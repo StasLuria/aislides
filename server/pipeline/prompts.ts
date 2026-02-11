@@ -242,12 +242,14 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - Output a JSON object matching the template's expected data fields.
 - Text must be concise and slide-appropriate (not paragraphs).
 - Bullet points: split text into 3-5 items with title + description.
-- Metrics: extract numbers/KPIs with labels and descriptions.
+- Metrics: extract numbers/KPIs with labels and descriptions. Each metric MUST have a meaningful description (1-2 sentences explaining the metric).
 - Steps: create numbered sequential items.
 - Timeline events: create dated milestones.
 - Table data: structure as headers[] + rows[][].
-- Icon references: use Lucide icon names (e.g., "trending-up", "users", "shield").
-- For icon objects, use format: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}
+- ICON FORMAT: Icons MUST be objects with "name" and "url" fields. Use Lucide icon names.
+  Format: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}
+  NEVER use emoji characters (like 📌 📊 🎯) as icons — they render incorrectly in templates.
+  Common icon names: trending-up, users, shield, target, bar-chart, clock, zap, star, heart, globe, award, check-circle, dollar-sign, percent, activity.
 - All text content must be in the same language as the source content.
 - Do NOT add inline styles for colors or backgrounds — the template uses CSS variables from the theme.
 - ALWAYS include the "title" field in every response.
@@ -259,7 +261,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - text-slide: {title, bullets: [{title, description}], icon?}
 - two-column: {title, leftColumn: {title, bullets: [string]}, rightColumn: {title, bullets: [string]}}
 - image-text: {title, bullets: [{title, description}], image?}
-- icons-numbers: {title, metrics: [{label, value, description, icon}]}
+- icons-numbers: {title, metrics: [{label, value, description, icon: {name, url}}]}  — icon MUST be an object with name+url, NOT a string/emoji. value should be a number or short stat (e.g. "85%", "3.2x", "$1.2M"). description is 1-2 sentences.
 - timeline: {title, events: [{date, title, description}]}
 - process-steps: {title, steps: [{number, title, description}]}
 - comparison: {title, optionA: {title, points: [string], color}, optionB: {title, points: [string], color}}

@@ -181,3 +181,10 @@
 - [x] Frontend: Visual feedback during save/re-render (toast notifications, loading states)
 - [x] Write vitest tests for editing endpoints (15 new tests — 99 total passing)
 - [x] End-to-end testing: all 5 visual tests passed (editor open, text edit, navigation, image controls, reassemble)
+
+## Bug Fix: Slide rendering issues (Round 3)
+- [x] Fix section-header template: added decorative elements (divider line, section number), improved vertical centering
+- [x] Fix icons-numbers template: replaced emoji icons with styled numbered circles, redesigned description boxes (no more progress bars)
+- [x] Fix HTML Composer prompt: updated instructions for icons-numbers layout data generation
+- [x] Fix Viewer: slides now centered — viewport-locked layout with overflow-hidden, no page scrolling
+- [ ] Test with new generation and visual verification (LLM API temporarily unavailable)

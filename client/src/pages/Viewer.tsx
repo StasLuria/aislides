@@ -166,17 +166,32 @@ export default function Viewer() {
   // Measure the main slide area
   const [mainSize, setMainSize] = useState({ w: 800, h: 500 });
 
+  const mainAreaRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function updateSize() {
-      // Main area: right panel minus toolbar (48px) and padding (48px)
-      const editorWidth = isEditing ? 360 : 0;
-      const w = Math.min(window.innerWidth - 280 - 48 - editorWidth, 1280);
-      const h = window.innerHeight - 56 - 48 - 48; // header + toolbar + padding
-      setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
+      if (mainAreaRef.current) {
+        const rect = mainAreaRef.current.getBoundingClientRect();
+        const w = Math.max(rect.width - 48, 400); // subtract padding
+        const h = Math.max(rect.height - 48, 300); // subtract padding
+        setMainSize({ w: Math.min(w, 1280), h });
+      } else {
+        // Fallback calculation
+        const editorWidth = isEditing ? 360 : 0;
+        const w = Math.min(window.innerWidth - 280 - 48 - editorWidth, 1280);
+        const h = window.innerHeight - 56 - 48 - 48;
+        setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
+      }
     }
     updateSize();
     window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    // Also observe the container for size changes
+    const observer = new ResizeObserver(updateSize);
+    if (mainAreaRef.current) observer.observe(mainAreaRef.current);
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      observer.disconnect();
+    };
   }, [isEditing]);
 
   // Fetch presentation data
@@ -429,10 +444,10 @@ export default function Viewer() {
   const THUMB_H = 108; // 16:9
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)]">
-      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-3.5rem)]">
+    <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
+      <div className="flex flex-col lg:flex-row h-full">
         {/* Left panel — Slide list */}
-        <div className="lg:w-[260px] border-r border-border/50 flex flex-col">
+        <div className="lg:w-[260px] border-r border-border/50 flex flex-col h-full overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center gap-2 mb-3">
@@ -540,7 +555,7 @@ export default function Viewer() {
         </div>
 
         {/* Center panel — Main slide view */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="flex items-center justify-between px-6 py-3 border-b border-border/50">
             <div className="flex items-center gap-4">
@@ -597,7 +612,7 @@ export default function Viewer() {
           </div>
 
           {/* Slide display */}
-          <div className="flex-1 flex items-center justify-center p-6 bg-black/20">
+          <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20">
             <div
               className="rounded-lg overflow-hidden border border-border/30 shadow-2xl bg-white"
               style={{
