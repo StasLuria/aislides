@@ -29,6 +29,7 @@ export interface CreatePresentationRequest {
   mode?: GenerationMode;
   config?: {
     theme_preset?: string;
+    enable_images?: boolean;
   } | null;
 }
 

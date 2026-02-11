@@ -75,7 +75,7 @@ export const GENERATION_STEPS = [
   { key: "writing", label: "Написание контента", agent: "writer", percent: 40 },
   { key: "layout", label: "Выбор макетов", agent: "layout", percent: 50 },
   { key: "theme", label: "Дизайн темы", agent: "theme", percent: 60 },
-  { key: "images", label: "Подбор изображений", agent: "image", percent: 70 },
+  { key: "images", label: "Генерация иллюстраций", agent: "image", percent: 70 },
   { key: "charts", label: "Создание графиков", agent: "chart", percent: 78 },
   { key: "composing", label: "Сборка HTML", agent: "html_composer", percent: 88 },
   { key: "review", label: "Проверка качества", agent: "reviewer", percent: 95 },

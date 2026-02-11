@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";  // still used for mode selector
 import { toast } from "sonner";
-import { ArrowRight, Sparkles, Layers, Zap, FileText } from "lucide-react";
+import { ArrowRight, Sparkles, Layers, Zap, FileText, ImageIcon } from "lucide-react";
 import api from "@/lib/api";
 import type { GenerationMode } from "@/lib/api";
 import { THEME_PRESETS } from "@/lib/constants";
@@ -28,6 +28,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<GenerationMode>("batch");
   const [theme, setTheme] = useState("corporate_blue");
+  const [enableImages, setEnableImages] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -52,6 +53,7 @@ export default function Home() {
           mode,
           config: {
             theme_preset: theme,
+            enable_images: enableImages,
           },
         });
         navigate(`/generate/${result.presentation_id}`);
@@ -256,6 +258,34 @@ export default function Home() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Image generation toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/40 border border-border/40">
+              <div className="flex items-center gap-3">
+                <ImageIcon className="w-4 h-4 text-primary/60 shrink-0" />
+                <div>
+                  <p className="text-xs text-foreground/80 font-medium">
+                    AI-иллюстрации
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Автоматическая генерация изображений для слайдов
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEnableImages(!enableImages)}
+                className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                  enableImages ? "bg-primary" : "bg-muted-foreground/30"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                    enableImages ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Info about auto slide count */}

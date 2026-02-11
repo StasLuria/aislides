@@ -207,6 +207,7 @@ async function startGeneration(
     // Run the pipeline (slide count is auto-determined by AI)
     const result = await generatePresentation(prompt, {
       themePreset: config.theme_preset,
+      enableImages: config.enable_images !== false, // enabled by default
     }, onProgress);
 
     // Upload HTML to S3

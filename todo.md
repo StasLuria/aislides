@@ -129,3 +129,17 @@
 - [x] Frontend: Image preview thumbnail with remove button
 - [x] Frontend: Image indicator badge in slide header
 - [x] Write vitest tests for image generation logic (10 new tests — 64 total passing)
+
+## Auto Image Generation in Batch Mode
+- [x] Backend: selectSlidesForImages — LLM picks 2-3 slides eligible for illustrations
+- [x] Backend: generateSlideImages — parallel image generation (max 3 concurrent)
+- [x] Backend: SKIP_IMAGE_LAYOUTS filter (title, final, chart, table, icons, agenda excluded)
+- [x] Backend: Image step integrated into pipeline between Layout and HTML Composer
+- [x] Backend: Layout override to "image-text" for slides with images
+- [x] Backend: Image data injected into slide data (image.url, backgroundImage.url)
+- [x] Backend: WebSocket progress events for image generation step
+- [x] Backend: Graceful failure handling — pipeline continues without images on error
+- [x] Frontend: enableImages toggle on Home.tsx (enabled by default)
+- [x] Frontend: Updated GENERATION_STEPS with "Генерация иллюстраций" label
+- [x] Frontend: enable_images passed through API config
+- [x] Write vitest tests for batch image generation logic (11 new tests — 75 total passing)

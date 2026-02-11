@@ -19,6 +19,7 @@ import {
 } from "./prompts";
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
 import { getThemePreset, type ThemePreset } from "./themes";
+import { generateImage } from "../_core/imageGeneration";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -26,6 +27,7 @@ import { getThemePreset, type ThemePreset } from "./themes";
 
 export interface GenerationConfig {
   themePreset?: string;
+  enableImages?: boolean;
 }
 
 export interface PipelineProgress {
@@ -530,6 +532,108 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
 }
 
 // ═══════════════════════════════════════════════════════
+// IMAGE GENERATION FOR BATCH MODE
+// ═══════════════════════════════════════════════════════
+
+/** Layouts that should NOT get auto-images */
+const SKIP_IMAGE_LAYOUTS = new Set([
+  "title-slide", "final-slide", "chart-slide", "table-slide",
+  "icons-numbers", "image-text", "image-fullscreen", "agenda-table-of-contents",
+]);
+
+interface ImageSelection {
+  slide_number: number;
+  image_prompt: string;
+}
+
+/**
+ * Ask LLM which slides would benefit from illustrations and generate prompts.
+ * Returns up to maxImages selections.
+ */
+async function selectSlidesForImages(
+  content: SlideContent[],
+  layoutMap: Map<number, string>,
+  maxImages: number = 3,
+): Promise<ImageSelection[]> {
+  // Filter to slides that are eligible for images
+  const eligible = content.filter((s) => {
+    const layout = layoutMap.get(s.slide_number) || "text-slide";
+    return !SKIP_IMAGE_LAYOUTS.has(layout);
+  });
+
+  if (eligible.length === 0) return [];
+
+  const slideSummaries = eligible.map((s) => (
+    `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 120)}`
+  )).join("\n");
+
+  const result = await llmStructured<{ selections: ImageSelection[] }>(
+    `You are an art director for presentations. Select up to ${maxImages} slides that would benefit most from an illustration image. For each, write a concise image generation prompt in English (max 80 words) describing a professional, modern illustration that enhances the slide content. Prefer abstract/conceptual visuals over literal photos. Do NOT select slides about agendas, tables, or data.`,
+    `Here are the eligible slides:\n${slideSummaries}\n\nSelect up to ${maxImages} slides and provide image prompts.`,
+    "image_selections",
+    {
+      type: "object",
+      properties: {
+        selections: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              slide_number: { type: "integer", description: "The slide number" },
+              image_prompt: { type: "string", description: "English prompt for image generation" },
+            },
+            required: ["slide_number", "image_prompt"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["selections"],
+      additionalProperties: false,
+    },
+  );
+
+  // Validate selections — only keep eligible slide numbers
+  const eligibleNumbers = new Set(eligible.map((s) => s.slide_number));
+  return result.selections
+    .filter((s) => eligibleNumbers.has(s.slide_number) && s.image_prompt.trim())
+    .slice(0, maxImages);
+}
+
+/**
+ * Generate images in parallel for selected slides.
+ * Returns a map of slide_number → image URL.
+ */
+async function generateSlideImages(
+  selections: ImageSelection[],
+  onProgress?: (completed: number, total: number) => void,
+): Promise<Map<number, string>> {
+  const imageMap = new Map<number, string>();
+  if (selections.length === 0) return imageMap;
+
+  // Generate images in parallel (max 3 concurrent)
+  const concurrency = 3;
+  for (let i = 0; i < selections.length; i += concurrency) {
+    const batch = selections.slice(i, i + concurrency);
+    const results = await Promise.allSettled(
+      batch.map(async (sel) => {
+        const result = await generateImage({ prompt: sel.image_prompt });
+        return { slideNumber: sel.slide_number, url: result.url };
+      }),
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.url) {
+        imageMap.set(r.value.slideNumber, r.value.url);
+      }
+    }
+
+    onProgress?.(Math.min(i + batch.length, selections.length), selections.length);
+  }
+
+  return imageMap;
+}
+
+// ═══════════════════════════════════════════════════════
 // MAIN PIPELINE
 // ═══════════════════════════════════════════════════════
 
@@ -544,6 +648,8 @@ export async function generatePresentation(
   slides: Array<{ layoutId: string; data: Record<string, any>; html: string }>;
   fullHtml: string;
 }> {
+  const enableImages = config.enableImages !== false; // enabled by default
+
   // 1. PLANNER
   onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: "Анализ темы и планирование..." });
   const plannerResult = await runPlanner(prompt);
@@ -556,10 +662,10 @@ export async function generatePresentation(
   // 3. WRITER (parallel)
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 25, message: `Написание контента для ${outline.slides.length} слайдов...` });
   const content = await runWriterParallel(outline, language);
-  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 45, message: "Контент готов" });
+  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
 
   // 4. THEME — use predefined preset when available
-  onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 55, message: "Создание визуальной темы..." });
+  onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 48, message: "Создание визуальной темы..." });
   const themePreset = getThemePreset(config.themePreset || "corporate_blue");
   const theme = await runTheme(
     plannerResult.presentation_title,
@@ -569,16 +675,54 @@ export async function generatePresentation(
   );
 
   // 5. LAYOUT
-  onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 65, message: "Выбор макетов для слайдов..." });
+  onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 55, message: "Выбор макетов для слайдов..." });
   const layoutDecisions = await runLayout(content);
-
-  // 6. HTML COMPOSER (parallel per slide)
-  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 70, message: "Сборка HTML-слайдов..." });
-
-  const slides: Array<{ layoutId: string; data: Record<string, any>; html: string }> = [];
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
+
+  // 5.5. IMAGE GENERATION (between layout and HTML composer)
+  let imageMap = new Map<number, string>();
+  if (enableImages) {
+    onProgress({ nodeName: "image", currentStep: "images", progressPercent: 60, message: "Подбор слайдов для иллюстраций..." });
+
+    try {
+      const selections = await selectSlidesForImages(content, layoutMap, 3);
+
+      if (selections.length > 0) {
+        onProgress({ nodeName: "image", currentStep: "images", progressPercent: 63, message: `Генерация ${selections.length} иллюстраций...` });
+
+        imageMap = await generateSlideImages(selections, (completed, total) => {
+          const imgProgress = 63 + (completed / total) * 7;
+          onProgress({
+            nodeName: "image",
+            currentStep: "images",
+            progressPercent: Math.round(imgProgress),
+            message: `Сгенерировано ${completed} из ${total} изображений`,
+          });
+        });
+
+        // Override layouts for slides that got images
+        Array.from(imageMap.keys()).forEach((slideNum) => {
+          layoutMap.set(slideNum, "image-text");
+        });
+
+        onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: `Готово: ${imageMap.size} иллюстраций` });
+      } else {
+        onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Изображения не требуются" });
+      }
+    } catch (err) {
+      console.error("[Pipeline] Image generation failed, continuing without images:", err);
+      onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Пропуск изображений (ошибка)" });
+    }
+  } else {
+    onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Изображения отключены" });
+  }
+
+  // 6. HTML COMPOSER (parallel per slide)
+  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 72, message: "Сборка HTML-слайдов..." });
+
+  const slides: Array<{ layoutId: string; data: Record<string, any>; html: string }> = [];
 
   // Run composers in parallel (batches of 5 to avoid rate limits)
   const batchSize = 5;
@@ -590,13 +734,21 @@ export async function generatePresentation(
         const data = await runHtmlComposer(slideContent, layoutName, theme.css_variables).catch(() =>
           buildFallbackData(slideContent, layoutName),
         );
+
+        // Inject image if available
+        const imgUrl = imageMap.get(slideContent.slide_number);
+        if (imgUrl) {
+          data.image = { url: imgUrl, alt: slideContent.title };
+          data.backgroundImage = { url: imgUrl, alt: slideContent.title };
+        }
+
         const html = renderSlide(layoutName, data);
         return { layoutId: layoutName, data, html };
       }),
     );
     slides.push(...batchResults);
 
-    const progress = 70 + ((i + batch.length) / content.length) * 20;
+    const progress = 72 + ((i + batch.length) / content.length) * 20;
     onProgress({
       nodeName: "composer",
       currentStep: "composing",
