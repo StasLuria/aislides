@@ -17,7 +17,10 @@ export type PresentationStatus =
   | "processing"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "awaiting_outline_approval"
+  | "awaiting_content_approval"
+  | "assembling";
 
 export type GenerationMode = "batch" | "interactive";
 
@@ -98,6 +101,50 @@ export interface WSCompletedData {
   slide_count: number;
   result_urls: Record<string, string>;
   title: string;
+}
+
+// ═══════════════════════════════════════════════════════
+// Interactive Mode Types
+// ═══════════════════════════════════════════════════════
+
+export interface OutlineSlideData {
+  slide_number: number;
+  title: string;
+  purpose: string;
+  key_points: string[];
+  speaker_notes_hint: string;
+}
+
+export interface OutlineData {
+  presentation_title: string;
+  target_audience: string;
+  narrative_arc: string;
+  slides: OutlineSlideData[];
+}
+
+export interface InteractiveStartResponse {
+  presentation_id: string;
+  status: string;
+  title: string;
+  language: string;
+  outline: OutlineData;
+}
+
+export interface SlideContentData {
+  slide_number: number;
+  title: string;
+  text: string;
+  notes: string;
+  data_points: Array<{ label: string; value: string; unit: string }>;
+  key_message: string;
+}
+
+export interface InteractiveContentResponse {
+  presentation_id: string;
+  status: string;
+  title: string;
+  outline: OutlineData | null;
+  content: SlideContentData[] | null;
 }
 
 export interface WSErrorData {
@@ -183,6 +230,52 @@ class ApiClient {
 
   async deletePresentation(id: string): Promise<void> {
     await this.http.delete(`/presentations/${id}`);
+  }
+
+  // — Interactive Mode —
+
+  async startInteractive(req: { prompt: string; config?: Record<string, unknown> }): Promise<InteractiveStartResponse> {
+    const { data } = await this.http.post<InteractiveStartResponse>(
+      "/interactive/start",
+      req,
+    );
+    return data;
+  }
+
+  async approveOutline(
+    id: string,
+    outline?: OutlineData,
+  ): Promise<{ presentation_id: string; status: string; message: string; slide_count: number }> {
+    const { data } = await this.http.post(`/interactive/${id}/approve-outline`, {
+      outline: outline || undefined,
+    });
+    return data;
+  }
+
+  async getInteractiveContent(id: string): Promise<InteractiveContentResponse> {
+    const { data } = await this.http.get<InteractiveContentResponse>(
+      `/interactive/${id}/content`,
+    );
+    return data;
+  }
+
+  async updateSlide(
+    id: string,
+    slideNumber: number,
+    updates: { title?: string; text?: string; key_message?: string; notes?: string },
+  ): Promise<{ presentation_id: string; slide_number: number; updated: boolean; slide: SlideContentData }> {
+    const { data } = await this.http.post(`/interactive/${id}/update-slide`, {
+      slide_number: slideNumber,
+      ...updates,
+    });
+    return data;
+  }
+
+  async assemblePresentation(
+    id: string,
+  ): Promise<{ presentation_id: string; status: string; message: string }> {
+    const { data } = await this.http.post(`/interactive/${id}/assemble`);
+    return data;
   }
 
   // — Files —

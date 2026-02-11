@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Generate from "./pages/Generate";
 import Viewer from "./pages/Viewer";
 import History from "./pages/History";
+import Interactive from "./pages/Interactive";
 import AppLayout from "./components/AppLayout";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,6 +24,7 @@ function Router() {
         <Route path="/generate/:id" component={Generate} />
         <Route path="/view/:id" component={Viewer} />
         <Route path="/history" component={History} />
+        <Route path="/interactive/:id" component={Interactive} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

@@ -38,6 +38,9 @@ export const presentations = mysqlTable("presentations", {
     "completed",
     "failed",
     "cancelled",
+    "awaiting_outline_approval",
+    "awaiting_content_approval",
+    "assembling",
   ]).default("pending").notNull(),
   /** Current pipeline step name */
   currentStep: varchar("currentStep", { length: 64 }).default("pending"),

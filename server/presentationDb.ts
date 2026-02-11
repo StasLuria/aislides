@@ -77,7 +77,7 @@ export async function listPresentations(userId?: number, limit = 50): Promise<Pr
 export async function updatePresentationProgress(
   presentationId: string,
   data: {
-    status?: "pending" | "processing" | "completed" | "failed" | "cancelled";
+    status?: "pending" | "processing" | "completed" | "failed" | "cancelled" | "awaiting_outline_approval" | "awaiting_content_approval" | "assembling";
     currentStep?: string;
     progressPercent?: number;
     title?: string;

@@ -1,0 +1,1 @@
+ALTER TABLE `presentations` MODIFY COLUMN `status` enum('pending','processing','completed','failed','cancelled','awaiting_outline_approval','awaiting_content_approval','assembling') NOT NULL DEFAULT 'pending';

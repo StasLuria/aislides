@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerPresentationRoutes } from "../presentationRoutes";
+import { registerInteractiveRoutes } from "../interactiveRoutes";
 import { wsManager } from "../wsManager";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -42,6 +43,9 @@ async function startServer() {
 
   // Presentation REST API — /api/v1/presentations/*, /health
   registerPresentationRoutes(app);
+
+  // Interactive mode API — /api/v1/interactive/*
+  registerInteractiveRoutes(app);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

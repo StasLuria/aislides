@@ -38,15 +38,24 @@ export default function Home() {
 
     setIsSubmitting(true);
     try {
-      const result = await api.createPresentation({
-        prompt: prompt.trim(),
-        mode,
-        config: {
-          theme_preset: theme,
-          // slide_count is auto-determined by AI based on content
-        },
-      });
-      navigate(`/generate/${result.presentation_id}`);
+      if (mode === "interactive") {
+        // Interactive mode — start step-by-step flow
+        const result = await api.startInteractive({
+          prompt: prompt.trim(),
+          config: { theme_preset: theme },
+        });
+        navigate(`/interactive/${result.presentation_id}`);
+      } else {
+        // Batch mode — full auto generation
+        const result = await api.createPresentation({
+          prompt: prompt.trim(),
+          mode,
+          config: {
+            theme_preset: theme,
+          },
+        });
+        navigate(`/generate/${result.presentation_id}`);
+      }
     } catch (error) {
       console.error("Failed to create presentation:", error);
       toast.error("Не удалось создать презентацию. Проверьте подключение к серверу.");

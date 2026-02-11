@@ -74,3 +74,15 @@
 - [x] Update section-header and final-slide to use accent gradient backgrounds
 - [x] Test generation with new themes
 - [x] Write vitest tests for theme system (10 tests passing)
+
+## Interactive Mode — Step-by-step Approval UI
+- [x] Backend: Split pipeline into steps (plan → outline → content → theme → assembly)
+- [x] Backend: API endpoints for each interactive step (start, approve-outline, get-content, update-slide, assemble)
+- [x] Backend: Store intermediate state in DB (pipelineState with outline, content, status)
+- [x] Frontend: Interactive generation page with step wizard UI
+- [x] Frontend: Step 1 — Outline review/edit (reorder slides, edit titles/purpose/key_points, add/remove slides)
+- [x] Frontend: Step 2 — Content review/edit (per-slide content editing with save)
+- [x] Frontend: Step 3 — Final assembly with progress via WebSocket
+- [x] Frontend: Navigation between steps with back/forward
+- [x] Connect interactive frontend to backend API (api.ts methods + routes)
+- [x] Write vitest tests for interactive endpoints (11 tests passing)

@@ -61,7 +61,24 @@ const STATUS_CONFIG: Record<
     color: "text-muted-foreground",
     bgColor: "bg-muted/50",
   },
-
+  awaiting_outline_approval: {
+    label: "Структура",
+    icon: Clock,
+    color: "text-amber-400",
+    bgColor: "bg-amber-400/10",
+  },
+  awaiting_content_approval: {
+    label: "Контент",
+    icon: Clock,
+    color: "text-orange-400",
+    bgColor: "bg-orange-400/10",
+  },
+  assembling: {
+    label: "Сборка",
+    icon: Loader2,
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+  },
 };
 
 export default function History() {
@@ -101,6 +118,13 @@ export default function History() {
   const handleView = (p: PresentationDetail) => {
     if (p.status === "completed") {
       navigate(`/view/${p.presentation_id}`);
+    } else if (
+      p.status === "awaiting_outline_approval" ||
+      p.status === "awaiting_content_approval" ||
+      (p.status === "assembling" && p.mode === "interactive") ||
+      (p.status === "processing" && p.mode === "interactive")
+    ) {
+      navigate(`/interactive/${p.presentation_id}`);
     } else if (p.status === "processing" || p.status === "pending") {
       navigate(`/generate/${p.presentation_id}`);
     }

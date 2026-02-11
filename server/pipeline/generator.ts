@@ -38,7 +38,7 @@ export interface PipelineProgress {
 
 export type ProgressCallback = (progress: PipelineProgress) => void;
 
-interface PlannerResult {
+export interface PlannerResult {
   source_type: string;
   language: string;
   presentation_title: string;
@@ -50,7 +50,7 @@ interface PlannerResult {
   };
 }
 
-interface OutlineSlide {
+export interface OutlineSlide {
   slide_number: number;
   title: string;
   purpose: string;
@@ -58,14 +58,14 @@ interface OutlineSlide {
   speaker_notes_hint: string;
 }
 
-interface OutlineResult {
+export interface OutlineResult {
   presentation_title: string;
   target_audience: string;
   narrative_arc: string;
   slides: OutlineSlide[];
 }
 
-interface SlideContent {
+export interface SlideContent {
   slide_number: number;
   title: string;
   text: string;
@@ -74,7 +74,7 @@ interface SlideContent {
   key_message: string;
 }
 
-interface ThemeResult {
+export interface ThemeResult {
   theme_name: string;
   colors: {
     primary: string;
@@ -89,7 +89,7 @@ interface ThemeResult {
   css_variables: string;
 }
 
-interface LayoutDecision {
+export interface LayoutDecision {
   slide_number: number;
   layout_name: string;
   rationale: string;
@@ -142,7 +142,7 @@ async function llmText(systemPrompt: string, userPrompt: string): Promise<string
 // AGENT FUNCTIONS
 // ═══════════════════════════════════════════════════════
 
-async function runPlanner(prompt: string): Promise<PlannerResult> {
+export async function runPlanner(prompt: string): Promise<PlannerResult> {
   return llmStructured<PlannerResult>(
     MASTER_PLANNER_SYSTEM,
     masterPlannerUser(prompt),
@@ -171,7 +171,7 @@ async function runPlanner(prompt: string): Promise<PlannerResult> {
   );
 }
 
-async function runOutline(
+export async function runOutline(
   prompt: string,
   branding: PlannerResult["branding"],
   language: string,
@@ -207,7 +207,7 @@ async function runOutline(
   });
 }
 
-async function runWriterSingle(
+export async function runWriterSingle(
   slideInfo: OutlineSlide,
   presentationTitle: string,
   allTitles: string,
@@ -258,7 +258,7 @@ async function runWriterSingle(
   return result.slide;
 }
 
-async function runWriterParallel(
+export async function runWriterParallel(
   outline: OutlineResult,
   language: string,
   onSlideWritten?: (slideNum: number, total: number) => void,
@@ -296,7 +296,7 @@ function extractCssVar(css: string, varName: string): string | null {
   return match ? match[1].trim().replace(/['"]*/g, '') : null;
 }
 
-async function runTheme(
+export async function runTheme(
   presentationTitle: string,
   branding: PlannerResult["branding"],
   targetAudience: string,
@@ -349,7 +349,7 @@ async function runTheme(
   });
 }
 
-async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
+export async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
   const slidesSummary = content
     .map(
       (s) =>
@@ -386,7 +386,7 @@ async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
   return result.decisions;
 }
 
-async function runHtmlComposer(
+export async function runHtmlComposer(
   slideContent: SlideContent,
   layoutName: string,
   themeCss: string,
@@ -421,7 +421,7 @@ async function runHtmlComposer(
   }
 }
 
-function buildFallbackData(content: SlideContent, layoutName: string): Record<string, any> {
+export function buildFallbackData(content: SlideContent, layoutName: string): Record<string, any> {
   const bullets = content.text
     .split("\n")
     .filter((l) => l.trim())
