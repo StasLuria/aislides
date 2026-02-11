@@ -99,17 +99,19 @@ export default function Generate() {
           break;
 
         case "generation.progress": {
-          const p = (event.data.progress_percent as number) || 0;
+          // Backend ws_manager sends: progress_percentage, current_step, node_name, phase
+          const p = (event.data.progress_percentage as number) || 0;
           const step = event.data.current_step as string | undefined;
-          const agent = event.data.agent as string | undefined;
+          const nodeName = event.data.node_name as string | undefined;
           setProgress(p);
-          if (agent) setCurrentAgent(agent);
+          if (nodeName) setCurrentAgent(nodeName);
           updateStepsFromProgress(p, step);
           break;
         }
 
         case "generation.slide_preview": {
-          const html = event.data.html as string;
+          // Backend ws_manager sends: html_content, slide_number, slide_title, layout_name
+          const html = event.data.html_content as string;
           if (html) {
             setSlidePreviewHtml(html);
             setSlidePreviews((prev) => [...prev, html]);
@@ -128,8 +130,9 @@ export default function Generate() {
 
         case "generation.failed": {
           setIsFailed(true);
+          // Backend ws_manager sends: error_type, error_message, failed_at_node, partial_result
           const errMsg =
-            (event.data.error as string) || "Произошла ошибка генерации";
+            (event.data.error_message as string) || "Произошла ошибка генерации";
           setErrorMessage(errMsg);
           setSteps((prev) =>
             prev.map((s) =>

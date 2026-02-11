@@ -6,6 +6,7 @@
 import { Link, useLocation } from "wouter";
 import { Presentation, Clock, Plus } from "lucide-react";
 import type { ReactNode } from "react";
+import ConnectionStatus from "./ConnectionStatus";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -39,35 +40,38 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
           </Link>
 
-          {/* Navigation */}
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? location === "/"
-                  : location.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`
-                    flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors
-                    ${
-                      isActive
-                        ? "text-foreground bg-secondary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }
-                  `}
-                >
-                  <span className="font-mono text-[10px] text-primary/60">
-                    {item.section}
-                  </span>
-                  <item.icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Navigation + Status */}
+          <div className="flex items-center gap-4">
+            <ConnectionStatus />
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? location === "/"
+                    : location.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`
+                      flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors
+                      ${
+                        isActive
+                          ? "text-foreground bg-secondary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }
+                    `}
+                  >
+                    <span className="font-mono text-[10px] text-primary/60">
+                      {item.section}
+                    </span>
+                    <item.icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
         </div>
 
         {/* Swiss divider */}

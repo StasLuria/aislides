@@ -184,5 +184,20 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    // Proxy API and WebSocket requests to FastAPI backend
+    proxy: {
+      "/api/v1": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+      "/ws": {
+        target: "ws://localhost:8001",
+        ws: true,
+      },
+      "/health": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+    },
   },
 });

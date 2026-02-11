@@ -1,0 +1,115 @@
+# ═══════════════════════════════════════════════════════
+# Docker Compose — Presentation Generator (Full Stack)
+# Frontend (nginx) + Backend (FastAPI) + optional MinIO
+# ═══════════════════════════════════════════════════════
+#
+# Usage:
+#   Development:  docker compose up -d
+#   With MinIO:   docker compose --profile minio up -d
+#   Rebuild:      docker compose up -d --build
+#
+# ═══════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+  # ── Frontend (nginx + SPA) ───────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pres-gen-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── API Server (FastAPI) ─────────────────────────────
+  api:
+    build:
+      context: ${BACKEND_PATH:-../presentation-generator}
+      dockerfile: Dockerfile
+    container_name: pres-gen-api
+    # No external port — accessed only via frontend nginx proxy
+    # Uncomment for direct API access during development:
+    # ports:
+    #   - "${API_PORT:-8001}:8000"
+    environment:
+      # App
+      - APP_NAME=Presentation Generator
+      - APP_VERSION=1.0.0
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_KEY=${API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      # Database
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./storage/presentations.db}
+      # Storage
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - LOCAL_STORAGE_PATH=/app/storage
+      # MinIO (when STORAGE_BACKEND=minio)
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio:9000}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-presentations}
+      - MINIO_SECURE=${MINIO_SECURE:-false}
+      # OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      # LLM Models
+      - MODEL_MASTER_PLANNER=${MODEL_MASTER_PLANNER:-gpt-4.1-mini}
+      - MODEL_OUTLINE=${MODEL_OUTLINE:-gpt-4.1-mini}
+      - MODEL_WRITER=${MODEL_WRITER:-gpt-4.1-mini}
+      - MODEL_LAYOUT=${MODEL_LAYOUT:-gpt-4.1-mini}
+      - MODEL_THEME=${MODEL_THEME:-gpt-4.1-mini}
+      - MODEL_HTML_COMPOSER=${MODEL_HTML_COMPOSER:-gpt-4.1-mini}
+      - MODEL_REVIEWER=${MODEL_REVIEWER:-gpt-4.1-nano}
+    volumes:
+      - pres-storage:/app/storage
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_started
+        required: false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── MinIO Object Storage (optional) ──────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: pres-gen-minio
+    profiles:
+      - minio
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pres-storage:
+    driver: local
+  minio-data:
+    driver: local

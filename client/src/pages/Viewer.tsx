@@ -51,31 +51,22 @@ export default function Viewer() {
           return;
         }
 
-        // Fetch the HTML content
-        if (data.result_urls?.html) {
+        // Fetch the HTML content from result_urls.html_preview
+        // Backend stores URL as "/api/v1/files/presentations/{id}/output/presentation.html"
+        const htmlUrl = data.result_urls?.html_preview || data.result_urls?.html;
+        if (htmlUrl) {
           try {
-            const response = await fetch(data.result_urls.html);
-            const html = await response.text();
+            const html = await api.fetchPresentationHtml(htmlUrl);
             setFullHtml(html);
             // Parse individual slides from the HTML
             const slides = parseSlides(html);
             setSlideHtmls(slides);
-          } catch {
-            // If URL fetch fails, try to get slides from result_urls
+          } catch (err) {
+            console.error("Failed to fetch HTML:", err);
             toast.error("Не удалось загрузить HTML презентации");
           }
-        }
-
-        // If we have individual slide URLs
-        if (data.result_urls?.slides) {
-          try {
-            const slidesData = JSON.parse(data.result_urls.slides as unknown as string);
-            if (Array.isArray(slidesData)) {
-              setSlideHtmls(slidesData);
-            }
-          } catch {
-            // Ignore parse errors
-          }
+        } else {
+          toast.error("URL презентации не найден");
         }
       } catch (error) {
         console.error("Failed to fetch presentation:", error);
