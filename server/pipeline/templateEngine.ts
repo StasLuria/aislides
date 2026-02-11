@@ -10,6 +10,8 @@
 
 const LAYOUT_TEMPLATES: Record<string, string> = {
   "title-slide": `<div class="relative z-10 flex h-full px-16 pt-12 pb-8">
+  <div class="slide-decor-circle slide-decor-top-right"></div>
+  <div class="slide-decor-circle slide-decor-bottom-left"></div>
   <div class="flex-1 flex items-center justify-center pr-8">
     <div class="w-full max-w-lg h-80 rounded-2xl overflow-hidden shadow-lg">
       {% if image and image.url %}
@@ -43,12 +45,16 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "section-header": `<div class="flex flex-col items-center justify-center h-full px-16 text-center">
-  <div class="accent-line-center mb-6"></div>
-  <h1 style="color: var(--text-heading-color, #111827);" class="text-6xl font-bold leading-tight mb-4">{{ title }}</h1>
-  {% if subtitle %}
-  <p style="color: var(--text-body-color, #4b5563);" class="text-xl leading-relaxed max-w-2xl">{{ subtitle }}</p>
-  {% endif %}
+  "section-header": `<div class="flex flex-col items-center justify-center h-full px-16 text-center" style="background: var(--slide-bg-accent-gradient, var(--primary-accent-color));">
+  <div class="slide-decor-circle slide-decor-top-right"></div>
+  <div class="slide-decor-circle slide-decor-bottom-left"></div>
+  <div class="relative z-10 flex flex-col items-center">
+    <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
+    <h1 style="color: #ffffff;" class="text-6xl font-bold leading-tight mb-4">{{ title }}</h1>
+    {% if subtitle %}
+    <p style="color: rgba(255,255,255,0.8);" class="text-xl leading-relaxed max-w-2xl">{{ subtitle }}</p>
+    {% endif %}
+  </div>
 </div>`,
 
   "text-slide": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
@@ -315,24 +321,28 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "final-slide": `<div class="flex flex-col items-center justify-center h-full px-16 text-center">
-  <h1 style="color: var(--text-heading-color, #111827);" class="text-6xl font-bold mb-4">{{ title | default('Спасибо!') }}</h1>
-  <div class="accent-line-center mb-6"></div>
+  "final-slide": `<div class="flex flex-col items-center justify-center h-full px-16 text-center" style="background: var(--slide-bg-accent-gradient, var(--primary-accent-color));">
+  <div class="slide-decor-circle slide-decor-top-right"></div>
+  <div class="slide-decor-circle slide-decor-bottom-left"></div>
+  <div class="relative z-10 flex flex-col items-center">
+  <h1 style="color: #ffffff;" class="text-6xl font-bold mb-4">{{ title | default('Спасибо!') }}</h1>
+  <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
   {% if subtitle %}
-  <p style="color: var(--text-body-color, #4b5563);" class="text-xl leading-relaxed max-w-2xl mb-8">{{ subtitle }}</p>
+  <p style="color: rgba(255,255,255,0.85);" class="text-xl leading-relaxed max-w-2xl mb-8">{{ subtitle }}</p>
   {% endif %}
   {% if thankYouText %}
-  <p style="color: var(--text-body-color, #4b5563);" class="text-lg mb-8">{{ thankYouText }}</p>
+  <p style="color: rgba(255,255,255,0.8);" class="text-lg mb-8">{{ thankYouText }}</p>
   {% endif %}
   {% if contactInfo %}
   <div class="flex flex-col items-center gap-3 mt-8">
     {% for contact in contactInfo %}
     <div class="flex items-center gap-3">
-      <span style="color: var(--text-body-color, #4b5563);" class="text-lg">{{ contact.value }}</span>
+      <span style="color: rgba(255,255,255,0.9);" class="text-lg">{{ contact.value }}</span>
     </div>
     {% endfor %}
   </div>
   {% endif %}
+  </div>
 </div>`,
 
   "agenda-table-of-contents": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
@@ -445,7 +455,7 @@ const BASE_CSS = `/* ── Slide Foundation ───────────�
   font-size: 16px;
   line-height: 1.5;
   color: var(--text-body-color, #4b5563);
-  background: var(--card-background-color, #ffffff);
+  background: var(--slide-bg-gradient, var(--card-background-color, #ffffff));
   box-sizing: border-box;
 }
 .slide *, .slide *::before, .slide *::after { box-sizing: border-box; }
@@ -537,22 +547,32 @@ const BASE_CSS = `/* ── Slide Foundation ───────────�
 .slide .object-cover { object-fit: cover; }
 .slide .object-contain { object-fit: contain; }
 /* ── Decorative ──────────────────────────────────────── */
-.accent-line { width: 80px; height: 4px; background: var(--primary-accent-color); }
-.accent-line-center { width: 80px; height: 4px; background: var(--primary-accent-color); margin-left: auto; margin-right: auto; }
+.accent-line { width: 80px; height: 4px; background: var(--primary-accent-color); border-radius: 2px; }
+.accent-line-center { width: 80px; height: 4px; background: var(--primary-accent-color); margin-left: auto; margin-right: auto; border-radius: 2px; }
 .icon-circle { width: 40px; height: 40px; border-radius: 9999px; background: var(--primary-accent-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .icon-circle img, .icon-circle svg { width: 20px; height: 20px; filter: brightness(0) invert(1); }
-.bullet-row { display: flex; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 12px; background: color-mix(in srgb, var(--primary-accent-color) 10%, transparent); }
-.card { padding: 24px; border-radius: 16px; border: 1px solid #e5e7eb; background: #ffffff; }
+.bullet-row { display: flex; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 12px; background: var(--decorative-shape-color, color-mix(in srgb, var(--primary-accent-color) 10%, transparent)); border: 1px solid var(--card-border-color, rgba(0,0,0,0.05)); }
+.card { padding: 24px; border-radius: 16px; border: 1px solid var(--card-border-color, #e5e7eb); background: var(--card-background-gradient, var(--card-background-color, #ffffff)); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04)); }
 .gradient-overlay-bottom { background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.2) 50%, transparent); }
 .gradient-overlay-dark { background: rgba(0,0,0,0.5); }
+/* ── Decorative Shapes ──────────────────────────────── */
+.slide-decor-circle { position: absolute; border-radius: 50%; background: var(--decorative-shape-color, rgba(0,0,0,0.03)); pointer-events: none; }
+.slide-decor-top-right { top: -80px; right: -80px; width: 300px; height: 300px; }
+.slide-decor-bottom-left { bottom: -60px; left: -60px; width: 200px; height: 200px; }
+/* ── Accent Gradient Slide (for section headers, title, final) ── */
+.slide.slide-accent {
+  background: var(--slide-bg-accent-gradient, var(--primary-accent-color));
+  color: #ffffff;
+}
 /* ── Tables ──────────────────────────────────────────── */
 .slide table { width: 100%; border-collapse: collapse; }
 .slide thead tr { background: var(--primary-accent-color); }
 .slide th { padding: 16px 24px; text-align: left; color: #ffffff; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
 .slide tbody tr { border-bottom: 1px solid #f3f4f6; }
-.slide tbody tr:nth-child(even) { background-color: #f9fafb; }
-.slide tbody tr:nth-child(odd) { background-color: #ffffff; }
-.slide td { padding: 12px 24px; font-size: 14px; }
+.slide tbody tr:nth-child(even) { background-color: var(--decorative-shape-color, #f9fafb); }
+.slide tbody tr:nth-child(odd) { background-color: var(--card-background-color, #ffffff); }
+.slide td { padding: 12px 24px; font-size: 14px; color: var(--text-body-color, #4b5563); }
+.slide .border { border: 1px solid var(--card-border-color, #e5e7eb); }
 `;
 
 // ═══════════════════════════════════════════════════════
@@ -799,6 +819,7 @@ export function renderPresentation(
   themeCss: string,
   presentationTitle: string,
   language: string = "ru",
+  fontsUrl?: string,
 ): string {
   const renderedSlides = slides.map((slide, index) => {
     const html = slide.html || renderSlide(slide.layoutId, { ...slide.data, _slide_index: index });
@@ -841,7 +862,7 @@ export function renderPresentation(
   <title>${escapeHtml(presentationTitle)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="${fontsUrl || 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'}" rel="stylesheet" />
   <style>${BASE_CSS}</style>
   <style>${themeCss}</style>
   ${hasCharts ? '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>' : ""}

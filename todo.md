@@ -59,6 +59,18 @@
 - [x] Update API schema to make slide_count optional
 
 ## Critical Bug Fixes Round 2
-- [ ] Fix Viewer: slides show as black screen in main area (iframe not rendering)
-- [ ] Fix Viewer: thumbnails are tiny and not properly scaled
-- [ ] Verify slide count slider is removed in deployed version
+- [x] Fix Viewer: slides show as black screen in main area (iframe not rendering)
+- [x] Fix Viewer: thumbnails are tiny and not properly scaled
+- [x] Verify slide count slider is removed in deployed version
+
+## Improve Slide Design
+- [x] Add new color themes with gradient backgrounds (10 themes total)
+- [x] Improve base slide CSS: better typography, spacing, shadows
+- [x] Add gradient overlays and decorative elements to slide templates
+- [x] Update frontend theme selector with visual gradient grid
+- [x] Update constants.ts with new theme list
+- [x] Create predefined theme presets (server/pipeline/themes.ts)
+- [x] Skip LLM theme generation when preset is selected (faster generation)
+- [x] Update section-header and final-slide to use accent gradient backgrounds
+- [x] Test generation with new themes
+- [x] Write vitest tests for theme system (10 tests passing)

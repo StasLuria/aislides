@@ -18,6 +18,7 @@ import {
   htmlComposerUser,
 } from "./prompts";
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
+import { getThemePreset, type ThemePreset } from "./themes";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -286,11 +287,40 @@ async function runWriterParallel(
   return results;
 }
 
+/**
+ * Extract a CSS variable value from a :root block.
+ */
+function extractCssVar(css: string, varName: string): string | null {
+  const regex = new RegExp(`${varName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\s*:\\s*([^;]+)`);
+  const match = css.match(regex);
+  return match ? match[1].trim().replace(/['"]*/g, '') : null;
+}
+
 async function runTheme(
   presentationTitle: string,
   branding: PlannerResult["branding"],
   targetAudience: string,
+  preset?: ThemePreset,
 ): Promise<ThemeResult> {
+  // If we have a preset, use its CSS variables directly — no LLM call needed
+  if (preset) {
+    return {
+      theme_name: preset.name,
+      colors: {
+        primary: extractCssVar(preset.cssVariables, "--primary-accent-color") || "#2563eb",
+        primary_light: extractCssVar(preset.cssVariables, "--primary-accent-light") || "#93bbfd",
+        secondary: extractCssVar(preset.cssVariables, "--secondary-accent-color") || "#0ea5e9",
+        background: extractCssVar(preset.cssVariables, "--card-background-color") || "#ffffff",
+        text_primary: extractCssVar(preset.cssVariables, "--text-heading-color") || "#0f172a",
+        text_secondary: extractCssVar(preset.cssVariables, "--text-body-color") || "#475569",
+      },
+      font_heading: extractCssVar(preset.cssVariables, "--heading-font-family") || "Inter",
+      font_body: extractCssVar(preset.cssVariables, "--body-font-family") || "Inter",
+      css_variables: preset.cssVariables,
+    };
+  }
+
+  // Fallback: ask LLM to generate theme from scratch
   const user = themeUser(presentationTitle, JSON.stringify(branding), targetAudience);
 
   return llmStructured<ThemeResult>(THEME_SYSTEM, user, "ThemeOutput", {
@@ -528,9 +558,15 @@ export async function generatePresentation(
   const content = await runWriterParallel(outline, language);
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 45, message: "Контент готов" });
 
-  // 4. THEME
+  // 4. THEME — use predefined preset when available
   onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 55, message: "Создание визуальной темы..." });
-  const theme = await runTheme(plannerResult.presentation_title, plannerResult.branding, outline.target_audience);
+  const themePreset = getThemePreset(config.themePreset || "corporate_blue");
+  const theme = await runTheme(
+    plannerResult.presentation_title,
+    plannerResult.branding,
+    outline.target_audience,
+    themePreset,
+  );
 
   // 5. LAYOUT
   onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 65, message: "Выбор макетов для слайдов..." });
@@ -572,7 +608,7 @@ export async function generatePresentation(
 
   // 7. ASSEMBLY
   onProgress({ nodeName: "assembler", currentStep: "assembling", progressPercent: 95, message: "Финальная сборка презентации..." });
-  const fullHtml = renderPresentation(slides, theme.css_variables, plannerResult.presentation_title, language);
+  const fullHtml = renderPresentation(slides, theme.css_variables, plannerResult.presentation_title, language, themePreset?.fontsUrl);
 
   onProgress({ nodeName: "assembler", currentStep: "completed", progressPercent: 100, message: "Презентация готова!" });
 

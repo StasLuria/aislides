@@ -13,7 +13,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";  // still used for mode selector
 import { toast } from "sonner";
 import { ArrowRight, Sparkles, Layers, Zap, FileText } from "lucide-react";
 import api from "@/lib/api";
@@ -182,62 +182,70 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Settings — Mode and Theme side by side */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Mode */}
-              <div className="space-y-2.5">
-                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Режим
-                </Label>
-                <Select value={mode} onValueChange={(v) => setMode(v as GenerationMode)}>
-                  <SelectTrigger className="bg-secondary/50 border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="batch">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-3.5 h-3.5 text-primary" />
-                        <span>Автоматический</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="interactive">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-primary" />
-                        <span>Интерактивный</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground">
-                  {mode === "batch"
-                    ? "Полная генерация без остановок"
-                    : "С утверждением структуры и контента"}
-                </p>
-              </div>
+            {/* Mode selector */}
+            <div className="space-y-2.5">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Режим
+              </Label>
+              <Select value={mode} onValueChange={(v) => setMode(v as GenerationMode)}>
+                <SelectTrigger className="bg-secondary/50 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="batch">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-3.5 h-3.5 text-primary" />
+                      <span>Автоматический</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="interactive">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-primary" />
+                      <span>Интерактивный</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">
+                {mode === "batch"
+                  ? "Полная генерация без остановок"
+                  : "С утверждением структуры и контента"}
+              </p>
+            </div>
 
-              {/* Theme */}
-              <div className="space-y-2.5">
-                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Тема дизайна
-                </Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="bg-secondary/50 border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {THEME_PRESETS.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full border border-white/10"
-                            style={{ backgroundColor: t.color }}
-                          />
-                          <span>{t.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Theme selector — visual gradient grid */}
+            <div className="space-y-3">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Тема дизайна
+              </Label>
+              <div className="grid grid-cols-5 gap-2">
+                {THEME_PRESETS.map((t) => {
+                  const isSelected = theme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTheme(t.id)}
+                      className={`group relative flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all duration-200 ${
+                        isSelected
+                          ? "bg-primary/10 ring-2 ring-primary/50"
+                          : "hover:bg-secondary/60"
+                      }`}
+                    >
+                      <div
+                        className={`w-full aspect-[16/10] rounded-md shadow-sm transition-transform duration-200 ${
+                          isSelected ? "scale-105 shadow-md" : "group-hover:scale-105"
+                        }`}
+                        style={{ background: t.gradient }}
+                      />
+                      <span className={`text-[10px] leading-tight text-center transition-colors ${
+                        isSelected ? "text-primary font-medium" : "text-muted-foreground"
+                      }`}>
+                        {t.nameRu}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
