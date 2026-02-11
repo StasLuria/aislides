@@ -154,3 +154,14 @@
 - [x] Frontend: Upload progress indicator
 - [x] Frontend: Preview uploaded image with replace/remove options
 - [x] Write vitest tests for upload endpoint (10 new tests — 84 total passing)
+
+## Bug Fix: Slides rendering incorrectly
+- [x] Investigate slide generation pipeline (templates, HTML composer, layout)
+- [x] Test end-to-end generation and identify specific rendering issues
+- [x] Fix: Layout fixup — remap image-requiring layouts (image-text, image-fullscreen, quote-slide) to text alternatives when no image available
+- [x] Fix: Title-slide template — decorative gradient instead of ugly SVG placeholder when no image
+- [x] Fix: Image-text template — gradient fallback instead of broken placeholder icon
+- [x] Fix: HTML Composer prompt — added explicit layout schemas for all 14 layout types
+- [x] Fix: Layout Agent prompt — discourage image-text/image-fullscreen for non-image slides
+- [x] Fix: Applied same layout fixup to interactive mode assemble endpoint
+- [x] Verify fixes with tests (84 tests passing) and visual inspection (15 slides, all rendering correctly)

@@ -769,6 +769,19 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
       // Get generated images from pipelineState
       const generatedImages: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
 
+      // Layout fixup: remap image-requiring layouts that have no image to text-based alternatives
+      const IMAGE_REQUIRING_LAYOUTS = new Set(["image-text", "image-fullscreen", "quote-slide"]);
+      const FALLBACK_LAYOUTS = ["text-slide", "two-column", "process-steps", "icons-numbers"];
+      let fallbackIdx = 0;
+      for (const [slideNum, layout] of Array.from(layoutMap.entries())) {
+        if (IMAGE_REQUIRING_LAYOUTS.has(layout) && !generatedImages[slideNum]) {
+          const replacement = FALLBACK_LAYOUTS[fallbackIdx % FALLBACK_LAYOUTS.length];
+          console.log(`[Interactive] Layout fixup: slide ${slideNum} "${layout}" \u2192 "${replacement}" (no image)`);
+          layoutMap.set(slideNum, replacement);
+          fallbackIdx++;
+        }
+      }
+
       const batchSize = 5;
       for (let i = 0; i < content.length; i += batchSize) {
         const batch = content.slice(i, i + batchSize);

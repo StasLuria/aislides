@@ -719,6 +719,21 @@ export async function generatePresentation(
     onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Изображения отключены" });
   }
 
+  // 5.6. POST-IMAGE LAYOUT FIXUP: remap image-requiring layouts that have no image
+  const IMAGE_REQUIRING_LAYOUTS = new Set(["image-text", "image-fullscreen", "quote-slide"]);
+  const FALLBACK_LAYOUTS = ["text-slide", "two-column", "process-steps", "icons-numbers"];
+  let fallbackIdx = 0;
+  for (const [slideNum, layout] of Array.from(layoutMap.entries())) {
+    if (IMAGE_REQUIRING_LAYOUTS.has(layout) && !imageMap.has(slideNum)) {
+      const replacement = FALLBACK_LAYOUTS[fallbackIdx % FALLBACK_LAYOUTS.length];
+      console.log(`[Pipeline] Layout fixup: slide ${slideNum} "${layout}" → "${replacement}" (no image available)`);
+      layoutMap.set(slideNum, replacement);
+      fallbackIdx++;
+    }
+  }
+  // Also fix title-slide if it has no image — keep title-slide but it will use the placeholder gracefully
+  // (title-slide always has the placeholder fallback, so no remap needed)
+
   // 6. HTML COMPOSER (parallel per slide)
   onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 72, message: "Сборка HTML-слайдов..." });
 

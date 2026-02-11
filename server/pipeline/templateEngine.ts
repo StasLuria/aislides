@@ -12,19 +12,21 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   "title-slide": `<div class="relative z-10 flex h-full px-16 pt-12 pb-8">
   <div class="slide-decor-circle slide-decor-top-right"></div>
   <div class="slide-decor-circle slide-decor-bottom-left"></div>
+  {% if image and image.url %}
   <div class="flex-1 flex items-center justify-center pr-8">
     <div class="w-full max-w-lg h-80 rounded-2xl overflow-hidden shadow-lg">
-      {% if image and image.url %}
       <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" class="w-full h-full object-cover" />
-      {% else %}
-      <div class="w-full h-full flex items-center justify-center" style="background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, white);">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--primary-accent-color, #9333ea); opacity: 0.4;">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-        </svg>
-      </div>
-      {% endif %}
     </div>
   </div>
+  {% else %}
+  <div class="flex-1 flex items-center justify-center pr-8">
+    <div class="w-full max-w-lg h-80 rounded-2xl overflow-hidden shadow-lg" style="background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, white), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 15%, white)); position: relative;">
+      <div style="position: absolute; top: -30px; right: -30px; width: 180px; height: 180px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 12%, transparent);"></div>
+      <div style="position: absolute; bottom: -20px; left: -20px; width: 120px; height: 120px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, transparent);"></div>
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, transparent);"></div>
+    </div>
+  </div>
+  {% endif %}
   <div class="flex-1 flex flex-col justify-center pl-8 space-y-6">
     <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold leading-tight">{{ title }}</h1>
     <div class="accent-line"></div>
@@ -115,10 +117,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       {% if image and image.url %}
       <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" class="w-full h-full object-cover" />
       {% else %}
-      <div class="w-full h-full flex items-center justify-center" style="background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, #f3f4f6);">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--primary-accent-color, #9333ea); opacity: 0.3;">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-        </svg>
+      <div class="w-full h-full" style="background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, #f3f4f6), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, #f3f4f6)); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent);"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 8%, transparent);"></div>
       </div>
       {% endif %}
     </div>

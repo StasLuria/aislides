@@ -206,6 +206,7 @@ Select the optimal slide layout for each slide based on its content and purpose.
 - After section-header, prefer visual layouts.
 - Alternate between text-heavy and visual layouts for rhythm.
 - Match layout to content: data → chart-slide/table-slide, metrics → icons-numbers, process → process-steps/timeline.
+- IMPORTANT: Avoid image-text, image-fullscreen, and quote-slide layouts unless the slide specifically has an image provided. These layouts require images — without them they show empty placeholders. Prefer text-slide, two-column, icons-numbers, process-steps, timeline, or comparison for content slides.
 </diversity_rules>
 <output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
@@ -249,7 +250,25 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - For icon objects, use format: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}
 - All text content must be in the same language as the source content.
 - Do NOT add inline styles for colors or backgrounds — the template uses CSS variables from the theme.
-</rules>${feedbackSection}
+- ALWAYS include the "title" field in every response.
+- Each bullet must have BOTH "title" and "description" fields (never just a string).
+</rules>
+<layout_schemas>
+- title-slide: {title, description, presenterName, initials, presentationDate, image?}
+- section-header: {title, subtitle}
+- text-slide: {title, bullets: [{title, description}], icon?}
+- two-column: {title, leftColumn: {title, bullets: [string]}, rightColumn: {title, bullets: [string]}}
+- image-text: {title, bullets: [{title, description}], image?}
+- icons-numbers: {title, metrics: [{label, value, description, icon}]}
+- timeline: {title, events: [{date, title, description}]}
+- process-steps: {title, steps: [{number, title, description}]}
+- comparison: {title, optionA: {title, points: [string], color}, optionB: {title, points: [string], color}}
+- chart-slide: {title, description, chartData: {type, labels: [string], datasets: [{label, data: [number]}]}}
+- table-slide: {title, description?, headers: [string], rows: [[string]]}
+- final-slide: {title, subtitle, thankYouText}
+- quote-slide: {title, quote, author, role?}
+- agenda-table-of-contents: {title, sections: [{number, title, description}]}
+</layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.
 </output_format>`;
