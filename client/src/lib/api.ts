@@ -162,6 +162,14 @@ export interface SuggestImagePromptResponse {
   suggested_prompt: string;
 }
 
+export interface UploadImageResponse {
+  presentation_id: string;
+  slide_number: number;
+  image_url: string;
+  filename: string;
+  size: number;
+}
+
 export interface WSErrorData {
   presentation_id: string;
   error_type: string;
@@ -344,6 +352,33 @@ class ApiClient {
     const { data } = await this.http.post(
       `/interactive/${id}/remove-image`,
       { slide_number: slideNumber },
+    );
+    return data;
+  }
+
+  async uploadSlideImage(
+    id: string,
+    slideNumber: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<UploadImageResponse> {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("slide_number", String(slideNumber));
+
+    const { data } = await this.http.post<UploadImageResponse>(
+      `/interactive/${id}/upload-image`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        },
+      },
     );
     return data;
   }

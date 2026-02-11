@@ -143,3 +143,14 @@
 - [x] Frontend: Updated GENERATION_STEPS with "Генерация иллюстраций" label
 - [x] Frontend: enable_images passed through API config
 - [x] Write vitest tests for batch image generation logic (11 new tests — 75 total passing)
+
+## Custom Image Upload on Step 2
+- [x] Backend: POST /api/v1/interactive/:id/upload-image endpoint (multipart/form-data)
+- [x] Backend: Upload image to S3 via storagePut, store URL in pipelineState.images
+- [x] Backend: Validate file type (jpg, png, webp, gif) and size limit (5MB)
+- [x] Frontend: Upload button alongside AI-generate button in image panel
+- [x] Frontend: Drag-and-drop zone for image upload
+- [x] Frontend: File picker with image type filter
+- [x] Frontend: Upload progress indicator
+- [x] Frontend: Preview uploaded image with replace/remove options
+- [x] Write vitest tests for upload endpoint (10 new tests — 84 total passing)

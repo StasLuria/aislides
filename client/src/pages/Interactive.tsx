@@ -31,6 +31,7 @@ import {
   ImagePlus,
   Sparkles,
   X,
+  Upload,
 } from "lucide-react";
 import api from "@/lib/api";
 import type {
@@ -258,6 +259,9 @@ export default function Interactive() {
   const [generatingImage, setGeneratingImage] = useState<number | null>(null);
   const [suggestingPrompt, setSuggestingPrompt] = useState<number | null>(null);
   const [showImagePanel, setShowImagePanel] = useState<number | null>(null);
+  const [uploadingImage, setUploadingImage] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -639,6 +643,68 @@ export default function Interactive() {
     } finally {
       setGeneratingImage(null);
     }
+  };
+
+  // ── Image upload ─────────────────────────────────
+  const handleUploadImage = async (slideNumber: number, file: File) => {
+    // Validate file type on client side
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Недопустимый формат. Разрешены: JPG, PNG, WebP, GIF");
+      return;
+    }
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Файл слишком большой. Максимум 5 МБ");
+      return;
+    }
+
+    setUploadingImage(slideNumber);
+    setUploadProgress(0);
+    try {
+      const result = await api.uploadSlideImage(
+        presentationId,
+        slideNumber,
+        file,
+        (percent) => setUploadProgress(percent),
+      );
+      setSlideImages((prev) => ({
+        ...prev,
+        [slideNumber]: { url: result.image_url, prompt: `[Загружено] ${result.filename}` },
+      }));
+      setPreviewRefreshKey((k) => k + 1);
+      setShowImagePanel(null);
+      toast.success(`Изображение загружено для слайда ${slideNumber}`);
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err.message || "Ошибка загрузки";
+      toast.error(detail);
+    } finally {
+      setUploadingImage(null);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleFileInputChange = (slideNumber: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleUploadImage(slideNumber, file);
+    }
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleDrop = (slideNumber: number, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleUploadImage(slideNumber, file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleRemoveImage = async (slideNumber: number) => {
@@ -1028,8 +1094,34 @@ export default function Interactive() {
                               />
                             </div>
 
-                            {/* Image generation panel */}
+                            {/* Image panel — generation + upload */}
                             <div className="pt-2 border-t border-border/20">
+                              {/* Hidden file input for this slide */}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                ref={(el) => { fileInputRefs.current[slide.slide_number] = el; }}
+                                onChange={(e) => handleFileInputChange(slide.slide_number, e)}
+                              />
+
+                              {/* Upload in progress overlay */}
+                              {uploadingImage === slide.slide_number && (
+                                <div className="flex items-center gap-3 p-3 rounded-md bg-primary/5 border border-primary/20 mb-2">
+                                  <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] text-primary font-medium mb-1">Загрузка изображения...</p>
+                                    <div className="w-full bg-primary/10 rounded-full h-1.5">
+                                      <div
+                                        className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                                        style={{ width: `${uploadProgress}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-primary font-mono shrink-0">{uploadProgress}%</span>
+                                </div>
+                              )}
+
                               {slideImages[slide.slide_number] ? (
                                 /* Image exists — show thumbnail + actions */
                                 <div className="flex items-start gap-3">
@@ -1051,26 +1143,38 @@ export default function Interactive() {
                                     <p className="text-[10px] text-muted-foreground truncate" title={slideImages[slide.slide_number].prompt}>
                                       {slideImages[slide.slide_number].prompt}
                                     </p>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setImagePrompts((prev) => ({ ...prev, [slide.slide_number]: slideImages[slide.slide_number].prompt }));
-                                        setShowImagePanel(slide.slide_number);
-                                      }}
-                                      className="text-[10px] h-6 px-2 mt-1 text-primary hover:text-primary"
-                                    >
-                                      <RotateCcw className="w-3 h-3 mr-1" />
-                                      Перегенерировать
-                                    </Button>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setImagePrompts((prev) => ({ ...prev, [slide.slide_number]: slideImages[slide.slide_number].prompt }));
+                                          setShowImagePanel(slide.slide_number);
+                                        }}
+                                        className="text-[10px] h-6 px-2 text-primary hover:text-primary"
+                                      >
+                                        <RotateCcw className="w-3 h-3 mr-1" />
+                                        Перегенерировать
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => fileInputRefs.current[slide.slide_number]?.click()}
+                                        disabled={uploadingImage === slide.slide_number}
+                                        className="text-[10px] h-6 px-2 text-muted-foreground hover:text-primary"
+                                      >
+                                        <Upload className="w-3 h-3 mr-1" />
+                                        Заменить файлом
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               ) : showImagePanel === slide.slide_number ? (
-                                /* Image prompt input panel */
+                                /* Image prompt input panel + upload zone */
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                      Описание изображения
+                                      Изображение для слайда
                                     </label>
                                     <Button
                                       variant="ghost"
@@ -1081,6 +1185,31 @@ export default function Interactive() {
                                       <X className="w-3 h-3" />
                                     </Button>
                                   </div>
+
+                                  {/* Drag-and-drop upload zone */}
+                                  <div
+                                    onDrop={(e) => handleDrop(slide.slide_number, e)}
+                                    onDragOver={handleDragOver}
+                                    onClick={() => fileInputRefs.current[slide.slide_number]?.click()}
+                                    className="border-2 border-dashed border-border/50 rounded-lg p-3 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-colors group/drop"
+                                  >
+                                    <Upload className="w-5 h-5 mx-auto mb-1.5 text-muted-foreground/50 group-hover/drop:text-primary/60 transition-colors" />
+                                    <p className="text-[10px] text-muted-foreground">
+                                      Перетащите файл сюда или <span className="text-primary">выберите</span>
+                                    </p>
+                                    <p className="text-[9px] text-muted-foreground/50 mt-0.5">
+                                      JPG, PNG, WebP, GIF • до 5 МБ
+                                    </p>
+                                  </div>
+
+                                  {/* Divider */}
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-px bg-border/30" />
+                                    <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">или сгенерировать</span>
+                                    <div className="flex-1 h-px bg-border/30" />
+                                  </div>
+
+                                  {/* AI generation prompt */}
                                   <div className="flex gap-2">
                                     <Textarea
                                       value={imagePrompts[slide.slide_number] || ""}
@@ -1125,21 +1254,34 @@ export default function Interactive() {
                                   </div>
                                 </div>
                               ) : (
-                                /* No image — show add button */
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setShowImagePanel(slide.slide_number);
-                                    if (!imagePrompts[slide.slide_number]) {
-                                      handleSuggestImagePrompt(slide.slide_number);
-                                    }
-                                  }}
-                                  className="text-[10px] h-7 gap-1 text-muted-foreground hover:text-primary"
-                                >
-                                  <ImagePlus className="w-3 h-3" />
-                                  Добавить иллюстрацию
-                                </Button>
+                                /* No image — show add buttons */
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setShowImagePanel(slide.slide_number);
+                                      if (!imagePrompts[slide.slide_number]) {
+                                        handleSuggestImagePrompt(slide.slide_number);
+                                      }
+                                    }}
+                                    className="text-[10px] h-7 gap-1 text-muted-foreground hover:text-primary"
+                                  >
+                                    <ImagePlus className="w-3 h-3" />
+                                    Добавить иллюстрацию
+                                  </Button>
+                                  <span className="text-[9px] text-muted-foreground/30">|</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => fileInputRefs.current[slide.slide_number]?.click()}
+                                    disabled={uploadingImage === slide.slide_number}
+                                    className="text-[10px] h-7 gap-1 text-muted-foreground hover:text-primary"
+                                  >
+                                    <Upload className="w-3 h-3" />
+                                    Загрузить своё
+                                  </Button>
+                                </div>
                               )}
                             </div>
 

@@ -9,6 +9,7 @@
  *   5. POST /api/v1/interactive/:id/assemble    — Run theme + layout + composer + assembly
  */
 import { Router, Request, Response } from "express";
+import multer from "multer";
 import {
   createPresentation,
   getPresentation,
@@ -580,6 +581,111 @@ router.post("/api/v1/interactive/:id/remove-image", async (req: Request, res: Re
     console.error("[Interactive] Remove image error:", error);
     res.status(500).json({ detail: error.message || "Failed to remove image" });
   }
+});
+
+// ═══════════════════════════════════════════════════════
+// STEP 4f: Upload image — User uploads their own image for a slide
+// ═══════════════════════════════════════════════════════
+
+// Multer config: memory storage, 5MB limit, image types only
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Недопустимый формат файла: ${file.mimetype}. Разрешены: JPG, PNG, WebP, GIF`));
+    }
+  },
+});
+
+router.post("/api/v1/interactive/:id/upload-image", (req: Request, res: Response) => {
+  upload.single("image")(req, res, async (err: any) => {
+    try {
+      // Handle multer errors
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          res.status(413).json({ detail: "Файл слишком большой. Максимальный размер: 5 МБ" });
+          return;
+        }
+        res.status(422).json({ detail: err.message || "Ошибка загрузки файла" });
+        return;
+      }
+
+      const file = req.file;
+      if (!file) {
+        res.status(422).json({ detail: "Файл не передан. Используйте поле 'image'" });
+        return;
+      }
+
+      const presentationId = req.params.id;
+      const slideNumber = parseInt(req.body.slide_number, 10);
+
+      if (!slideNumber || isNaN(slideNumber)) {
+        res.status(422).json({ detail: "slide_number is required" });
+        return;
+      }
+
+      const p = await getPresentation(presentationId);
+      if (!p) {
+        res.status(404).json({ detail: "Presentation not found" });
+        return;
+      }
+
+      if (p.status !== "awaiting_content_approval") {
+        res.status(400).json({ detail: `Cannot upload image in status: ${p.status}` });
+        return;
+      }
+
+      const pipelineState = p.pipelineState as any;
+      const content: SlideContent[] = pipelineState?.content || [];
+
+      const slideContent = content.find((s: SlideContent) => s.slide_number === slideNumber);
+      if (!slideContent) {
+        res.status(404).json({ detail: `Slide ${slideNumber} not found` });
+        return;
+      }
+
+      // Determine file extension from mimetype
+      const extMap: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      };
+      const ext = extMap[file.mimetype] || "png";
+
+      // Upload to S3
+      const fileKey = `presentations/${presentationId}/user-upload-slide${slideNumber}-${nanoid(8)}.${ext}`;
+      const { url: imageUrl } = await storagePut(fileKey, file.buffer, file.mimetype);
+
+      // Store in pipelineState.images map (same structure as AI-generated images)
+      const images: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
+      images[slideNumber] = { url: imageUrl, prompt: `[Загружено пользователем] ${file.originalname}` };
+
+      await updatePresentationProgress(presentationId, {
+        pipelineState: {
+          ...pipelineState,
+          images,
+        },
+      });
+
+      res.json({
+        presentation_id: presentationId,
+        slide_number: slideNumber,
+        image_url: imageUrl,
+        filename: file.originalname,
+        size: file.size,
+      });
+    } catch (error: any) {
+      console.error("[Interactive] Upload image error:", error);
+      res.status(500).json({ detail: error.message || "Image upload failed" });
+    }
+  });
 });
 
 // ═══════════════════════════════════════════════════════

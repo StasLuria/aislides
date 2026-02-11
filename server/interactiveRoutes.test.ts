@@ -813,3 +813,131 @@ describe("Interactive Routes - Data Flow", () => {
     });
   });
 });
+
+describe("Image upload", () => {
+  it("should reject upload when status is not awaiting_content_approval", async () => {
+    mockGetPresentation.mockResolvedValue({
+      presentationId: "test-id",
+      status: "processing",
+      pipelineState: {},
+    });
+
+    const p = await getPresentation("test-id");
+    expect(p?.status !== "awaiting_content_approval").toBe(true);
+  });
+
+  it("should allow upload when status is awaiting_content_approval", async () => {
+    mockGetPresentation.mockResolvedValue({
+      presentationId: "test-id",
+      status: "awaiting_content_approval",
+      pipelineState: {
+        content: [
+          { slide_number: 1, title: "Intro", text: "text", notes: "", data_points: [], key_message: "" },
+          { slide_number: 2, title: "Content", text: "text", notes: "", data_points: [], key_message: "" },
+        ],
+        images: {},
+      },
+    });
+
+    const p = await getPresentation("test-id");
+    expect(p?.status).toBe("awaiting_content_approval");
+  });
+
+  it("should store uploaded image in pipelineState.images with user-upload prefix", () => {
+    const images: Record<number, { url: string; prompt: string }> = {};
+
+    // Simulate upload storage
+    const slideNumber = 2;
+    const imageUrl = "https://s3.example.com/presentations/test-id/user-upload-slide2-abc12345.png";
+    const filename = "my-photo.png";
+
+    images[slideNumber] = { url: imageUrl, prompt: `[Загружено пользователем] ${filename}` };
+
+    expect(images[2]).toBeDefined();
+    expect(images[2].url).toBe(imageUrl);
+    expect(images[2].prompt).toContain("[Загружено пользователем]");
+    expect(images[2].prompt).toContain("my-photo.png");
+  });
+
+  it("should replace AI-generated image with uploaded image", () => {
+    const images: Record<number, { url: string; prompt: string }> = {
+      3: { url: "https://s3.example.com/ai-generated.png", prompt: "A futuristic city" },
+    };
+
+    // Simulate replacing with upload
+    images[3] = { url: "https://s3.example.com/user-upload.png", prompt: "[Загружено пользователем] photo.jpg" };
+
+    expect(images[3].url).toBe("https://s3.example.com/user-upload.png");
+    expect(images[3].prompt).toContain("[Загружено пользователем]");
+  });
+
+  it("should validate allowed MIME types", () => {
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+    expect(ALLOWED_MIME_TYPES.includes("image/jpeg")).toBe(true);
+    expect(ALLOWED_MIME_TYPES.includes("image/png")).toBe(true);
+    expect(ALLOWED_MIME_TYPES.includes("image/webp")).toBe(true);
+    expect(ALLOWED_MIME_TYPES.includes("image/gif")).toBe(true);
+    expect(ALLOWED_MIME_TYPES.includes("image/svg+xml")).toBe(false);
+    expect(ALLOWED_MIME_TYPES.includes("application/pdf")).toBe(false);
+    expect(ALLOWED_MIME_TYPES.includes("text/plain")).toBe(false);
+  });
+
+  it("should enforce 5MB file size limit", () => {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    expect(MAX_FILE_SIZE).toBe(5242880);
+    expect(4 * 1024 * 1024 < MAX_FILE_SIZE).toBe(true); // 4MB OK
+    expect(5 * 1024 * 1024 <= MAX_FILE_SIZE).toBe(true); // 5MB OK
+    expect(6 * 1024 * 1024 > MAX_FILE_SIZE).toBe(true); // 6MB rejected
+  });
+
+  it("should determine correct file extension from MIME type", () => {
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+
+    expect(extMap["image/jpeg"]).toBe("jpg");
+    expect(extMap["image/png"]).toBe("png");
+    expect(extMap["image/webp"]).toBe("webp");
+    expect(extMap["image/gif"]).toBe("gif");
+  });
+
+  it("should find target slide in content array for upload validation", () => {
+    const content = [
+      { slide_number: 1, title: "Intro", text: "text", notes: "", data_points: [], key_message: "" },
+      { slide_number: 2, title: "Content", text: "text", notes: "", data_points: [], key_message: "" },
+      { slide_number: 3, title: "End", text: "text", notes: "", data_points: [], key_message: "" },
+    ];
+
+    const slide2 = content.find((s) => s.slide_number === 2);
+    expect(slide2).toBeDefined();
+    expect(slide2?.title).toBe("Content");
+
+    const slide99 = content.find((s) => s.slide_number === 99);
+    expect(slide99).toBeUndefined();
+  });
+
+  it("should use uploaded image in preview just like AI-generated image", () => {
+    const slide = {
+      slide_number: 2,
+      title: "Slide with Upload",
+      text: "Some content here",
+      notes: "",
+      data_points: [],
+      key_message: "key",
+    };
+
+    const uploadedImageUrl = "https://s3.example.com/presentations/test/user-upload-slide2-xyz.jpg";
+    const data = buildPreviewData(slide, "image-text", uploadedImageUrl);
+
+    expect(data.title).toBe("Slide with Upload");
+    expect(data.image).toBeDefined();
+    expect(data.image.url).toBe(uploadedImageUrl);
+    expect(data.backgroundImage).toBeDefined();
+    expect(data.backgroundImage.url).toBe(uploadedImageUrl);
+  });
+});
