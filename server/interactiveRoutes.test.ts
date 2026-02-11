@@ -87,6 +87,7 @@ vi.mock("./storage", () => ({
 
 // Import after mocks
 import { getPresentation } from "./presentationDb";
+import { pickLayoutForPreview, buildPreviewData } from "./interactiveRoutes";
 
 const mockGetPresentation = getPresentation as ReturnType<typeof vi.fn>;
 
@@ -221,6 +222,168 @@ describe("Interactive Routes - Data Flow", () => {
 
       const p = await getPresentation("test-id");
       expect(p?.status).toBe("awaiting_content_approval");
+    });
+  });
+
+  describe("Slide preview - layout picker", () => {
+
+    const makeSlide = (overrides: Partial<any> = {}) => ({
+      slide_number: 2,
+      title: "Test Slide",
+      text: "Some content",
+      notes: "notes",
+      data_points: [],
+      key_message: "key message",
+      ...overrides,
+    });
+
+    it("should pick title-slide for slide 1", () => {
+      const result = pickLayoutForPreview(makeSlide({ slide_number: 1 }), 10, 1);
+      expect(result).toBe("title-slide");
+    });
+
+    it("should pick final-slide for the last slide", () => {
+      const result = pickLayoutForPreview(makeSlide({ slide_number: 10 }), 10, 10);
+      expect(result).toBe("final-slide");
+    });
+
+    it("should pick metrics-slide for slides with 3+ data points", () => {
+      const slide = makeSlide({
+        data_points: [
+          { label: "Revenue", value: "$1M", unit: "USD" },
+          { label: "Growth", value: "25%", unit: "%" },
+          { label: "Users", value: "10K", unit: "" },
+        ],
+      });
+      const result = pickLayoutForPreview(slide, 10, 5);
+      expect(result).toBe("metrics-slide");
+    });
+
+    it("should pick two-column-slide for slides with 1-2 data points", () => {
+      const slide = makeSlide({
+        data_points: [{ label: "Revenue", value: "$1M", unit: "USD" }],
+      });
+      const result = pickLayoutForPreview(slide, 10, 5);
+      expect(result).toBe("two-column-slide");
+    });
+
+    it("should pick bullet-list-slide for text with many bullets", () => {
+      const slide = makeSlide({
+        text: "Intro\n- Point 1\n- Point 2\n- Point 3\n- Point 4\n- Point 5",
+      });
+      const result = pickLayoutForPreview(slide, 10, 5);
+      expect(result).toBe("bullet-list-slide");
+    });
+
+    it("should pick quote-slide for short text with long key message", () => {
+      const slide = makeSlide({
+        text: "Short text",
+        key_message: "This is a very important key message that should be displayed prominently",
+      });
+      const result = pickLayoutForPreview(slide, 10, 5);
+      expect(result).toBe("quote-slide");
+    });
+
+    it("should default to text-slide for regular content", () => {
+      const slide = makeSlide({
+        text: "Regular paragraph of text without bullets or special formatting.",
+        key_message: "Short",
+      });
+      const result = pickLayoutForPreview(slide, 10, 5);
+      expect(result).toBe("text-slide");
+    });
+  });
+
+  describe("Slide preview - data builder", () => {
+
+    it("should build title-slide data with presenter fields", () => {
+      const slide = {
+        slide_number: 1,
+        title: "My Presentation",
+        text: "Description text",
+        notes: "Speaker notes",
+        data_points: [],
+        key_message: "Welcome",
+      };
+      const data = buildPreviewData(slide, "title-slide");
+      expect(data.title).toBe("My Presentation");
+      expect(data).toHaveProperty("presenterName");
+      expect(data).toHaveProperty("presentationDate");
+      expect(data).toHaveProperty("initials");
+    });
+
+    it("should build bullet-list-slide data with extracted bullets", () => {
+      const slide = {
+        slide_number: 2,
+        title: "Key Points",
+        text: "Intro line\n- First point\n- Second point\n- Third point",
+        notes: "",
+        data_points: [],
+        key_message: "",
+      };
+      const data = buildPreviewData(slide, "bullet-list-slide");
+      expect(data.bullets).toEqual(["First point", "Second point", "Third point"]);
+    });
+
+    it("should build metrics-slide data from data_points", () => {
+      const slide = {
+        slide_number: 3,
+        title: "Metrics",
+        text: "Performance overview",
+        notes: "",
+        data_points: [
+          { label: "Revenue", value: "$5M", unit: "USD" },
+          { label: "Growth", value: "30%", unit: "%" },
+        ],
+        key_message: "",
+      };
+      const data = buildPreviewData(slide, "metrics-slide");
+      expect(data.metrics).toHaveLength(2);
+      expect(data.metrics[0].value).toBe("$5M");
+      expect(data.metrics[0].label).toBe("Revenue");
+    });
+
+    it("should build final-slide data with callToAction", () => {
+      const slide = {
+        slide_number: 10,
+        title: "Thank You",
+        text: "Final words",
+        notes: "",
+        data_points: [],
+        key_message: "Contact us today!",
+      };
+      const data = buildPreviewData(slide, "final-slide");
+      expect(data.callToAction).toBe("Contact us today!");
+      expect(data).toHaveProperty("contactInfo");
+    });
+
+    it("should build quote-slide data from key_message", () => {
+      const slide = {
+        slide_number: 5,
+        title: "Quote",
+        text: "Some context",
+        notes: "",
+        data_points: [],
+        key_message: "Innovation distinguishes between a leader and a follower.",
+      };
+      const data = buildPreviewData(slide, "quote-slide");
+      expect(data.quote).toBe("Innovation distinguishes between a leader and a follower.");
+    });
+
+    it("should build two-column-slide data splitting bullets", () => {
+      const slide = {
+        slide_number: 4,
+        title: "Comparison",
+        text: "- Point A\n- Point B\n- Point C\n- Point D",
+        notes: "",
+        data_points: [{ label: "x", value: "y", unit: "" }],
+        key_message: "",
+      };
+      const data = buildPreviewData(slide, "two-column-slide");
+      expect(data.leftBullets).toBeDefined();
+      expect(data.rightBullets).toBeDefined();
+      expect(data.leftTitle).toBe("Ключевые аспекты");
+      expect(data.rightTitle).toBe("Детали");
     });
   });
 

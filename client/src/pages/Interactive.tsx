@@ -36,6 +36,7 @@ import type {
   SlideContentData,
   WSEvent,
 } from "@/lib/api";
+import SlidePreview from "@/components/SlidePreview";
 
 // ═══════════════════════════════════════════════════════
 // STEP DEFINITIONS
@@ -66,6 +67,7 @@ export default function Interactive() {
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -347,6 +349,7 @@ export default function Interactive() {
       });
       toast.success(`Слайд ${slideNumber} сохранён`);
       setEditingSlide(null);
+      setPreviewRefreshKey((k) => k + 1);
     } catch (err: any) {
       toast.error(err.message || "Ошибка сохранения");
     } finally {
@@ -723,96 +726,112 @@ export default function Interactive() {
 
                     {/* Expanded content */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-border/30 space-y-3 pt-3">
-                        {/* Title */}
-                        <div>
-                          <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                            Заголовок
-                          </label>
-                          <Input
-                            value={slide.title}
-                            onChange={(e) => updateContentField(slide.slide_number, "title", e.target.value)}
-                            disabled={!isEditing}
-                            className="bg-background/50 border-border/50 text-sm font-medium disabled:opacity-80"
-                          />
-                        </div>
+                      <div className="border-t border-border/30">
+                        {/* Two-column layout: editor + preview */}
+                        <div className="flex flex-col lg:flex-row">
+                          {/* Left: Content editor */}
+                          <div className="flex-1 px-4 pb-4 space-y-3 pt-3 lg:border-r lg:border-border/30">
+                            {/* Title */}
+                            <div>
+                              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+                                Заголовок
+                              </label>
+                              <Input
+                                value={slide.title}
+                                onChange={(e) => updateContentField(slide.slide_number, "title", e.target.value)}
+                                disabled={!isEditing}
+                                className="bg-background/50 border-border/50 text-sm font-medium disabled:opacity-80"
+                              />
+                            </div>
 
-                        {/* Text */}
-                        <div>
-                          <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                            Текст слайда
-                          </label>
-                          <Textarea
-                            value={slide.text}
-                            onChange={(e) => updateContentField(slide.slide_number, "text", e.target.value)}
-                            disabled={!isEditing}
-                            className="bg-background/50 border-border/50 text-xs min-h-[100px] disabled:opacity-80"
-                          />
-                        </div>
+                            {/* Text */}
+                            <div>
+                              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+                                Текст слайда
+                              </label>
+                              <Textarea
+                                value={slide.text}
+                                onChange={(e) => updateContentField(slide.slide_number, "text", e.target.value)}
+                                disabled={!isEditing}
+                                className="bg-background/50 border-border/50 text-xs min-h-[100px] disabled:opacity-80"
+                              />
+                            </div>
 
-                        {/* Key message */}
-                        <div>
-                          <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                            Ключевое сообщение
-                          </label>
-                          <Input
-                            value={slide.key_message}
-                            onChange={(e) => updateContentField(slide.slide_number, "key_message", e.target.value)}
-                            disabled={!isEditing}
-                            className="bg-background/50 border-border/50 text-xs disabled:opacity-80"
-                          />
-                        </div>
+                            {/* Key message */}
+                            <div>
+                              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+                                Ключевое сообщение
+                              </label>
+                              <Input
+                                value={slide.key_message}
+                                onChange={(e) => updateContentField(slide.slide_number, "key_message", e.target.value)}
+                                disabled={!isEditing}
+                                className="bg-background/50 border-border/50 text-xs disabled:opacity-80"
+                              />
+                            </div>
 
-                        {/* Notes */}
-                        <div>
-                          <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                            Заметки спикера
-                          </label>
-                          <Textarea
-                            value={slide.notes}
-                            onChange={(e) => updateContentField(slide.slide_number, "notes", e.target.value)}
-                            disabled={!isEditing}
-                            className="bg-background/50 border-border/50 text-xs min-h-[60px] disabled:opacity-80"
-                          />
-                        </div>
+                            {/* Notes */}
+                            <div>
+                              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+                                Заметки спикера
+                              </label>
+                              <Textarea
+                                value={slide.notes}
+                                onChange={(e) => updateContentField(slide.slide_number, "notes", e.target.value)}
+                                disabled={!isEditing}
+                                className="bg-background/50 border-border/50 text-xs min-h-[60px] disabled:opacity-80"
+                              />
+                            </div>
 
-                        {/* Edit/Save buttons */}
-                        <div className="flex justify-end gap-2 pt-2">
-                          {isEditing ? (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingSlide(null)}
-                                className="text-xs h-7"
-                              >
-                                Отмена
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleSaveSlide(slide.slide_number)}
-                                disabled={isSaving}
-                                className="text-xs h-7 gap-1"
-                              >
-                                {isSaving ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Save className="w-3 h-3" />
-                                )}
-                                Сохранить
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingSlide(slide.slide_number)}
-                              className="text-xs h-7 gap-1"
-                            >
-                              <Pencil className="w-3 h-3" />
-                              Редактировать
-                            </Button>
-                          )}
+                            {/* Edit/Save buttons */}
+                            <div className="flex justify-end gap-2 pt-2">
+                              {isEditing ? (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditingSlide(null)}
+                                    className="text-xs h-7"
+                                  >
+                                    Отмена
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveSlide(slide.slide_number)}
+                                    disabled={isSaving}
+                                    className="text-xs h-7 gap-1"
+                                  >
+                                    {isSaving ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Save className="w-3 h-3" />
+                                    )}
+                                    Сохранить
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditingSlide(slide.slide_number)}
+                                  className="text-xs h-7 gap-1"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Редактировать
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: Slide preview */}
+                          <div className="px-4 pb-4 pt-3 lg:w-[520px] shrink-0">
+                            <SlidePreview
+                              presentationId={presentationId}
+                              slideNumber={slide.slide_number}
+                              refreshKey={previewRefreshKey}
+                              width={480}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

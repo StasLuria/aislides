@@ -86,3 +86,14 @@
 - [x] Frontend: Navigation between steps with back/forward
 - [x] Connect interactive frontend to backend API (api.ts methods + routes)
 - [x] Write vitest tests for interactive endpoints (11 tests passing)
+
+## Real-time Slide Preview on Step 2
+- [x] Backend: API endpoint to render single slide HTML from content + theme + layout (preview-slide)
+- [x] Backend: Heuristic layout picker (no LLM call = instant preview)
+- [x] Backend: Direct data builder for all layout types (title, bullet, metrics, quote, etc.)
+- [x] Frontend: SlidePreview component with scaled iframe rendering (1280x720 → 480x270)
+- [x] Frontend: Fullscreen modal for detailed preview
+- [x] Frontend: Integrate preview panel into Interactive.tsx Step 2 (two-column: editor + preview)
+- [x] Frontend: Auto-refresh preview when user saves edits (previewRefreshKey)
+- [x] Frontend: Loading state, error handling, show/hide toggle for preview
+- [x] Write vitest tests for preview (13 new tests: layout picker + data builder) — 43 total passing

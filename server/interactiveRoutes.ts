@@ -482,6 +482,204 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
   }
 });
 
+// ═══════════════════════════════════════════════════════
+// PREVIEW: Render a single slide as standalone HTML
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/interactive/:id/preview-slide", async (req: Request, res: Response) => {
+  try {
+    const presentationId = req.params.id;
+    const { slide_number } = req.body;
+
+    if (!slide_number || typeof slide_number !== "number") {
+      res.status(422).json({ detail: "slide_number is required" });
+      return;
+    }
+
+    const p = await getPresentation(presentationId);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    const pipelineState = p.pipelineState as any;
+    const content: SlideContent[] = pipelineState?.content || [];
+    const config = (p.config as Record<string, any>) || {};
+
+    const slideContent = content.find((s: SlideContent) => s.slide_number === slide_number);
+    if (!slideContent) {
+      res.status(404).json({ detail: `Slide ${slide_number} not found` });
+      return;
+    }
+
+    // Get theme preset
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    // Determine layout — use a quick heuristic (same logic as runLayout but without LLM)
+    const layoutName = pickLayoutForPreview(slideContent, content.length, slide_number);
+
+    // Build slide data from content (simplified composer — no LLM call)
+    const slideData = buildPreviewData(slideContent, layoutName);
+
+    // Render the slide HTML
+    const slideHtml = renderSlide(layoutName, slideData);
+
+    // Import BASE_CSS from templateEngine
+    const { BASE_CSS } = await import("./pipeline/templateEngine");
+
+    // Wrap in a standalone HTML document
+    const html = `<!DOCTYPE html>
+<html lang="${p.language || 'ru'}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="${themePreset.fontsUrl}" rel="stylesheet" />
+  <style>${BASE_CSS}</style>
+  <style>${themePreset.cssVariables}</style>
+  <style>
+    body { margin: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="slide" style="width:1280px; height:720px; overflow:hidden;">
+    ${slideHtml}
+  </div>
+</body>
+</html>`;
+
+    res.json({
+      presentation_id: presentationId,
+      slide_number,
+      layout: layoutName,
+      html,
+    });
+  } catch (error: any) {
+    console.error("[Interactive] Preview slide error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+/**
+ * Quick layout picker for preview — no LLM call, uses heuristics.
+ */
+export function pickLayoutForPreview(slide: SlideContent, totalSlides: number, slideNumber: number): string {
+  // First slide → title
+  if (slideNumber === 1) return "title-slide";
+  // Last slide → final
+  if (slideNumber === totalSlides) return "final-slide";
+
+  const text = slide.text || "";
+  const hasDataPoints = slide.data_points && slide.data_points.length > 0;
+  const hasBullets = text.includes("\n-") || text.includes("\n•") || text.includes("\n*");
+  const bulletCount = (text.match(/\n[-•*]/g) || []).length;
+
+  // Data-heavy → chart or metrics
+  if (hasDataPoints && slide.data_points.length >= 3) return "metrics-slide";
+  if (hasDataPoints && slide.data_points.length >= 1) return "two-column-slide";
+
+  // Many bullets → bullet-list
+  if (bulletCount >= 4) return "bullet-list-slide";
+
+  // Short text with strong key message → quote
+  if (text.length < 200 && slide.key_message && slide.key_message.length > 20) return "quote-slide";
+
+  // Medium content → text slide
+  if (hasBullets || text.length > 300) return "text-slide";
+
+  // Default
+  return "text-slide";
+}
+
+/**
+ * Build slide data for preview from content — no LLM, uses direct mapping.
+ */
+export function buildPreviewData(slide: SlideContent, layoutName: string): Record<string, any> {
+  const text = slide.text || "";
+  const lines = text.split("\n").filter((l) => l.trim());
+
+  // Extract bullets from text
+  const bullets = lines
+    .filter((l) => /^[-•*]\s/.test(l.trim()))
+    .map((l) => l.trim().replace(/^[-•*]\s*/, ""));
+
+  // Non-bullet text
+  const bodyLines = lines.filter((l) => !/^[-•*]\s/.test(l.trim()));
+  const body = bodyLines.join("\n");
+
+  const base: Record<string, any> = {
+    title: slide.title,
+    description: body || text,
+    key_message: slide.key_message || "",
+    notes: slide.notes || "",
+  };
+
+  switch (layoutName) {
+    case "title-slide":
+      return {
+        ...base,
+        presenterName: "",
+        presentationDate: new Date().toLocaleDateString("ru-RU"),
+        initials: "",
+      };
+
+    case "bullet-list-slide":
+      return {
+        ...base,
+        bullets: bullets.length > 0 ? bullets : lines.slice(0, 6),
+      };
+
+    case "two-column-slide": {
+      const mid = Math.ceil(bullets.length / 2);
+      return {
+        ...base,
+        leftTitle: "Ключевые аспекты",
+        rightTitle: "Детали",
+        leftBullets: bullets.slice(0, mid),
+        rightBullets: bullets.slice(mid),
+      };
+    }
+
+    case "metrics-slide":
+      return {
+        ...base,
+        metrics: (slide.data_points || []).map((dp) => ({
+          value: dp.value,
+          label: dp.label,
+          unit: dp.unit || "",
+        })),
+      };
+
+    case "quote-slide":
+      return {
+        ...base,
+        quote: slide.key_message || text.substring(0, 200),
+        author: "",
+      };
+
+    case "section-header":
+      return {
+        ...base,
+        sectionNumber: String(slide.slide_number).padStart(2, "0"),
+      };
+
+    case "final-slide":
+      return {
+        ...base,
+        contactInfo: "",
+        callToAction: slide.key_message || "Спасибо за внимание!",
+      };
+
+    case "text-slide":
+    default:
+      return {
+        ...base,
+        bullets: bullets.length > 0 ? bullets : undefined,
+      };
+  }
+}
+
 export function registerInteractiveRoutes(app: import("express").Express) {
   app.use(router);
 }

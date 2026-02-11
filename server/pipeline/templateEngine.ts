@@ -445,7 +445,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
 // ═══════════════════════════════════════════════════════
 // BASE CSS (embedded from Python backend)
 // ═══════════════════════════════════════════════════════
-const BASE_CSS = `/* ── Slide Foundation ─────────────────────────────────── */
+export const BASE_CSS = `/* ── Slide Foundation ─────────────────────────────────── */
 .slide {
   width: 1280px;
   height: 720px;

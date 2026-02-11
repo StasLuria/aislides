@@ -278,6 +278,16 @@ class ApiClient {
     return data;
   }
 
+  async previewSlide(
+    id: string,
+    slideNumber: number,
+  ): Promise<{ presentation_id: string; slide_number: number; layout: string; html: string }> {
+    const { data } = await this.http.post(`/interactive/${id}/preview-slide`, {
+      slide_number: slideNumber,
+    });
+    return data;
+  }
+
   // — Files —
 
   /**
