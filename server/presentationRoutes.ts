@@ -204,9 +204,8 @@ async function startGeneration(
       }).catch((err) => console.error("[Pipeline] DB update failed:", err));
     };
 
-    // Run the pipeline
+    // Run the pipeline (slide count is auto-determined by AI)
     const result = await generatePresentation(prompt, {
-      slideCount: config.slide_count || 10,
       themePreset: config.theme_preset,
     }, onProgress);
 

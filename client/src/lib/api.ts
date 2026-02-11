@@ -25,7 +25,6 @@ export interface CreatePresentationRequest {
   prompt: string;
   mode?: GenerationMode;
   config?: {
-    slide_count?: number;
     theme_preset?: string;
   } | null;
 }

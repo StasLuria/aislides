@@ -35,7 +35,7 @@ Analyze the request and determine the generation strategy.`;
 // ═══════════════════════════════════════════════════════
 // OUTLINE AGENT
 // ═══════════════════════════════════════════════════════
-export function outlineSystem(minSlides: number, maxSlides: number, optimalSlides: number, language: string): string {
+export function outlineSystem(language: string): string {
   return `You are Outline Agent — a presentation structure architect.
 <role>
 Create a detailed outline for a presentation based on the topic, audience, and context.
@@ -44,15 +44,18 @@ Create a detailed outline for a presentation based on the topic, audience, and c
 1. Define the narrative arc of the presentation.
 2. Create a slide-by-slide outline with titles, purposes, and key points.
 3. Ensure logical flow and storytelling structure.
+4. Determine the optimal number of slides based on the content.
 </task>
 <rules>
-- Generate between ${minSlides} and ${maxSlides} slides. Optimal: ${optimalSlides}.
+- ONE SLIDE = ONE IDEA. Each slide must convey exactly one clear thought.
+- Determine the number of slides based on the content complexity (typically 7-15 slides).
 - ALWAYS start with a TitleSlide (slide 1).
 - ALWAYS end with a FinalSlide (last slide).
 - Use SectionHeader slides to separate major sections.
 - Each slide must have a clear, distinct purpose — no redundancy.
 - Key points should be specific and actionable, not generic.
 - Generate content in ${language}.
+- Do NOT pad with filler slides. Only create slides that add value.
 </rules>
 <narrative_structure>
 1. Opening: Title + hook (1-2 slides)

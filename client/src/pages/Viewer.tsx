@@ -2,9 +2,12 @@
  * Viewer Page — Presentation Slide Viewer
  * Swiss Precision: Split layout with slide list (left) and large preview (right)
  * Keyboard navigation: Left/Right arrows, Escape to exit
+ *
+ * Key fix: slides are 1280×720 fixed-size elements. We use CSS transform scale
+ * to fit them into the viewport. Thumbnails use the same approach at a smaller scale.
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +25,121 @@ import {
 import api from "@/lib/api";
 import type { PresentationDetail } from "@/lib/api";
 
+/**
+ * Parse the full HTML presentation into individual slide HTML documents.
+ * Each slide is a `.slide-container` wrapping a `.slide` (1280×720).
+ * We extract the <head> styles and wrap each slide into a standalone HTML doc.
+ */
+function parseSlides(html: string): string[] {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // Get all styles from head
+  const headContent = doc.head.innerHTML;
+
+  // Try .slide-container first (our template wraps each slide in one)
+  let slideElements = doc.querySelectorAll(".slide-container");
+  if (slideElements.length === 0) {
+    // Fallback to .slide
+    slideElements = doc.querySelectorAll(".slide");
+  }
+  if (slideElements.length === 0) {
+    // Fallback to [data-slide]
+    slideElements = doc.querySelectorAll("[data-slide]");
+  }
+
+  if (slideElements.length > 0) {
+    return Array.from(slideElements).map((el) => {
+      return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  ${headContent}
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 1280px;
+      height: 720px;
+      background: #fff;
+    }
+    .slide-container {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .slide-number {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>${el.outerHTML}</body>
+</html>`;
+    });
+  }
+
+  // If no slide markers found, return the full HTML as a single slide
+  return [html];
+}
+
+/**
+ * SlideFrame — renders a single slide in a scaled iframe.
+ * The slide is always 1280×720 internally, and we scale it down
+ * to fit the container using CSS transform.
+ */
+function SlideFrame({
+  html,
+  containerWidth,
+  containerHeight,
+  className = "",
+  interactive = false,
+}: {
+  html: string;
+  containerWidth: number;
+  containerHeight: number;
+  className?: string;
+  interactive?: boolean;
+}) {
+  const SLIDE_W = 1280;
+  const SLIDE_H = 720;
+
+  const scale = Math.min(containerWidth / SLIDE_W, containerHeight / SLIDE_H);
+
+  return (
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{
+        width: containerWidth,
+        height: containerHeight,
+      }}
+    >
+      <div
+        style={{
+          width: SLIDE_W,
+          height: SLIDE_H,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          position: "absolute",
+          top: Math.max(0, (containerHeight - SLIDE_H * scale) / 2),
+          left: Math.max(0, (containerWidth - SLIDE_W * scale) / 2),
+        }}
+      >
+        <iframe
+          srcDoc={html}
+          className="border-0"
+          style={{ width: SLIDE_W, height: SLIDE_H }}
+          sandbox="allow-scripts allow-same-origin"
+          tabIndex={interactive ? 0 : -1}
+          title="Slide"
+        />
+        {!interactive && (
+          <div className="absolute inset-0" style={{ pointerEvents: "all" }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Viewer() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -34,7 +152,20 @@ export default function Viewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [fullHtml, setFullHtml] = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Measure the main slide area
+  const [mainSize, setMainSize] = useState({ w: 800, h: 500 });
+
+  useEffect(() => {
+    function updateSize() {
+      // Main area: right panel minus toolbar (48px) and padding (48px)
+      const w = Math.min(window.innerWidth - 280 - 48, 1280);
+      const h = window.innerHeight - 56 - 48 - 48; // header + toolbar + padding
+      setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
+    }
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   // Fetch presentation data
   useEffect(() => {
@@ -51,14 +182,12 @@ export default function Viewer() {
           return;
         }
 
-        // Fetch the HTML content from result_urls.html_preview
-        // Backend stores URL as "/api/v1/files/presentations/{id}/output/presentation.html"
+        // Fetch the HTML content
         const htmlUrl = data.result_urls?.html_preview || data.result_urls?.html;
         if (htmlUrl) {
           try {
             const html = await api.fetchPresentationHtml(htmlUrl);
             setFullHtml(html);
-            // Parse individual slides from the HTML
             const slides = parseSlides(html);
             setSlideHtmls(slides);
           } catch (err) {
@@ -80,30 +209,14 @@ export default function Viewer() {
     fetchData();
   }, [presentationId, navigate]);
 
-  // Parse slides from full HTML
-  const parseSlides = (html: string): string[] => {
-    // Try to split by slide containers
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const slideElements = doc.querySelectorAll(".slide, [data-slide]");
-
-    if (slideElements.length > 0) {
-      const head = doc.head.innerHTML;
-      return Array.from(slideElements).map((el) => {
-        return `<!DOCTYPE html><html><head>${head}</head><body style="margin:0;overflow:hidden;">${el.outerHTML}</body></html>`;
-      });
-    }
-
-    // If no slide markers, return full HTML as single slide
-    return [html];
-  };
-
   // Keyboard navigation
+  const totalSlides = slideHtmls.length || (presentation?.slide_count || 0);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
-        setCurrentSlide((prev) => Math.min(prev + 1, slideHtmls.length - 1));
+        setCurrentSlide((prev) => Math.min(prev + 1, totalSlides - 1));
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         setCurrentSlide((prev) => Math.max(prev - 1, 0));
@@ -117,7 +230,7 @@ export default function Viewer() {
         setIsFullscreen((prev) => !prev);
       }
     },
-    [slideHtmls.length, isFullscreen, navigate]
+    [totalSlides, isFullscreen, navigate]
   );
 
   useEffect(() => {
@@ -143,10 +256,14 @@ export default function Viewer() {
 
   // Open in new tab
   const handleOpenInTab = () => {
-    if (!fullHtml) return;
-    const blob = new Blob([fullHtml], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    const htmlUrl = presentation?.result_urls?.html_preview || presentation?.result_urls?.html;
+    if (htmlUrl) {
+      window.open(htmlUrl, "_blank");
+    } else if (fullHtml) {
+      const blob = new Blob([fullHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    }
   };
 
   if (isLoading) {
@@ -160,17 +277,12 @@ export default function Viewer() {
     );
   }
 
-  // Demo mode: if no slides loaded, show demo content
   const hasSlides = slideHtmls.length > 0;
-  const totalSlides = hasSlides ? slideHtmls.length : (presentation?.slide_count || 0);
 
   // Fullscreen mode
   if (isFullscreen) {
     return (
-      <div
-        ref={containerRef}
-        className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
-      >
+      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
         {/* Controls overlay */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
           <span className="text-xs text-white/50 font-mono mr-2">
@@ -190,44 +302,44 @@ export default function Viewer() {
         {currentSlide > 0 && (
           <button
             onClick={() => setCurrentSlide((prev) => prev - 1)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
           >
-            <ChevronLeft className="w-5 h-5 text-white/70" />
+            <ChevronLeft className="w-6 h-6 text-white/80" />
           </button>
         )}
         {currentSlide < totalSlides - 1 && (
           <button
             onClick={() => setCurrentSlide((prev) => prev + 1)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
           >
-            <ChevronRight className="w-5 h-5 text-white/70" />
+            <ChevronRight className="w-6 h-6 text-white/80" />
           </button>
         )}
 
-        {/* Slide */}
-        <div className="w-full max-w-[1280px] aspect-video">
-          {hasSlides ? (
-            <iframe
-              srcDoc={slideHtmls[currentSlide]}
-              className="w-full h-full border-0"
-              sandbox="allow-scripts"
-              title={`Slide ${currentSlide + 1}`}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/30">
-              Слайд {currentSlide + 1}
-            </div>
-          )}
-        </div>
+        {/* Slide — fullscreen */}
+        {hasSlides && slideHtmls[currentSlide] ? (
+          <SlideFrame
+            html={slideHtmls[currentSlide]}
+            containerWidth={window.innerWidth - 120}
+            containerHeight={window.innerHeight - 80}
+            interactive
+          />
+        ) : (
+          <div className="text-white/30 text-lg">Слайд {currentSlide + 1}</div>
+        )}
       </div>
     );
   }
+
+  // Thumbnail dimensions
+  const THUMB_W = 192;
+  const THUMB_H = 108; // 16:9
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)]">
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-3.5rem)]">
         {/* Left panel — Slide list */}
-        <div className="lg:w-[280px] border-r border-border/50 flex flex-col">
+        <div className="lg:w-[260px] border-r border-border/50 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center gap-2 mb-3">
@@ -240,7 +352,7 @@ export default function Viewer() {
               className="text-sm font-semibold truncate"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              Презентация
+              {presentation?.title || "Презентация"}
             </h3>
             <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
               {totalSlides} слайдов • ID: {presentationId.slice(0, 8)}
@@ -255,32 +367,30 @@ export default function Viewer() {
                   key={i}
                   onClick={() => setCurrentSlide(i)}
                   className={`
-                    w-full rounded-md overflow-hidden border transition-all
+                    w-full rounded-md overflow-hidden border-2 transition-all
                     ${
                       currentSlide === i
-                        ? "border-primary ring-1 ring-primary/30"
+                        ? "border-primary shadow-md shadow-primary/20"
                         : "border-border/30 hover:border-border/60"
                     }
                   `}
                 >
-                  <div className="flex items-center gap-2 p-2">
+                  <div className="flex items-center gap-2 p-1.5">
                     <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <div className="flex-1 aspect-video bg-secondary/50 rounded overflow-hidden">
+                    <div
+                      className="rounded overflow-hidden bg-white"
+                      style={{ width: THUMB_W, height: THUMB_H }}
+                    >
                       {hasSlides && slideHtmls[i] ? (
-                        <iframe
-                          srcDoc={slideHtmls[i]}
-                          className="w-[640px] h-[360px] border-0 pointer-events-none"
-                          style={{
-                            transform: "scale(0.15)",
-                            transformOrigin: "top left",
-                          }}
-                          tabIndex={-1}
-                          title={`Thumb ${i + 1}`}
+                        <SlideFrame
+                          html={slideHtmls[i]}
+                          containerWidth={THUMB_W}
+                          containerHeight={THUMB_H}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-secondary/50">
                           <Layers className="w-3 h-3 text-muted-foreground/30" />
                         </div>
                       )}
@@ -308,7 +418,7 @@ export default function Viewer() {
               variant="ghost"
               size="sm"
               className="w-full gap-2 text-xs"
-              disabled={!fullHtml}
+              disabled={!fullHtml && !presentation?.result_urls?.html_preview}
             >
               <ExternalLink className="w-3.5 h-3.5" />
               Открыть в новой вкладке
@@ -365,13 +475,20 @@ export default function Viewer() {
 
           {/* Slide display */}
           <div className="flex-1 flex items-center justify-center p-6 bg-black/20">
-            <div className="w-full max-w-[960px] aspect-video rounded-lg overflow-hidden border border-border/30 shadow-2xl">
+            <div
+              className="rounded-lg overflow-hidden border border-border/30 shadow-2xl bg-white"
+              style={{
+                width: mainSize.w,
+                height: mainSize.w * (720 / 1280),
+                maxHeight: mainSize.h,
+              }}
+            >
               {hasSlides && slideHtmls[currentSlide] ? (
-                <iframe
-                  srcDoc={slideHtmls[currentSlide]}
-                  className="w-full h-full border-0"
-                  sandbox="allow-scripts"
-                  title={`Slide ${currentSlide + 1}`}
+                <SlideFrame
+                  html={slideHtmls[currentSlide]}
+                  containerWidth={mainSize.w}
+                  containerHeight={Math.min(mainSize.w * (720 / 1280), mainSize.h)}
+                  interactive
                 />
               ) : (
                 <div className="w-full h-full bg-secondary/30 flex items-center justify-center">

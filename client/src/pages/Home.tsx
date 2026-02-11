@@ -3,6 +3,9 @@
  * Swiss Precision Design: Asymmetric two-panel layout
  * Left: Hero with branding. Right: Creation form.
  * Typography-driven, dark canvas, indigo accent.
+ *
+ * Slide count is auto-determined by the AI pipeline
+ * based on the "one slide = one idea" principle.
  */
 
 import { useState } from "react";
@@ -11,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { ArrowRight, Sparkles, Layers, Zap, FileText } from "lucide-react";
 import api from "@/lib/api";
@@ -25,7 +27,6 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<GenerationMode>("batch");
-  const [slideCount, setSlideCount] = useState([10]);
   const [theme, setTheme] = useState("corporate_blue");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,8 +42,8 @@ export default function Home() {
         prompt: prompt.trim(),
         mode,
         config: {
-          slide_count: slideCount[0],
           theme_preset: theme,
+          // slide_count is auto-determined by AI based on content
         },
       });
       navigate(`/generate/${result.presentation_id}`);
@@ -56,17 +57,17 @@ export default function Home() {
   const features = [
     {
       icon: Sparkles,
-      title: "10 AI-агентов",
+      title: "AI-агенты",
       desc: "Команда специализированных агентов для контента и дизайна",
     },
     {
       icon: Layers,
-      title: "18 макетов",
-      desc: "Профессиональные шаблоны слайдов для любого контента",
+      title: "1 слайд = 1 мысль",
+      desc: "AI сам определит оптимальное количество слайдов",
     },
     {
       icon: Zap,
-      title: "~100 секунд",
+      title: "~60 секунд",
       desc: "Полная генерация презентации за минуту",
     },
   ];
@@ -103,7 +104,7 @@ export default function Home() {
             </h1>
 
             <p className="text-muted-foreground text-base lg:text-lg leading-relaxed mb-10 max-w-md">
-              Введите тему — получите готовую презентацию. 10 AI-агентов
+              Введите тему — получите готовую презентацию. AI-агенты
               создадут контент, подберут дизайн и соберут слайды.
             </p>
 
@@ -134,7 +135,7 @@ export default function Home() {
           <div className="relative z-10 mt-8">
             <div className="swiss-divider mb-4" />
             <p className="text-[11px] text-muted-foreground font-mono">
-              Powered by LangGraph + OpenAI + 18 HTML Templates
+              Powered by LLM Pipeline + 18 HTML Templates
             </p>
           </div>
         </div>
@@ -152,7 +153,7 @@ export default function Home() {
                 Новая презентация
               </h2>
               <p className="text-sm text-muted-foreground mt-1.5">
-                Опишите тему, выберите параметры и запустите генерацию
+                Опишите тему и запустите генерацию — AI определит структуру
               </p>
             </div>
 
@@ -169,7 +170,7 @@ export default function Home() {
                 placeholder="Например: Стратегия развития компании на 2026 год с фокусом на AI-технологии и автоматизацию бизнес-процессов"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[120px] resize-none bg-secondary/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-primary/20 text-sm leading-relaxed"
+                className="min-h-[140px] resize-none bg-secondary/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-primary/20 text-sm leading-relaxed"
               />
               <div className="flex justify-between">
                 <p className="text-[11px] text-muted-foreground font-mono">
@@ -181,7 +182,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Settings grid */}
+            {/* Settings — Mode and Theme side by side */}
             <div className="grid grid-cols-2 gap-6">
               {/* Mode */}
               <div className="space-y-2.5">
@@ -240,27 +241,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Slide count */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Количество слайдов
-                </Label>
-                <span className="text-lg font-semibold text-primary font-mono">
-                  {slideCount[0]}
-                </span>
-              </div>
-              <Slider
-                value={slideCount}
-                onValueChange={setSlideCount}
-                min={5}
-                max={20}
-                step={1}
-                className="w-full"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                <span>5 слайдов</span>
-                <span>20 слайдов</span>
+            {/* Info about auto slide count */}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+              <Layers className="w-4 h-4 text-primary/60 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs text-foreground/80 font-medium">
+                  Количество слайдов определяется автоматически
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  AI анализирует тему и создаёт оптимальную структуру по принципу «один слайд — одна мысль»
+                </p>
               </div>
             </div>
 
@@ -288,7 +278,7 @@ export default function Home() {
             </Button>
 
             <p className="text-[10px] text-center text-muted-foreground/60 font-mono">
-              Генерация занимает ~100 секунд • 10 AI-агентов • HTML-вывод
+              Генерация занимает ~60 секунд • AI-агенты • HTML-вывод
             </p>
           </div>
         </div>

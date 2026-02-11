@@ -50,3 +50,10 @@
 - [x] Connect frontend to new tRPC/Express endpoints
 - [x] Write vitest tests for backend
 - [x] Test full end-to-end flow
+
+## Bug Fixes: Viewer + Home Page
+- [x] Fix Viewer: main slide iframe not displaying content (black/empty area)
+- [x] Fix Viewer: thumbnails not scaling properly (too small, cropped, wrong proportions)
+- [x] Remove slide count slider from Home page form
+- [x] Update pipeline to auto-determine slide count based on content ("one slide = one idea")
+- [x] Update API schema to make slide_count optional

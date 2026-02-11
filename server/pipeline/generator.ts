@@ -24,7 +24,6 @@ import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEn
 // ═══════════════════════════════════════════════════════
 
 export interface GenerationConfig {
-  slideCount?: number;
   themePreset?: string;
 }
 
@@ -174,12 +173,9 @@ async function runPlanner(prompt: string): Promise<PlannerResult> {
 async function runOutline(
   prompt: string,
   branding: PlannerResult["branding"],
-  slideCount: number,
   language: string,
 ): Promise<OutlineResult> {
-  const minSlides = Math.max(5, slideCount - 3);
-  const maxSlides = slideCount + 3;
-  const system = outlineSystem(minSlides, maxSlides, slideCount, language);
+  const system = outlineSystem(language);
   const brandingStr = JSON.stringify(branding);
   const user = outlineUser(prompt, brandingStr);
 
@@ -518,8 +514,6 @@ export async function generatePresentation(
   slides: Array<{ layoutId: string; data: Record<string, any>; html: string }>;
   fullHtml: string;
 }> {
-  const slideCount = config.slideCount || 10;
-
   // 1. PLANNER
   onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: "Анализ темы и планирование..." });
   const plannerResult = await runPlanner(prompt);
@@ -527,7 +521,7 @@ export async function generatePresentation(
 
   // 2. OUTLINE
   onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 15, message: "Создание структуры презентации..." });
-  const outline = await runOutline(prompt, plannerResult.branding, slideCount, language);
+  const outline = await runOutline(prompt, plannerResult.branding, language);
 
   // 3. WRITER (parallel)
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 25, message: `Написание контента для ${outline.slides.length} слайдов...` });
