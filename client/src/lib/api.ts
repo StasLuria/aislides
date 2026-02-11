@@ -170,6 +170,41 @@ export interface UploadImageResponse {
   size: number;
 }
 
+// ═══════════════════════════════════════════════════════
+// Slide Editing Types
+// ═══════════════════════════════════════════════════════
+
+export interface SlideData {
+  index: number;
+  layoutId: string;
+  data: Record<string, any>;
+}
+
+export interface SlidesResponse {
+  presentation_id: string;
+  title: string;
+  theme_preset: string;
+  theme_css: string;
+  fonts_url: string;
+  language: string;
+  slides: SlideData[];
+}
+
+export interface SlideEditResponse {
+  presentation_id: string;
+  index: number;
+  layoutId: string;
+  data: Record<string, any>;
+  html: string;
+  image_url?: string;
+}
+
+export interface ReassembleResponse {
+  presentation_id: string;
+  html_url: string;
+  slide_count: number;
+}
+
 export interface WSErrorData {
   presentation_id: string;
   error_type: string;
@@ -451,6 +486,78 @@ class ApiClient {
     }, 25000);
 
     return ws;
+  }
+
+  // — Slide Editing —
+
+  async getSlides(id: string): Promise<SlidesResponse> {
+    const { data } = await this.http.get<SlidesResponse>(`/presentations/${id}/slides`);
+    return data;
+  }
+
+  async getSlide(id: string, index: number): Promise<SlideEditResponse> {
+    const { data } = await this.http.get<SlideEditResponse>(`/presentations/${id}/slides/${index}`);
+    return data;
+  }
+
+  async updateSlideData(
+    id: string,
+    index: number,
+    slideData: Record<string, any>,
+  ): Promise<SlideEditResponse> {
+    const { data } = await this.http.put<SlideEditResponse>(
+      `/presentations/${id}/slides/${index}`,
+      { data: slideData },
+    );
+    return data;
+  }
+
+  async uploadSlideEditImage(
+    id: string,
+    index: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<SlideEditResponse> {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const { data } = await this.http.post<SlideEditResponse>(
+      `/presentations/${id}/slides/${index}/image`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        },
+      },
+    );
+    return data;
+  }
+
+  async removeSlideEditImage(id: string, index: number): Promise<SlideEditResponse> {
+    const { data } = await this.http.delete<SlideEditResponse>(
+      `/presentations/${id}/slides/${index}/image`,
+    );
+    return data;
+  }
+
+  async changeSlideLayout(id: string, index: number, layoutId: string): Promise<SlideEditResponse> {
+    const { data } = await this.http.post<SlideEditResponse>(
+      `/presentations/${id}/slides/${index}/layout`,
+      { layoutId },
+    );
+    return data;
+  }
+
+  async reassemblePresentation(id: string): Promise<ReassembleResponse> {
+    const { data } = await this.http.post<ReassembleResponse>(
+      `/presentations/${id}/reassemble`,
+    );
+    return data;
   }
 
   // — Health —

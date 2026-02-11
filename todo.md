@@ -165,3 +165,19 @@
 - [x] Fix: Layout Agent prompt — discourage image-text/image-fullscreen for non-image slides
 - [x] Fix: Applied same layout fixup to interactive mode assemble endpoint
 - [x] Verify fixes with tests (84 tests passing) and visual inspection (15 slides, all rendering correctly)
+
+## Post-Assembly Slide Editing (Edit text/images without full regeneration)
+- [x] Backend: Store individual slide data (content, layout, theme, image) per slide in DB (slideData JSON column)
+- [x] Backend: GET /api/v1/presentations/:id/slides — return all slides with editable data
+- [x] Backend: PUT /api/v1/presentations/:id/slides/:slideIndex — update slide text content
+- [x] Backend: POST /api/v1/presentations/:id/slides/:slideIndex/upload-image — upload new image
+- [x] Backend: DELETE /api/v1/presentations/:id/slides/:slideIndex/image — remove slide image
+- [x] Backend: POST /api/v1/presentations/:id/slides/:slideIndex/render — re-render single slide HTML
+- [x] Backend: POST /api/v1/presentations/:id/reassemble — reassemble full presentation HTML from edited slides
+- [x] Frontend: Edit mode toggle in Viewer page ("Редактировать" / "Закрыть редактор")
+- [x] Frontend: Slide text editor panel (title, subtitle, description, bullet points by layout type)
+- [x] Frontend: Image management (upload, replace, remove) per slide with drag-and-drop
+- [x] Frontend: Save changes button with re-render and reassemble ("Сохранить все изменения")
+- [x] Frontend: Visual feedback during save/re-render (toast notifications, loading states)
+- [x] Write vitest tests for editing endpoints (15 new tests — 99 total passing)
+- [x] End-to-end testing: all 5 visual tests passed (editor open, text edit, navigation, image controls, reassemble)

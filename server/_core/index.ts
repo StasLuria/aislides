@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerPresentationRoutes } from "../presentationRoutes";
 import { registerInteractiveRoutes } from "../interactiveRoutes";
+import { registerSlideEditRoutes } from "../slideEditRoutes";
 import { wsManager } from "../wsManager";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -46,6 +47,9 @@ async function startServer() {
 
   // Interactive mode API — /api/v1/interactive/*
   registerInteractiveRoutes(app);
+
+  // Slide editing API — /api/v1/presentations/:id/slides/*
+  registerSlideEditRoutes(app);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

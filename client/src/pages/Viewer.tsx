@@ -1,13 +1,14 @@
 /**
- * Viewer Page — Presentation Slide Viewer
- * Swiss Precision: Split layout with slide list (left) and large preview (right)
- * Keyboard navigation: Left/Right arrows, Escape to exit
+ * Viewer Page — Presentation Slide Viewer with Editing
+ * Swiss Precision: Split layout with slide list (left), large preview (center),
+ * and optional editor panel (right).
+ * Keyboard navigation: Left/Right arrows, Escape to exit, E to toggle edit.
  *
  * Key fix: slides are 1280×720 fixed-size elements. We use CSS transform scale
  * to fit them into the viewport. Thumbnails use the same approach at a smaller scale.
  */
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,9 +22,13 @@ import {
   ArrowLeft,
   Layers,
   ExternalLink,
+  Pencil,
+  Save,
+  Loader2,
 } from "lucide-react";
 import api from "@/lib/api";
-import type { PresentationDetail } from "@/lib/api";
+import type { PresentationDetail, SlideData, SlideEditResponse } from "@/lib/api";
+import SlideEditor from "@/components/SlideEditor";
 
 /**
  * Parse the full HTML presentation into individual slide HTML documents.
@@ -152,20 +157,27 @@ export default function Viewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [fullHtml, setFullHtml] = useState<string | null>(null);
 
+  // Editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
+  const [hasEdits, setHasEdits] = useState(false);
+  const [isReassembling, setIsReassembling] = useState(false);
+
   // Measure the main slide area
   const [mainSize, setMainSize] = useState({ w: 800, h: 500 });
 
   useEffect(() => {
     function updateSize() {
       // Main area: right panel minus toolbar (48px) and padding (48px)
-      const w = Math.min(window.innerWidth - 280 - 48, 1280);
+      const editorWidth = isEditing ? 360 : 0;
+      const w = Math.min(window.innerWidth - 280 - 48 - editorWidth, 1280);
       const h = window.innerHeight - 56 - 48 - 48; // header + toolbar + padding
       setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
     }
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [isEditing]);
 
   // Fetch presentation data
   useEffect(() => {
@@ -197,6 +209,14 @@ export default function Viewer() {
         } else {
           toast.error("URL презентации не найден");
         }
+
+        // Also fetch slide data for editing
+        try {
+          const slidesData = await api.getSlides(presentationId);
+          setSlideDataList(slidesData.slides);
+        } catch (err) {
+          console.error("Failed to fetch slide data:", err);
+        }
       } catch (error) {
         console.error("Failed to fetch presentation:", error);
         toast.error("Презентация не найдена");
@@ -214,6 +234,10 @@ export default function Viewer() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Don't capture keys when editing text
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
         setCurrentSlide((prev) => Math.min(prev + 1, totalSlides - 1));
@@ -221,22 +245,91 @@ export default function Viewer() {
         e.preventDefault();
         setCurrentSlide((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Escape") {
-        if (isFullscreen) {
+        if (isEditing) {
+          setIsEditing(false);
+        } else if (isFullscreen) {
           setIsFullscreen(false);
         } else {
           navigate("/history");
         }
       } else if (e.key === "f" || e.key === "F") {
-        setIsFullscreen((prev) => !prev);
+        if (!isEditing) setIsFullscreen((prev) => !prev);
+      } else if (e.key === "e" || e.key === "E") {
+        if (!isFullscreen) setIsEditing((prev) => !prev);
       }
     },
-    [totalSlides, isFullscreen, navigate]
+    [totalSlides, isFullscreen, isEditing, navigate]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Handle slide update from editor
+  const handleSlideUpdated = useCallback(
+    (index: number, response: SlideEditResponse) => {
+      // Update the slide HTML in the viewer
+      const newHtml = response.html;
+      setSlideHtmls((prev) => {
+        const updated = [...prev];
+        // Parse the response HTML to extract just the slide content
+        const parsed = parseSlides(newHtml);
+        if (parsed.length > 0) {
+          updated[index] = parsed[0];
+        } else {
+          updated[index] = newHtml;
+        }
+        return updated;
+      });
+
+      // Update slide data
+      setSlideDataList((prev) => {
+        const updated = [...prev];
+        if (updated[index]) {
+          updated[index] = {
+            ...updated[index],
+            layoutId: response.layoutId,
+            data: response.data,
+          };
+        }
+        return updated;
+      });
+
+      setHasEdits(true);
+    },
+    [],
+  );
+
+  // Reassemble — re-render full HTML and upload to S3
+  const handleReassemble = async () => {
+    setIsReassembling(true);
+    try {
+      const result = await api.reassemblePresentation(presentationId);
+
+      // Fetch the new HTML
+      const html = await api.fetchPresentationHtml(result.html_url);
+      setFullHtml(html);
+      const slides = parseSlides(html);
+      setSlideHtmls(slides);
+
+      // Update presentation result URLs
+      if (presentation) {
+        setPresentation({
+          ...presentation,
+          result_urls: { ...presentation.result_urls, html_preview: result.html_url },
+        });
+      }
+
+      setHasEdits(false);
+      toast.success("Презентация пересобрана и сохранена");
+    } catch (error) {
+      console.error("Failed to reassemble:", error);
+      toast.error("Не удалось пересобрать презентацию");
+    } finally {
+      setIsReassembling(false);
+    }
+  };
 
   // Download HTML
   const handleDownload = () => {
@@ -403,6 +496,26 @@ export default function Viewer() {
 
           {/* Actions */}
           <div className="p-3 border-t border-border/50 space-y-2">
+            {hasEdits && (
+              <Button
+                onClick={handleReassemble}
+                size="sm"
+                className="w-full gap-2 text-xs"
+                disabled={isReassembling}
+              >
+                {isReassembling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Пересборка...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    Сохранить все изменения
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               onClick={handleDownload}
               variant="outline"
@@ -426,7 +539,7 @@ export default function Viewer() {
           </div>
         </div>
 
-        {/* Right panel — Main slide view */}
+        {/* Center panel — Main slide view */}
         <div className="flex-1 flex flex-col">
           {/* Toolbar */}
           <div className="flex items-center justify-between px-6 py-3 border-b border-border/50">
@@ -461,8 +574,18 @@ export default function Viewer() {
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
-                ← → навигация • F полноэкранный • Esc выход
+                ← → навигация • E редактор • F полноэкранный
               </span>
+              <Button
+                variant={isEditing ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsEditing((prev) => !prev)}
+                className="gap-1.5 text-xs"
+                disabled={slideDataList.length === 0}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                {isEditing ? "Закрыть редактор" : "Редактировать"}
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -503,6 +626,16 @@ export default function Viewer() {
             </div>
           </div>
         </div>
+
+        {/* Right panel — Editor (conditional) */}
+        {isEditing && slideDataList[currentSlide] && (
+          <SlideEditor
+            presentationId={presentationId}
+            slide={slideDataList[currentSlide]}
+            onClose={() => setIsEditing(false)}
+            onSlideUpdated={handleSlideUpdated}
+          />
+        )}
       </div>
     </div>
   );
