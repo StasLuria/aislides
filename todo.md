@@ -57,3 +57,8 @@
 - [x] Remove slide count slider from Home page form
 - [x] Update pipeline to auto-determine slide count based on content ("one slide = one idea")
 - [x] Update API schema to make slide_count optional
+
+## Critical Bug Fixes Round 2
+- [ ] Fix Viewer: slides show as black screen in main area (iframe not rendering)
+- [ ] Fix Viewer: thumbnails are tiny and not properly scaled
+- [ ] Verify slide count slider is removed in deployed version
