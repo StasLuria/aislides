@@ -271,6 +271,16 @@ class ApiClient {
     return data;
   }
 
+  async regenerateSlide(
+    id: string,
+    slideNumber: number,
+  ): Promise<{ presentation_id: string; slide_number: number; regenerated: boolean; slide: SlideContentData }> {
+    const { data } = await this.http.post(`/interactive/${id}/regenerate-slide`, {
+      slide_number: slideNumber,
+    });
+    return data;
+  }
+
   async assemblePresentation(
     id: string,
   ): Promise<{ presentation_id: string; status: string; message: string }> {

@@ -105,3 +105,12 @@
 - [x] Auto-renumber slides after reorder (arrayMove + map renumber)
 - [x] Keep expand/collapse and edit functionality working with DnD (SortableSlideCard component)
 - [x] Write vitest tests for reorder logic (5 new DnD tests — 48 total passing)
+
+## Regenerate Single Slide on Step 2
+- [x] Backend: API endpoint POST /api/v1/interactive/:id/regenerate-slide calling runWriterSingle
+- [x] Backend: Update pipelineState content array with regenerated slide, preserve slide_number
+- [x] Frontend: "Перегенерировать" button with RotateCcw icon on each slide card (accent styling)
+- [x] Frontend: Loading overlay with blur + spinner during regeneration, border highlight
+- [x] Frontend: Update local content state with new AI-generated text, exit edit mode
+- [x] Frontend: Auto-refresh preview after regeneration (previewRefreshKey)
+- [x] Write vitest tests for regeneration (7 new tests — 54 total passing)

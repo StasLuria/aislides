@@ -245,6 +245,7 @@ export default function Interactive() {
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [regeneratingSlide, setRegeneratingSlide] = useState<number | null>(null);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [activeSlideId, setActiveSlideId] = useState<number | null>(null);
 
@@ -566,6 +567,32 @@ export default function Interactive() {
     }
   };
 
+  const handleRegenerateSlide = async (slideNumber: number) => {
+    setRegeneratingSlide(slideNumber);
+    try {
+      const result = await api.regenerateSlide(presentationId, slideNumber);
+      if (result.regenerated && result.slide) {
+        setContent((prev) =>
+          prev
+            ? prev.map((s) =>
+                s.slide_number === slideNumber ? { ...result.slide, slide_number: slideNumber } : s,
+              )
+            : prev,
+        );
+        setPreviewRefreshKey((k) => k + 1);
+        toast.success(`Слайд ${slideNumber} перегенерирован`);
+        // If this slide was being edited, exit edit mode so user sees fresh content
+        if (editingSlide === slideNumber) {
+          setEditingSlide(null);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка перегенерации");
+    } finally {
+      setRegeneratingSlide(null);
+    }
+  };
+
   const updateContentField = (slideNumber: number, field: keyof SlideContentData, value: string) => {
     if (!content) return;
     setContent(
@@ -840,8 +867,21 @@ export default function Interactive() {
                 return (
                   <div
                     key={slide.slide_number}
-                    className="rounded-lg border border-border/50 bg-secondary/20 overflow-hidden"
+                    className={`rounded-lg border bg-secondary/20 overflow-hidden relative transition-all ${
+                      regeneratingSlide === slide.slide_number
+                        ? "border-primary/50 ring-1 ring-primary/20"
+                        : "border-border/50"
+                    }`}
                   >
+                    {/* Regeneration overlay */}
+                    {regeneratingSlide === slide.slide_number && (
+                      <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                        <div className="flex items-center gap-2 bg-background/90 rounded-lg px-4 py-2 border border-primary/30 shadow-lg">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm text-primary font-medium">Перегенерация контента...</span>
+                        </div>
+                      </div>
+                    )}
                     {/* Slide header */}
                     <button
                       className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/30 transition-colors"
@@ -957,6 +997,20 @@ export default function Interactive() {
                                   Редактировать
                                 </Button>
                               )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRegenerateSlide(slide.slide_number)}
+                                disabled={regeneratingSlide === slide.slide_number || isSaving}
+                                className="text-xs h-7 gap-1 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                              >
+                                {regeneratingSlide === slide.slide_number ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="w-3 h-3" />
+                                )}
+                                {regeneratingSlide === slide.slide_number ? "Генерация..." : "Перегенерировать"}
+                              </Button>
                             </div>
                           </div>
 

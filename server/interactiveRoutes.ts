@@ -316,6 +316,91 @@ router.post("/api/v1/interactive/:id/update-slide", async (req: Request, res: Re
 });
 
 // ═══════════════════════════════════════════════════════
+// STEP 4b: Regenerate slide — Re-run AI writer for a single slide
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/interactive/:id/regenerate-slide", async (req: Request, res: Response) => {
+  try {
+    const presentationId = req.params.id;
+    const p = await getPresentation(presentationId);
+
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "awaiting_content_approval") {
+      res.status(400).json({ detail: `Cannot regenerate slide in status: ${p.status}` });
+      return;
+    }
+
+    const { slide_number } = req.body;
+
+    if (!slide_number || typeof slide_number !== "number") {
+      res.status(422).json({ detail: "slide_number is required" });
+      return;
+    }
+
+    const pipelineState = p.pipelineState as any;
+    const outline: OutlineResult = pipelineState.outline;
+    const content: SlideContent[] = pipelineState.content || [];
+    const language = p.language || "ru";
+
+    // Find the outline slide info
+    const outlineSlide = outline.slides.find((s: OutlineSlide) => s.slide_number === slide_number);
+    if (!outlineSlide) {
+      res.status(404).json({ detail: `Slide ${slide_number} not found in outline` });
+      return;
+    }
+
+    // Find the content slide index
+    const slideIndex = content.findIndex((s: SlideContent) => s.slide_number === slide_number);
+    if (slideIndex === -1) {
+      res.status(404).json({ detail: `Slide ${slide_number} not found in content` });
+      return;
+    }
+
+    // Build context for the writer
+    const allTitles = outline.slides.map((s: OutlineSlide) => `${s.slide_number}. ${s.title}`).join("\n");
+    const targetAudience = outline.target_audience || "general";
+    const presentationTitle = outline.presentation_title || p.title || "";
+
+    // Call AI writer for this single slide
+    const regenerated = await runWriterSingle(
+      outlineSlide,
+      presentationTitle,
+      allTitles,
+      targetAudience,
+      language,
+    );
+
+    // Replace the slide content in the array
+    content[slideIndex] = {
+      ...regenerated,
+      slide_number, // ensure slide_number is preserved
+    };
+
+    // Persist updated content
+    await updatePresentationProgress(presentationId, {
+      pipelineState: {
+        ...pipelineState,
+        content,
+      },
+    });
+
+    res.json({
+      presentation_id: presentationId,
+      slide_number,
+      regenerated: true,
+      slide: content[slideIndex],
+    });
+  } catch (error: any) {
+    console.error("[Interactive] Regenerate slide error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
 // STEP 5: Assemble — Run theme + layout + composer + final assembly
 // ═══════════════════════════════════════════════════════
 

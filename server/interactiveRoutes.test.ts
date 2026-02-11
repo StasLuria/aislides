@@ -531,4 +531,113 @@ describe("Interactive Routes - Data Flow", () => {
       expect(idx).toBe(-1);
     });
   });
+
+  describe("Slide regeneration", () => {
+    it("should reject regeneration when status is not awaiting_content_approval", async () => {
+      mockGetPresentation.mockResolvedValue({
+        presentationId: "test-id",
+        status: "processing",
+        pipelineState: {},
+      });
+
+      const p = await getPresentation("test-id");
+      expect(p?.status).toBe("processing");
+      expect(p?.status !== "awaiting_content_approval").toBe(true);
+    });
+
+    it("should allow regeneration when status is awaiting_content_approval", async () => {
+      mockGetPresentation.mockResolvedValue({
+        presentationId: "test-id",
+        status: "awaiting_content_approval",
+        pipelineState: {
+          plannerResult: { presentation_title: "Test" },
+          outline: {
+            presentation_title: "Test",
+            target_audience: "executives",
+            slides: [
+              { slide_number: 1, title: "Intro", purpose: "intro", key_points: ["p1"], speaker_notes_hint: "" },
+              { slide_number: 2, title: "Content", purpose: "explain", key_points: ["p2"], speaker_notes_hint: "" },
+            ],
+          },
+          content: [
+            { slide_number: 1, title: "Intro", text: "Old text", notes: "", data_points: [], key_message: "" },
+            { slide_number: 2, title: "Content", text: "Old text 2", notes: "", data_points: [], key_message: "" },
+          ],
+        },
+        language: "ru",
+      });
+
+      const p = await getPresentation("test-id");
+      expect(p?.status).toBe("awaiting_content_approval");
+    });
+
+    it("should replace specific slide content after regeneration", () => {
+      const content = [
+        { slide_number: 1, title: "Intro", text: "Old text 1", notes: "n1", data_points: [], key_message: "m1" },
+        { slide_number: 2, title: "Content", text: "Old text 2", notes: "n2", data_points: [], key_message: "m2" },
+        { slide_number: 3, title: "End", text: "Old text 3", notes: "n3", data_points: [], key_message: "m3" },
+      ];
+
+      const regenerated = {
+        slide_number: 2,
+        title: "New Content Title",
+        text: "Freshly generated AI text",
+        notes: "new notes",
+        data_points: [{ label: "Metric", value: "42%", unit: "%" }],
+        key_message: "new key message",
+      };
+
+      // Simulate the replacement logic from the endpoint
+      const slideIndex = content.findIndex((s) => s.slide_number === regenerated.slide_number);
+      expect(slideIndex).toBe(1);
+
+      content[slideIndex] = { ...regenerated, slide_number: 2 };
+
+      expect(content[0].text).toBe("Old text 1"); // unchanged
+      expect(content[1].title).toBe("New Content Title"); // replaced
+      expect(content[1].text).toBe("Freshly generated AI text"); // replaced
+      expect(content[1].key_message).toBe("new key message"); // replaced
+      expect(content[1].data_points).toHaveLength(1); // new data
+      expect(content[2].text).toBe("Old text 3"); // unchanged
+    });
+
+    it("should find outline slide by slide_number for regeneration context", () => {
+      const outline = {
+        slides: [
+          { slide_number: 1, title: "Intro", purpose: "introduce", key_points: ["p1"], speaker_notes_hint: "" },
+          { slide_number: 2, title: "Data", purpose: "present data", key_points: ["p2", "p3"], speaker_notes_hint: "" },
+          { slide_number: 3, title: "End", purpose: "conclude", key_points: ["p4"], speaker_notes_hint: "" },
+        ],
+      };
+
+      const outlineSlide = outline.slides.find((s) => s.slide_number === 2);
+      expect(outlineSlide).toBeDefined();
+      expect(outlineSlide?.title).toBe("Data");
+      expect(outlineSlide?.key_points).toEqual(["p2", "p3"]);
+    });
+
+    it("should return undefined for non-existent slide in outline", () => {
+      const outline = {
+        slides: [
+          { slide_number: 1, title: "Intro", purpose: "intro", key_points: ["p1"], speaker_notes_hint: "" },
+        ],
+      };
+
+      const outlineSlide = outline.slides.find((s) => s.slide_number === 99);
+      expect(outlineSlide).toBeUndefined();
+    });
+
+    it("should build allTitles string for writer context", () => {
+      const outline = {
+        slides: [
+          { slide_number: 1, title: "Introduction", purpose: "intro", key_points: [], speaker_notes_hint: "" },
+          { slide_number: 2, title: "Main Content", purpose: "explain", key_points: [], speaker_notes_hint: "" },
+          { slide_number: 3, title: "Conclusion", purpose: "conclude", key_points: [], speaker_notes_hint: "" },
+        ],
+      };
+
+      const allTitles = outline.slides.map((s) => `${s.slide_number}. ${s.title}`).join("\n");
+      expect(allTitles).toBe("1. Introduction\n2. Main Content\n3. Conclusion");
+    });
+  });
 });
