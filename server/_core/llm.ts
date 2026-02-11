@@ -209,16 +209,13 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
+const resolveForgeApiUrl = () =>
   ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 
-const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-};
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_MODEL = "gpt-4o";
 
 const normalizeResponseFormat = ({
   responseFormat,
@@ -265,9 +262,7 @@ const normalizeResponseFormat = ({
   };
 };
 
-export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
-
+function buildPayload(params: InvokeParams, model: string): Record<string, unknown> {
   const {
     messages,
     tools,
@@ -280,7 +275,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model,
     messages: messages.map(normalizeMessage),
   };
 
@@ -296,9 +291,14 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
+  // OpenAI models have different max_tokens limits
+  if (model === OPENAI_MODEL) {
+    payload.max_tokens = 16384;
+  } else {
+    payload.max_tokens = 32768;
+    payload.thinking = {
+      "budget_tokens": 128
+    };
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({
@@ -312,11 +312,15 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
+  return payload;
+}
+
+async function callApi(url: string, apiKey: string, payload: Record<string, unknown>): Promise<InvokeResult> {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(payload),
   });
@@ -329,4 +333,35 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   return (await response.json()) as InvokeResult;
+}
+
+export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
+  // Try built-in Manus Forge API first
+  if (ENV.forgeApiKey) {
+    try {
+      const forgePayload = buildPayload(params, "gemini-2.5-flash");
+      const result = await callApi(resolveForgeApiUrl(), ENV.forgeApiKey, forgePayload);
+      return result;
+    } catch (forgeError: unknown) {
+      const errorMsg = forgeError instanceof Error ? forgeError.message : String(forgeError);
+      console.log(`[LLM] Forge API failed: ${errorMsg}`);
+
+      // If OpenAI key is available, fall back to it
+      if (ENV.openaiApiKey) {
+        console.log("[LLM] Falling back to OpenAI API...");
+      } else {
+        // No fallback available, re-throw original error
+        throw forgeError;
+      }
+    }
+  }
+
+  // Fallback to OpenAI API
+  if (ENV.openaiApiKey) {
+    const openaiPayload = buildPayload(params, OPENAI_MODEL);
+    const result = await callApi(OPENAI_API_URL, ENV.openaiApiKey, openaiPayload);
+    return result;
+  }
+
+  throw new Error("No LLM API key configured. Set BUILT_IN_FORGE_API_KEY or OPENAI_API_KEY.");
 }

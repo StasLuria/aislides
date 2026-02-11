@@ -187,4 +187,10 @@
 - [x] Fix icons-numbers template: replaced emoji icons with styled numbered circles, redesigned description boxes (no more progress bars)
 - [x] Fix HTML Composer prompt: updated instructions for icons-numbers layout data generation
 - [x] Fix Viewer: slides now centered — viewport-locked layout with overflow-hidden, no page scrolling
-- [ ] Test with new generation and visual verification (LLM API temporarily unavailable)
+- [x] Test with new generation and visual verification — confirmed all fixes working via OpenAI fallback
+
+## OpenAI API Fallback
+- [x] Add OPENAI_API_KEY secret to project
+- [x] Implement fallback in LLM helper: try built-in API first, fall back to OpenAI on failure (gpt-4o model)
+- [x] Test slide generation with OpenAI fallback (36 sec, 9 slides)
+- [x] Verify slide rendering fixes visually with new generation — all 3 critical issues confirmed fixed
