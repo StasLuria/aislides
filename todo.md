@@ -97,3 +97,11 @@
 - [x] Frontend: Auto-refresh preview when user saves edits (previewRefreshKey)
 - [x] Frontend: Loading state, error handling, show/hide toggle for preview
 - [x] Write vitest tests for preview (13 new tests: layout picker + data builder) — 43 total passing
+
+## Drag-and-Drop Slide Reordering on Step 1
+- [x] Install @dnd-kit/core + @dnd-kit/sortable + @dnd-kit/utilities
+- [x] Replace up/down arrow buttons with drag handle + DnD SortableContext
+- [x] Add visual feedback during drag (ghost opacity, DragOverlay with accent border/shadow)
+- [x] Auto-renumber slides after reorder (arrayMove + map renumber)
+- [x] Keep expand/collapse and edit functionality working with DnD (SortableSlideCard component)
+- [x] Write vitest tests for reorder logic (5 new DnD tests — 48 total passing)

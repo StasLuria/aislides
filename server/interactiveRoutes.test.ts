@@ -438,4 +438,97 @@ describe("Interactive Routes - Data Flow", () => {
       expect(canRemove).toBe(false);
     });
   });
+
+  describe("Drag-and-drop reordering (arrayMove)", () => {
+    it("should reorder slides using arrayMove when dragging from index 2 to 0", async () => {
+      // Import arrayMove from @dnd-kit/sortable
+      const { arrayMove } = await import("@dnd-kit/sortable");
+
+      const slides = [
+        { slide_number: 1, title: "First" },
+        { slide_number: 2, title: "Second" },
+        { slide_number: 3, title: "Third" },
+        { slide_number: 4, title: "Fourth" },
+      ];
+
+      // Drag slide at index 2 ("Third") to index 0
+      const reordered = arrayMove(slides, 2, 0);
+      const renumbered = reordered.map((s, i) => ({ ...s, slide_number: i + 1 }));
+
+      expect(renumbered[0].title).toBe("Third");
+      expect(renumbered[0].slide_number).toBe(1);
+      expect(renumbered[1].title).toBe("First");
+      expect(renumbered[1].slide_number).toBe(2);
+      expect(renumbered[2].title).toBe("Second");
+      expect(renumbered[2].slide_number).toBe(3);
+      expect(renumbered[3].title).toBe("Fourth");
+      expect(renumbered[3].slide_number).toBe(4);
+    });
+
+    it("should reorder slides using arrayMove when dragging from index 0 to last", async () => {
+      const { arrayMove } = await import("@dnd-kit/sortable");
+
+      const slides = [
+        { slide_number: 1, title: "First" },
+        { slide_number: 2, title: "Second" },
+        { slide_number: 3, title: "Third" },
+      ];
+
+      // Drag slide at index 0 ("First") to index 2 (last)
+      const reordered = arrayMove(slides, 0, 2);
+      const renumbered = reordered.map((s, i) => ({ ...s, slide_number: i + 1 }));
+
+      expect(renumbered[0].title).toBe("Second");
+      expect(renumbered[0].slide_number).toBe(1);
+      expect(renumbered[1].title).toBe("Third");
+      expect(renumbered[1].slide_number).toBe(2);
+      expect(renumbered[2].title).toBe("First");
+      expect(renumbered[2].slide_number).toBe(3);
+    });
+
+    it("should not change order when dragging to same position", async () => {
+      const { arrayMove } = await import("@dnd-kit/sortable");
+
+      const slides = [
+        { slide_number: 1, title: "First" },
+        { slide_number: 2, title: "Second" },
+        { slide_number: 3, title: "Third" },
+      ];
+
+      const reordered = arrayMove(slides, 1, 1);
+      const renumbered = reordered.map((s, i) => ({ ...s, slide_number: i + 1 }));
+
+      expect(renumbered[0].title).toBe("First");
+      expect(renumbered[1].title).toBe("Second");
+      expect(renumbered[2].title).toBe("Third");
+    });
+
+    it("should correctly find slide index by slide_number for DnD active/over IDs", () => {
+      const slides = [
+        { slide_number: 1, title: "First" },
+        { slide_number: 2, title: "Second" },
+        { slide_number: 3, title: "Third" },
+      ];
+
+      // Simulate DnD event: active.id = 3, over.id = 1
+      const activeId = 3;
+      const overId = 1;
+
+      const oldIndex = slides.findIndex((s) => s.slide_number === activeId);
+      const newIndex = slides.findIndex((s) => s.slide_number === overId);
+
+      expect(oldIndex).toBe(2);
+      expect(newIndex).toBe(0);
+    });
+
+    it("should return -1 for non-existent slide_number in DnD lookup", () => {
+      const slides = [
+        { slide_number: 1, title: "First" },
+        { slide_number: 2, title: "Second" },
+      ];
+
+      const idx = slides.findIndex((s) => s.slide_number === 99);
+      expect(idx).toBe(-1);
+    });
+  });
 });

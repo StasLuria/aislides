@@ -37,6 +37,24 @@ import type {
   WSEvent,
 } from "@/lib/api";
 import SlidePreview from "@/components/SlidePreview";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // ═══════════════════════════════════════════════════════
 // STEP DEFINITIONS
@@ -49,6 +67,166 @@ const STEPS = [
 ];
 
 type InteractiveStep = "loading" | "outline" | "writing" | "content" | "assembling" | "completed" | "error";
+
+// ═══════════════════════════════════════════════════════
+// SORTABLE SLIDE CARD (Step 1)
+// ═══════════════════════════════════════════════════════
+
+interface SortableSlideCardProps {
+  slide: OutlineSlideData;
+  index: number;
+  totalSlides: number;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onUpdateTitle: (title: string) => void;
+  onUpdatePurpose: (purpose: string) => void;
+  onUpdateKeyPoints: (points: string[]) => void;
+  onRemove: () => void;
+  isDragOverlay?: boolean;
+}
+
+function SortableSlideCard({
+  slide,
+  index,
+  totalSlides,
+  isExpanded,
+  onToggleExpand,
+  onUpdateTitle,
+  onUpdatePurpose,
+  onUpdateKeyPoints,
+  onRemove,
+  isDragOverlay = false,
+}: SortableSlideCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slide.slide_number });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragOverlay ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group rounded-lg border bg-secondary/20 transition-colors ${
+        isDragOverlay
+          ? "border-primary/50 bg-secondary/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20"
+          : isDragging
+            ? "border-border/30"
+            : "border-border/50 hover:bg-secondary/30"
+      }`}
+    >
+      {/* Slide header */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Drag handle & number */}
+        <button
+          className="flex items-center gap-1 shrink-0 cursor-grab active:cursor-grabbing touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+          <span className="font-mono text-xs text-muted-foreground w-6 text-right">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+        </button>
+
+        {/* Title input */}
+        <Input
+          value={slide.title}
+          onChange={(e) => onUpdateTitle(e.target.value)}
+          className="flex-1 bg-transparent border-0 px-0 text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0 h-8"
+          placeholder="Заголовок слайда"
+        />
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onToggleExpand}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={onRemove}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/30 mt-0">
+          <div className="pt-3">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+              Цель слайда
+            </label>
+            <Input
+              value={slide.purpose}
+              onChange={(e) => onUpdatePurpose(e.target.value)}
+              className="bg-background/50 border-border/50 text-xs"
+              placeholder="Зачем этот слайд нужен"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
+              Ключевые тезисы
+            </label>
+            {slide.key_points.map((point, pi) => (
+              <div key={pi} className="flex items-center gap-2 mb-1.5">
+                <span className="text-[10px] text-muted-foreground/50 font-mono w-4 shrink-0">
+                  {pi + 1}.
+                </span>
+                <Input
+                  value={point}
+                  onChange={(e) => {
+                    const newPoints = [...slide.key_points];
+                    newPoints[pi] = e.target.value;
+                    onUpdateKeyPoints(newPoints);
+                  }}
+                  className="bg-background/50 border-border/50 text-xs h-7"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => {
+                    const newPoints = slide.key_points.filter((_, i) => i !== pi);
+                    onUpdateKeyPoints(newPoints);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground h-7 mt-1"
+              onClick={() => onUpdateKeyPoints([...slide.key_points, ""])}
+            >
+              <Plus className="w-3 h-3 mr-1" /> Добавить тезис
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Interactive() {
   const params = useParams<{ id: string }>();
@@ -68,9 +246,40 @@ export default function Interactive() {
   const [isSaving, setIsSaving] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  const [activeSlideId, setActiveSlideId] = useState<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── DnD sensors ────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveSlideId(event.active.id as number);
+    setExpandedSlide(null); // collapse all during drag
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveSlideId(null);
+
+    if (!over || !outline || active.id === over.id) return;
+
+    const oldIndex = outline.slides.findIndex((s) => s.slide_number === active.id);
+    const newIndex = outline.slides.findIndex((s) => s.slide_number === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(outline.slides, oldIndex, newIndex);
+    // Renumber
+    const renumbered = reordered.map((s, i) => ({ ...s, slide_number: i + 1 }));
+    setOutline({ ...outline, slides: renumbered });
+  };
 
   // ── Load initial state ──────────────────────────────
   useEffect(() => {
@@ -495,129 +704,57 @@ export default function Interactive() {
               />
             </div>
 
-            {/* Slides list */}
-            <div className="space-y-2">
-              {outline.slides.map((slide, index) => (
-                <div
-                  key={`slide-${index}`}
-                  className="group rounded-lg border border-border/50 bg-secondary/20 hover:bg-secondary/30 transition-colors"
-                >
-                  {/* Slide header */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    {/* Drag handle & number */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <GripVertical className="w-4 h-4 text-muted-foreground/30" />
-                      <span className="font-mono text-xs text-muted-foreground w-6 text-right">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-
-                    {/* Title input */}
-                    <Input
-                      value={slide.title}
-                      onChange={(e) => updateSlideTitle(index, e.target.value)}
-                      className="flex-1 bg-transparent border-0 px-0 text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0 h-8"
-                      placeholder="Заголовок слайда"
+            {/* Slides list with drag-and-drop */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={outline.slides.map((s) => s.slide_number)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {outline.slides.map((slide, index) => (
+                    <SortableSlideCard
+                      key={slide.slide_number}
+                      slide={slide}
+                      index={index}
+                      totalSlides={outline.slides.length}
+                      isExpanded={expandedSlide === index}
+                      onToggleExpand={() => setExpandedSlide(expandedSlide === index ? null : index)}
+                      onUpdateTitle={(title) => updateSlideTitle(index, title)}
+                      onUpdatePurpose={(purpose) => updateSlidePurpose(index, purpose)}
+                      onUpdateKeyPoints={(points) => updateSlideKeyPoints(index, points)}
+                      onRemove={() => removeSlide(index)}
                     />
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => moveSlide(index, "up")}
-                        disabled={index === 0}
-                      >
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => moveSlide(index, "down")}
-                        disabled={index === outline.slides.length - 1}
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setExpandedSlide(expandedSlide === index ? null : index)}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => removeSlide(index)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Expanded details */}
-                  {expandedSlide === index && (
-                    <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/30 mt-0">
-                      <div className="pt-3">
-                        <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                          Цель слайда
-                        </label>
-                        <Input
-                          value={slide.purpose}
-                          onChange={(e) => updateSlidePurpose(index, e.target.value)}
-                          className="bg-background/50 border-border/50 text-xs"
-                          placeholder="Зачем этот слайд нужен"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-                          Ключевые тезисы
-                        </label>
-                        {slide.key_points.map((point, pi) => (
-                          <div key={pi} className="flex items-center gap-2 mb-1.5">
-                            <span className="text-[10px] text-muted-foreground/50 font-mono w-4 shrink-0">
-                              {pi + 1}.
-                            </span>
-                            <Input
-                              value={point}
-                              onChange={(e) => {
-                                const newPoints = [...slide.key_points];
-                                newPoints[pi] = e.target.value;
-                                updateSlideKeyPoints(index, newPoints);
-                              }}
-                              className="bg-background/50 border-border/50 text-xs h-7"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 shrink-0"
-                              onClick={() => {
-                                const newPoints = slide.key_points.filter((_, i) => i !== pi);
-                                updateSlideKeyPoints(index, newPoints);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3 text-muted-foreground" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-muted-foreground h-7 mt-1"
-                          onClick={() => updateSlideKeyPoints(index, [...slide.key_points, ""])}
-                        >
-                          <Plus className="w-3 h-3 mr-1" /> Добавить тезис
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+
+              {/* Drag overlay — floating card while dragging */}
+              <DragOverlay dropAnimation={null}>
+                {activeSlideId != null && (() => {
+                  const idx = outline.slides.findIndex((s) => s.slide_number === activeSlideId);
+                  const slide = outline.slides[idx];
+                  if (!slide) return null;
+                  return (
+                    <div className="rounded-lg border border-primary/50 bg-secondary/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20">
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <GripVertical className="w-4 h-4 text-primary/60" />
+                          <span className="font-mono text-xs text-primary w-6 text-right">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                        <span className="flex-1 text-sm font-medium truncate">{slide.title}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </DragOverlay>
+            </DndContext>
 
             {/* Add slide button */}
             <Button
