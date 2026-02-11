@@ -14,8 +14,8 @@ import Generate from "./pages/Generate";
 import Viewer from "./pages/Viewer";
 import History from "./pages/History";
 import AppLayout from "./components/AppLayout";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <AppLayout>
       <Switch>

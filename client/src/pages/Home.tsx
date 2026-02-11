@@ -21,6 +21,7 @@ import { THEME_PRESETS } from "@/lib/constants";
 const HERO_BG = "https://private-us-east-1.manuscdn.com/sessionFile/KBKMulqyrRTtBkQ7DeuSuk/sandbox/fEV2zCiRVgoVEHmhF3i7FE-img-1_1770801497000_na1fn_aGVyby1hYnN0cmFjdC1kYXJr.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvS0JLTXVscXlyUlR0QmtRN0RldVN1ay9zYW5kYm94L2ZFVjJ6Q2lSVmdvVkVIbWhGM2k3RkUtaW1nLTFfMTc3MDgwMTQ5NzAwMF9uYTFmbl9hR1Z5YnkxaFluTjBjbUZqZEMxa1lYSnIucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=LZlCpAF7k39vnxKR-fYXrbMuJk1GdZcoNJny-6LmeJ3WYK4wloe-hhsrJmYFA1P4-NLzjW5mZ~uZ0sdj4QTS85hYQ79w2Jz7zGEfNQxVC-XJgGuluGsuska92Rt4vQwB3hHgQ3551NZLIZPJkrKfdnkiz5DAecFD5GFSzb6kr9FrJTPbwUUltMSU1KQsrfAAfxjNSIw8V6n54vXlo3h8tLHCrkCUwJeRacYuR1P5-qSVj~~EiHZGJNrzmpMQ~p21YsZVwqWj4CePsXVL~IfhCTl334t4Awq25MUYG-su9Nnoq~LOfHXlkWwBZnauyi-Qhkoww6ec~geIElOz2QefMg__";
 
 export default function Home() {
+
   const [, navigate] = useLocation();
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<GenerationMode>("batch");

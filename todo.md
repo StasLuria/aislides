@@ -1,35 +1,52 @@
 # Frontend ↔ Backend Integration
 
 ## Phase 1: Review
-- [ ] Check backend API routes and base URL
-- [ ] Check WebSocket endpoint format
-- [ ] Review current frontend API client
+- [x] Check backend API routes and base URL
+- [x] Check WebSocket endpoint format
+- [x] Review current frontend API client
 
 ## Phase 2: Configure Connection
-- [ ] Add .env file with API_BASE_URL and WS_BASE_URL
-- [ ] Configure Vite proxy for API requests (dev mode)
-- [ ] Handle CORS if needed
+- [x] Add .env file with API_BASE_URL and WS_BASE_URL
+- [x] Configure Vite proxy for API requests (dev mode)
+- [x] Handle CORS if needed
 
 ## Phase 3: Update API Client
-- [ ] Handle real backend response formats
-- [ ] Add error handling for network failures
-- [ ] Fix WebSocket reconnection logic
-- [ ] Handle presentation HTML fetching from result_urls
+- [x] Handle real backend response formats
+- [x] Add error handling for network failures
+- [x] Fix WebSocket reconnection logic
+- [x] Handle presentation HTML fetching from result_urls
 
 ## Phase 4: Test Full Cycle
-- [ ] Start backend server
-- [ ] Create presentation via frontend form
-- [ ] Verify WebSocket progress events
-- [ ] View completed presentation in Viewer
-- [ ] Test History page with real data
+- [x] Start backend server
+- [x] Create presentation via frontend form
+- [x] Verify WebSocket progress events
+- [x] View completed presentation in Viewer
+- [x] Test History page with real data
 
 ## Phase 5: Docker Compose
-- [ ] Add frontend Dockerfile
-- [ ] Add frontend service to docker-compose.yml
-- [ ] Configure nginx or reverse proxy
-- [ ] Test unified deployment
+- [x] Add frontend Dockerfile
+- [x] Add frontend service to docker-compose.yml
+- [x] Configure nginx or reverse proxy
+- [x] Test unified deployment
 
 ## Phase 6: Polish
-- [ ] Fix any issues found during testing
-- [ ] Improve error messages
-- [ ] Add loading states
+- [x] Fix any issues found during testing
+- [x] Improve error messages
+- [x] Add loading states
+
+## Bug Fix: POST /presentations 500 error on deployed version
+- [x] Resolve conflicts from web-db-user upgrade (keep existing pages)
+- [x] Add Express proxy routes for /api/v1/* and /ws/* to forward to FastAPI backend
+- [x] Configure VITE_BACKEND_URL secret for FastAPI backend URL
+- [x] Test full cycle on deployed version
+
+## Rewrite Backend in Node.js (integrated into Manus project)
+- [x] Study Python backend pipeline, prompts, templates
+- [x] Create Drizzle schema for presentations table
+- [x] Build presentation generation pipeline with invokeLLM
+- [x] Create API endpoints (create, list, get, delete presentations)
+- [x] Add WebSocket support for real-time progress
+- [x] Port HTML slide templates from Python to Node.js
+- [x] Connect frontend to new tRPC/Express endpoints
+- [x] Write vitest tests for backend
+- [x] Test full end-to-end flow

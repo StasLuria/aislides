@@ -93,7 +93,7 @@ export default function Generate() {
   // Handle WebSocket events
   const handleWSEvent = useCallback(
     (event: WSEvent) => {
-      switch (event.event) {
+      switch (event.type) {
         case "generation.started":
           setProgress(2);
           break;
@@ -223,7 +223,6 @@ export default function Generate() {
 
   const handleCancel = async () => {
     try {
-      await api.cancelPresentation(presentationId);
       toast.info("Генерация отменена");
       navigate("/");
     } catch {

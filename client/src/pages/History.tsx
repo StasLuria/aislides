@@ -61,12 +61,7 @@ const STATUS_CONFIG: Record<
     color: "text-muted-foreground",
     bgColor: "bg-muted/50",
   },
-  waiting_for_user: {
-    label: "Ожидание",
-    icon: AlertCircle,
-    color: "text-amber-400",
-    bgColor: "bg-amber-400/10",
-  },
+
 };
 
 export default function History() {
@@ -77,9 +72,9 @@ export default function History() {
 
   const fetchPresentations = useCallback(async () => {
     try {
-      const result = await api.listPresentations(1, 50);
-      setPresentations(result.items);
-      setTotal(result.total);
+      const items = await api.listPresentations();
+      setPresentations(items);
+      setTotal(items.length);
     } catch (error) {
       console.error("Failed to fetch presentations:", error);
       // Show empty state instead of error for demo

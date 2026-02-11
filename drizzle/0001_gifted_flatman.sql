@@ -1,0 +1,23 @@
+CREATE TABLE `presentations` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`presentationId` varchar(64) NOT NULL,
+	`userId` int,
+	`prompt` text NOT NULL,
+	`mode` enum('batch','interactive') NOT NULL DEFAULT 'batch',
+	`status` enum('pending','processing','completed','failed','cancelled') NOT NULL DEFAULT 'pending',
+	`currentStep` varchar(64) DEFAULT 'pending',
+	`slideCount` int DEFAULT 0,
+	`progressPercent` int DEFAULT 0,
+	`config` json,
+	`pipelineState` json,
+	`finalHtmlSlides` json,
+	`resultUrls` json,
+	`errorInfo` json,
+	`title` varchar(512) DEFAULT '',
+	`language` varchar(10) DEFAULT 'ru',
+	`themeCss` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `presentations_id` PRIMARY KEY(`id`),
+	CONSTRAINT `presentations_presentationId_unique` UNIQUE(`presentationId`)
+);
