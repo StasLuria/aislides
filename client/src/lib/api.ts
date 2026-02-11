@@ -145,6 +145,20 @@ export interface InteractiveContentResponse {
   title: string;
   outline: OutlineData | null;
   content: SlideContentData[] | null;
+  images: Record<number, { url: string; prompt: string }>;
+}
+
+export interface GenerateImageResponse {
+  presentation_id: string;
+  slide_number: number;
+  image_url: string;
+  prompt: string;
+}
+
+export interface SuggestImagePromptResponse {
+  presentation_id: string;
+  slide_number: number;
+  suggested_prompt: string;
 }
 
 export interface WSErrorData {
@@ -295,6 +309,41 @@ class ApiClient {
     const { data } = await this.http.post(`/interactive/${id}/preview-slide`, {
       slide_number: slideNumber,
     });
+    return data;
+  }
+
+  async generateSlideImage(
+    id: string,
+    slideNumber: number,
+    prompt: string,
+  ): Promise<GenerateImageResponse> {
+    const { data } = await this.http.post<GenerateImageResponse>(
+      `/interactive/${id}/generate-image`,
+      { slide_number: slideNumber, prompt },
+      { timeout: 60000 }, // Image generation can take up to 60s
+    );
+    return data;
+  }
+
+  async suggestImagePrompt(
+    id: string,
+    slideNumber: number,
+  ): Promise<SuggestImagePromptResponse> {
+    const { data } = await this.http.post<SuggestImagePromptResponse>(
+      `/interactive/${id}/suggest-image-prompt`,
+      { slide_number: slideNumber },
+    );
+    return data;
+  }
+
+  async removeSlideImage(
+    id: string,
+    slideNumber: number,
+  ): Promise<{ presentation_id: string; slide_number: number; removed: boolean }> {
+    const { data } = await this.http.post(
+      `/interactive/${id}/remove-image`,
+      { slide_number: slideNumber },
+    );
     return data;
   }
 

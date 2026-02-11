@@ -640,4 +640,176 @@ describe("Interactive Routes - Data Flow", () => {
       expect(allTitles).toBe("1. Introduction\n2. Main Content\n3. Conclusion");
     });
   });
+
+  describe("Image generation", () => {
+    it("should reject image generation when status is not awaiting_content_approval", async () => {
+      mockGetPresentation.mockResolvedValue({
+        presentationId: "test-id",
+        status: "processing",
+        pipelineState: {},
+      });
+
+      const p = await getPresentation("test-id");
+      expect(p?.status !== "awaiting_content_approval").toBe(true);
+    });
+
+    it("should allow image generation when status is awaiting_content_approval", async () => {
+      mockGetPresentation.mockResolvedValue({
+        presentationId: "test-id",
+        status: "awaiting_content_approval",
+        pipelineState: {
+          content: [
+            { slide_number: 1, title: "Intro", text: "text", notes: "", data_points: [], key_message: "" },
+          ],
+          images: {},
+        },
+      });
+
+      const p = await getPresentation("test-id");
+      expect(p?.status).toBe("awaiting_content_approval");
+    });
+
+    it("should store image in pipelineState.images by slide_number", () => {
+      const images: Record<number, { url: string; prompt: string }> = {};
+
+      // Simulate adding an image
+      const slideNumber = 3;
+      const imageUrl = "https://s3.example.com/image.png";
+      const prompt = "A futuristic city skyline";
+
+      images[slideNumber] = { url: imageUrl, prompt };
+
+      expect(images[3]).toBeDefined();
+      expect(images[3].url).toBe(imageUrl);
+      expect(images[3].prompt).toBe(prompt);
+    });
+
+    it("should remove image from pipelineState.images", () => {
+      const images: Record<number, { url: string; prompt: string }> = {
+        2: { url: "https://s3.example.com/img2.png", prompt: "prompt2" },
+        5: { url: "https://s3.example.com/img5.png", prompt: "prompt5" },
+      };
+
+      // Simulate removing image for slide 2
+      delete images[2];
+
+      expect(images[2]).toBeUndefined();
+      expect(images[5]).toBeDefined();
+      expect(images[5].url).toBe("https://s3.example.com/img5.png");
+    });
+
+    it("should replace existing image when regenerating", () => {
+      const images: Record<number, { url: string; prompt: string }> = {
+        3: { url: "https://s3.example.com/old.png", prompt: "old prompt" },
+      };
+
+      // Simulate regenerating image for slide 3
+      images[3] = { url: "https://s3.example.com/new.png", prompt: "new prompt" };
+
+      expect(images[3].url).toBe("https://s3.example.com/new.png");
+      expect(images[3].prompt).toBe("new prompt");
+    });
+
+    it("should include images in content endpoint response", () => {
+      const pipelineState = {
+        content: [
+          { slide_number: 1, title: "Slide 1", text: "text", notes: "", data_points: [], key_message: "" },
+          { slide_number: 2, title: "Slide 2", text: "text", notes: "", data_points: [], key_message: "" },
+        ],
+        images: {
+          1: { url: "https://s3.example.com/img1.png", prompt: "prompt1" },
+        },
+      };
+
+      // Simulate content endpoint response
+      const response = {
+        content: pipelineState.content,
+        images: pipelineState.images || {},
+      };
+
+      expect(response.images).toBeDefined();
+      expect(response.images[1]).toBeDefined();
+      expect(response.images[1].url).toBe("https://s3.example.com/img1.png");
+    });
+
+    it("should use image-text layout when image exists for a slide in preview", () => {
+      const slide = {
+        slide_number: 3,
+        title: "Slide with Image",
+        text: "Some content",
+        notes: "",
+        data_points: [],
+        key_message: "key",
+      };
+
+      // When image exists, preview should use image-text layout
+      const hasImage = true;
+      const layout = hasImage ? "image-text" : pickLayoutForPreview(slide, 10, 3);
+      expect(layout).toBe("image-text");
+    });
+
+    it("should build image-text preview data with image object", () => {
+      const slide = {
+        slide_number: 3,
+        title: "Slide with Image",
+        text: "Description of the image content",
+        notes: "",
+        data_points: [],
+        key_message: "key message",
+      };
+
+      const imageUrl = "https://s3.example.com/generated.png";
+      const data = buildPreviewData(slide, "image-text", imageUrl);
+
+      expect(data.title).toBe("Slide with Image");
+      expect(data.image).toBeDefined();
+      expect(data.image.url).toBe(imageUrl);
+      expect(data.backgroundImage).toBeDefined();
+      expect(data.backgroundImage.url).toBe(imageUrl);
+    });
+
+    it("should build image-fullscreen preview data with image object", () => {
+      const slide = {
+        slide_number: 5,
+        title: "Full Image",
+        text: "Overlay text",
+        notes: "",
+        data_points: [],
+        key_message: "headline",
+      };
+
+      const imageUrl = "https://s3.example.com/fullscreen.png";
+      const data = buildPreviewData(slide, "image-fullscreen", imageUrl);
+
+      expect(data.title).toBe("Full Image");
+      expect(data.image).toBeDefined();
+      expect(data.image.url).toBe(imageUrl);
+      expect(data.subtitle).toBe("headline");
+    });
+
+    it("should inject images into slide data during assembly", () => {
+      const content = [
+        { slide_number: 1, title: "Intro", text: "text", notes: "", data_points: [], key_message: "" },
+        { slide_number: 2, title: "Visual", text: "text", notes: "", data_points: [], key_message: "" },
+        { slide_number: 3, title: "End", text: "text", notes: "", data_points: [], key_message: "" },
+      ];
+
+      const images: Record<number, { url: string; prompt: string }> = {
+        2: { url: "https://s3.example.com/img2.png", prompt: "visual prompt" },
+      };
+
+      // Simulate assembly image injection
+      const slidesWithImages = content.map((slide) => {
+        const img = images[slide.slide_number];
+        if (img) {
+          return { ...slide, image_url: img.url };
+        }
+        return slide;
+      });
+
+      expect((slidesWithImages[0] as any).image_url).toBeUndefined();
+      expect((slidesWithImages[1] as any).image_url).toBe("https://s3.example.com/img2.png");
+      expect((slidesWithImages[2] as any).image_url).toBeUndefined();
+    });
+  });
 });

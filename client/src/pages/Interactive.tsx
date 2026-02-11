@@ -28,6 +28,9 @@ import {
   Pencil,
   RotateCcw,
   Save,
+  ImagePlus,
+  Sparkles,
+  X,
 } from "lucide-react";
 import api from "@/lib/api";
 import type {
@@ -249,6 +252,13 @@ export default function Interactive() {
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [activeSlideId, setActiveSlideId] = useState<number | null>(null);
 
+  // Image generation state
+  const [slideImages, setSlideImages] = useState<Record<number, { url: string; prompt: string }>>({});
+  const [imagePrompts, setImagePrompts] = useState<Record<number, string>>({});
+  const [generatingImage, setGeneratingImage] = useState<number | null>(null);
+  const [suggestingPrompt, setSuggestingPrompt] = useState<number | null>(null);
+  const [showImagePanel, setShowImagePanel] = useState<number | null>(null);
+
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -321,6 +331,7 @@ export default function Interactive() {
             const contentData = await api.getInteractiveContent(presentationId);
             if (contentData.outline) setOutline(contentData.outline);
             if (contentData.content) setContent(contentData.content);
+            if (contentData.images) setSlideImages(contentData.images);
             setStep("content");
             setProgress(45);
             break;
@@ -442,6 +453,7 @@ export default function Interactive() {
           const resp = await api.getInteractiveContent(presentationId);
           if (resp.outline) setOutline(resp.outline);
           if (resp.content) setContent(resp.content);
+          if (resp.images) setSlideImages(resp.images);
           setStep("content");
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
@@ -590,6 +602,57 @@ export default function Interactive() {
       toast.error(err.message || "Ошибка перегенерации");
     } finally {
       setRegeneratingSlide(null);
+    }
+  };
+
+  // ── Image generation ─────────────────────────────────
+  const handleSuggestImagePrompt = async (slideNumber: number) => {
+    setSuggestingPrompt(slideNumber);
+    try {
+      const result = await api.suggestImagePrompt(presentationId, slideNumber);
+      setImagePrompts((prev) => ({ ...prev, [slideNumber]: result.suggested_prompt }));
+    } catch (err: any) {
+      toast.error(err.message || "Не удалось сгенерировать описание");
+    } finally {
+      setSuggestingPrompt(null);
+    }
+  };
+
+  const handleGenerateImage = async (slideNumber: number) => {
+    const prompt = imagePrompts[slideNumber];
+    if (!prompt?.trim()) {
+      toast.error("Введите описание изображения");
+      return;
+    }
+
+    setGeneratingImage(slideNumber);
+    try {
+      const result = await api.generateSlideImage(presentationId, slideNumber, prompt.trim());
+      setSlideImages((prev) => ({
+        ...prev,
+        [slideNumber]: { url: result.image_url, prompt: result.prompt },
+      }));
+      setPreviewRefreshKey((k) => k + 1);
+      toast.success(`Изображение для слайда ${slideNumber} создано`);
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка генерации изображения");
+    } finally {
+      setGeneratingImage(null);
+    }
+  };
+
+  const handleRemoveImage = async (slideNumber: number) => {
+    try {
+      await api.removeSlideImage(presentationId, slideNumber);
+      setSlideImages((prev) => {
+        const updated = { ...prev };
+        delete updated[slideNumber];
+        return updated;
+      });
+      setPreviewRefreshKey((k) => k + 1);
+      toast.success("Изображение удалено");
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка удаления");
     }
   };
 
@@ -894,6 +957,11 @@ export default function Interactive() {
                       <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0">
                         {slide.text.length} зн.
                       </span>
+                      {slideImages[slide.slide_number] && (
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium shrink-0">
+                          🖼️
+                        </span>
+                      )}
                       {isExpanded ? (
                         <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
                       ) : (
@@ -958,6 +1026,121 @@ export default function Interactive() {
                                 disabled={!isEditing}
                                 className="bg-background/50 border-border/50 text-xs min-h-[60px] disabled:opacity-80"
                               />
+                            </div>
+
+                            {/* Image generation panel */}
+                            <div className="pt-2 border-t border-border/20">
+                              {slideImages[slide.slide_number] ? (
+                                /* Image exists — show thumbnail + actions */
+                                <div className="flex items-start gap-3">
+                                  <div className="relative group w-24 h-16 rounded-md overflow-hidden border border-border/50 shrink-0">
+                                    <img
+                                      src={slideImages[slide.slide_number].url}
+                                      alt={`Иллюстрация слайда ${slide.slide_number}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <button
+                                      onClick={() => handleRemoveImage(slide.slide_number)}
+                                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-destructive/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Удалить изображение"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] text-muted-foreground truncate" title={slideImages[slide.slide_number].prompt}>
+                                      {slideImages[slide.slide_number].prompt}
+                                    </p>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setImagePrompts((prev) => ({ ...prev, [slide.slide_number]: slideImages[slide.slide_number].prompt }));
+                                        setShowImagePanel(slide.slide_number);
+                                      }}
+                                      className="text-[10px] h-6 px-2 mt-1 text-primary hover:text-primary"
+                                    >
+                                      <RotateCcw className="w-3 h-3 mr-1" />
+                                      Перегенерировать
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : showImagePanel === slide.slide_number ? (
+                                /* Image prompt input panel */
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                      Описание изображения
+                                    </label>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setShowImagePanel(null)}
+                                      className="h-5 w-5 p-0 text-muted-foreground"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Textarea
+                                      value={imagePrompts[slide.slide_number] || ""}
+                                      onChange={(e) => setImagePrompts((prev) => ({ ...prev, [slide.slide_number]: e.target.value }))}
+                                      placeholder="Опишите иллюстрацию для этого слайда..."
+                                      className="bg-background/50 border-border/50 text-xs min-h-[60px] flex-1"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleSuggestImagePrompt(slide.slide_number)}
+                                      disabled={suggestingPrompt === slide.slide_number}
+                                      className="text-[10px] h-7 gap-1"
+                                    >
+                                      {suggestingPrompt === slide.slide_number ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Sparkles className="w-3 h-3" />
+                                      )}
+                                      AI-подсказка
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleGenerateImage(slide.slide_number)}
+                                      disabled={generatingImage === slide.slide_number || !imagePrompts[slide.slide_number]?.trim()}
+                                      className="text-[10px] h-7 gap-1"
+                                    >
+                                      {generatingImage === slide.slide_number ? (
+                                        <>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          Генерация...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ImagePlus className="w-3 h-3" />
+                                          Создать
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* No image — show add button */
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowImagePanel(slide.slide_number);
+                                    if (!imagePrompts[slide.slide_number]) {
+                                      handleSuggestImagePrompt(slide.slide_number);
+                                    }
+                                  }}
+                                  className="text-[10px] h-7 gap-1 text-muted-foreground hover:text-primary"
+                                >
+                                  <ImagePlus className="w-3 h-3" />
+                                  Добавить иллюстрацию
+                                </Button>
+                              )}
                             </div>
 
                             {/* Edit/Save buttons */}

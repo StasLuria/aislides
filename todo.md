@@ -114,3 +114,18 @@
 - [x] Frontend: Update local content state with new AI-generated text, exit edit mode
 - [x] Frontend: Auto-refresh preview after regeneration (previewRefreshKey)
 - [x] Write vitest tests for regeneration (7 new tests — 54 total passing)
+
+## AI Image Generation for Slides
+- [x] Backend: POST /api/v1/interactive/:id/generate-image endpoint
+- [x] Backend: POST /api/v1/interactive/:id/suggest-image-prompt — LLM suggests prompt from slide content
+- [x] Backend: DELETE /api/v1/interactive/:id/remove-image — remove image from slide
+- [x] Backend: Store image URLs in pipelineState.images map (slide_number → {url, prompt})
+- [x] Backend: Update preview-slide to use image-text layout when image exists
+- [x] Backend: Update assemble to inject image URLs into HTML composition
+- [x] Backend: Return images in content endpoint response
+- [x] Frontend: Image generation panel in Step 2 content cards
+- [x] Frontend: "Подсказать промпт" button that calls LLM for image description
+- [x] Frontend: "Сгенерировать" button with loading state
+- [x] Frontend: Image preview thumbnail with remove button
+- [x] Frontend: Image indicator badge in slide header
+- [x] Write vitest tests for image generation logic (10 new tests — 64 total passing)

@@ -32,6 +32,8 @@ import { renderSlide, renderPresentation } from "./pipeline/templateEngine";
 import { getThemePreset } from "./pipeline/themes";
 import { wsManager } from "./wsManager";
 import { storagePut } from "./storage";
+import { generateImage } from "./_core/imageGeneration";
+import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
 
 const router = Router();
@@ -248,6 +250,7 @@ router.get("/api/v1/interactive/:id/content", async (req: Request, res: Response
       title: p.title,
       outline: pipelineState?.outline || null,
       content: pipelineState?.content || null,
+      images: pipelineState?.images || {},
     });
   } catch (error: any) {
     console.error("[Interactive] Get content error:", error);
@@ -401,6 +404,185 @@ router.post("/api/v1/interactive/:id/regenerate-slide", async (req: Request, res
 });
 
 // ═══════════════════════════════════════════════════════
+// STEP 4c: Generate image — AI-generate an illustration for a slide
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/interactive/:id/generate-image", async (req: Request, res: Response) => {
+  try {
+    const presentationId = req.params.id;
+    const p = await getPresentation(presentationId);
+
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "awaiting_content_approval") {
+      res.status(400).json({ detail: `Cannot generate image in status: ${p.status}` });
+      return;
+    }
+
+    const { slide_number, prompt } = req.body;
+
+    if (!slide_number || typeof slide_number !== "number") {
+      res.status(422).json({ detail: "slide_number is required" });
+      return;
+    }
+
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      res.status(422).json({ detail: "prompt is required" });
+      return;
+    }
+
+    const pipelineState = p.pipelineState as any;
+    const content: SlideContent[] = pipelineState?.content || [];
+
+    const slideContent = content.find((s: SlideContent) => s.slide_number === slide_number);
+    if (!slideContent) {
+      res.status(404).json({ detail: `Slide ${slide_number} not found` });
+      return;
+    }
+
+    // Generate image via AI
+    const result = await generateImage({ prompt: prompt.trim() });
+
+    if (!result.url) {
+      res.status(500).json({ detail: "Image generation returned no URL" });
+      return;
+    }
+
+    // Store image in pipelineState.images map
+    const images: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
+    images[slide_number] = { url: result.url, prompt: prompt.trim() };
+
+    await updatePresentationProgress(presentationId, {
+      pipelineState: {
+        ...pipelineState,
+        images,
+      },
+    });
+
+    res.json({
+      presentation_id: presentationId,
+      slide_number,
+      image_url: result.url,
+      prompt: prompt.trim(),
+    });
+  } catch (error: any) {
+    console.error("[Interactive] Generate image error:", error);
+    res.status(500).json({ detail: error.message || "Image generation failed" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// STEP 4d: Suggest image prompt — LLM suggests an image description
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/interactive/:id/suggest-image-prompt", async (req: Request, res: Response) => {
+  try {
+    const presentationId = req.params.id;
+    const p = await getPresentation(presentationId);
+
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    const { slide_number } = req.body;
+
+    if (!slide_number || typeof slide_number !== "number") {
+      res.status(422).json({ detail: "slide_number is required" });
+      return;
+    }
+
+    const pipelineState = p.pipelineState as any;
+    const content: SlideContent[] = pipelineState?.content || [];
+
+    const slideContent = content.find((s: SlideContent) => s.slide_number === slide_number);
+    if (!slideContent) {
+      res.status(404).json({ detail: `Slide ${slide_number} not found` });
+      return;
+    }
+
+    // Use LLM to suggest an image prompt
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert at creating image generation prompts for presentation slides. Given slide content, suggest a concise, vivid image description suitable for AI image generation. The image should be professional, relevant to the slide topic, and work well as a presentation illustration. Output ONLY the image prompt text, nothing else. Write in English for best image generation quality. Keep it under 100 words.`,
+        },
+        {
+          role: "user",
+          content: `Slide title: ${slideContent.title}\nSlide text: ${slideContent.text}\nKey message: ${slideContent.key_message || "N/A"}`,
+        },
+      ],
+    });
+
+    const suggestedPrompt = typeof response.choices?.[0]?.message?.content === "string"
+      ? response.choices[0].message.content.trim()
+      : "Professional business illustration";
+
+    res.json({
+      presentation_id: presentationId,
+      slide_number,
+      suggested_prompt: suggestedPrompt,
+    });
+  } catch (error: any) {
+    console.error("[Interactive] Suggest image prompt error:", error);
+    res.status(500).json({ detail: error.message || "Failed to suggest image prompt" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// STEP 4e: Remove image — Remove a generated image from a slide
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/interactive/:id/remove-image", async (req: Request, res: Response) => {
+  try {
+    const presentationId = req.params.id;
+    const p = await getPresentation(presentationId);
+
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "awaiting_content_approval") {
+      res.status(400).json({ detail: `Cannot remove image in status: ${p.status}` });
+      return;
+    }
+
+    const { slide_number } = req.body;
+
+    if (!slide_number || typeof slide_number !== "number") {
+      res.status(422).json({ detail: "slide_number is required" });
+      return;
+    }
+
+    const pipelineState = p.pipelineState as any;
+    const images: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
+
+    delete images[slide_number];
+
+    await updatePresentationProgress(presentationId, {
+      pipelineState: {
+        ...pipelineState,
+        images,
+      },
+    });
+
+    res.json({
+      presentation_id: presentationId,
+      slide_number,
+      removed: true,
+    });
+  } catch (error: any) {
+    console.error("[Interactive] Remove image error:", error);
+    res.status(500).json({ detail: error.message || "Failed to remove image" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
 // STEP 5: Assemble — Run theme + layout + composer + final assembly
 // ═══════════════════════════════════════════════════════
 
@@ -478,15 +660,32 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
       const slides: Array<{ layoutId: string; data: Record<string, any>; html: string }> = [];
       const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
 
+      // Get generated images from pipelineState
+      const generatedImages: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
+
       const batchSize = 5;
       for (let i = 0; i < content.length; i += batchSize) {
         const batch = content.slice(i, i + batchSize);
         const batchResults = await Promise.all(
           batch.map(async (slideContent) => {
-            const layoutName = layoutMap.get(slideContent.slide_number) || "text-slide";
+            let layoutName = layoutMap.get(slideContent.slide_number) || "text-slide";
+            const slideImage = generatedImages[slideContent.slide_number];
+
+            // Override layout to image-text if image exists (unless title/final/section)
+            if (slideImage && !["title-slide", "final-slide", "section-header"].includes(layoutName)) {
+              layoutName = "image-text";
+            }
+
             const data = await runHtmlComposer(slideContent, layoutName, theme.css_variables).catch(() =>
               buildFallbackData(slideContent, layoutName),
             );
+
+            // Inject image data into template data
+            if (slideImage) {
+              data.image = { url: slideImage.url, alt: slideContent.title };
+              data.backgroundImage = { url: slideImage.url, alt: slideContent.title };
+            }
+
             const html = renderSlide(layoutName, data);
             return { layoutId: layoutName, data, html };
           }),
@@ -600,11 +799,18 @@ router.post("/api/v1/interactive/:id/preview-slide", async (req: Request, res: R
     // Get theme preset
     const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
 
-    // Determine layout — use a quick heuristic (same logic as runLayout but without LLM)
-    const layoutName = pickLayoutForPreview(slideContent, content.length, slide_number);
+    // Check if there's a generated image for this slide
+    const images: Record<number, { url: string; prompt: string }> = pipelineState.images || {};
+    const slideImage = images[slide_number];
 
-    // Build slide data from content (simplified composer — no LLM call)
-    const slideData = buildPreviewData(slideContent, layoutName);
+    // Determine layout — use image-text if image exists (unless title/final slide)
+    let layoutName = pickLayoutForPreview(slideContent, content.length, slide_number);
+    if (slideImage && layoutName !== "title-slide" && layoutName !== "final-slide") {
+      layoutName = "image-text";
+    }
+
+    // Build slide data from content, passing image URL if available
+    const slideData = buildPreviewData(slideContent, layoutName, slideImage?.url);
 
     // Render the slide HTML
     const slideHtml = renderSlide(layoutName, slideData);
@@ -680,7 +886,7 @@ export function pickLayoutForPreview(slide: SlideContent, totalSlides: number, s
 /**
  * Build slide data for preview from content — no LLM, uses direct mapping.
  */
-export function buildPreviewData(slide: SlideContent, layoutName: string): Record<string, any> {
+export function buildPreviewData(slide: SlideContent, layoutName: string, imageUrl?: string): Record<string, any> {
   const text = slide.text || "";
   const lines = text.split("\n").filter((l) => l.trim());
 
@@ -700,6 +906,12 @@ export function buildPreviewData(slide: SlideContent, layoutName: string): Recor
     notes: slide.notes || "",
   };
 
+  // Add image data if available
+  if (imageUrl) {
+    base.image = { url: imageUrl, alt: slide.title };
+    base.backgroundImage = { url: imageUrl, alt: slide.title };
+  }
+
   switch (layoutName) {
     case "title-slide":
       return {
@@ -707,6 +919,26 @@ export function buildPreviewData(slide: SlideContent, layoutName: string): Recor
         presenterName: "",
         presentationDate: new Date().toLocaleDateString("ru-RU"),
         initials: "",
+      };
+
+    case "image-text":
+      return {
+        ...base,
+        bullets: bullets.length > 0
+          ? bullets.map((b) => {
+              const colonIdx = b.indexOf(":");
+              if (colonIdx > 0 && colonIdx < 60) {
+                return { title: b.substring(0, colonIdx).trim(), description: b.substring(colonIdx + 1).trim() };
+              }
+              return { title: b, description: "" };
+            })
+          : [{ title: text.substring(0, 100), description: "" }],
+      };
+
+    case "image-fullscreen":
+      return {
+        ...base,
+        subtitle: slide.key_message || text.substring(0, 150),
       };
 
     case "bullet-list-slide":
