@@ -948,3 +948,72 @@ describe("PATCH slide field — logic", () => {
     expect(invalidIndex >= slides.length).toBe(true);
   });
 });
+
+
+// ═══════════════════════════════════════════════════════
+// Auto-expanding text boxes — CSS overrides during editing
+// ═══════════════════════════════════════════════════════
+
+describe("generateInlineEditScript — auto-expand CSS", () => {
+  const fields = [
+    { key: "title", selector: "h1", label: "Заголовок", multiline: false },
+  ];
+
+  it("includes CSS overrides that remove overflow:hidden", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("overflow");
+    expect(script).toContain("visible");
+  });
+
+  it("includes CSS overrides that remove -webkit-line-clamp", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("line-clamp");
+    expect(script).toContain("unset");
+  });
+
+  it("includes CSS overrides that remove text-overflow:ellipsis", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("text-overflow");
+    expect(script).toContain("unset");
+  });
+
+  it("includes CSS overrides for height:auto on slide container", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("height");
+    expect(script).toContain("auto");
+  });
+
+  it("includes height reporting via postMessage", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("inline-slide-resize");
+    expect(script).toContain("scrollHeight");
+  });
+
+  it("includes MutationObserver for dynamic height tracking", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("MutationObserver");
+  });
+
+  it("reports height on input events", () => {
+    const script = generateInlineEditScript(fields);
+    expect(script).toContain("reportHeight");
+  });
+});
+
+describe("buildEditableSlideHtml — auto-expand support", () => {
+  it("generates HTML with auto-expand CSS in the inline edit script", () => {
+    const fields = [
+      { key: "title", selector: "h1", label: "Заголовок", multiline: false },
+    ];
+    const baseHtml = "<div class='slide'><h1>Test Title</h1></div>";
+    const baseCss = "body { margin: 0; }";
+    const themeCss = ":root { --primary: blue; }";
+    const fontsUrl = "https://fonts.googleapis.com/css2?family=Inter";
+
+    const result = buildEditableSlideHtml(baseHtml, baseCss, themeCss, fontsUrl, fields);
+
+    // Should contain the inline edit script with auto-expand CSS
+    expect(result).toContain("inline-slide-resize");
+    expect(result).toContain("visible");
+  });
+});

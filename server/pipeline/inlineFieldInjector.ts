@@ -466,12 +466,29 @@ export function generateInlineEditScript(
   // Add inline editing styles
   var style = document.createElement('style');
   style.textContent = \`
+    /* ═══ Slide container: allow expansion during editing ═══ */
+    .slide {
+      height: auto !important;
+      min-height: 720px !important;
+      overflow: visible !important;
+    }
+
+    /* ═══ Remove all text clamping and overflow restrictions on editable fields ═══ */
     [data-field] {
       cursor: text;
       transition: outline 0.15s ease, background 0.15s ease;
       outline: 2px solid transparent;
       outline-offset: 2px;
       border-radius: 4px;
+      /* Override clamp/ellipsis */
+      overflow: visible !important;
+      text-overflow: unset !important;
+      -webkit-line-clamp: unset !important;
+      -webkit-box-orient: unset !important;
+      display: block !important;
+      max-height: none !important;
+      white-space: pre-wrap !important;
+      word-wrap: break-word !important;
     }
     [data-field]:hover {
       outline: 2px dashed rgba(99, 102, 241, 0.5);
@@ -505,6 +522,19 @@ export function generateInlineEditScript(
     }
     [data-field] {
       position: relative;
+    }
+
+    /* ═══ Remove overflow restrictions on parent containers of editable fields ═══ */
+    .card, .bullet-row,
+    div[style*="overflow: hidden"] {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+    /* Allow flex containers to grow */
+    div[style*="flex: 1"],
+    div[style*="flex:1"] {
+      flex-shrink: 0 !important;
+      min-height: auto !important;
     }
 
     /* Image editing overlay styles */
@@ -940,6 +970,44 @@ export function generateInlineEditScript(
   // Also handle drag events on the whole slide body to prevent browser defaults
   document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
   document.body.addEventListener('drop', function(e) { e.preventDefault(); });
+
+  // ═══════════════════════════════════════════════════════
+  // HEIGHT REPORTING — notify parent when content height changes
+  // ═══════════════════════════════════════════════════════
+  var lastReportedHeight = 720;
+  function reportHeight() {
+    var slideEl = document.querySelector('.slide');
+    if (!slideEl) return;
+    var newHeight = Math.max(720, slideEl.scrollHeight);
+    if (newHeight !== lastReportedHeight) {
+      lastReportedHeight = newHeight;
+      window.parent.postMessage({
+        type: 'inline-slide-resize',
+        height: newHeight
+      }, '*');
+    }
+  }
+
+  // Observe DOM mutations for height changes (text editing, content changes)
+  if (typeof MutationObserver !== 'undefined') {
+    var observer = new MutationObserver(function() {
+      requestAnimationFrame(reportHeight);
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true
+    });
+  }
+
+  // Also report on input events (for contentEditable)
+  document.body.addEventListener('input', function() {
+    requestAnimationFrame(reportHeight);
+  });
+
+  // Initial height report
+  requestAnimationFrame(reportHeight);
 
   // Notify parent that inline editing is ready
   window.parent.postMessage({

@@ -8,6 +8,7 @@
  * 2. Makes them contentEditable
  * 3. Sends postMessage to parent on blur with changed text
  * 4. Wraps images with hover overlay for replacement (click or drag-and-drop)
+ * 5. Reports content height changes so iframe can auto-expand
  *
  * The parent (this component) listens for messages and calls the API
  * to persist changes.
@@ -15,7 +16,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Check, Loader2, MousePointerClick, ImageIcon, Upload } from "lucide-react";
+import { Check, Loader2, MousePointerClick, Upload } from "lucide-react";
 import api from "@/lib/api";
 import type { EditableSlideResponse, InlineFieldPatchResponse, SlideEditResponse } from "@/lib/api";
 
@@ -58,11 +59,18 @@ export default function InlineEditableSlide({
   const [fieldCount, setFieldCount] = useState(0);
   const [imageCount, setImageCount] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
+  // Dynamic height from iframe content
+  const [contentHeight, setContentHeight] = useState(SLIDE_H);
 
   // Debounce timer for auto-save
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const scale = Math.min(containerWidth / SLIDE_W, containerHeight / SLIDE_H);
+  // Use the larger of SLIDE_H and contentHeight for scaling
+  const effectiveHeight = Math.max(SLIDE_H, contentHeight);
+  const scale = Math.min(containerWidth / SLIDE_W, containerHeight / effectiveHeight);
+  // The outer container height adapts: if content is taller, the container grows
+  const scaledHeight = effectiveHeight * scale;
+  const outerHeight = Math.max(containerHeight, scaledHeight);
 
   // Fetch editable slide HTML
   useEffect(() => {
@@ -70,6 +78,7 @@ export default function InlineEditableSlide({
 
     const fetchEditable = async () => {
       setIsLoading(true);
+      setContentHeight(SLIDE_H); // Reset height on slide change
       try {
         const resp: EditableSlideResponse = await api.getEditableSlide(
           presentationId,
@@ -185,6 +194,15 @@ export default function InlineEditableSlide({
           setImageCount(msg.imageCount || 0);
           onReady?.(msg.fieldCount || 0);
           break;
+
+        case "inline-slide-resize": {
+          // Iframe reports new content height
+          const newHeight = msg.height;
+          if (typeof newHeight === "number" && newHeight >= SLIDE_H) {
+            setContentHeight(newHeight);
+          }
+          break;
+        }
 
         case "inline-edit-focus":
           setActiveField(msg.field);
@@ -352,22 +370,26 @@ export default function InlineEditableSlide({
         </div>
       )}
 
-      {/* Scaled iframe */}
+      {/* Scaled iframe — auto-expands when content grows */}
       <div
-        className="overflow-hidden"
+        className="overflow-auto"
         style={{
           width: containerWidth,
-          height: containerHeight,
+          height: outerHeight,
+          maxHeight: containerHeight + 200, // Allow some expansion beyond container
+          transition: "height 0.2s ease",
         }}
       >
         <div
           style={{
             width: SLIDE_W,
-            height: SLIDE_H,
+            height: effectiveHeight,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
             position: "relative",
-            top: Math.max(0, (containerHeight - SLIDE_H * scale) / 2),
+            top: effectiveHeight <= SLIDE_H
+              ? Math.max(0, (containerHeight - SLIDE_H * scale) / 2)
+              : 0,
             left: Math.max(0, (containerWidth - SLIDE_W * scale) / 2),
           }}
         >
@@ -376,7 +398,11 @@ export default function InlineEditableSlide({
               ref={iframeRef}
               srcDoc={editableHtml}
               className="border-0"
-              style={{ width: SLIDE_W, height: SLIDE_H }}
+              style={{
+                width: SLIDE_W,
+                height: effectiveHeight,
+                transition: "height 0.2s ease",
+              }}
               sandbox="allow-scripts allow-same-origin"
               tabIndex={0}
               title="Editable Slide"

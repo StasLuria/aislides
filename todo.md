@@ -534,3 +534,12 @@
 - [x] Handle image validation (file type, size limit 5MB)
 - [x] Test inline image editing across slide types (title-slide, image-text, image-fullscreen)
 - [x] Write/update vitest tests (7 new image editing tests added)
+
+## Auto-Expanding Text Boxes in Inline Editing
+- [x] Analyze how slide templates constrain text box sizes (fixed height, overflow hidden, line-clamp, text-overflow)
+- [x] Remove overflow restrictions during inline editing mode (CSS !important overrides)
+- [x] Make text containers auto-expand when content grows (height:auto, min-height, overflow:visible)
+- [x] Ensure adjacent elements reflow/shift when a text box expands (flex/grid auto-sizing)
+- [x] Handle slide container overflow gracefully (iframe dynamic height via postMessage + MutationObserver)
+- [x] Test across all slide layouts (title-slide, two-column, text-slide, image-text, final-slide)
+- [x] Write/update vitest tests (8 new auto-expand tests)
