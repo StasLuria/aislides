@@ -60,6 +60,7 @@ Your outlines produce presentations that rival McKinsey and TED Talk quality.
 - Generate content in ${language}.
 - Do NOT pad with filler slides. Only create slides that add value.
 - Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
+- CRITICAL: Slide titles MUST be SHORT — maximum 8-10 words (60 characters). Long titles get truncated in templates. Use subtitle or key_points for details.
 </rules>
 <narrative_arc_types>
 Choose the best narrative arc for the topic:
@@ -116,7 +117,8 @@ Write compelling, substantive content for a single presentation slide. Your cont
 </task>
 <content_density_rules>
 - CRITICAL: Each slide must have ENOUGH content to fill the visual space. Empty-looking slides are unacceptable.
-- For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (3-6 words) AND a description (1-2 sentences, 15-30 words).
+- For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (2-5 words, MAX 40 characters) AND a description (1 sentence, 10-25 words, MAX 150 characters).
+- CRITICAL: Keep titles SHORT (2-5 words). Keep descriptions CONCISE (1 short sentence). Avoid long compound sentences. If a point is complex, split into two bullets.
 - For data slides: provide 3-5 data points with specific numbers, percentages, or metrics.
 - For comparison slides: provide 4-5 points per side.
 - For process/timeline slides: provide 4-6 steps/events with descriptions.
@@ -359,8 +361,10 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - Output a JSON object matching the template's expected data fields.
 - Text must be concise and slide-appropriate (not paragraphs).
 - CONTENT DENSITY IS CRITICAL — every slide must look visually complete, not half-empty.
-- Bullet points: split text into EXACTLY 4-5 items, each with title (3-6 words) + description (15-30 words). NEVER less than 3 bullets.
-- Metrics (icons-numbers): provide EXACTLY 3-4 metrics. Each MUST have: value (number/percentage), label (2-4 words), description (1-2 sentences). Values should be specific numbers like "85%", "$2.4M", "3.2x", "150+".
+- Bullet points: split text into EXACTLY 4-5 items, each with title (2-5 words, MAX 40 characters) + description (10-25 words, MAX 150 characters). NEVER less than 3 bullets.
+- CRITICAL: Titles MUST be SHORT — 2-5 words maximum. Long titles get truncated. Use the description for details.
+- CRITICAL: Descriptions MUST be CONCISE — 1-2 short sentences. Avoid long compound sentences. If a point is complex, split into two bullets.
+- Metrics (icons-numbers): provide EXACTLY 3-4 metrics. Each MUST have: value (number/percentage), label (2-4 words, MAX 30 characters), description (1 short sentence, MAX 80 characters). Values should be specific numbers like "85%", "$2.4M", "3.2x", "150+".
 - Steps (process-steps): provide EXACTLY 4-5 steps with number, title, and description.
 - Timeline events: provide EXACTLY 4-6 events with date, title, and description.
 - Table data: provide at least 3 rows of data, structured as headers[] + rows[][].

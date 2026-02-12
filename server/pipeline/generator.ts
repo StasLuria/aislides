@@ -1035,8 +1035,20 @@ export async function generatePresentation(
         });
 
         // Override layouts for slides that got images
+        // Only switch to image-text if the current layout doesn't support images natively
+        const IMAGE_NATIVE_LAYOUTS = new Set([
+          "image-text", "image-fullscreen", "title-slide", "quote-slide",
+          "text-slide", "text-with-callout", "two-column", "comparison",
+          "process-steps", "timeline", "numbered-steps-v2", "checklist",
+          "pros-cons", "hero-stat", "highlight-stats",
+        ]);
         Array.from(imageMap.keys()).forEach((slideNum) => {
-          layoutMap.set(slideNum, "image-text");
+          const currentLayout = layoutMap.get(slideNum) || "text-slide";
+          if (!IMAGE_NATIVE_LAYOUTS.has(currentLayout)) {
+            layoutMap.set(slideNum, "image-text");
+          }
+          // Otherwise keep the original layout — the image will be injected into data.image
+          // and templates that don't use it will simply ignore it
         });
 
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: `Готово: ${imageMap.size} иллюстраций` });

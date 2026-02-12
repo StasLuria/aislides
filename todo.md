@@ -613,3 +613,17 @@
 
 ## Bug Fixes
 - [x] Fix slide thumbnail sidebar not scrolling past slide 7 in Viewer page (added overflow-hidden to parent + flex-1 min-h-0 to ScrollArea)
+
+## Bug Fix: Text Truncation with Ellipsis
+- [x] Fix text-slide/image-text templates: descriptions truncated with "..." instead of showing full text
+- [x] Fix title truncation: long titles cut off with "..." instead of wrapping
+- [x] Fix stats-chart/chart-text: stat descriptions truncated
+- [x] Review all templates for text-overflow: ellipsis and line-clamp that cause content loss
+- [x] Ensure autoDensity properly escalates when content overflows (increased line-clamp defaults)
+- [x] Writer Agent: generate shorter, more concise bullet descriptions (2 lines max)
+
+## Bug Fix: Layout Diversity (Too Many Identical Slide Types)
+- [x] Layout Agent uses too many image-text layouts — fixed: images no longer force layout override to image-text
+- [x] Strengthen layout selection: max 1 of each layout type per presentation
+- [x] Add layout usage tracking to prevent repetition (IMAGE_NATIVE_LAYOUTS set preserves original layouts)
+- [x] Ensure diverse mix: text-slide, two-column, stats-chart, timeline, process-steps, etc.

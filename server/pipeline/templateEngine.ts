@@ -140,8 +140,8 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       <div style="display: flex; align-items: flex-start; gap: 12px;">
         <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
         <div style="flex: 1; min-width: 0;">
-          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 15px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
-          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-label-size, 13px); line-height: var(--at-body-lh, 1.5); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 15px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-bullet-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-label-size, 13px); line-height: var(--at-body-lh, 1.5); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 3); -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
         </div>
       </div>
       {% endfor %}
@@ -400,7 +400,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-top: 12px;"></div>
     {% if companyDescription %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ companyDescription }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ companyDescription }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
@@ -604,7 +604,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
@@ -762,7 +762,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
@@ -779,7 +779,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         <div style="flex: 1; min-width: 0;">
           <div style="font-size: 13px; font-weight: 600; color: var(--text-heading-color, #111827); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;{% if item.done %} text-decoration: line-through; opacity: 0.6;{% endif %}">{{ item.title | default('') }}</div>
           {% if item.description %}
-          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ item.description }}</div>
+          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item.description }}</div>
           {% endif %}
         </div>
         {% if item.status %}
@@ -810,9 +810,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         <div class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
           <div style="font-size: 28px; font-weight: 700; color: var(--primary-accent-color, #9333ea); min-width: 70px;">{{ stat.value | default('') }}</div>
           <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.label | default('') }}</div>
             {% if stat.description %}
-            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.description }}</div>
             {% endif %}
           </div>
         </div>
@@ -839,9 +839,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
           <div style="font-size: var(--at-value-size, 28px); font-weight: 700; color: var(--primary-accent-color, #6366f1); line-height: 1;">{{ stat.value | default('') }}</div>
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: var(--at-small-size, 14px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
+          <div style="font-size: var(--at-small-size, 14px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.label | default('') }}</div>
           {% if stat.description %}
-          <div style="font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
+          <div style="font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.description }}</div>
           {% endif %}
         </div>
         {% if stat.change %}
@@ -896,9 +896,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       <div style="display: flex; align-items: flex-start; gap: 10px;">
         <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #6366f1);"></div>
         <div style="flex: 1; min-width: 0;">
-          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 14px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 14px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
           {% if bullet.description %}
-          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 3); -webkit-box-orient: vertical;">{{ bullet.description }}</div>
           {% endif %}
         </div>
       </div>
@@ -934,9 +934,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px;">
         <div style="font-size: 24px; font-weight: 700; color: var(--primary-accent-color, #6366f1); min-width: 70px;">{{ stat.value | default('') }}</div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.label | default('') }}</div>
           {% if stat.description %}
-          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
+          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stat.description }}</div>
           {% endif %}
         </div>
       </div>
@@ -962,7 +962,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     {% for scenario in scenarios | default([]) %}
     <div class="card" style="display: flex; flex-direction: column; padding: 20px; overflow: hidden; border-top: 4px solid {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }};">
       <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }}; margin-bottom: 8px;">{{ scenario.label | default('') }}</div>
-      <div style="font-size: var(--at-subtitle-size, 18px); font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ scenario.title | default('') }}</div>
+      <div style="font-size: var(--at-subtitle-size, 18px); font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ scenario.title | default('') }}</div>
       {% if scenario.value %}
       <div style="font-size: 28px; font-weight: 800; color: {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }}; margin-bottom: 8px;">{{ scenario.value }}</div>
       {% endif %}
@@ -996,7 +996,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         <span style="font-size: 18px; font-weight: 700; color: {% if loop.index == 1 %}#ffffff{% else %}var(--primary-accent-color, #6366f1){% endif %};">{{ step.number | default(loop.index) }}</span>
       </div>
       <div style="flex: 1; min-width: 0; padding-top: 4px;">
-        <div style="font-size: var(--at-body-size, 16px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ step.title | default('') }}</div>
+        <div style="font-size: var(--at-body-size, 16px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step.title | default('') }}</div>
         {% if step.description %}
         <div style="font-size: var(--at-small-size, 13px); color: var(--text-body-color, #4b5563); margin-top: 4px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ step.description }}</div>
         {% endif %}
@@ -1028,7 +1028,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
           {% if loop.index % 2 == 1 %}
           <div style="margin-bottom: 12px; min-height: 80px; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
+            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
             {% if event.description %}
             <div style="font-size: var(--at-tiny-size, 11px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.description }}</div>
             {% endif %}
@@ -1038,7 +1038,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
           <div style="font-size: 11px; font-weight: 600; color: var(--primary-accent-color, #6366f1); margin-top: 6px; margin-bottom: 6px;">{{ event.date | default('') }}</div>
           {% if loop.index % 2 == 0 %}
           <div style="min-height: 80px;">
-            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
+            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
             {% if event.description %}
             <div style="font-size: var(--at-tiny-size, 11px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.description }}</div>
             {% endif %}
