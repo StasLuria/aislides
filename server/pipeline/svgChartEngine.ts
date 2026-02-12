@@ -79,9 +79,56 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function truncateLabel(label: string, maxLen: number = 12): string {
+function truncateLabel(label: string, maxLen: number = 18): string {
   if (label.length <= maxLen) return label;
   return label.substring(0, maxLen - 1) + "…";
+}
+
+/**
+ * Split a long label into multiple lines for SVG <text> rendering.
+ * Returns an array of tspan-ready lines.
+ */
+function wrapLabel(label: string, maxCharsPerLine: number = 14): string[] {
+  if (label.length <= maxCharsPerLine) return [label];
+  
+  const words = label.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+  
+  for (const word of words) {
+    if (currentLine.length === 0) {
+      currentLine = word;
+    } else if ((currentLine + " " + word).length <= maxCharsPerLine) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  
+  // Max 2 lines, truncate if more
+  if (lines.length > 2) {
+    return [lines[0], truncateLabel(lines.slice(1).join(" "), maxCharsPerLine)];
+  }
+  return lines;
+}
+
+/**
+ * Render a multi-line SVG label using <text> with <tspan> elements.
+ */
+function renderWrappedLabel(label: string, x: number, y: number, maxChars: number = 14, fontSize: number = 10): string {
+  const lines = wrapLabel(label, maxChars);
+  if (lines.length === 1) {
+    return `<text x="${x}" y="${y}" text-anchor="middle" fill="#6b7280" font-size="${fontSize}" font-family="Inter, sans-serif">${escapeXml(lines[0])}</text>`;
+  }
+  // Multi-line: shift first line up by half the total height
+  const lineHeight = fontSize + 2;
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+  const tspans = lines.map((line, i) => 
+    `<tspan x="${x}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+  ).join("");
+  return `<text x="${x}" y="${startY}" text-anchor="middle" fill="#6b7280" font-size="${fontSize}" font-family="Inter, sans-serif">${tspans}</text>`;
 }
 
 function formatValue(value: number, unit?: string): string {
@@ -106,7 +153,7 @@ export function renderBarChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 20, bottom: 50, left: 60 };
+  const margin = { top: 30, right: 20, bottom: 65, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -146,7 +193,7 @@ export function renderBarChart(config: ChartConfig): string {
         <animate attributeName="y" from="${margin.top + chartH}" to="${y}" dur="0.6s" fill="freeze" />
       </rect>
       ${valueLabel}
-      <text x="${labelX}" y="${height - margin.bottom + 18}" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label))}</text>
+      ${renderWrappedLabel(d.label, labelX, height - margin.bottom + 16, 16, 10)}
     </g>`;
   });
 
@@ -188,7 +235,7 @@ export function renderHorizontalBarChart(config: ChartConfig): string {
     }
 
     return `<g>
-      <text x="${margin.left - 8}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 16))}</text>
+      <text x="${margin.left - 8}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))}</text>
       <rect x="${margin.left}" y="${y}" width="${barW}" height="${barHeight}" rx="4" fill="${color}" opacity="0.9">
         <animate attributeName="width" from="0" to="${barW}" dur="0.6s" fill="freeze" />
       </rect>
@@ -212,7 +259,7 @@ export function renderLineChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 30, bottom: 50, left: 60 };
+  const margin = { top: 30, right: 30, bottom: 65, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -255,7 +302,7 @@ export function renderLineChart(config: ChartConfig): string {
     return `<g>
       <circle cx="${p.x}" cy="${p.y}" r="4" fill="white" stroke="${lineColor}" stroke-width="2.5" />
       ${valueLabel}
-      <text x="${p.x}" y="${height - margin.bottom + 18}" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(truncateLabel(p.d.label))}</text>
+      ${renderWrappedLabel(p.d.label, p.x, height - margin.bottom + 16, 16, 10)}
     </g>`;
   });
 
@@ -343,7 +390,7 @@ export function renderPieChart(config: ChartConfig): string {
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 14))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))} (${pct}%)</text>
       </g>`;
     }).join("\n    ");
   }
@@ -418,7 +465,7 @@ export function renderDonutChart(config: ChartConfig): string {
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 14))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))} (${pct}%)</text>
       </g>`;
     }).join("\n    ");
   }

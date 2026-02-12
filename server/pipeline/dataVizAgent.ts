@@ -170,6 +170,9 @@ const SKIP_CHART_LAYOUTS = new Set([
   "title-slide", "final-slide", "section-header", "quote-slide",
   "image-text", "image-fullscreen", "agenda-table-of-contents",
   "checklist", "pros-cons",
+  // Additional layouts that are self-sufficient without charts
+  "text-slide", "text-with-callout", "two-column", "icons-numbers",
+  "process-steps", "timeline", "team-profiles", "comparison-table",
 ]);
 
 /** Layouts that already have chart support */
@@ -343,7 +346,7 @@ Extract chartable data as JSON.`;
 export async function runDataVizAgent(
   content: SlideContent[],
   layoutMap: Map<number, string>,
-  maxCharts: number = 6,
+  maxCharts: number = 3,
   onProgress?: (message: string) => void,
 ): Promise<DataVizResult> {
   const decisions: DataVizDecision[] = [];
@@ -378,13 +381,33 @@ export async function runDataVizAgent(
     }
   }
 
-  // Phase 3: Sort by confidence and limit
+  // Phase 3: Sort by confidence and ensure chart type diversity
   decisions.sort((a, b) => {
     const confOrder = { high: 0, medium: 1, low: 2 };
     return confOrder[a.confidence] - confOrder[b.confidence];
   });
 
-  const selectedDecisions = decisions.slice(0, maxCharts);
+  // Enforce chart type diversity: avoid using the same chart type twice
+  const selectedDecisions: DataVizDecision[] = [];
+  const usedChartTypes = new Set<ChartType>();
+  const DIVERSE_CHART_ROTATION: ChartType[] = ["bar", "donut", "horizontal-bar", "line", "pie"];
+  
+  for (const decision of decisions) {
+    if (selectedDecisions.length >= maxCharts) break;
+    
+    if (usedChartTypes.has(decision.chartType)) {
+      // Find an alternative chart type that hasn't been used
+      const alternative = DIVERSE_CHART_ROTATION.find(t => !usedChartTypes.has(t));
+      if (alternative) {
+        decision.chartType = alternative;
+      } else {
+        continue; // Skip if all chart types are already used
+      }
+    }
+    
+    usedChartTypes.add(decision.chartType);
+    selectedDecisions.push(decision);
+  }
 
   // Phase 4: Generate SVG charts
   if (selectedDecisions.length > 0) {

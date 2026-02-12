@@ -633,3 +633,10 @@
 - [x] Verify layout diversity — 6 unique layout types: title, highlight-stats, image-text, chart-text, stats-chart, two-column
 - [x] Verify thumbnail sidebar scrolling works for all slides (all 11 thumbnails accessible)
 - [x] Verify keyboard arrow navigation (left/right) switches slides (handler works, needs page focus not iframe focus)
+
+## Bug Fix: Chart Issues (Labels, Frequency, Diversity)
+- [x] Fix chart axis labels truncated for long Russian words (increased truncateLabel to 18, added wrapLabel with multi-line SVG tspan rendering)
+- [x] Reduce chart frequency — maxCharts reduced from 6 to 3, added 8 more layouts to SKIP_CHART_LAYOUTS
+- [x] Improve chart type diversity — added diversity enforcement: no duplicate chart types per presentation
+- [x] Update dataVizAgent to limit chart assignments (max 3 per presentation)
+- [x] Update SVG chart rendering to handle long labels (word wrap via renderWrappedLabel, increased bottom margins)
