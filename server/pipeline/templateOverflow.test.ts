@@ -137,8 +137,8 @@ describe("Template Overflow Protection — All Templates", () => {
         opportunities: { title: "O", items: [longItem] },
         threats: { title: "T", items: [longItem] },
       });
-      // Should have line-clamp for each quadrant's items
-      const clampCount = (html.match(/-webkit-line-clamp: 2/g) || []).length;
+      // Should have line-clamp for each quadrant's items (may use CSS variable or hardcoded)
+      const clampCount = (html.match(/-webkit-line-clamp:/g) || []).length;
       expect(clampCount).toBeGreaterThanOrEqual(4); // At least one per quadrant item
     });
 

@@ -379,3 +379,28 @@
 - [x] Verify roadmap renders alternating top/bottom milestones correctly
 - [x] All 520 tests passing, no regressions
 
+
+## Sprint 7: Adaptive Typography
+
+- [x] Design adaptive typography system (CSS variables + density classes: normal/compact/dense)
+- [x] Implement CSS utility classes (.density-compact, .density-dense) with scaled CSS variables
+- [x] Implement computeDensity() function — analyzes item count, text length, title length
+- [x] Implement injectDensityClass() — adds density class to root div of rendered HTML
+- [x] Apply adaptive typography to text-slide (var(--at-title-size), var(--at-body-size), etc.)
+- [x] Apply adaptive typography to two-column (var(--at-card-padding), var(--at-small-size))
+- [x] Apply adaptive typography to comparison (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to timeline (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to process-steps (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to icons-numbers (var(--at-value-size), var(--at-label-size))
+- [x] Apply adaptive typography to team-profiles (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to agenda-table-of-contents (var(--at-title-size))
+- [x] Apply adaptive typography to swot-analysis (var(--at-title-size), var(--at-bullet-clamp))
+- [x] Apply adaptive typography to checklist (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to pros-cons (var(--at-title-size), var(--at-small-size))
+- [x] Apply adaptive typography to funnel (var(--at-title-size))
+- [x] Apply adaptive typography to roadmap (var(--at-title-size))
+- [x] Apply adaptive typography to table-slide, chart-slide, logo-grid, waterfall, pyramid, matrix-2x2
+- [x] Apply adaptive typography to highlight-stats (var(--at-value-size), var(--at-label-size))
+- [x] Write 73 vitest tests for adaptive typography (adaptiveTypography.test.ts)
+- [x] Visual testing: 30 slides at 3 density levels, 0/30 overflow, all readable
+- [x] All 593 tests passing, no regressions
