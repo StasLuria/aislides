@@ -712,3 +712,28 @@
 - [x] Ensure image prompts match presentation theme/mood
 - [x] Write/update vitest tests for improved image prompt generation
 - [x] Test with real generation and verify image relevance (2/3 images cybersecurity-themed, slide 9 excellent)
+
+## Bug Fix: Title Slide Fake Author/Date
+- [x] Remove "Аналитик 23 мая 2024 г." from title slide — fake author/date data appearing
+- [x] Check title-slide template for author/date fields and remove or make them optional
+- [x] Ensure HTML Composer doesn't generate fake author metadata
+
+## Bug Fix: Chart Label Readability
+- [x] Fix chart axis labels truncated/overlapping for Russian text (e.g., "емя реагирования ...")
+- [x] Fix horizontal bar chart: labels cut off, values overlap with bars
+- [x] Increase SVG chart margins and font sizes for better readability
+- [x] Fix dual-chart right panel: horizontal bar labels not readable
+
+## Bug Fix: Non-Editable Fields in Editor
+- [x] Identify which slide layout has non-editable fields (checklist layout with grid cards)
+- [x] Fix checklist layout: added CHECKLIST_TITLE, CHECKLIST_DESC, CHECKLIST_STATUS selectors
+- [x] Fix inlineFieldInjector selectors to match actual rendered HTML structure for all 30+ layouts
+- [x] Ensure title, description, and severity/badge fields inside cards are all editable
+- [x] Added comprehensive editable field support for: comparison, pros-cons, swot-analysis, pyramid, matrix-2x2, roadmap, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout, dual-chart, risk-matrix, team-profiles
+
+## Bug Fix: Image Style Diversity
+- [x] Images are all futuristic/sci-fi style regardless of topic
+- [x] Add variety of image styles: business photography, flat illustration, isometric, abstract, realistic
+- [x] Rotate image styles across slides to avoid monotony (deterministic rotation based on slide index)
+- [x] Make image style match content type (data → abstract, people → photography, tech → modern)
+- [x] Added 8-12 diverse styles per topic category with content-aware selection

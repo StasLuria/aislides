@@ -438,7 +438,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - You can use *italic* markers for secondary emphasis. They will be rendered as <em> tags.
 </rules>
 <layout_schemas>
-- title-slide: {title, description, presenterName, initials, presentationDate, image?}
+- title-slide: {title, description, image?} — Do NOT include presenterName, initials, or presentationDate unless explicitly provided by the user
 - section-header: {title, subtitle}
 - text-slide: {title, bullets: [{title, description}], icon?}
 - two-column: {title, leftColumn: {title, bullets: [string]}, rightColumn: {title, bullets: [string]}}

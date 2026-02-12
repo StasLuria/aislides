@@ -508,7 +508,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       data.description = content.text.substring(0, 200);
       data.presenterName = "";
       data.initials = "";
-      data.presentationDate = new Date().toLocaleDateString("ru-RU");
+      data.presentationDate = "";
       break;
     case "section-header":
       data.subtitle = content.key_message || content.text.substring(0, 150);

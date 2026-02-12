@@ -1,6 +1,9 @@
 /**
  * Image Prompt Engine — generates high-quality, context-aware image prompts
  * for presentation slides using full slide content, theme, and content analysis.
+ * 
+ * Key improvement: Each slide gets a UNIQUE visual style from a diverse pool,
+ * preventing repetitive "futuristic" or "same-style" images across the presentation.
  */
 
 import { invokeLLM } from "../_core/llm";
@@ -39,11 +42,38 @@ export interface EnrichedSlideInfo {
 }
 
 // ═══════════════════════════════════════════════════════
+// DIVERSE VISUAL STYLE POOL
+// ═══════════════════════════════════════════════════════
+
+/**
+ * A pool of diverse visual styles that can be applied to ANY topic.
+ * Each style produces a visually distinct image.
+ */
+const VISUAL_STYLE_POOL = [
+  "Clean flat vector illustration with bold geometric shapes",
+  "Soft watercolor-style digital painting with organic textures",
+  "Isometric 3D illustration with clean lines and soft shadows",
+  "Minimalist line art with selective color accents",
+  "Photorealistic conceptual still life with dramatic lighting",
+  "Abstract gradient mesh composition with flowing forms",
+  "Paper cut-out layered illustration with depth and shadows",
+  "Blueprint-style technical drawing with modern color overlay",
+  "Low-poly 3D render with faceted surfaces and warm lighting",
+  "Aerial/bird's-eye view illustration with miniature details",
+  "Duotone photography-style composition with high contrast",
+  "Hand-drawn sketch style with digital color enhancement",
+  "Glassmorphism-inspired composition with translucent layers",
+  "Retro-modern illustration combining vintage elements with contemporary design",
+  "Macro photography style showing intricate details and textures",
+];
+
+// ═══════════════════════════════════════════════════════
 // TOPIC-AWARE STYLE MAPPING
 // ═══════════════════════════════════════════════════════
 
 interface StyleGuide {
-  stylePrefix: string;
+  /** Multiple style prefixes — one is chosen per slide for diversity */
+  stylePrefixes: string[];
   preferredElements: string[];
   avoidElements: string[];
   colorGuidance: string;
@@ -51,73 +81,139 @@ interface StyleGuide {
 
 const TOPIC_STYLE_MAP: Record<string, StyleGuide> = {
   technology: {
-    stylePrefix: "Futuristic 3D render",
-    preferredElements: [
-      "glowing circuit patterns", "holographic interfaces", "floating data streams",
-      "neural network visualizations", "abstract digital landscapes", "geometric wireframes",
+    stylePrefixes: [
+      "Clean flat vector illustration of",
+      "Isometric 3D illustration showing",
+      "Abstract gradient composition representing",
+      "Minimalist line art depicting",
+      "Low-poly 3D render of",
+      "Blueprint-style technical visualization of",
+      "Glassmorphism-inspired composition showing",
     ],
-    avoidElements: ["old computers", "floppy disks", "generic office scenes"],
+    preferredElements: [
+      "circuit patterns", "digital interfaces", "data streams",
+      "neural network visualizations", "abstract digital landscapes", "geometric wireframes",
+      "connected nodes", "flowing data particles", "modular components",
+    ],
+    avoidElements: ["old computers", "floppy disks", "generic office scenes", "cliche robot faces"],
     colorGuidance: "electric blues, neon cyans, deep purples with luminous accents",
   },
   finance: {
-    stylePrefix: "Clean minimalist illustration",
+    stylePrefixes: [
+      "Clean minimalist illustration of",
+      "Isometric 3D visualization of",
+      "Photorealistic conceptual still life showing",
+      "Abstract gradient mesh representing",
+      "Flat vector infographic-style illustration of",
+      "Paper cut-out layered illustration of",
+    ],
     preferredElements: [
       "abstract growth curves", "geometric bar compositions", "golden ratio spirals",
       "ascending arrow formations", "crystal-clear data visualizations", "balanced scales",
+      "stacked coins as architecture", "financial dashboard elements",
     ],
-    avoidElements: ["money piles", "piggy banks", "generic coins"],
+    avoidElements: ["money piles", "piggy banks", "generic coins", "dollar signs"],
     colorGuidance: "deep navy, emerald green, gold accents on clean white",
   },
   healthcare: {
-    stylePrefix: "Modern medical illustration",
+    stylePrefixes: [
+      "Soft watercolor-style digital painting of",
+      "Clean flat vector illustration of",
+      "Isometric 3D medical illustration of",
+      "Minimalist line art with color accents showing",
+      "Macro photography style revealing",
+      "Abstract organic composition representing",
+    ],
     preferredElements: [
       "molecular structures", "DNA helixes", "abstract cellular patterns",
       "clean laboratory environments", "medical technology interfaces", "organic flowing forms",
+      "heartbeat rhythms", "protective shields",
     ],
-    avoidElements: ["scary medical instruments", "blood", "sick patients"],
+    avoidElements: ["scary medical instruments", "blood", "sick patients", "needles"],
     colorGuidance: "calming blues, fresh greens, clean whites with subtle teal accents",
   },
   education: {
-    stylePrefix: "Warm isometric illustration",
+    stylePrefixes: [
+      "Warm isometric illustration of",
+      "Hand-drawn sketch style with digital colors showing",
+      "Paper cut-out layered illustration of",
+      "Flat vector illustration with friendly colors depicting",
+      "Soft watercolor-style painting of",
+      "Retro-modern illustration of",
+    ],
     preferredElements: [
       "open books with floating knowledge", "interconnected concept maps",
       "light bulb metaphors", "growing trees of knowledge", "collaborative learning spaces",
+      "puzzle pieces coming together", "pathways of discovery",
     ],
     avoidElements: ["boring classrooms", "chalkboards", "generic school supplies"],
     colorGuidance: "warm oranges, friendly yellows, inviting blues with natural greens",
   },
   energy: {
-    stylePrefix: "Dynamic environmental illustration",
+    stylePrefixes: [
+      "Dynamic environmental illustration of",
+      "Aerial bird's-eye view illustration of",
+      "Clean flat vector illustration of",
+      "Photorealistic conceptual composition of",
+      "Isometric 3D landscape showing",
+      "Abstract gradient composition representing",
+    ],
     preferredElements: [
       "wind turbines in dramatic landscapes", "solar panel arrays reflecting sunlight",
       "flowing energy streams", "sustainable city concepts", "nature-technology fusion",
+      "green infrastructure", "renewable energy grids",
     ],
-    avoidElements: ["pollution", "oil rigs", "dark factories"],
+    avoidElements: ["pollution", "oil rigs", "dark factories", "smoke stacks"],
     colorGuidance: "vibrant greens, sky blues, solar golds with earth tones",
   },
   marketing: {
-    stylePrefix: "Bold creative composition",
+    stylePrefixes: [
+      "Bold creative composition showing",
+      "Flat vector illustration with dynamic colors of",
+      "Isometric 3D illustration of",
+      "Abstract gradient mesh representing",
+      "Duotone high-contrast composition of",
+      "Paper cut-out layered illustration of",
+    ],
     preferredElements: [
       "abstract target/bullseye compositions", "dynamic funnel visualizations",
       "connected network graphs", "megaphone/amplification metaphors", "growth trajectories",
+      "audience engagement visuals", "conversion pathway elements",
     ],
-    avoidElements: ["generic handshakes", "thumbs up", "stock photo people"],
+    avoidElements: ["generic handshakes", "thumbs up", "stock photo people", "like buttons"],
     colorGuidance: "bold primary colors, gradient transitions, high contrast accents",
   },
   management: {
-    stylePrefix: "Professional abstract illustration",
+    stylePrefixes: [
+      "Professional abstract illustration of",
+      "Clean isometric 3D visualization of",
+      "Minimalist line art with selective color showing",
+      "Flat vector illustration of",
+      "Blueprint-style diagram of",
+      "Low-poly 3D render of",
+    ],
     preferredElements: [
       "interconnected gear systems", "organizational hierarchy visualizations",
       "strategic chess pieces", "compass/navigation metaphors", "team collaboration abstracts",
+      "roadmap visualizations", "milestone markers",
     ],
     avoidElements: ["generic office photos", "boring meeting rooms", "clipart people"],
     colorGuidance: "authoritative navy, trustworthy blues, accent golds on neutral backgrounds",
   },
   default: {
-    stylePrefix: "Modern professional illustration",
+    stylePrefixes: [
+      "Modern professional illustration of",
+      "Clean flat vector illustration of",
+      "Isometric 3D illustration of",
+      "Abstract gradient composition representing",
+      "Minimalist line art depicting",
+      "Soft watercolor-style digital painting of",
+      "Paper cut-out layered illustration of",
+    ],
     preferredElements: [
       "abstract geometric compositions", "gradient mesh backgrounds",
       "floating 3D shapes", "clean data visualization art", "conceptual metaphors",
+      "interconnected elements", "flowing organic forms",
     ],
     avoidElements: ["stock photo cliches", "clip art", "cartoons", "text in images"],
     colorGuidance: "professional blues, clean whites, subtle accent colors",
@@ -208,6 +304,27 @@ export function getStyleGuide(topic: string): StyleGuide {
   return TOPIC_STYLE_MAP[topic] || TOPIC_STYLE_MAP.default;
 }
 
+/**
+ * Select a unique style prefix for each slide index, ensuring diversity.
+ * Uses round-robin through topic-specific styles + global pool.
+ */
+function selectDiverseStylePrefix(styleGuide: StyleGuide, slideIndex: number, totalSlides: number): string {
+  const allStyles = [...styleGuide.stylePrefixes];
+  
+  // If we have more slides than topic-specific styles, add from global pool
+  if (totalSlides > allStyles.length) {
+    for (const globalStyle of VISUAL_STYLE_POOL) {
+      // Don't add duplicates
+      if (!allStyles.some(s => s.toLowerCase().includes(globalStyle.toLowerCase().split(" ")[0]))) {
+        allStyles.push(globalStyle + " of");
+      }
+    }
+  }
+  
+  // Round-robin through available styles
+  return allStyles[slideIndex % allStyles.length];
+}
+
 // ═══════════════════════════════════════════════════════
 // ENRICHED SLIDE SUMMARY BUILDER
 // ═══════════════════════════════════════════════════════
@@ -258,6 +375,8 @@ export function buildEnrichedSlideSummary(slide: EnrichedSlideInfo): string {
 /**
  * Generate high-quality, context-aware image prompts for selected slides.
  * Uses full slide content, presentation context, theme, and content analysis.
+ * 
+ * KEY: Each slide gets a UNIQUE visual style to prevent repetitive images.
  */
 export async function generateImagePrompts(
   slides: EnrichedSlideInfo[],
@@ -286,6 +405,15 @@ export async function generateImagePrompts(
     })
     .join("\n");
 
+  // Pre-assign a unique style to each slide for the LLM to use
+  const slideStyleAssignments = slides
+    .slice(0, maxImages)
+    .map((s, i) => {
+      const style = selectDiverseStylePrefix(styleGuide, i, slides.length);
+      return `Slide ${s.slideNumber}: MUST use style "${style}"`;
+    })
+    .join("\n");
+
   const systemPrompt = `You are a world-class art director creating illustrations for a professional presentation.
 
 <presentation_context>
@@ -297,23 +425,31 @@ Secondary color: ${context.secondaryColor}
 </presentation_context>
 
 <style_direction>
-Base style: ${styleGuide.stylePrefix}
-Preferred visual elements: ${styleGuide.preferredElements.join(", ")}
+Available visual elements: ${styleGuide.preferredElements.join(", ")}
 Color palette guidance: ${styleGuide.colorGuidance}
 AVOID: ${styleGuide.avoidElements.join(", ")}
 </style_direction>
+
+<CRITICAL_STYLE_DIVERSITY_RULES>
+EVERY image MUST use a DIFFERENT visual style. The assigned styles below are MANDATORY:
+${slideStyleAssignments}
+
+DO NOT make all images look similar. Each image must be visually distinct:
+- Different rendering techniques (flat vector vs 3D vs watercolor vs line art vs photo-realistic)
+- Different compositions (close-up vs wide shot vs aerial vs abstract)
+- Different color treatments (warm vs cool vs duotone vs gradient)
+</CRITICAL_STYLE_DIVERSITY_RULES>
 
 <rules>
 1. Select up to ${maxImages} slides that would benefit MOST from an illustration.
 2. For each selected slide, write a detailed image generation prompt in English (80-120 words).
 3. Each prompt MUST be SPECIFIC to the slide's actual content — reference the real topic, data, and key message.
-4. Each prompt MUST start with the visual style (e.g., "${styleGuide.stylePrefix} of...").
+4. Each prompt MUST START with the ASSIGNED visual style prefix for that slide (see above).
 5. Include color references that harmonize with the theme: use ${context.primaryColor} and ${context.secondaryColor} tones.
 6. NEVER include text, labels, numbers, or words IN the image — the image is purely visual.
 7. Each image should tell a visual story that reinforces the slide's message.
-8. Vary the composition across slides — mix close-ups, wide shots, abstract, and concrete.
-9. Reference SPECIFIC elements from the slide content (e.g., if slide mentions "AI diagnostics", show neural network analyzing medical scans, not generic tech).
-10. Do NOT select slides about agendas, tables, pure data charts, or closing/thank-you slides.
+8. Reference SPECIFIC elements from the slide content (e.g., if slide mentions "AI diagnostics", show neural network analyzing medical scans, not generic tech).
+9. Do NOT select slides about agendas, tables, pure data charts, or closing/thank-you slides.
 </rules>`;
 
   const userPrompt = `Here are the eligible slides with full content details:
@@ -321,7 +457,8 @@ AVOID: ${styleGuide.avoidElements.join(", ")}
 ${slideSummaries}
 
 ${contentTypeHints ? `\nVisual metaphor suggestions:\n${contentTypeHints}\n` : ""}
-Select up to ${maxImages} slides and generate detailed, content-specific image prompts. Each prompt should directly reference the slide's actual topic and data.`;
+Select up to ${maxImages} slides and generate detailed, content-specific image prompts. 
+REMINDER: Each prompt MUST start with its assigned style prefix and produce a visually UNIQUE image.`;
 
   try {
     const response = await invokeLLM({
@@ -390,6 +527,10 @@ export async function generateSingleSlidePrompt(
   );
   const styleGuide = getStyleGuide(topic);
 
+  // Pick a random style from the pool for variety
+  const randomIndex = Math.floor(Math.random() * styleGuide.stylePrefixes.length);
+  const selectedStyle = styleGuide.stylePrefixes[randomIndex];
+
   // Build content-type visual hint
   let visualHint = "";
   if (slide.contentType && CONTENT_TYPE_VISUALS[slide.contentType]) {
@@ -413,7 +554,7 @@ Theme colors: ${context.primaryColor}, ${context.secondaryColor}
 </context>
 
 <style>
-Base style: ${styleGuide.stylePrefix}
+MANDATORY style for this image: ${selectedStyle}
 Preferred elements: ${styleGuide.preferredElements.slice(0, 3).join(", ")}
 Color guidance: ${styleGuide.colorGuidance}
 AVOID: ${styleGuide.avoidElements.join(", ")}
@@ -421,7 +562,7 @@ AVOID: ${styleGuide.avoidElements.join(", ")}
 
 <rules>
 - Write a detailed English prompt (80-120 words)
-- Start with the visual style prefix
+- Start with the MANDATORY style prefix: "${selectedStyle}"
 - Reference SPECIFIC content from the slide (topic, data, key message)
 - Include color references matching the theme
 - NEVER include text, labels, or numbers IN the image
@@ -446,9 +587,9 @@ Generate a detailed, content-specific image prompt:`;
     const rawContent = response.choices?.[0]?.message?.content;
     const prompt = typeof rawContent === "string" ? rawContent.trim() : "";
 
-    return prompt || `${styleGuide.stylePrefix} representing ${slide.title}, professional business illustration with ${context.primaryColor} and ${context.secondaryColor} color accents, clean modern design`;
+    return prompt || `${selectedStyle} representing ${slide.title}, professional business illustration with ${context.primaryColor} and ${context.secondaryColor} color accents, clean modern design`;
   } catch (error) {
     console.error("[ImagePromptEngine] Single prompt generation failed:", error);
-    return `${styleGuide.stylePrefix} representing ${slide.title}, professional business illustration with ${context.primaryColor} and ${context.secondaryColor} color accents, clean modern design`;
+    return `${selectedStyle} representing ${slide.title}, professional business illustration with ${context.primaryColor} and ${context.secondaryColor} color accents, clean modern design`;
   }
 }

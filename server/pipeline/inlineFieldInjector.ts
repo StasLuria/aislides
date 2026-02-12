@@ -82,6 +82,49 @@ export function setFieldValue(data: Record<string, any>, path: string, value: st
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// HELPER: add bullet-style fields (title + description)
+// ═══════════════════════════════════════════════════════
+
+function addBulletFields(
+  fields: EditableFieldDef[],
+  bullets: any[],
+  prefix: string,
+  selectorTitle: string,
+  selectorDesc: string,
+  labelPrefix: string,
+): void {
+  for (let i = 0; i < bullets.length; i++) {
+    const b = bullets[i];
+    if (typeof b === "object" && b.title) {
+      fields.push({
+        key: `${prefix}.${i}.title`,
+        label: `${labelPrefix} ${i + 1}`,
+        selector: selectorTitle,
+        matchIndex: i,
+        multiline: false,
+      });
+      if (b.description) {
+        fields.push({
+          key: `${prefix}.${i}.description`,
+          label: `Описание ${i + 1}`,
+          selector: selectorDesc,
+          matchIndex: i,
+          multiline: true,
+        });
+      }
+    } else if (typeof b === "string") {
+      fields.push({
+        key: `${prefix}.${i}`,
+        label: `${labelPrefix} ${i + 1}`,
+        selector: selectorTitle,
+        matchIndex: i,
+        multiline: false,
+      });
+    }
+  }
+}
+
 /**
  * Build editable field definitions dynamically based on layout and actual data.
  * This generates fields for all text content that can be edited.
@@ -108,6 +151,9 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "text-slide": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
       const bullets = data.bullets || [];
       for (let i = 0; i < bullets.length; i++) {
         const b = bullets[i];
@@ -118,7 +164,6 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
             selector: ".bullet-row",
             matchIndex: i,
             multiline: false,
-            // We'll use a special sub-selector approach in the script
           });
           if (b.description) {
             fields.push({
@@ -188,7 +233,6 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
           fields.push({
             key: `bullets.${i}.title`,
             label: `Пункт ${i + 1}`,
-            // image-text uses non-classed bullet rows
             selector: "BULLET_TITLE",
             matchIndex: i,
             multiline: false,
@@ -326,6 +370,38 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "comparison": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      // Option A
+      if (data.optionA) {
+        if (data.optionA.title) {
+          fields.push({ key: "optionA.title", label: "Вариант A", selector: "COMPARISON_A_TITLE", matchIndex: 0, multiline: false });
+        }
+        const aPoints = data.optionA.points || [];
+        for (let i = 0; i < aPoints.length; i++) {
+          fields.push({
+            key: `optionA.points.${i}`,
+            label: `A: пункт ${i + 1}`,
+            selector: "COMPARISON_A_POINT",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      // Option B
+      if (data.optionB) {
+        if (data.optionB.title) {
+          fields.push({ key: "optionB.title", label: "Вариант B", selector: "COMPARISON_B_TITLE", matchIndex: 0, multiline: false });
+        }
+        const bPoints = data.optionB.points || [];
+        for (let i = 0; i < bPoints.length; i++) {
+          fields.push({
+            key: `optionB.points.${i}`,
+            label: `B: пункт ${i + 1}`,
+            selector: "COMPARISON_B_POINT",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
@@ -348,12 +424,32 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "team-profiles": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const members = data.teamMembers || [];
+      for (let i = 0; i < members.length; i++) {
+        if (members[i].name) {
+          fields.push({
+            key: `teamMembers.${i}.name`,
+            label: `Имя ${i + 1}`,
+            selector: "TEAM_NAME",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (members[i].role) {
+          fields.push({
+            key: `teamMembers.${i}.role`,
+            label: `Роль ${i + 1}`,
+            selector: "TEAM_ROLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
     case "logo-grid":
-    case "video-embed":
-    case "checklist": {
+    case "video-embed": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
       if (data.description) {
         fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
@@ -361,8 +457,73 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       break;
     }
 
+    case "checklist": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
+      // Checklist items
+      const items = data.items || [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].title) {
+          fields.push({
+            key: `items.${i}.title`,
+            label: `Пункт ${i + 1}`,
+            selector: "CHECKLIST_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (items[i].description) {
+          fields.push({
+            key: `items.${i}.description`,
+            label: `Описание ${i + 1}`,
+            selector: "CHECKLIST_DESC",
+            matchIndex: i,
+            multiline: true,
+          });
+        }
+        if (items[i].status) {
+          fields.push({
+            key: `items.${i}.status`,
+            label: `Статус ${i + 1}`,
+            selector: "CHECKLIST_STATUS",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      break;
+    }
+
     case "swot-analysis": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      // SWOT quadrants: strengths, weaknesses, opportunities, threats
+      const quadrants = ["strengths", "weaknesses", "opportunities", "threats"];
+      const quadrantLabels = ["Сильные", "Слабые", "Возможности", "Угрозы"];
+      for (let q = 0; q < quadrants.length; q++) {
+        const qData = data[quadrants[q]];
+        if (!qData) continue;
+        if (qData.title) {
+          fields.push({
+            key: `${quadrants[q]}.title`,
+            label: quadrantLabels[q],
+            selector: "SWOT_TITLE",
+            matchIndex: q,
+            multiline: false,
+          });
+        }
+        const qItems = qData.items || [];
+        for (let i = 0; i < qItems.length; i++) {
+          fields.push({
+            key: `${quadrants[q]}.items.${i}`,
+            label: `${quadrantLabels[q]} ${i + 1}`,
+            selector: "SWOT_ITEM",
+            matchIndex: q * 100 + i, // encode quadrant + item index
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
@@ -379,27 +540,324 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
             multiline: false,
           });
         }
+        if (stages[i].title && !stages[i].label) {
+          fields.push({
+            key: `stages.${i}.title`,
+            label: `Этап ${i + 1}`,
+            selector: "FUNNEL_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (stages[i].value) {
+          fields.push({
+            key: `stages.${i}.value`,
+            label: `Значение ${i + 1}`,
+            selector: "FUNNEL_VALUE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
       }
       break;
     }
 
     case "roadmap": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
+      const milestones = data.milestones || [];
+      for (let i = 0; i < milestones.length; i++) {
+        if (milestones[i].title) {
+          fields.push({
+            key: `milestones.${i}.title`,
+            label: `Этап ${i + 1}`,
+            selector: "ROADMAP_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
     case "pyramid": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const levels = data.levels || [];
+      for (let i = 0; i < levels.length; i++) {
+        if (levels[i].label) {
+          fields.push({
+            key: `levels.${i}.label`,
+            label: `Уровень ${i + 1}`,
+            selector: "PYRAMID_LABEL",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
     case "matrix-2x2": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      // 4 quadrants
+      const quadrantKeys = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
+      const quadrantLabelsM = ["Верх-лево", "Верх-право", "Низ-лево", "Низ-право"];
+      for (let q = 0; q < quadrantKeys.length; q++) {
+        const qData = data[quadrantKeys[q]];
+        if (!qData) continue;
+        if (qData.title) {
+          fields.push({
+            key: `${quadrantKeys[q]}.title`,
+            label: quadrantLabelsM[q],
+            selector: "MATRIX_TITLE",
+            matchIndex: q,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
     case "pros-cons": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      // Pros
+      if (data.pros) {
+        if (data.pros.title) {
+          fields.push({ key: "pros.title", label: "Плюсы", selector: "PROSCONS_TITLE", matchIndex: 0, multiline: false });
+        }
+        const prosItems = data.pros.items || [];
+        for (let i = 0; i < prosItems.length; i++) {
+          fields.push({
+            key: `pros.items.${i}`,
+            label: `Плюс ${i + 1}`,
+            selector: "PROSCONS_ITEM",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      // Cons
+      if (data.cons) {
+        if (data.cons.title) {
+          fields.push({ key: "cons.title", label: "Минусы", selector: "PROSCONS_TITLE", matchIndex: 1, multiline: false });
+        }
+        const consItems = data.cons.items || [];
+        for (let i = 0; i < consItems.length; i++) {
+          fields.push({
+            key: `cons.items.${i}`,
+            label: `Минус ${i + 1}`,
+            selector: "PROSCONS_CON_ITEM",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      break;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // MANUS-STYLE LAYOUTS (Sprint 4)
+    // ═══════════════════════════════════════════════════════
+
+    case "stats-chart": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const stats = data.stats || [];
+      for (let i = 0; i < stats.length; i++) {
+        if (stats[i].value) {
+          fields.push({
+            key: `stats.${i}.value`,
+            label: `Значение ${i + 1}`,
+            selector: "STATS_VALUE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (stats[i].label) {
+          fields.push({
+            key: `stats.${i}.label`,
+            label: `Метка ${i + 1}`,
+            selector: "STATS_LABEL",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      if (data.source) {
+        fields.push({ key: "source", label: "Источник", selector: "SLIDE_SOURCE", matchIndex: 0, multiline: false });
+      }
+      break;
+    }
+
+    case "chart-text": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
+      const ctBullets = data.bullets || [];
+      addBulletFields(fields, ctBullets, "bullets", "CHARTTEXT_BULLET_TITLE", "CHARTTEXT_BULLET_DESC", "Пункт");
+      if (data.source) {
+        fields.push({ key: "source", label: "Источник", selector: "SLIDE_SOURCE", matchIndex: 0, multiline: false });
+      }
+      break;
+    }
+
+    case "hero-stat": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.mainStat) {
+        if (data.mainStat.value) {
+          fields.push({ key: "mainStat.value", label: "Главное значение", selector: "HEROSTAT_MAIN_VALUE", matchIndex: 0, multiline: false });
+        }
+        if (data.mainStat.label) {
+          fields.push({ key: "mainStat.label", label: "Главная метка", selector: "HEROSTAT_MAIN_LABEL", matchIndex: 0, multiline: false });
+        }
+      }
+      const suppStats = data.supportingStats || [];
+      for (let i = 0; i < suppStats.length; i++) {
+        if (suppStats[i].value) {
+          fields.push({
+            key: `supportingStats.${i}.value`,
+            label: `Доп. значение ${i + 1}`,
+            selector: "HEROSTAT_SUPP_VALUE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (suppStats[i].label) {
+          fields.push({
+            key: `supportingStats.${i}.label`,
+            label: `Доп. метка ${i + 1}`,
+            selector: "HEROSTAT_SUPP_LABEL",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      break;
+    }
+
+    case "scenario-cards": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
+      const scenarios = data.scenarios || [];
+      for (let i = 0; i < scenarios.length; i++) {
+        if (scenarios[i].title) {
+          fields.push({
+            key: `scenarios.${i}.title`,
+            label: `Сценарий ${i + 1}`,
+            selector: "SCENARIO_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (scenarios[i].label) {
+          fields.push({
+            key: `scenarios.${i}.label`,
+            label: `Метка ${i + 1}`,
+            selector: "SCENARIO_LABEL",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      break;
+    }
+
+    case "numbered-steps-v2": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const steps2 = data.steps || [];
+      for (let i = 0; i < steps2.length; i++) {
+        if (steps2[i].title) {
+          fields.push({
+            key: `steps.${i}.title`,
+            label: `Шаг ${i + 1}`,
+            selector: "NSTEP_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (steps2[i].description) {
+          fields.push({
+            key: `steps.${i}.description`,
+            label: `Описание ${i + 1}`,
+            selector: "NSTEP_DESC",
+            matchIndex: i,
+            multiline: true,
+          });
+        }
+      }
+      break;
+    }
+
+    case "timeline-horizontal": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "SLIDE_DESCRIPTION", matchIndex: 0, multiline: true });
+      }
+      const thEvents = data.events || [];
+      for (let i = 0; i < thEvents.length; i++) {
+        if (thEvents[i].title) {
+          fields.push({
+            key: `events.${i}.title`,
+            label: `Событие ${i + 1}`,
+            selector: "HTIMELINE_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (thEvents[i].date) {
+          fields.push({
+            key: `events.${i}.date`,
+            label: `Дата ${i + 1}`,
+            selector: "HTIMELINE_DATE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
+      break;
+    }
+
+    case "text-with-callout": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const twcBullets = data.bullets || [];
+      addBulletFields(fields, twcBullets, "bullets", "BULLET_TITLE", "BULLET_DESC", "Пункт");
+      if (data.callout) {
+        fields.push({ key: "callout", label: "Вывод", selector: "CALLOUT_TEXT", matchIndex: 0, multiline: true });
+      }
+      break;
+    }
+
+    case "dual-chart": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      // Left chart title
+      if (data.leftChart?.title) {
+        fields.push({ key: "leftChart.title", label: "Левый график", selector: "DUALCHART_TITLE", matchIndex: 0, multiline: false });
+      }
+      // Right chart title
+      if (data.rightChart?.title) {
+        fields.push({ key: "rightChart.title", label: "Правый график", selector: "DUALCHART_TITLE", matchIndex: 1, multiline: false });
+      }
+      break;
+    }
+
+    case "risk-matrix": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const mitigations = data.mitigations || [];
+      for (let i = 0; i < mitigations.length; i++) {
+        if (mitigations[i].title) {
+          fields.push({
+            key: `mitigations.${i}.title`,
+            label: `Мера ${i + 1}`,
+            selector: "MITIGATION_TITLE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+      }
       break;
     }
 
@@ -600,6 +1058,40 @@ export function generateInlineEditScript(
   \`;
   document.head.appendChild(style);
 
+  // ═══════════════════════════════════════════════════════
+  // HELPER: find grid/card items in a slide
+  // ═══════════════════════════════════════════════════════
+  function findGridCards() {
+    // Find cards in grid layout (used by checklist, scenario-cards, etc.)
+    var cards = slide.querySelectorAll('div[style*="grid"] > div[style*="display: flex"]');
+    if (cards.length === 0) {
+      // Fallback: look for .card elements
+      cards = slide.querySelectorAll('.card');
+    }
+    return cards;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // HELPER: find SWOT quadrants (4 colored grid cells)
+  // ═══════════════════════════════════════════════════════
+  function findSwotQuadrants() {
+    var grid = slide.querySelector('div[style*="grid-template-columns: 1fr 1fr"][style*="grid-template-rows"]');
+    if (!grid) return [];
+    return Array.from(grid.children);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // HELPER: find columns in comparison/pros-cons layout
+  // ═══════════════════════════════════════════════════════
+  function findComparisonCards() {
+    var cards = slide.querySelectorAll('.card');
+    if (cards.length >= 2) return cards;
+    // Fallback: grid children
+    var grid = slide.querySelector('div[style*="grid-template-columns"]');
+    if (grid) return grid.children;
+    return [];
+  }
+
   /**
    * Find the element for a field using its selector and matchIndex.
    * Handles special selectors for bullet items, metrics, etc.
@@ -608,17 +1100,45 @@ export function generateInlineEditScript(
     var sel = field.selector;
     var idx = field.matchIndex || 0;
 
-    // Special selectors for structured content
+    // ═══ SLIDE_DESCRIPTION: first <p> after accent-line ═══
+    if (sel === 'SLIDE_DESCRIPTION') {
+      var ps = slide.querySelectorAll('p');
+      var filtered = [];
+      for (var pi = 0; pi < ps.length; pi++) {
+        if (!ps[pi].closest('.slide-footer')) filtered.push(ps[pi]);
+      }
+      return filtered[idx] || null;
+    }
+
+    // ═══ SLIDE_SOURCE: source text at bottom ═══
+    if (sel === 'SLIDE_SOURCE') {
+      var sourceEls = slide.querySelectorAll('div[style*="font-size: 11px"], div[style*="font-size:11px"], span[style*="font-size: 11px"]');
+      for (var si = 0; si < sourceEls.length; si++) {
+        var txt = sourceEls[si].textContent || '';
+        if (txt.indexOf('Источник') !== -1 || txt.indexOf('Source') !== -1) return sourceEls[si];
+      }
+      return null;
+    }
+
+    // ═══ CALLOUT_TEXT: callout bar at bottom ═══
+    if (sel === 'CALLOUT_TEXT') {
+      var calloutBar = slide.querySelector('div[style*="border-radius"][style*="background"][style*="padding"]');
+      if (!calloutBar) return null;
+      // Find the text element inside the callout (not the icon)
+      var calloutTexts = calloutBar.querySelectorAll('div[style*="flex: 1"], span');
+      for (var ci = 0; ci < calloutTexts.length; ci++) {
+        if (calloutTexts[ci].textContent && calloutTexts[ci].textContent.trim().length > 10) return calloutTexts[ci];
+      }
+      return calloutBar;
+    }
+
+    // ═══ BULLET_TITLE / BULLET_DESC ═══
     if (sel === 'BULLET_TITLE' || sel === 'BULLET_DESC') {
-      // For text-slide and image-text: find bullet rows by structure
       var bulletRows = slide.querySelectorAll('.bullet-row');
       if (bulletRows.length === 0) {
-        // image-text doesn't use .bullet-row class — find bullet containers by structure
-        // Look for containers with a dot marker + content div
         var allDivs = slide.querySelectorAll('div[style*="display: flex"][style*="align-items"]');
         var bulletContainers = [];
         allDivs.forEach(function(d) {
-          // Check if it has a dot marker child and a content child
           var children = d.children;
           if (children.length >= 2) {
             var firstChild = children[0];
@@ -638,15 +1158,12 @@ export function generateInlineEditScript(
       if (!row) return null;
 
       if (sel === 'BULLET_TITLE') {
-        // Find the bold/heading text in the bullet
         var titleEl = row.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
         if (!titleEl) titleEl = row.querySelector('span[style*="font-weight: 600"], span[style*="font-weight:600"]');
         return titleEl;
       } else {
-        // Find the description text (lighter color, after the title)
         var descEl = row.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
         if (!descEl) {
-          // Fallback: second div inside the content area
           var contentDiv = row.querySelector('div[style*="flex: 1"]');
           if (contentDiv && contentDiv.children.length > 1) {
             descEl = contentDiv.children[1];
@@ -656,11 +1173,69 @@ export function generateInlineEditScript(
       }
     }
 
+    // ═══ CHARTTEXT_BULLET_TITLE / CHARTTEXT_BULLET_DESC ═══
+    if (sel === 'CHARTTEXT_BULLET_TITLE' || sel === 'CHARTTEXT_BULLET_DESC') {
+      // chart-text: bullets are in the right panel
+      var panels = slide.querySelectorAll('div[style*="flex: 1"]');
+      var rightPanel = panels.length >= 2 ? panels[panels.length - 1] : slide;
+      var bulletDivs = rightPanel.querySelectorAll('div[style*="display: flex"][style*="align-items"]');
+      var bulletItems = [];
+      bulletDivs.forEach(function(d) {
+        if (d.children.length >= 2) {
+          var first = d.children[0];
+          if (first.style && (first.style.borderRadius === '50%' || parseInt(first.style.width) <= 12)) {
+            bulletItems.push(d);
+          }
+        }
+      });
+      var bItem = bulletItems[idx];
+      if (!bItem) return null;
+      if (sel === 'CHARTTEXT_BULLET_TITLE') {
+        return bItem.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+      } else {
+        var bd = bItem.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+        if (!bd) {
+          var cd = bItem.querySelector('div[style*="flex: 1"]');
+          if (cd && cd.children.length > 1) bd = cd.children[1];
+        }
+        return bd;
+      }
+    }
+
+    // ═══ CHECKLIST_TITLE / CHECKLIST_DESC / CHECKLIST_STATUS ═══
+    if (sel === 'CHECKLIST_TITLE' || sel === 'CHECKLIST_DESC' || sel === 'CHECKLIST_STATUS') {
+      var gridEl = slide.querySelector('div[style*="grid-template-columns"]');
+      if (!gridEl) return null;
+      var checkItems = gridEl.children;
+      var item = checkItems[idx];
+      if (!item) return null;
+
+      if (sel === 'CHECKLIST_TITLE') {
+        // Title: first div with font-weight: 600 inside the flex:1 content area
+        var contentArea = item.querySelector('div[style*="flex: 1"]');
+        if (contentArea) {
+          return contentArea.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+        }
+        return null;
+      }
+      if (sel === 'CHECKLIST_DESC') {
+        var contentArea2 = item.querySelector('div[style*="flex: 1"]');
+        if (contentArea2 && contentArea2.children.length > 1) {
+          return contentArea2.children[1]; // Second child is description
+        }
+        return null;
+      }
+      if (sel === 'CHECKLIST_STATUS') {
+        // Status badge: div with border-radius: 20px (pill shape)
+        return item.querySelector('div[style*="border-radius: 20px"]');
+      }
+      return null;
+    }
+
+    // ═══ METRIC_VALUE / METRIC_LABEL ═══
     if (sel === 'METRIC_VALUE' || sel === 'METRIC_LABEL') {
-      // Find metric/stat cards
       var cards = slide.querySelectorAll('.card, div[style*="text-align: center"]');
       if (cards.length === 0) {
-        // Fallback: look for grid items
         var grid = slide.querySelector('div[style*="grid"]');
         if (grid) cards = grid.children;
       }
@@ -673,68 +1248,287 @@ export function generateInlineEditScript(
       }
     }
 
+    // ═══ STATS_VALUE / STATS_LABEL (stats-chart) ═══
+    if (sel === 'STATS_VALUE' || sel === 'STATS_LABEL') {
+      var statCards = slide.querySelectorAll('.card');
+      var sc = statCards[idx];
+      if (!sc) return null;
+      if (sel === 'STATS_VALUE') {
+        return sc.querySelector('div[style*="font-size: 2"], div[style*="font-weight: 700"], div[style*="font-weight:700"]');
+      } else {
+        return sc.querySelector('div[style*="text-body-color"], div[style*="#4b5563"], div[style*="font-size: 12"], div[style*="font-size: 13"]');
+      }
+    }
+
+    // ═══ HEROSTAT_MAIN_VALUE / HEROSTAT_MAIN_LABEL ═══
+    if (sel === 'HEROSTAT_MAIN_VALUE') {
+      // Big stat on accent panel
+      var accentPanel = slide.querySelector('div[style*="background: var(--slide-bg-accent"], div[style*="background:var(--slide-bg-accent"]');
+      if (!accentPanel) accentPanel = slide.querySelector('div[style*="background: var(--primary-accent"]');
+      if (!accentPanel) return null;
+      return accentPanel.querySelector('div[style*="font-size: 5"], div[style*="font-size: 6"], div[style*="font-size:5"]');
+    }
+    if (sel === 'HEROSTAT_MAIN_LABEL') {
+      var accentPanel2 = slide.querySelector('div[style*="background: var(--slide-bg-accent"], div[style*="background:var(--slide-bg-accent"]');
+      if (!accentPanel2) accentPanel2 = slide.querySelector('div[style*="background: var(--primary-accent"]');
+      if (!accentPanel2) return null;
+      return accentPanel2.querySelector('div[style*="font-size: 16"], div[style*="font-size: 18"], div[style*="font-weight: 600"]');
+    }
+
+    // ═══ HEROSTAT_SUPP_VALUE / HEROSTAT_SUPP_LABEL ═══
+    if (sel === 'HEROSTAT_SUPP_VALUE' || sel === 'HEROSTAT_SUPP_LABEL') {
+      var suppCards = slide.querySelectorAll('.card');
+      var suppCard = suppCards[idx];
+      if (!suppCard) return null;
+      if (sel === 'HEROSTAT_SUPP_VALUE') {
+        return suppCard.querySelector('div[style*="font-size: 2"], div[style*="font-weight: 700"]');
+      } else {
+        return suppCard.querySelector('div[style*="font-weight: 600"][style*="font-size: 14"], div[style*="font-weight: 600"][style*="font-size: 15"]');
+      }
+    }
+
+    // ═══ SCENARIO_TITLE / SCENARIO_LABEL ═══
+    if (sel === 'SCENARIO_TITLE' || sel === 'SCENARIO_LABEL') {
+      var scenarioCards = slide.querySelectorAll('.card');
+      if (scenarioCards.length === 0) {
+        var scGrid = slide.querySelector('div[style*="grid"]');
+        if (scGrid) scenarioCards = scGrid.children;
+      }
+      var scCard = scenarioCards[idx];
+      if (!scCard) return null;
+      if (sel === 'SCENARIO_TITLE') {
+        return scCard.querySelector('h2, div[style*="font-weight: 600"][style*="font-size: 1"]');
+      } else {
+        return scCard.querySelector('div[style*="border-radius"][style*="font-weight: 600"], div[style*="font-size: 12"][style*="font-weight"]');
+      }
+    }
+
+    // ═══ NSTEP_TITLE / NSTEP_DESC (numbered-steps-v2) ═══
+    if (sel === 'NSTEP_TITLE' || sel === 'NSTEP_DESC') {
+      // Steps are flex rows with circle numbers
+      var stepRows = slide.querySelectorAll('div[style*="display: flex"][style*="gap"]');
+      var stepContainers = [];
+      stepRows.forEach(function(r) {
+        // Look for rows with a circle number (border-radius: 50% child)
+        var circle = r.querySelector('div[style*="border-radius: 50%"][style*="width: 4"], div[style*="border-radius: 50%"][style*="width: 3"]');
+        if (circle) stepContainers.push(r);
+      });
+      var stepItem = stepContainers[idx];
+      if (!stepItem) return null;
+      if (sel === 'NSTEP_TITLE') {
+        return stepItem.querySelector('div[style*="font-weight: 600"], div[style*="font-weight: 700"]');
+      } else {
+        return stepItem.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+      }
+    }
+
+    // ═══ HTIMELINE_TITLE / HTIMELINE_DATE ═══
+    if (sel === 'HTIMELINE_TITLE' || sel === 'HTIMELINE_DATE') {
+      // Horizontal timeline: columns with content above/below the line
+      var timelineCols = slide.querySelectorAll('div[style*="display: flex"][style*="flex-direction: column"][style*="align-items: center"]');
+      if (timelineCols.length === 0) {
+        var tlGrid = slide.querySelector('div[style*="grid"]');
+        if (tlGrid) timelineCols = tlGrid.children;
+      }
+      var tlCol = timelineCols[idx];
+      if (!tlCol) return null;
+      if (sel === 'HTIMELINE_TITLE') {
+        return tlCol.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+      } else {
+        return tlCol.querySelector('div[style*="font-size: 11"], div[style*="font-size: 12"], div[style*="font-weight: 700"]');
+      }
+    }
+
+    // ═══ DUALCHART_TITLE ═══
+    if (sel === 'DUALCHART_TITLE') {
+      var chartCards = slide.querySelectorAll('.card');
+      var chartCard = chartCards[idx];
+      if (!chartCard) return null;
+      return chartCard.querySelector('h2, div[style*="font-weight: 600"][style*="font-size: 1"]');
+    }
+
+    // ═══ MITIGATION_TITLE (risk-matrix) ═══
+    if (sel === 'MITIGATION_TITLE') {
+      // Mitigations are numbered cards on the right side
+      var mitigCards = slide.querySelectorAll('div[style*="display: flex"][style*="gap"][style*="padding"]');
+      var mitigItems = [];
+      mitigCards.forEach(function(mc) {
+        // Look for items with a number circle
+        var numCircle = mc.querySelector('div[style*="border-radius: 50%"][style*="width: 2"]');
+        if (numCircle) mitigItems.push(mc);
+      });
+      var mitigItem = mitigItems[idx];
+      if (!mitigItem) return null;
+      return mitigItem.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+    }
+
+    // ═══ COMPARISON_A_TITLE / COMPARISON_A_POINT / COMPARISON_B_TITLE / COMPARISON_B_POINT ═══
+    if (sel === 'COMPARISON_A_TITLE' || sel === 'COMPARISON_A_POINT' || sel === 'COMPARISON_B_TITLE' || sel === 'COMPARISON_B_POINT') {
+      var compCards = findComparisonCards();
+      var isA = sel.indexOf('_A_') !== -1;
+      var targetCard = isA ? compCards[0] : compCards[1];
+      if (!targetCard) return null;
+      if (sel.indexOf('_TITLE') !== -1) {
+        return targetCard.querySelector('h2');
+      } else {
+        var spans = targetCard.querySelectorAll('span');
+        return spans[idx] || null;
+      }
+    }
+
+    // ═══ PROSCONS_TITLE / PROSCONS_ITEM / PROSCONS_CON_ITEM ═══
+    if (sel === 'PROSCONS_TITLE' || sel === 'PROSCONS_ITEM' || sel === 'PROSCONS_CON_ITEM') {
+      var pcCards = findComparisonCards();
+      if (sel === 'PROSCONS_TITLE') {
+        var pcCard = pcCards[idx];
+        if (!pcCard) return null;
+        return pcCard.querySelector('h2');
+      }
+      if (sel === 'PROSCONS_ITEM') {
+        var prosCard = pcCards[0];
+        if (!prosCard) return null;
+        var prosSpans = prosCard.querySelectorAll('span');
+        return prosSpans[idx] || null;
+      }
+      if (sel === 'PROSCONS_CON_ITEM') {
+        var consCard = pcCards[1];
+        if (!consCard) return null;
+        var consSpans = consCard.querySelectorAll('span');
+        return consSpans[idx] || null;
+      }
+    }
+
+    // ═══ SWOT_TITLE / SWOT_ITEM ═══
+    if (sel === 'SWOT_TITLE' || sel === 'SWOT_ITEM') {
+      var swotQuads = findSwotQuadrants();
+      if (sel === 'SWOT_TITLE') {
+        var quad = swotQuads[idx];
+        if (!quad) return null;
+        return quad.querySelector('h2');
+      }
+      if (sel === 'SWOT_ITEM') {
+        // Decode: quadrant index = Math.floor(idx/100), item index = idx % 100
+        var qIdx = Math.floor(idx / 100);
+        var iIdx = idx % 100;
+        var swotQuad = swotQuads[qIdx];
+        if (!swotQuad) return null;
+        var swotSpans = swotQuad.querySelectorAll('span');
+        return swotSpans[iIdx] || null;
+      }
+    }
+
+    // ═══ FUNNEL_TITLE / FUNNEL_VALUE ═══
+    if (sel === 'FUNNEL_TITLE' || sel === 'FUNNEL_VALUE') {
+      var funnelStages = slide.querySelectorAll('div[style*="border-radius: 10px"][style*="background"]');
+      var fStage = funnelStages[idx];
+      if (!fStage) return null;
+      if (sel === 'FUNNEL_TITLE') {
+        return fStage.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+      } else {
+        return fStage.querySelector('div[style*="font-size: 24"], div[style*="font-weight: 700"]');
+      }
+    }
+
+    // ═══ ROADMAP_TITLE ═══
+    if (sel === 'ROADMAP_TITLE') {
+      var milestoneCards = slide.querySelectorAll('.card');
+      var msCard = milestoneCards[idx];
+      if (!msCard) return null;
+      return msCard.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"], h3');
+    }
+
+    // ═══ PYRAMID_LABEL ═══
+    if (sel === 'PYRAMID_LABEL') {
+      var pyramidLevels = slide.querySelectorAll('div[style*="border-radius"][style*="background"][style*="display: flex"][style*="align-items: center"]');
+      var pLevel = pyramidLevels[idx];
+      if (!pLevel) return null;
+      return pLevel.querySelector('div[style*="font-weight: 600"], div[style*="font-weight: 700"], span[style*="font-weight"]');
+    }
+
+    // ═══ MATRIX_TITLE ═══
+    if (sel === 'MATRIX_TITLE') {
+      var matrixGrid = slide.querySelector('div[style*="grid-template-columns: 1fr 1fr"][style*="grid-template-rows"]');
+      if (!matrixGrid) matrixGrid = slide.querySelector('div[style*="grid-template-columns"][style*="grid-template-rows"]');
+      if (!matrixGrid) return null;
+      var matrixCell = matrixGrid.children[idx];
+      if (!matrixCell) return null;
+      return matrixCell.querySelector('h2, div[style*="font-weight: 600"], div[style*="font-weight: 700"]');
+    }
+
+    // ═══ TEAM_NAME / TEAM_ROLE ═══
+    if (sel === 'TEAM_NAME' || sel === 'TEAM_ROLE') {
+      var teamCards = slide.querySelectorAll('.card');
+      var tCard = teamCards[idx];
+      if (!tCard) return null;
+      if (sel === 'TEAM_NAME') {
+        return tCard.querySelector('div[style*="font-weight: 600"][style*="font-size: 14"]');
+      } else {
+        return tCard.querySelector('div[style*="primary-accent-color"][style*="font-size: 12"]');
+      }
+    }
+
+    // ═══ TIMELINE_TITLE / TIMELINE_DESC ═══
     if (sel === 'TIMELINE_TITLE' || sel === 'TIMELINE_DESC') {
       var timelineItems = slide.querySelectorAll('.card, div[style*="border-radius"][style*="padding"]');
-      var item = timelineItems[idx];
-      if (!item) return null;
+      var tlItem = timelineItems[idx];
+      if (!tlItem) return null;
       if (sel === 'TIMELINE_TITLE') {
-        return item.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"], h3');
+        return tlItem.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"], h3');
       } else {
-        return item.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+        return tlItem.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
       }
     }
 
+    // ═══ STEP_TITLE / STEP_DESC ═══
     if (sel === 'STEP_TITLE' || sel === 'STEP_DESC') {
-      var stepItems = slide.querySelectorAll('.card, div[style*="border-radius"][style*="background"]');
-      var step = stepItems[idx];
-      if (!step) return null;
+      var stepItems2 = slide.querySelectorAll('.card, div[style*="border-radius"][style*="background"]');
+      var step2 = stepItems2[idx];
+      if (!step2) return null;
       if (sel === 'STEP_TITLE') {
-        return step.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"], h3');
+        return step2.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"], h3');
       } else {
-        return step.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+        return step2.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
       }
     }
 
+    // ═══ SECTION_TITLE ═══
     if (sel === 'SECTION_TITLE') {
-      // Agenda sections
       var sectionRows = slide.querySelectorAll('div[style*="border-radius"][style*="background"]');
       var section = sectionRows[idx];
       if (!section) return null;
       return section.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
     }
 
+    // ═══ FUNNEL_LABEL (legacy) ═══
     if (sel === 'FUNNEL_LABEL') {
-      var funnelStages = slide.querySelectorAll('div[style*="border-radius"]');
-      var stage = funnelStages[idx];
-      if (!stage) return null;
-      return stage.querySelector('span, div[style*="font-weight"]');
+      var funnelStages2 = slide.querySelectorAll('div[style*="border-radius"]');
+      var stage2 = funnelStages2[idx];
+      if (!stage2) return null;
+      return stage2.querySelector('span, div[style*="font-weight"]');
     }
 
-    // For .bullet-row selector (text-slide with matchIndex)
+    // ═══ .bullet-row selector (text-slide with matchIndex) ═══
     if (sel === '.bullet-row') {
       var rows = slide.querySelectorAll('.bullet-row');
       var targetRow = rows[idx];
       if (!targetRow) return null;
-      // Determine if we want title or description based on field key
       if (field.key.endsWith('.title') || !field.key.includes('.description')) {
         var t = targetRow.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
         if (t) return t;
-        // For simple string bullets, return the span
         return targetRow.querySelector('span');
       } else {
         var d = targetRow.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
         if (!d) {
-          var contentArea = targetRow.querySelector('div[style*="flex: 1"]');
-          if (contentArea && contentArea.children.length > 1) d = contentArea.children[1];
+          var contentArea3 = targetRow.querySelector('div[style*="flex: 1"]');
+          if (contentArea3 && contentArea3.children.length > 1) d = contentArea3.children[1];
         }
         return d;
       }
     }
 
-    // Standard CSS selector
+    // ═══ Standard CSS selector ═══
     try {
       var elements = slide.querySelectorAll(sel);
-      // Skip elements in footer
       var filtered = [];
       for (var i = 0; i < elements.length; i++) {
         if (!elements[i].closest('.slide-footer')) {
@@ -912,54 +1706,43 @@ export function generateInlineEditScript(
   });
 
   // 2) Placeholder divs (gradient containers used when no image URL is set)
-  //    These are divs with linear-gradient background inside a container with border-radius and overflow:hidden
-  //    Typically: parent has border-radius >= 12px, overflow: hidden, and child has linear-gradient
   var allDivs = slide.querySelectorAll('div');
   allDivs.forEach(function(div) {
-    // Check if this div has a linear-gradient background and is large enough to be an image placeholder
     var style = div.getAttribute('style') || '';
     if (style.indexOf('linear-gradient') === -1) return;
-    // Must be inside a container with overflow:hidden and border-radius
     var parent = div.parentElement;
     if (!parent) return;
     var parentStyle = parent.getAttribute('style') || '';
     if (parentStyle.indexOf('overflow') === -1 || parentStyle.indexOf('border-radius') === -1) return;
-    // Skip small elements
     var rect = div.getBoundingClientRect();
     if (rect.width < 100 || rect.height < 100) return;
-    // Skip if already processed (has img-edit-overlay)
     if (div.querySelector('.img-edit-overlay')) return;
     if (div.closest('.img-edit-wrapper')) return;
-    // Skip footer
     if (div.closest('.slide-footer')) return;
-    // Check parent dimensions match (should be the main image container)
     var parentRect = parent.getBoundingClientRect();
     if (parentRect.width < 100 || parentRect.height < 100) return;
 
     imageCount++;
     var myIdx = imageCount - 1;
 
-    // Make the parent the wrapper (it already has position, overflow, border-radius)
     parent.classList.add('img-edit-wrapper');
     parent.style.position = 'relative';
 
     var overlay = document.createElement('div');
     overlay.className = 'img-edit-overlay';
-    overlay.style.opacity = '1'; // Always visible on placeholder
+    overlay.style.opacity = '1';
     overlay.style.background = 'rgba(0, 0, 0, 0.25)';
     overlay.innerHTML = addPlaceholderBtnHtml;
     parent.appendChild(overlay);
 
     attachClickHandler(overlay, myIdx, function() { return ''; });
     attachDragHandlers(overlay, myIdx, addPlaceholderBtnHtml, function(dataUrl) {
-      // Replace the gradient placeholder with an img element
       var newImg = document.createElement('img');
       newImg.src = dataUrl;
       newImg.style.width = '100%';
       newImg.style.height = '100%';
       newImg.style.objectFit = 'cover';
       parent.replaceChild(newImg, div);
-      // Update overlay to show "replace" instead of "add"
       overlay.innerHTML = overlayBtnHtml;
       overlay.style.opacity = '';
       overlay.style.background = '';

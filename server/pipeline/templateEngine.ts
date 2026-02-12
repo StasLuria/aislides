@@ -35,17 +35,21 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     {% if description %}
     <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 0 0 24px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
+    {% if presenterName %}
     <div style="border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);">
       <div style="display: flex; align-items: center; gap: 16px;">
         <div style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--primary-accent-color, #9333ea);">
           <span style="font-weight: 700; font-size: 14px; color: white;">{{ initials | default('') }}</span>
         </div>
         <div style="display: flex; flex-direction: column;">
-          <span style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 700;">{{ presenterName | default('') }}</span>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; font-weight: 500;">{{ presentationDate | default('') }}</span>
+          <span style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 700;">{{ presenterName }}</span>
+          {% if presentationDate %}
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; font-weight: 500;">{{ presentationDate }}</span>
+          {% endif %}
         </div>
       </div>
     </div>
+    {% endif %}
   </div>
 </div>`,
 

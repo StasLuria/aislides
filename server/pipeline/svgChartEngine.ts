@@ -8,6 +8,7 @@
  * - Responsive viewBox with proper scaling
  * - Animated on load (CSS animations)
  * - Grid lines and axis labels
+ * - Improved label handling for Russian/Cyrillic text
  */
 
 // ═══════════════════════════════════════════════════════
@@ -85,6 +86,27 @@ function truncateLabel(label: string, maxLen: number = 18): string {
 }
 
 /**
+ * Estimate the pixel width of a text string.
+ * Cyrillic characters are wider on average than Latin.
+ */
+function estimateTextWidth(text: string, fontSize: number): number {
+  let charCount = 0;
+  for (const ch of text) {
+    // Cyrillic characters are ~0.65em wide, Latin ~0.55em, digits ~0.55em
+    if (/[\u0400-\u04FF]/.test(ch)) {
+      charCount += 0.65;
+    } else if (/[A-Z]/.test(ch)) {
+      charCount += 0.65;
+    } else if (/\s/.test(ch)) {
+      charCount += 0.3;
+    } else {
+      charCount += 0.55;
+    }
+  }
+  return charCount * fontSize;
+}
+
+/**
  * Split a long label into multiple lines for SVG <text> rendering.
  * Returns an array of tspan-ready lines.
  */
@@ -123,7 +145,7 @@ function renderWrappedLabel(label: string, x: number, y: number, maxChars: numbe
     return `<text x="${x}" y="${y}" text-anchor="middle" fill="#6b7280" font-size="${fontSize}" font-family="Inter, sans-serif">${escapeXml(lines[0])}</text>`;
   }
   // Multi-line: shift first line up by half the total height
-  const lineHeight = fontSize + 2;
+  const lineHeight = fontSize + 3;
   const startY = y - ((lines.length - 1) * lineHeight) / 2;
   const tspans = lines.map((line, i) => 
     `<tspan x="${x}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
@@ -153,7 +175,12 @@ export function renderBarChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 20, bottom: 65, left: 60 };
+  // Dynamically calculate bottom margin based on label lengths
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  const needsWrap = maxLabelLen > 12;
+  const bottomMargin = needsWrap ? 80 : 65;
+
+  const margin = { top: 30, right: 20, bottom: bottomMargin, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -174,6 +201,12 @@ export function renderBarChart(config: ChartConfig): string {
     }
   }
 
+  // Calculate label font size based on bar spacing
+  const availableWidth = barWidth + barGap * 0.6;
+  const labelFontSize = data.length > 6 ? 9 : 11;
+  // Max chars per line based on available width
+  const maxCharsPerLine = Math.max(8, Math.floor(availableWidth / (labelFontSize * 0.55)));
+
   // Bars
   const bars = data.map((d, i) => {
     const barH = (d.value / maxVal) * chartH;
@@ -193,7 +226,7 @@ export function renderBarChart(config: ChartConfig): string {
         <animate attributeName="y" from="${margin.top + chartH}" to="${y}" dur="0.6s" fill="freeze" />
       </rect>
       ${valueLabel}
-      ${renderWrappedLabel(d.label, labelX, height - margin.bottom + 16, 16, 10)}
+      ${renderWrappedLabel(d.label, labelX, height - margin.bottom + 18, maxCharsPerLine, labelFontSize)}
     </g>`;
   });
 
@@ -216,7 +249,16 @@ export function renderHorizontalBarChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 20, right: 60, bottom: 20, left: 120 };
+  // Dynamically calculate left margin based on longest label
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  // Estimate pixel width: ~6.5px per Cyrillic char at font-size 11
+  const estimatedMaxWidth = Math.max(...data.map(d => estimateTextWidth(d.label, 11)));
+  // Use at least 140px, up to 200px for long labels
+  const leftMargin = Math.min(220, Math.max(140, estimatedMaxWidth + 16));
+  // Truncation limit based on available space
+  const maxLabelChars = Math.min(28, Math.max(16, Math.floor(leftMargin / 7)));
+
+  const margin = { top: 20, right: 70, bottom: 20, left: leftMargin };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -234,8 +276,12 @@ export function renderHorizontalBarChart(config: ChartConfig): string {
       valueLabel = `<text x="${margin.left + barW + 8}" y="${y + barHeight / 2 + 4}" text-anchor="start" fill="#6b7280" font-size="12" font-weight="600" font-family="Inter, sans-serif">${formatValue(d.value, unit)}</text>`;
     }
 
+    // Use larger font for horizontal bar labels since there's more space
+    const labelFontSize = 11;
+    const truncatedLabel = truncateLabel(d.label, maxLabelChars);
+
     return `<g>
-      <text x="${margin.left - 8}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))}</text>
+      <text x="${margin.left - 10}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#4b5563" font-size="${labelFontSize}" font-family="Inter, sans-serif">${escapeXml(truncatedLabel)}</text>
       <rect x="${margin.left}" y="${y}" width="${barW}" height="${barHeight}" rx="4" fill="${color}" opacity="0.9">
         <animate attributeName="width" from="0" to="${barW}" dur="0.6s" fill="freeze" />
       </rect>
@@ -259,7 +305,12 @@ export function renderLineChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 30, bottom: 65, left: 60 };
+  // Dynamically calculate bottom margin based on label lengths
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  const needsWrap = maxLabelLen > 12;
+  const bottomMargin = needsWrap ? 80 : 65;
+
+  const margin = { top: 30, right: 30, bottom: bottomMargin, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -294,6 +345,11 @@ export function renderLineChart(config: ChartConfig): string {
 
   const lineColor = getColor(0, true);
 
+  // Calculate label sizing for line chart
+  const pointSpacing = data.length > 1 ? chartW / (data.length - 1) : chartW;
+  const labelFontSize = data.length > 6 ? 9 : 11;
+  const maxCharsPerLine = Math.max(8, Math.floor(pointSpacing / (labelFontSize * 0.55)));
+
   const pointElements = points.map((p, i) => {
     let valueLabel = "";
     if (showValues) {
@@ -302,7 +358,7 @@ export function renderLineChart(config: ChartConfig): string {
     return `<g>
       <circle cx="${p.x}" cy="${p.y}" r="4" fill="white" stroke="${lineColor}" stroke-width="2.5" />
       ${valueLabel}
-      ${renderWrappedLabel(p.d.label, p.x, height - margin.bottom + 16, 16, 10)}
+      ${renderWrappedLabel(p.d.label, p.x, height - margin.bottom + 18, maxCharsPerLine, labelFontSize)}
     </g>`;
   });
 
@@ -338,7 +394,7 @@ export function renderPieChart(config: ChartConfig): string {
   const total = data.reduce((sum, d) => sum + Math.abs(d.value), 0);
   if (total === 0) return renderEmptyChart(width, height, "No data");
 
-  const cx = showLegend ? width * 0.35 : width / 2;
+  const cx = showLegend ? width * 0.32 : width / 2;
   const cy = height / 2;
   const radius = Math.min(cx - 20, cy - 30);
 
@@ -379,18 +435,22 @@ export function renderPieChart(config: ChartConfig): string {
     </g>`;
   });
 
-  // Legend
+  // Legend — improved for longer labels
   let legend = "";
   if (showLegend) {
-    const legendX = width * 0.72;
-    const legendStartY = Math.max(30, cy - (data.length * 24) / 2);
+    const legendX = width * 0.68;
+    const legendAvailWidth = width - legendX - 10;
+    // Max chars based on available width at font-size 11
+    const legendMaxChars = Math.max(14, Math.floor(legendAvailWidth / 6.5));
+    const legendStartY = Math.max(30, cy - (data.length * 26) / 2);
     legend = data.map((d, i) => {
-      const y = legendStartY + i * 24;
+      const y = legendStartY + i * 26;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
+      const labelText = truncateLabel(d.label, legendMaxChars);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#4b5563" font-size="11" font-family="Inter, sans-serif">${escapeXml(labelText)} (${pct}%)</text>
       </g>`;
     }).join("\n    ");
   }
@@ -414,7 +474,7 @@ export function renderDonutChart(config: ChartConfig): string {
   const total = data.reduce((sum, d) => sum + Math.abs(d.value), 0);
   if (total === 0) return renderEmptyChart(width, height, "No data");
 
-  const cx = showLegend ? width * 0.35 : width / 2;
+  const cx = showLegend ? width * 0.32 : width / 2;
   const cy = height / 2;
   const outerR = Math.min(cx - 20, cy - 30);
   const innerR = outerR * 0.6;
@@ -449,23 +509,26 @@ export function renderDonutChart(config: ChartConfig): string {
   let centerText = "";
   if (centerValue || centerLabel) {
     centerText = `<g>
-      ${centerValue ? `<text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="middle" fill="#1f2937" font-size="28" font-weight="700" font-family="Inter, sans-serif">${escapeXml(centerValue)}</text>` : ""}
-      ${centerLabel ? `<text x="${cx}" y="${cy + 18}" text-anchor="middle" dominant-baseline="middle" fill="#9ca3af" font-size="11" font-family="Inter, sans-serif">${escapeXml(centerLabel)}</text>` : ""}
+      ${centerValue ? `<text x="${cx}" y="${cy - 4}" text-anchor="middle" dominant-baseline="middle" fill="#1f2937" font-size="24" font-weight="700" font-family="Inter, sans-serif">${escapeXml(centerValue)}</text>` : ""}
+      ${centerLabel ? `<text x="${cx}" y="${cy + 18}" text-anchor="middle" dominant-baseline="middle" fill="#9ca3af" font-size="10" font-family="Inter, sans-serif">${escapeXml(truncateLabel(centerLabel, 14))}</text>` : ""}
     </g>`;
   }
 
-  // Legend
+  // Legend — improved for longer labels
   let legend = "";
   if (showLegend) {
-    const legendX = width * 0.72;
-    const legendStartY = Math.max(30, cy - (data.length * 24) / 2);
+    const legendX = width * 0.68;
+    const legendAvailWidth = width - legendX - 10;
+    const legendMaxChars = Math.max(14, Math.floor(legendAvailWidth / 6.5));
+    const legendStartY = Math.max(30, cy - (data.length * 26) / 2);
     legend = data.map((d, i) => {
-      const y = legendStartY + i * 24;
+      const y = legendStartY + i * 26;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
+      const labelText = truncateLabel(d.label, legendMaxChars);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 20))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#4b5563" font-size="11" font-family="Inter, sans-serif">${escapeXml(labelText)} (${pct}%)</text>
       </g>`;
     }).join("\n    ");
   }
