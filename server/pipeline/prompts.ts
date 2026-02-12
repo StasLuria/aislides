@@ -108,6 +108,8 @@ Write compelling, substantive content for a single presentation slide. Your cont
 - If the slide topic involves data, extract it as structured data_points (array of {label, value, unit}). Provide at least 3 data points.
 - The key_message should be one impactful sentence that captures the slide's essence.
 - Use specific facts, numbers, and examples — avoid generic platitudes.
+- If previous slide context is provided, DO NOT repeat the same points. Each slide must introduce NEW information, examples, or perspectives.
+- Maintain logical flow: reference or build upon concepts from previous slides when relevant.
 </rules>
 <presentation_context>
 Title: ${presentationTitle}
@@ -119,13 +121,12 @@ Return a JSON with: slide (object with slide_number, title, text, notes, data_po
 </output_format>`;
 }
 
-export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string): string {
-  return `<slide_info>
-Slide ${slideNumber}: ${slideTitle}
-Purpose: ${slidePurpose}
-Key points: ${keyPoints}
-</slide_info>
-Write the content for this slide.`;
+export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string): string {
+  const contextSection = previousContext
+    ? `\n<previous_slides_context>\n${previousContext}\n</previous_slides_context>\n<instruction>Use this context to maintain narrative flow and avoid repeating the same points. Build upon what was already covered. Each slide must add NEW information.</instruction>`
+    : "";
+
+  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${contextSection}\nWrite the content for this slide.`;
 }
 
 // ═══════════════════════════════════════════════════════

@@ -20,6 +20,8 @@ import {
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
 import { getThemePreset, type ThemePreset } from "./themes";
 import { generateImage } from "../_core/imageGeneration";
+import { validateSlideData, autoFixSlideData } from "./qaAgent";
+import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -215,6 +217,7 @@ export async function runWriterSingle(
   allTitles: string,
   targetAudience: string,
   language: string,
+  previousContext?: string,
 ): Promise<SlideContent> {
   const system = writerSystem(language, presentationTitle, allTitles, targetAudience);
   const user = writerUser(
@@ -222,6 +225,7 @@ export async function runWriterSingle(
     slideInfo.title,
     slideInfo.purpose,
     slideInfo.key_points.join(", "),
+    previousContext,
   );
 
   const result = await llmStructured<{ slide: SlideContent }>(system, user, "WriterOutput", {
@@ -260,31 +264,71 @@ export async function runWriterSingle(
   return result.slide;
 }
 
+/**
+ * Build a concise context summary from previously written slides.
+ * Keeps only key_message and title to avoid token bloat.
+ */
+function buildWriterContext(writtenSlides: SlideContent[]): string {
+  if (writtenSlides.length === 0) return "";
+
+  // Keep last 4 slides' context to avoid token bloat
+  const recent = writtenSlides.slice(-4);
+  return recent
+    .map((s) => `Slide ${s.slide_number} "${s.title}": ${s.key_message}`)
+    .join("\n");
+}
+
 export async function runWriterParallel(
   outline: OutlineResult,
   language: string,
   onSlideWritten?: (slideNum: number, total: number) => void,
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
+  const results: SlideContent[] = [];
 
-  // Run all slides in parallel
-  const promises = outline.slides.map((slide) =>
-    runWriterSingle(slide, outline.presentation_title, allTitles, outline.target_audience, language).catch(
-      (err): SlideContent => {
-        console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
-        return {
-          slide_number: slide.slide_number,
-          title: slide.title,
-          text: slide.key_points.map((kp) => `• ${kp}`).join("\n"),
-          notes: "",
-          data_points: [],
-          key_message: slide.purpose,
-        };
-      },
-    ),
-  );
+  // Semi-sequential: write in small batches of 2-3 slides,
+  // passing context from previous batches for coherence.
+  // This balances speed (some parallelism) with context awareness.
+  const batchSize = 2;
 
-  const results = await Promise.all(promises);
+  for (let i = 0; i < outline.slides.length; i += batchSize) {
+    const batch = outline.slides.slice(i, i + batchSize);
+    const previousContext = buildWriterContext(results);
+
+    const batchResults = await Promise.all(
+      batch.map((slide) =>
+        runWriterSingle(
+          slide,
+          outline.presentation_title,
+          allTitles,
+          outline.target_audience,
+          language,
+          previousContext,
+        ).catch(
+          (err): SlideContent => {
+            console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
+            return {
+              slide_number: slide.slide_number,
+              title: slide.title,
+              text: slide.key_points.map((kp) => `• ${kp}`).join("\n"),
+              notes: "",
+              data_points: [],
+              key_message: slide.purpose,
+            };
+          },
+        ),
+      ),
+    );
+
+    batchResults.sort((a, b) => a.slide_number - b.slide_number);
+    results.push(...batchResults);
+
+    // Report progress
+    for (const r of batchResults) {
+      onSlideWritten?.(r.slide_number, outline.slides.length);
+    }
+  }
+
   results.sort((a, b) => a.slide_number - b.slide_number);
   return results;
 }
@@ -532,6 +576,85 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
 }
 
 // ═══════════════════════════════════════════════════════
+// HTML COMPOSER WITH QA VALIDATION + RETRY
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Run HTML Composer with QA validation, auto-fix, and optional retry.
+ * Flow: Compose → Validate → Auto-fix → Re-validate → Retry with feedback (if still failing)
+ */
+export async function runHtmlComposerWithQA(
+  slideContent: SlideContent,
+  layoutName: string,
+  themeCss: string,
+  maxRetries: number = 1,
+): Promise<Record<string, any>> {
+  let data = await runHtmlComposer(slideContent, layoutName, themeCss);
+
+  // Step 1: Validate
+  let qa = validateSlideData(data, layoutName);
+
+  if (qa.passed) return data;
+
+  // Step 2: Auto-fix common issues
+  const { data: fixedData, fixed } = autoFixSlideData(data, layoutName);
+  if (fixed) {
+    data = fixedData;
+    qa = validateSlideData(data, layoutName);
+    if (qa.passed) {
+      console.log(`[QA] Slide ${slideContent.slide_number} "${layoutName}": auto-fixed`);
+      return data;
+    }
+  }
+
+  // Step 3: Retry with feedback (only for errors, max retries)
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    console.log(`[QA] Slide ${slideContent.slide_number} "${layoutName}": retry ${attempt + 1} — ${qa.feedbackForRetry}`);
+
+    // Re-run HTML Composer with the QA feedback
+    const layoutTemplate = getLayoutTemplate(layoutName);
+    const system = htmlComposerSystem(qa.feedbackForRetry);
+    const user = htmlComposerUser(
+      layoutName,
+      layoutTemplate || `Layout: ${layoutName}`,
+      slideContent.title,
+      slideContent.text,
+      slideContent.notes,
+      slideContent.key_message,
+      themeCss,
+    );
+
+    const rawResponse = await llmText(system, user).catch(() => "");
+    let jsonStr = rawResponse;
+    const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) jsonStr = jsonMatch[1];
+
+    try {
+      data = JSON.parse(jsonStr.trim());
+    } catch {
+      // If JSON parsing fails on retry, use fallback
+      console.log(`[QA] Slide ${slideContent.slide_number}: retry JSON parse failed, using fallback`);
+      data = buildFallbackData(slideContent, layoutName);
+      break;
+    }
+
+    // Auto-fix the retry result too
+    const retryFix = autoFixSlideData(data, layoutName);
+    data = retryFix.data;
+
+    qa = validateSlideData(data, layoutName);
+    if (qa.passed) {
+      console.log(`[QA] Slide ${slideContent.slide_number}: passed after retry ${attempt + 1}`);
+      return data;
+    }
+  }
+
+  // If still failing after retries, auto-fix what we can and use it
+  console.warn(`[QA] Slide ${slideContent.slide_number} "${layoutName}": still has issues after retries, using best effort. Issues: ${qa.issues.map(i => i.message).join("; ")}`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
 // IMAGE GENERATION FOR BATCH MODE
 // ═══════════════════════════════════════════════════════
 
@@ -746,7 +869,7 @@ export async function generatePresentation(
     const batchResults = await Promise.all(
       batch.map(async (slideContent) => {
         const layoutName = layoutMap.get(slideContent.slide_number) || "text-slide";
-        const data = await runHtmlComposer(slideContent, layoutName, theme.css_variables).catch(() =>
+        const data = await runHtmlComposerWithQA(slideContent, layoutName, theme.css_variables).catch(() =>
           buildFallbackData(slideContent, layoutName),
         );
 
@@ -757,7 +880,15 @@ export async function generatePresentation(
           data.backgroundImage = { url: imgUrl, alt: slideContent.title };
         }
 
-        const html = renderSlide(layoutName, data);
+        let html = renderSlide(layoutName, data);
+
+        // Apply adaptive font sizing based on content density
+        const analysis = analyzeContentDensity(data, layoutName);
+        const adaptive = generateAdaptiveStyles(analysis);
+        if (adaptive.hasOverrides) {
+          html = `<style>${adaptive.cssOverrides}</style>${html}`;
+        }
+
         return { layoutId: layoutName, data, html };
       }),
     );

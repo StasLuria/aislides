@@ -208,3 +208,20 @@
 - [x] Fix fallback data builder: use proper icon objects instead of emoji strings
 - [x] Write vitest tests for template vertical centering (11 new tests — 128 total passing)
 - [x] Test with multiple topics and verify visual quality — 11 slides generated, all properly centered, content fills slides well
+
+## Quality Improvement: QA Agent + Writer Context + Adaptive Fonts
+- [x] QA Agent: Create validation logic for HTML Composer output (check all required fields, content density, icon format)
+- [x] QA Agent: Add QA prompt that reviews slide data and returns pass/fail with specific issues
+- [x] QA Agent: Integrate QA step into pipeline with retry (max 1 retry per slide)
+- [x] QA Agent: Add QA step to interactive mode assemble endpoint
+- [x] Writer Context: Pass key messages from previous slides to each Writer call
+- [x] Writer Context: Add "avoid repeating" instruction with previous slide summaries
+- [x] Writer Context: Update writerSystem prompt to accept and use context from prior slides
+- [x] Adaptive Fonts: Analyze content density per slide (bullet count, text length)
+- [x] Adaptive Fonts: Generate CSS overrides for font-size, gap, padding based on density
+- [x] Adaptive Fonts: Apply adaptive styles inline in renderSlide output
+- [x] Adaptive Fonts: Handle all layout types (text-slide, two-column, icons-numbers, process-steps, timeline, comparison)
+- [x] Write vitest tests for QA validation logic (42 new tests — 170 total passing)
+- [x] Write vitest tests for writer context building
+- [x] Write vitest tests for adaptive font sizing
+- [x] Test end-to-end generation — 13 slides, all centered, rich content, no repetition, QA step visible
