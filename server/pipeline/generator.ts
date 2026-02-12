@@ -30,6 +30,7 @@ import { runResearchAgent, formatResearchForWriter, type ResearchContext } from 
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 import { analyzeAllSlides, buildEnrichedSlidesSummary, applyContentAwareOverrides, type ContentAnalysis } from "./contentAnalyzer";
+import { generateImagePrompts, type EnrichedSlideInfo, type ImagePromptContext } from "./imagePromptEngine";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -1096,7 +1097,36 @@ export async function generatePresentation(
     onProgress({ nodeName: "image", currentStep: "images", progressPercent: 60, message: "Подбор слайдов для иллюстраций..." });
 
     try {
-      const selections = await selectSlidesForImages(content, layoutMap, 5);
+      // Build enriched slide info with full content context for image prompt engine
+      const enrichedSlides: EnrichedSlideInfo[] = content
+        .filter(s => {
+          const layout = layoutMap.get(s.slide_number) || "text-slide";
+          return !SKIP_IMAGE_LAYOUTS.has(layout);
+        })
+        .map(s => {
+          const analysis = contentAnalyses.find(a => a.slideNumber === s.slide_number);
+          return {
+            slideNumber: s.slide_number,
+            title: s.title,
+            fullText: s.text,
+            keyMessage: s.key_message,
+            dataPoints: s.data_points,
+            layout: layoutMap.get(s.slide_number) || "text-slide",
+            contentType: analysis?.contentType,
+            confidence: analysis?.confidence,
+          };
+        });
+
+      const imagePromptContext: ImagePromptContext = {
+        presentationTitle: plannerResult.presentation_title,
+        language: plannerResult.language,
+        themeMood: themePreset.mood,
+        primaryColor: theme.colors.primary,
+        secondaryColor: theme.colors.secondary,
+        };
+
+      const selections = await generateImagePrompts(enrichedSlides, imagePromptContext, 5);
+      console.log(`[Pipeline] Image prompt engine selected ${selections.length} slides: ${selections.map(s => `slide ${s.slide_number}`).join(", ")}`);
 
       if (selections.length > 0) {
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 63, message: `Генерация ${selections.length} иллюстраций...` });

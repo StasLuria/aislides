@@ -662,8 +662,8 @@
 - [x] Better layout diversity through content-aware assignment
 
 ## Quality Improvement: Step 4 — Better Image Selection
-- [ ] Improve image prompt generation for more relevant results
-- [ ] Better image-to-slide matching
+- [x] Improve image prompt generation for more relevant results
+- [x] Better image-to-slide matching
 
 ## Bug Fix: Final Slide Title Truncation
 - [x] Fix final-slide template: title truncated with "..." for long titles
@@ -701,3 +701,14 @@
 - [x] Improve Layout Agent prompt with content-aware examples and rules
 - [x] Ensure layout diversity is maintained alongside content-aware selection
 - [x] Test with real generation and verify layout quality (9 unique layouts / 11 slides, comparison→comparison, stats→hero-stat, KPI→chart-text)
+
+## Quality Improvement: Step 4 — Better Image Generation
+- [x] Audit current image prompt generation logic (suggest-image-prompt, selectSlidesForImages, generateSlideImages)
+- [x] Analyze how slide content (title, text, data_points, key_message) is used in image prompts
+- [x] Improve image prompt generation: add slide content context (topic, key facts, data points)
+- [x] Add style guidance to prompts (professional, business, clean, no text overlay)
+- [x] Improve slide selection for images: prefer slides with visual topics (technology, people, places)
+- [x] Add negative prompt patterns to avoid generic stock-photo results
+- [x] Ensure image prompts match presentation theme/mood
+- [x] Write/update vitest tests for improved image prompt generation
+- [x] Test with real generation and verify image relevance (2/3 images cybersecurity-themed, slide 9 excellent)
