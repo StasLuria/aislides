@@ -32,7 +32,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0 0 20px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-bottom: 20px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.55; margin: 0 0 24px 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 0 0 24px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
     <div style="border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);">
       <div style="display: flex; align-items: center; gap: 16px;">

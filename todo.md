@@ -404,3 +404,14 @@
 - [x] Write 73 vitest tests for adaptive typography (adaptiveTypography.test.ts)
 - [x] Visual testing: 30 slides at 3 density levels, 0/30 overflow, all readable
 - [x] All 593 tests passing, no regressions
+
+## Sprint 8: Interactive Mode Testing & Fixes
+
+- [x] Analyze existing interactive mode implementation (interactiveRoutes.ts + Interactive.tsx)
+- [x] End-to-end test: create presentation in interactive mode via browser
+- [x] Fix title-slide description overflow — truncate to 150 chars in buildPreviewData
+- [x] Fix title-slide template — add line-clamp-3 on description
+- [x] Fix chart rendering in Viewer — include Chart.js scripts in parseSlides for canvas slides
+- [x] Fix batch pipeline — add same title/final-slide description truncation post-processing
+- [x] Verify interactive mode flow: structure → content → assembly → view (all working)
+- [x] All 593 tests passing, no regressions

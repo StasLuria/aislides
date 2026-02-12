@@ -54,12 +54,33 @@ function parseSlides(html: string): string[] {
   }
 
   if (slideElements.length > 0) {
-    return Array.from(slideElements).map((el) => {
+    // Extract Chart.js library and initialization scripts from the original HTML
+    const scripts = doc.querySelectorAll("script");
+    let chartLibScript = "";
+    const chartInitScripts: string[] = [];
+    scripts.forEach((s) => {
+      if (s.src && s.src.includes("chart.js")) {
+        chartLibScript = `<script src="${s.src}"><\/script>`;
+      } else if (s.textContent && s.textContent.includes("new Chart")) {
+        // Extract individual chart init functions
+        const initFns = s.textContent.match(/\(function\(\)[\s\S]*?\}\)\(\);/g) || [];
+        chartInitScripts.push(...initFns);
+      }
+    });
+
+    return Array.from(slideElements).map((el, idx) => {
+      const hasCanvas = el.querySelector("canvas") !== null;
+      // Find the chart init script that matches this slide's canvas id
+      const chartInit = hasCanvas
+        ? chartInitScripts.find((s) => s.includes(`chart-${idx}`))
+        : null;
+
       return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
   ${headContent}
+  ${hasCanvas ? chartLibScript : ""}
   <style>
     html, body {
       margin: 0;
@@ -78,7 +99,7 @@ function parseSlides(html: string): string[] {
     }
   </style>
 </head>
-<body>${el.outerHTML}</body>
+<body>${el.outerHTML}${chartInit ? `<script>${chartInit}<\/script>` : ""}</body>
 </html>`;
     });
   }

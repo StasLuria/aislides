@@ -795,9 +795,14 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
               layoutName = "image-text";
             }
 
-            const data = await runHtmlComposer(slideContent, layoutName, theme.css_variables).catch(() =>
+            let data = await runHtmlComposer(slideContent, layoutName, theme.css_variables).catch(() =>
               buildFallbackData(slideContent, layoutName),
             );
+
+            // Post-process: truncate description for title/final slides to prevent overflow
+            if ((layoutName === "title-slide" || layoutName === "final-slide") && data.description && data.description.length > 200) {
+              data.description = data.description.substring(0, 200);
+            }
 
             // Inject image data into template data
             if (slideImage) {
@@ -1035,6 +1040,7 @@ export function buildPreviewData(slide: SlideContent, layoutName: string, imageU
     case "title-slide":
       return {
         ...base,
+        description: (slide.key_message || body || text).substring(0, 150),
         presenterName: "",
         presentationDate: new Date().toLocaleDateString("ru-RU"),
         initials: "",

@@ -985,6 +985,11 @@ export async function generatePresentation(
           buildFallbackData(slideContent, layoutName),
         );
 
+        // Post-process: truncate description for title/final slides to prevent overflow
+        if ((layoutName === "title-slide" || layoutName === "final-slide") && data.description && data.description.length > 200) {
+          data.description = data.description.substring(0, 200);
+        }
+
         // Inject image if available
         const imgUrl = imageMap.get(slideContent.slide_number);
         if (imgUrl) {
