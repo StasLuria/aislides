@@ -464,9 +464,276 @@ describe("Manus-Style Layout Templates — Sprint 4", () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════
+   // ═══════════════════════════════════════════════════
+  // dual-chart
+  // ═══════════════════════════════════════════════════
+  describe("dual-chart", () => {
+    it("should render two chart cards side by side", () => {
+      const html = renderSlide("dual-chart", {
+        title: "Сравнение выручки и расходов",
+        description: "Динамика за 2024-2025",
+        leftChart: {
+          title: "Выручка",
+          subtitle: "млн руб.",
+          insight: "Рост на 23% г/г",
+        },
+        rightChart: {
+          title: "Расходы",
+          subtitle: "млн руб.",
+          insight: "Снижение на 5%",
+        },
+        leftChartSvg: "<svg><rect width='100' height='50' fill='blue'/></svg>",
+        rightChartSvg: "<svg><rect width='100' height='50' fill='red'/></svg>",
+        source: "Финансовая отчётность 2025",
+      });
+      expect(html).toContain("Сравнение выручки и расходов");
+      expect(html).toContain("Выручка");
+      expect(html).toContain("Расходы");
+      expect(html).toContain("млн руб.");
+      expect(html).toContain("Рост на 23%");
+      expect(html).toContain("Снижение на 5%");
+      // Check SVG injection
+      expect(html).toContain("fill='blue'");
+      expect(html).toContain("fill='red'");
+      expect(html).toContain("Финансовая отчётность 2025");
+    });
+
+    it("should render with placeholders when no SVG", () => {
+      const html = renderSlide("dual-chart", {
+        title: "Comparison",
+        leftChart: {
+          title: "Chart A",
+          placeholder: "Revenue data",
+        },
+        rightChart: {
+          title: "Chart B",
+          placeholder: "Cost data",
+        },
+      });
+      expect(html).toContain("Chart A");
+      expect(html).toContain("Chart B");
+      expect(html).toContain("Revenue data");
+      expect(html).toContain("Cost data");
+    });
+
+    it("should use grid-template-columns: 1fr 1fr for side-by-side layout", () => {
+      const html = renderSlide("dual-chart", {
+        title: "Test",
+        leftChart: { title: "L" },
+        rightChart: { title: "R" },
+      });
+      expect(html).toContain("grid-template-columns: 1fr 1fr");
+    });
+
+    it("should render description when provided", () => {
+      const html = renderSlide("dual-chart", {
+        title: "Test",
+        description: "Описание сравнения",
+        leftChart: { title: "L" },
+        rightChart: { title: "R" },
+      });
+      expect(html).toContain("Описание сравнения");
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // risk-matrix
+  // ═══════════════════════════════════════════════════
+  describe("risk-matrix", () => {
+    const fullData = {
+      title: "Матрица рисков проекта",
+      description: "Оценка вероятности и влияния",
+      matrixColumns: ["Низкое", "Среднее", "Высокое"],
+      matrixRows: [
+        { label: "Высокий", cells: [
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+          { label: "Высокий", color: "#fed7aa", textColor: "#9a3412" },
+          { label: "Критичный", color: "#fecaca", textColor: "#991b1b" },
+        ]},
+        { label: "Средний", cells: [
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+          { label: "Высокий", color: "#fed7aa", textColor: "#9a3412" },
+        ]},
+        { label: "Низкий", cells: [
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+        ]},
+      ],
+      matrixLegend: [
+        { label: "Низкий", color: "#dcfce7" },
+        { label: "Средний", color: "#fef9c3" },
+        { label: "Высокий", color: "#fed7aa" },
+        { label: "Критичный", color: "#fecaca" },
+      ],
+      mitigationTitle: "Меры снижения",
+      mitigations: [
+        { title: "Резервный поставщик", description: "Подключить альтернативного поставщика", color: "#dc2626", priority: "Критичный" },
+        { title: "Страхование", description: "Оформить полис", color: "#ea580c", priority: "Высокий" },
+        { title: "Мониторинг", description: "Еженедельный отчёт", color: "#ca8a04", priority: "Средний" },
+      ],
+      source: "Риск-менеджмент 2025",
+    };
+
+    it("should render the 3x3 heatmap grid", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("Матрица рисков проекта");
+      expect(html).toContain("Низкое");
+      expect(html).toContain("Среднее");
+      expect(html).toContain("Высокое");
+      // Row labels
+      expect(html).toContain("Высокий");
+      expect(html).toContain("Средний");
+      expect(html).toContain("Низкий");
+    });
+
+    it("should render color-coded cells", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      // Green for low risk
+      expect(html).toContain("#dcfce7");
+      // Yellow for medium
+      expect(html).toContain("#fef9c3");
+      // Orange for high
+      expect(html).toContain("#fed7aa");
+      // Red for critical
+      expect(html).toContain("#fecaca");
+    });
+
+    it("should render cell text colors", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("#166534"); // green text
+      expect(html).toContain("#854d0e"); // yellow text
+      expect(html).toContain("#9a3412"); // orange text
+      expect(html).toContain("#991b1b"); // red text
+    });
+
+    it("should render mitigation cards with numbered circles", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("Резервный поставщик");
+      expect(html).toContain("Страхование");
+      expect(html).toContain("Мониторинг");
+      expect(html).toContain("Подключить альтернативного поставщика");
+    });
+
+    it("should render priority badges", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("Критичный");
+      expect(html).toContain("Высокий");
+      expect(html).toContain("Средний");
+    });
+
+    it("should render legend items", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      // Legend should show all risk levels
+      const legendMatches = html.match(/width: 10px; height: 10px; border-radius: 3px/g);
+      expect(legendMatches).not.toBeNull();
+      expect(legendMatches!.length).toBe(4);
+    });
+
+    it("should render mitigation title", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("Меры снижения");
+    });
+
+    it("should render source citation", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("Риск-менеджмент 2025");
+    });
+
+    it("should use 1.2fr 0.8fr grid for matrix + mitigations", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("grid-template-columns: 1.2fr 0.8fr");
+    });
+
+    it("should render vertical row labels with writing-mode", () => {
+      const html = renderSlide("risk-matrix", fullData);
+      expect(html).toContain("writing-mode: vertical-lr");
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // Auto-density for new layouts
+  // ═══════════════════════════════════════════════════
+  describe("Auto-density for dual-chart and risk-matrix", () => {
+    it("should estimate height for dual-chart", () => {
+      const height = estimateContentHeight("dual-chart", {
+        title: "Comparison",
+        description: "Year over year",
+        leftChart: { title: "Revenue" },
+        rightChart: { title: "Costs" },
+      }, "normal");
+      expect(height).toBeGreaterThan(0);
+      expect(height).toBeLessThan(1000);
+    });
+
+    it("should estimate height for risk-matrix", () => {
+      const height = estimateContentHeight("risk-matrix", {
+        title: "Risk Assessment",
+        matrixColumns: ["Low", "Med", "High"],
+        matrixRows: [
+          { label: "High", cells: [{ label: "M" }, { label: "H" }, { label: "C" }] },
+          { label: "Med", cells: [{ label: "L" }, { label: "M" }, { label: "H" }] },
+          { label: "Low", cells: [{ label: "L" }, { label: "L" }, { label: "M" }] },
+        ],
+        mitigations: [
+          { title: "A", description: "Desc A" },
+          { title: "B", description: "Desc B" },
+        ],
+      }, "normal");
+      expect(height).toBeGreaterThan(0);
+      expect(height).toBeLessThan(1000);
+    });
+
+    it("should increase height estimate with more mitigations", () => {
+      const small = estimateContentHeight("risk-matrix", {
+        title: "R",
+        matrixRows: [{ label: "H", cells: [{ label: "C" }] }],
+        mitigations: [{ title: "A" }],
+      }, "normal");
+      const large = estimateContentHeight("risk-matrix", {
+        title: "R",
+        matrixRows: [
+          { label: "H", cells: [{ label: "C" }] },
+          { label: "M", cells: [{ label: "M" }] },
+          { label: "L", cells: [{ label: "L" }] },
+        ],
+        mitigations: [
+          { title: "A", description: "D" },
+          { title: "B", description: "D" },
+          { title: "C", description: "D" },
+          { title: "D", description: "D" },
+          { title: "E", description: "D" },
+        ],
+      }, "normal");
+      expect(large).toBeGreaterThan(small);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
+  // Layout registration for new layouts
+  // ═══════════════════════════════════════════════════
+  describe("Layout registration for Sprint 6", () => {
+    it("should have dual-chart and risk-matrix registered", () => {
+      const allLayouts = listLayouts();
+      expect(allLayouts).toContain("dual-chart");
+      expect(allLayouts).toContain("risk-matrix");
+    });
+
+    it("should have at least 33 total layouts", () => {
+      const allLayouts = listLayouts();
+      expect(allLayouts.length).toBeGreaterThanOrEqual(33);
+    });
+
+    it("should have non-empty templates for new layouts", () => {
+      expect(getLayoutTemplate("dual-chart").length).toBeGreaterThan(100);
+      expect(getLayoutTemplate("risk-matrix").length).toBeGreaterThan(100);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════
   // New Themes
-  // ═══════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════
   describe("New Themes", () => {
     it("should have executive_navy_red theme", () => {
       const theme = getThemePreset("executive_navy_red");

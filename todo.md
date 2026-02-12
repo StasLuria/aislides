@@ -572,3 +572,16 @@
 - [x] Add "auto" option to frontend theme selector with Wand2 icon and description
 - [x] Set "auto" as default theme selection mode
 - [x] Write vitest tests for theme selection logic — 51 new tests (850 total pass)
+
+## Sprint 6: Remaining Layouts (dual-chart + risk-matrix)
+- [x] Implement "dual-chart" layout template — two SVG charts side by side with titles, subtitles, insights, placeholders
+- [x] Implement "risk-matrix" layout template — 3x3 heatmap grid + color-coded cells + mitigation cards with priority badges + legend
+- [x] Update LAYOUT_SYSTEM prompt with new layout descriptions
+- [x] Update htmlComposer prompt with layout schemas for dual-chart and risk-matrix
+- [x] Update QA agent validation rules for new layouts
+- [x] Update autoDensity height estimates for new layouts
+- [x] Update computeDensity cases for new layouts
+- [x] Update generator fallback data for new layouts
+- [x] Update dataVizAgent CHART_LAYOUTS for dual-chart
+- [x] Update injectChartIntoSlideData for dual-chart (leftChartSvg/rightChartSvg)
+- [x] Write vitest tests for both new layouts — 22 new tests (872 total pass)

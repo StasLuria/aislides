@@ -374,12 +374,30 @@ export function estimateContentHeight(
         const text = typeof bullet === "string" ? bullet : bullet?.text || bullet?.title || "";
         const desc = typeof bullet === "object" ? bullet?.description || "" : "";
         const titleLines = clampLines(estimateTextLines(text, p.bodySize), p.bulletClamp);
-        const descLines = desc ? clampLines(estimateTextLines(desc, p.smallSize), p.descClamp) : 0;
+        const descLines = desc ? clampLines(estimateTextLines(desc, p.smallSize), 1.4) : 0;
         bulletsH += titleLines * (p.bodySize * p.bodyLh) + descLines * (p.smallSize * 1.4) + p.gapSm + 8;
       }
       const calloutH = data.callout ? 50 : 0;
       const sourceH = data.source ? 20 : 0;
       return headerH + bulletsH + calloutH + sourceH;
+    }
+
+    case "dual-chart": {
+      // Two chart cards side by side — fixed grid height
+      const descH = data.description ? 30 : 0;
+      const sourceH = data.source ? 25 : 0;
+      return headerH + descH + 350 + sourceH; // 350 for chart cards grid
+    }
+
+    case "risk-matrix": {
+      // Left: 3x3 grid, Right: mitigation cards — fixed grid height
+      const descH = data.description ? 30 : 0;
+      const rows = data.matrixRows || [];
+      const matrixH = Math.max(rows.length * 80, 240); // ~80px per row, min 240
+      const mitigations = data.mitigations || [];
+      const mitigH = mitigations.length * 65; // ~65px per mitigation card
+      const sourceH = data.source ? 25 : 0;
+      return headerH + descH + Math.max(matrixH, mitigH) + sourceH;
     }
 
     default:

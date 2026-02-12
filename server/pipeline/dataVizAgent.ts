@@ -173,7 +173,7 @@ const SKIP_CHART_LAYOUTS = new Set([
 ]);
 
 /** Layouts that already have chart support */
-const CHART_LAYOUTS = new Set(["chart-slide", "waterfall-chart", "stats-chart", "chart-text"]);
+const CHART_LAYOUTS = new Set(["chart-slide", "waterfall-chart", "stats-chart", "chart-text", "dual-chart"]);
 
 /**
  * Determine if a slide should get a chart and what type.
@@ -436,8 +436,17 @@ export function injectChartIntoSlideData(
   svgChart: string,
   layoutName: string,
 ): Record<string, any> {
-  data.chartSvg = svgChart;
-  data.hasChart = true;
+  if (layoutName === "dual-chart") {
+    // For dual-chart, inject the same chart into both panels
+    // (the LLM generates separate chartData.left and chartData.right,
+    //  but the SVG engine produces one chart from the primary data)
+    data.leftChartSvg = svgChart;
+    data.rightChartSvg = svgChart;
+    data.hasChart = true;
+  } else {
+    data.chartSvg = svgChart;
+    data.hasChart = true;
+  }
 
   // For chart-slide layout, replace the canvas-based chart with SVG
   if (layoutName === "chart-slide") {

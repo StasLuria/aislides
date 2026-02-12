@@ -649,6 +649,54 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       data.bullets = bullets.slice(0, 5);
       data.callout = content.key_message || "";
       break;
+    case "dual-chart":
+      data.leftChart = {
+        title: bullets[0]?.title || "Показатель 1",
+        subtitle: bullets[0]?.description || "",
+        placeholder: "Данные для графика",
+      };
+      data.rightChart = {
+        title: bullets[1]?.title || "Показатель 2",
+        subtitle: bullets[1]?.description || "",
+        placeholder: "Данные для графика",
+      };
+      data.chartData = {
+        left: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [10, 20, 30, 40] }] },
+        right: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [15, 25, 35, 45] }] },
+      };
+      break;
+    case "risk-matrix":
+      data.matrixColumns = ["Низкое", "Среднее", "Высокое"];
+      data.matrixRows = [
+        { label: "Высокий", cells: [
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+          { label: "Высокий", color: "#fed7aa", textColor: "#9a3412" },
+          { label: "Критичный", color: "#fecaca", textColor: "#991b1b" },
+        ]},
+        { label: "Средний", cells: [
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+          { label: "Высокий", color: "#fed7aa", textColor: "#9a3412" },
+        ]},
+        { label: "Низкий", cells: [
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Низкий", color: "#dcfce7", textColor: "#166534" },
+          { label: "Средний", color: "#fef9c3", textColor: "#854d0e" },
+        ]},
+      ];
+      data.matrixLegend = [
+        { label: "Низкий", color: "#dcfce7" },
+        { label: "Средний", color: "#fef9c3" },
+        { label: "Высокий", color: "#fed7aa" },
+        { label: "Критичный", color: "#fecaca" },
+      ];
+      data.mitigations = bullets.slice(0, 4).map((b, i) => ({
+        title: b.title || `Мера ${i + 1}`,
+        description: b.description || "",
+        color: ["#dc2626", "#ea580c", "#ca8a04", "#16a34a"][i] || "#6366f1",
+        priority: ["Критичный", "Высокий", "Средний", "Низкий"][i] || "",
+      }));
+      break;
     default:
       data.bullets = bullets.slice(0, 5);
   }

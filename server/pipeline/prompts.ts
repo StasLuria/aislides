@@ -254,6 +254,8 @@ Your goal is to create a visually diverse, professional presentation where every
 29. numbered-steps-v2 — Vertical numbered steps with large circle numbers, connector lines, and optional result badges. Best for methodologies, action plans. Data: steps[] with number, title, description, result.
 30. timeline-horizontal — Horizontal timeline with alternating above/below content and dot markers on a line. Best for chronological data with 4-6 events. Data: events[] with date, title, description.
 31. text-with-callout — Standard bullet list + bottom callout bar with key insight. Best for slides that need a summary takeaway. Data: bullets[] + callout string.
+32. dual-chart — Two charts side by side in cards, each with title, subtitle, and optional insight. Best for comparative data visualization (e.g., revenue vs costs, before vs after). Data: leftChart + rightChart + chartData for both.
+33. risk-matrix — Left: 3x3 color-coded heatmap grid (rows x columns). Right: numbered mitigation cards with priority badges. Best for risk assessment, impact/probability analysis. Data: matrixColumns[], matrixRows[] with cells[], mitigations[].
 </available_layouts>
 <content_matching_rules>
 - Match layout to content type:
@@ -275,6 +277,8 @@ Your goal is to create a visually diverse, professional presentation where every
   * Slide with hierarchy, priority levels, or layered framework → pyramid
   * Slide with 2x2 decision matrix or prioritization grid → matrix-2x2
   * Slide with action items, requirements, or readiness checklist → checklist
+  * Slide comparing two datasets or metrics side by side → dual-chart
+  * Slide with risk assessment, impact/probability analysis → risk-matrix
 </content_matching_rules>
 <diversity_rules>
 - Use at LEAST 6 unique layouts across the presentation (with 27 layouts available, aim for maximum variety).
@@ -293,13 +297,15 @@ Your goal is to create a visually diverse, professional presentation where every
 - Prefer matrix-2x2 for prioritization/positioning slides.
 - Prefer checklist for action items/requirements slides.
 - Prefer waterfall-chart for financial breakdown slides.
-- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout) when content matches — they create more visually engaging presentations than text-slide.
+- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout, dual-chart, risk-matrix) when content matches — they create more visually engaging presentations than text-slide.
 - For data-heavy slides with both metrics and chart data, prefer stats-chart or chart-text over plain chart-slide.
 - For slides emphasizing ONE dramatic number, prefer hero-stat over highlight-stats.
 - For scenario/forecast analysis, prefer scenario-cards.
 - For step-by-step processes with results, prefer numbered-steps-v2 over process-steps.
 - For horizontal timelines with few events (4-6), prefer timeline-horizontal over timeline.
 - When a slide has a key takeaway or conclusion, prefer text-with-callout over text-slide.
+- For comparing two datasets visually (e.g., revenue vs costs, Q1 vs Q2), prefer dual-chart over chart-slide.
+- For risk assessment or impact/probability analysis, prefer risk-matrix.
 </diversity_rules>
 <output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
@@ -383,6 +389,8 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - numbered-steps-v2: {title, steps: [{number, title, description, result?}]} — Vertical steps with circles and connector lines. result is optional badge (e.g. "+15%", "Done").
 - timeline-horizontal: {title, description?, events: [{date, title, description?, highlight?: boolean}]} — Horizontal timeline. Set highlight=true for the current/key event.
 - text-with-callout: {title, bullets: [{title, description}], callout?, source?, icon?} — Standard bullets + bottom callout bar with key insight.
+- dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data.
+- risk-matrix: {title, description?, matrixColumns: [string], matrixRows: [{label, cells: [{label, value?, color, textColor?}]}], matrixLegend: [{label, color}], mitigationTitle?, mitigations: [{title, description?, color, priority?}], source?} — 3x3 heatmap grid + mitigation cards. Use colors: green (#dcfce7/#166534) for low risk, yellow (#fef9c3/#854d0e) for medium, orange (#fed7aa/#9a3412) for high, red (#fecaca/#991b1b) for critical.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

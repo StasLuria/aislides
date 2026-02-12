@@ -1083,6 +1083,134 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
   {% endif %}
 </div>`,
+
+  "dual-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; overflow: hidden;">
+    <div class="card" style="display: flex; flex-direction: column; padding: 20px; overflow: hidden;">
+      <div style="flex-shrink: 0; margin-bottom: 12px;">
+        <div style="font-size: var(--at-small-size, 14px); font-weight: 700; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ leftChart.title | default('') }}</div>
+        {% if leftChart.subtitle %}
+        <div style="font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ leftChart.subtitle }}</div>
+        {% endif %}
+      </div>
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; overflow: hidden;">
+        {% if leftChartSvg %}
+        <div style="width: 100%; max-height: 100%;">{{{ leftChartSvg }}}</div>
+        {% elif leftChart.placeholder %}
+        <div style="text-align: center; color: var(--text-body-color, #4b5563);">
+          <div style="font-size: 40px; margin-bottom: 8px; opacity: 0.3;">📊</div>
+          <div style="font-size: 12px;">{{ leftChart.placeholder }}</div>
+        </div>
+        {% endif %}
+      </div>
+      {% if leftChart.insight %}
+      <div style="flex-shrink: 0; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+        <div style="font-size: 11px; color: var(--text-body-color, #4b5563); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">💡 {{ leftChart.insight }}</div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="card" style="display: flex; flex-direction: column; padding: 20px; overflow: hidden;">
+      <div style="flex-shrink: 0; margin-bottom: 12px;">
+        <div style="font-size: var(--at-small-size, 14px); font-weight: 700; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ rightChart.title | default('') }}</div>
+        {% if rightChart.subtitle %}
+        <div style="font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ rightChart.subtitle }}</div>
+        {% endif %}
+      </div>
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; overflow: hidden;">
+        {% if rightChartSvg %}
+        <div style="width: 100%; max-height: 100%;">{{{ rightChartSvg }}}</div>
+        {% elif rightChart.placeholder %}
+        <div style="text-align: center; color: var(--text-body-color, #4b5563);">
+          <div style="font-size: 40px; margin-bottom: 8px; opacity: 0.3;">📊</div>
+          <div style="font-size: 12px;">{{ rightChart.placeholder }}</div>
+        </div>
+        {% endif %}
+      </div>
+      {% if rightChart.insight %}
+      <div style="flex-shrink: 0; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+        <div style="font-size: 11px; color: var(--text-body-color, #4b5563); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">💡 {{ rightChart.insight }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if source %}
+  <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+  </div>
+  {% endif %}
+</div>`,
+
+  "risk-matrix": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 14px); line-height: 1.5; margin: 6px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; margin-bottom: 4px;">
+        <div style="width: 28px;"></div>
+        {% for col in matrixColumns | default([]) %}
+        <div style="flex: 1; text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-body-color, #4b5563); padding: 4px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ col }}</div>
+        {% endfor %}
+      </div>
+      {% for row in matrixRows | default([]) %}
+      <div style="display: flex; flex: 1; min-height: 0;">
+        <div style="width: 28px; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-body-color, #4b5563); writing-mode: vertical-lr; transform: rotate(180deg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.label | default('') }}</div>
+        </div>
+        {% for cell in row.cells | default([]) %}
+        <div style="flex: 1; margin: 2px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; background: {{ cell.color | default('rgba(0,0,0,0.04)') }}; overflow: hidden;">
+          <div style="font-size: 11px; font-weight: 700; color: {{ cell.textColor | default('var(--text-heading-color, #111827)') }}; text-align: center; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2;">{{ cell.label | default('') }}</div>
+          {% if cell.value %}
+          <div style="font-size: 10px; color: {{ cell.textColor | default('var(--text-body-color, #4b5563)') }}; margin-top: 2px; opacity: 0.8;">{{ cell.value }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <div style="display: flex; margin-top: 6px; gap: 12px; justify-content: center;">
+        {% for legend in matrixLegend | default([]) %}
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <div style="width: 10px; height: 10px; border-radius: 3px; background: {{ legend.color | default('#ccc') }};"></div>
+          <span style="font-size: 10px; color: var(--text-body-color, #4b5563);">{{ legend.label | default('') }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+      <div style="font-size: var(--at-small-size, 13px); font-weight: 700; color: var(--text-heading-color, #111827); flex-shrink: 0;">{{ mitigationTitle | default('Меры митигации') }}</div>
+      {% for item in mitigations | default([]) %}
+      <div class="card" style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; overflow: hidden; border-left: 3px solid {{ item.color | default('var(--primary-accent-color, #6366f1)') }};">
+        <div style="flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; background: {{ item.color | default('var(--primary-accent-color, #6366f1)') }};">{{ loop.index }}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: var(--at-tiny-size, 12px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.title | default('') }}</div>
+          {% if item.description %}
+          <div style="font-size: 11px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item.description }}</div>
+          {% endif %}
+          {% if item.priority %}
+          <div style="display: inline-block; margin-top: 4px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; color: {{ item.color | default('#6366f1') }}; background: {{ item.color | default('#6366f1') }}15;">{{ item.priority }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% if source %}
+  <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+  </div>
+  {% endif %}
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -1948,6 +2076,23 @@ export function computeDensity(layoutId: string, data: Record<string, any>): Den
       compactThreshold = 8;
       denseThreshold = 12;
       break;
+
+    case "dual-chart":
+      // Two chart cards — mostly visual, density depends on description/insight text
+      textLength = (data.description || "").length + (data.leftChart?.insight || "").length + (data.rightChart?.insight || "").length;
+      compactThreshold = 999;
+      denseThreshold = 999;
+      break;
+
+    case "risk-matrix": {
+      const matrixRows = countItems(data.matrixRows);
+      const mitigCount = countItems(data.mitigations);
+      itemCount = Math.max(matrixRows, mitigCount);
+      textLength = totalTextLen(data.mitigations);
+      compactThreshold = 4;
+      denseThreshold = 6;
+      break;
+    }
 
     default:
       return "normal";

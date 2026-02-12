@@ -133,6 +133,12 @@ const LAYOUT_REQUIREMENTS: Record<string, LayoutRequirement> = {
     minBullets: 3,
     bulletNeedsTitleAndDesc: true,
   },
+  "dual-chart": {
+    requiredFields: ["title", "leftChart", "rightChart"],
+  },
+  "risk-matrix": {
+    requiredFields: ["title", "matrixColumns", "matrixRows", "mitigations"],
+  },
 };
 
 // ═══════════════════════════════════════════════════════
