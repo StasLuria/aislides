@@ -415,3 +415,28 @@
 - [x] Fix batch pipeline — add same title/final-slide description truncation post-processing
 - [x] Verify interactive mode flow: structure → content → assembly → view (all working)
 - [x] All 593 tests passing, no regressions
+
+## Sprint 9: Inline Slide Editing in Viewer
+
+- [ ] Study Viewer architecture (SlideFrame, parseSlides, iframe rendering)
+- [ ] Design inline editing approach (contentEditable in iframe vs overlay editor)
+- [ ] Add backend API endpoint: PATCH /api/presentations/:id/slides/:index to update slide HTML
+- [ ] Add backend logic: update individual slide HTML in full presentation HTML
+- [ ] Implement edit mode toggle in Viewer toolbar
+- [ ] Implement contentEditable injection into slide iframes when edit mode is active
+- [ ] Add visual indicators for editable elements (hover highlight, cursor change)
+- [ ] Implement text change detection and save mechanism
+- [ ] Add undo/redo support for edits
+- [ ] Persist changes to database via API call
+- [ ] Write vitest tests for slide update API
+- [ ] End-to-end browser testing of inline editing flow
+
+## Sprint 6 — Inline Editing in Viewer
+- [x] Add data-field attributes to rendered slide HTML via post-processing (inlineFieldInjector.ts)
+- [x] Create new API endpoint for inline field updates (PATCH single field)
+- [x] Create GET editable slide endpoint (returns HTML with inline editing script)
+- [x] Create InlineEditableSlide component with contentEditable + postMessage
+- [x] Integrate inline editing into Viewer (toggle between sidebar and inline modes)
+- [x] Add inline editing CSS styles (hover highlights, focus outlines, save indicators)
+- [x] Write vitest tests for inline editing (30 tests, all passing)
+- [x] Add API client methods (getEditableSlide, patchSlideField)

@@ -3,13 +3,15 @@
  * without full regeneration.
  *
  * Routes:
- *   GET    /api/v1/presentations/:id/slides         — get all slide data (layout + data)
- *   GET    /api/v1/presentations/:id/slides/:index   — get single slide data
- *   PUT    /api/v1/presentations/:id/slides/:index   — update slide text/data fields
- *   POST   /api/v1/presentations/:id/slides/:index/image — upload/replace slide image
- *   DELETE /api/v1/presentations/:id/slides/:index/image — remove slide image
- *   POST   /api/v1/presentations/:id/slides/:index/layout — change slide layout
- *   POST   /api/v1/presentations/:id/reassemble      — re-render full HTML from edited slides
+ *   GET    /api/v1/presentations/:id/slides                  — get all slide data (layout + data)
+ *   GET    /api/v1/presentations/:id/slides/:index            — get single slide data
+ *   GET    /api/v1/presentations/:id/slides/:index/editable   — get slide HTML with inline editing
+ *   PUT    /api/v1/presentations/:id/slides/:index            — update slide text/data fields
+ *   PATCH  /api/v1/presentations/:id/slides/:index            — update single field inline
+ *   POST   /api/v1/presentations/:id/slides/:index/image      — upload/replace slide image
+ *   DELETE /api/v1/presentations/:id/slides/:index/image      — remove slide image
+ *   POST   /api/v1/presentations/:id/slides/:index/layout     — change slide layout
+ *   POST   /api/v1/presentations/:id/reassemble               — re-render full HTML from edited slides
  */
 import { Router, Request, Response } from "express";
 import multer from "multer";
@@ -18,6 +20,7 @@ import { renderSlide, renderPresentation, BASE_CSS } from "./pipeline/templateEn
 import { getThemePreset } from "./pipeline/themes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { buildEditableSlideHtml, getEditableFields } from "./pipeline/inlineFieldInjector";
 
 const router = Router();
 
@@ -347,6 +350,153 @@ router.delete("/api/v1/presentations/:id/slides/:index/image", async (req: Reque
     });
   } catch (error: any) {
     console.error("[SlideEdit] Delete image error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// GET editable slide HTML — returns slide HTML with inline editing script
+// ═══════════════════════════════════════════════════════
+
+router.get("/api/v1/presentations/:id/slides/:index/editable", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    const index = parseInt(req.params.index);
+
+    if (isNaN(index) || index < 0 || index >= slides.length) {
+      res.status(404).json({ detail: `Slide index ${req.params.index} out of range (0-${slides.length - 1})` });
+      return;
+    }
+
+    const slide = slides[index];
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    // Render the slide HTML
+    const slideHtml = renderSlide(slide.layoutId, slide.data);
+
+    // Wrap in editable HTML with inline editing script
+    const html = buildEditableSlideHtml(
+      slideHtml,
+      p.themeCss || themePreset.cssVariables,
+      themePreset.fontsUrl,
+      p.language || "ru",
+      slide.layoutId,
+      slide.data,
+      BASE_CSS,
+    );
+
+    const fields = getEditableFields(slide.layoutId);
+
+    res.json({
+      presentation_id: p.presentationId,
+      index,
+      layoutId: slide.layoutId,
+      data: slide.data,
+      html,
+      editableFields: fields.map(f => ({
+        key: f.key,
+        label: f.label,
+        multiline: !!f.multiline,
+      })),
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Get editable slide error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// PATCH slide field — update a single text field inline
+// ═══════════════════════════════════════════════════════
+
+router.patch("/api/v1/presentations/:id/slides/:index", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    const index = parseInt(req.params.index);
+
+    if (isNaN(index) || index < 0 || index >= slides.length) {
+      res.status(404).json({ detail: `Slide index ${req.params.index} out of range` });
+      return;
+    }
+
+    const { field, value } = req.body;
+
+    if (!field || typeof field !== "string") {
+      res.status(422).json({ detail: "field name is required" });
+      return;
+    }
+    if (typeof value !== "string") {
+      res.status(422).json({ detail: "value must be a string" });
+      return;
+    }
+
+    // Validate field is editable for this layout
+    const editableFields = getEditableFields(slides[index].layoutId);
+    const fieldDef = editableFields.find(f => f.key === field);
+    if (!fieldDef) {
+      res.status(422).json({ detail: `Field '${field}' is not editable for layout '${slides[index].layoutId}'` });
+      return;
+    }
+
+    // Update the specific field
+    slides[index].data[field] = value;
+
+    // Re-render the slide HTML
+    const slideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+
+    // Save updated slides to DB
+    await updatePresentationProgress(req.params.id, {
+      finalHtmlSlides: slides,
+    });
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    // Return editable HTML for the updated slide
+    const html = buildEditableSlideHtml(
+      slideHtml,
+      p.themeCss || themePreset.cssVariables,
+      themePreset.fontsUrl,
+      p.language || "ru",
+      slides[index].layoutId,
+      slides[index].data,
+      BASE_CSS,
+    );
+
+    res.json({
+      presentation_id: p.presentationId,
+      index,
+      layoutId: slides[index].layoutId,
+      data: slides[index].data,
+      field,
+      value,
+      html,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Patch slide field error:", error);
     res.status(500).json({ detail: error.message || "Internal server error" });
   }
 });

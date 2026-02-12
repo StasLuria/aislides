@@ -4,6 +4,10 @@
  * and optional editor panel (right).
  * Keyboard navigation: Left/Right arrows, Escape to exit, E to toggle edit.
  *
+ * Editing modes:
+ *   - Inline: Click directly on slide text to edit in-place (default when editing)
+ *   - Sidebar: Traditional form-based editor panel on the right
+ *
  * Key fix: slides are 1280×720 fixed-size elements. We use CSS transform scale
  * to fit them into the viewport. Thumbnails use the same approach at a smaller scale.
  */
@@ -23,12 +27,15 @@ import {
   Layers,
   ExternalLink,
   Pencil,
+  PencilLine,
+  PanelRightOpen,
   Save,
   Loader2,
 } from "lucide-react";
 import api from "@/lib/api";
-import type { PresentationDetail, SlideData, SlideEditResponse } from "@/lib/api";
+import type { PresentationDetail, SlideData, SlideEditResponse, InlineFieldPatchResponse } from "@/lib/api";
 import SlideEditor from "@/components/SlideEditor";
+import InlineEditableSlide from "@/components/InlineEditableSlide";
 
 /**
  * Parse the full HTML presentation into individual slide HTML documents.
@@ -166,6 +173,8 @@ function SlideFrame({
   );
 }
 
+type EditMode = "off" | "inline" | "sidebar";
+
 export default function Viewer() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -178,11 +187,14 @@ export default function Viewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [fullHtml, setFullHtml] = useState<string | null>(null);
 
-  // Editing state
-  const [isEditing, setIsEditing] = useState(false);
+  // Editing state — now supports two modes
+  const [editMode, setEditMode] = useState<EditMode>("off");
   const [slideDataList, setSlideDataList] = useState<SlideData[]>([]);
   const [hasEdits, setHasEdits] = useState(false);
   const [isReassembling, setIsReassembling] = useState(false);
+
+  // Backwards compat
+  const isEditing = editMode !== "off";
 
   // Slide transition animation
   const [slideTransition, setSlideTransition] = useState<"none" | "fade-in" | "slide-left" | "slide-right">("none");
@@ -202,7 +214,7 @@ export default function Viewer() {
         setMainSize({ w: Math.min(w, 1280), h });
       } else {
         // Fallback calculation
-        const editorWidth = isEditing ? 360 : 0;
+        const editorWidth = editMode === "sidebar" ? 360 : 0;
         const w = Math.min(window.innerWidth - 280 - 48 - editorWidth, 1280);
         const h = window.innerHeight - 56 - 48 - 48;
         setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
@@ -217,7 +229,7 @@ export default function Viewer() {
       window.removeEventListener("resize", updateSize);
       observer.disconnect();
     };
-  }, [isEditing]);
+  }, [editMode]);
 
   // Fetch presentation data
   useEffect(() => {
@@ -274,9 +286,9 @@ export default function Viewer() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Don't capture keys when editing text
+      // Don't capture keys when editing text in sidebar or inline
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
@@ -294,7 +306,7 @@ export default function Viewer() {
         });
       } else if (e.key === "Escape") {
         if (isEditing) {
-          setIsEditing(false);
+          setEditMode("off");
         } else if (isFullscreen) {
           setIsFullscreen(false);
         } else {
@@ -303,7 +315,9 @@ export default function Viewer() {
       } else if (e.key === "f" || e.key === "F") {
         if (!isEditing) setIsFullscreen((prev) => !prev);
       } else if (e.key === "e" || e.key === "E") {
-        if (!isFullscreen) setIsEditing((prev) => !prev);
+        if (!isFullscreen) {
+          setEditMode((prev) => prev === "off" ? "inline" : "off");
+        }
       }
     },
     [totalSlides, isFullscreen, isEditing, navigate]
@@ -314,7 +328,7 @@ export default function Viewer() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Handle slide update from editor
+  // Handle slide update from sidebar editor
   const handleSlideUpdated = useCallback(
     (index: number, response: SlideEditResponse) => {
       // Update the slide HTML in the viewer
@@ -344,6 +358,29 @@ export default function Viewer() {
         return updated;
       });
 
+      setHasEdits(true);
+    },
+    [],
+  );
+
+  // Handle inline field save
+  const handleInlineFieldSaved = useCallback(
+    (index: number, field: string, value: string, response: InlineFieldPatchResponse) => {
+      // Update slide data
+      setSlideDataList((prev) => {
+        const updated = [...prev];
+        if (updated[index]) {
+          updated[index] = {
+            ...updated[index],
+            data: response.data,
+          };
+        }
+        return updated;
+      });
+
+      // Note: We don't update slideHtmls here because the inline editor
+      // already shows the updated text. The slideHtmls will be refreshed
+      // when switching away from inline mode or on reassemble.
       setHasEdits(true);
     },
     [],
@@ -405,6 +442,15 @@ export default function Viewer() {
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
     }
+  };
+
+  // Toggle edit mode
+  const cycleEditMode = () => {
+    setEditMode((prev) => {
+      if (prev === "off") return "inline";
+      if (prev === "inline") return "sidebar";
+      return "off";
+    });
   };
 
   if (isLoading) {
@@ -475,6 +521,9 @@ export default function Viewer() {
   // Thumbnail dimensions
   const THUMB_W = 192;
   const THUMB_H = 108; // 16:9
+
+  // Calculate slide display dimensions
+  const slideDisplayH = Math.min(mainSize.w * (720 / 1280), mainSize.h);
 
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -626,16 +675,31 @@ export default function Viewer() {
               <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
                 ← → навигация • E редактор • F полноэкранный
               </span>
+
+              {/* Inline edit toggle */}
               <Button
-                variant={isEditing ? "default" : "outline"}
+                variant={editMode === "inline" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setIsEditing((prev) => !prev)}
+                onClick={() => setEditMode(editMode === "inline" ? "off" : "inline")}
                 className="gap-1.5 text-xs"
                 disabled={slideDataList.length === 0}
+                title="Inline-редактирование: кликните на текст слайда"
               >
-                <Pencil className="w-3.5 h-3.5" />
-                {isEditing ? "Закрыть редактор" : "Редактировать"}
+                <PencilLine className="w-3.5 h-3.5" />
+                {editMode === "inline" ? "Выкл. редактор" : "Редактировать"}
               </Button>
+
+              {/* Sidebar editor toggle */}
+              <Button
+                variant={editMode === "sidebar" ? "default" : "ghost"}
+                size="icon-sm"
+                onClick={() => setEditMode(editMode === "sidebar" ? "off" : "sidebar")}
+                disabled={slideDataList.length === 0}
+                title="Панель редактирования (все поля)"
+              >
+                <PanelRightOpen className="w-4 h-4" />
+              </Button>
+
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -649,20 +713,31 @@ export default function Viewer() {
           {/* Slide display */}
           <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20">
             <div
-              className={`rounded-lg overflow-hidden border border-border/30 shadow-2xl bg-white slide-transition ${slideTransition}`}
+              className={`rounded-lg overflow-hidden border shadow-2xl bg-white slide-transition ${slideTransition} ${
+                editMode === "inline" ? "border-primary/40 ring-1 ring-primary/20" : "border-border/30"
+              }`}
               style={{
                 width: mainSize.w,
-                height: mainSize.w * (720 / 1280),
+                height: slideDisplayH,
                 maxHeight: mainSize.h,
               }}
               onAnimationEnd={() => setSlideTransition("none")}
             >
-              {hasSlides && slideHtmls[currentSlide] ? (
+              {editMode === "inline" && slideDataList[currentSlide] ? (
+                /* Inline editable slide */
+                <InlineEditableSlide
+                  presentationId={presentationId}
+                  slideIndex={currentSlide}
+                  containerWidth={mainSize.w}
+                  containerHeight={slideDisplayH}
+                  onFieldSaved={handleInlineFieldSaved}
+                />
+              ) : hasSlides && slideHtmls[currentSlide] ? (
                 <SlideFrame
                   html={slideHtmls[currentSlide]}
                   containerWidth={mainSize.w}
-                  containerHeight={Math.min(mainSize.w * (720 / 1280), mainSize.h)}
-                  interactive
+                  containerHeight={slideDisplayH}
+                  interactive={editMode === "off"}
                 />
               ) : (
                 <div className="w-full h-full bg-secondary/30 flex items-center justify-center">
@@ -678,12 +753,12 @@ export default function Viewer() {
           </div>
         </div>
 
-        {/* Right panel — Editor (conditional) */}
-        {isEditing && slideDataList[currentSlide] && (
+        {/* Right panel — Sidebar Editor (conditional) */}
+        {editMode === "sidebar" && slideDataList[currentSlide] && (
           <SlideEditor
             presentationId={presentationId}
             slide={slideDataList[currentSlide]}
-            onClose={() => setIsEditing(false)}
+            onClose={() => setEditMode("off")}
             onSlideUpdated={handleSlideUpdated}
           />
         )}

@@ -205,6 +205,31 @@ export interface ReassembleResponse {
   slide_count: number;
 }
 
+export interface EditableFieldInfo {
+  key: string;
+  label: string;
+  multiline: boolean;
+}
+
+export interface EditableSlideResponse {
+  presentation_id: string;
+  index: number;
+  layoutId: string;
+  data: Record<string, any>;
+  html: string;
+  editableFields: EditableFieldInfo[];
+}
+
+export interface InlineFieldPatchResponse {
+  presentation_id: string;
+  index: number;
+  layoutId: string;
+  data: Record<string, any>;
+  field: string;
+  value: string;
+  html: string;
+}
+
 export interface WSErrorData {
   presentation_id: string;
   error_type: string;
@@ -556,6 +581,28 @@ class ApiClient {
   async reassemblePresentation(id: string): Promise<ReassembleResponse> {
     const { data } = await this.http.post<ReassembleResponse>(
       `/presentations/${id}/reassemble`,
+    );
+    return data;
+  }
+
+  // — Inline Editing —
+
+  async getEditableSlide(id: string, index: number): Promise<EditableSlideResponse> {
+    const { data } = await this.http.get<EditableSlideResponse>(
+      `/presentations/${id}/slides/${index}/editable`,
+    );
+    return data;
+  }
+
+  async patchSlideField(
+    id: string,
+    index: number,
+    field: string,
+    value: string,
+  ): Promise<InlineFieldPatchResponse> {
+    const { data } = await this.http.patch<InlineFieldPatchResponse>(
+      `/presentations/${id}/slides/${index}`,
+      { field, value },
     );
     return data;
   }
