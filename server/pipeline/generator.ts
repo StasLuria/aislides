@@ -27,6 +27,7 @@ import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
+import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -950,8 +951,26 @@ export async function generatePresentation(
     onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 72, message: "Пропуск заметок (ошибка)" });
   }
 
+  // 5.8. DATA VISUALIZATION — generate SVG charts for data-rich slides
+  onProgress({ nodeName: "data_viz", currentStep: "analyzing", progressPercent: 72, message: "Анализ данных для визуализации..." });
+  let chartMap = new Map<number, string>();
+  try {
+    const dataVizResult = await runDataVizAgent(
+      content,
+      layoutMap,
+      6,
+      (msg) => onProgress({ nodeName: "data_viz", currentStep: "generating", progressPercent: 73, message: msg }),
+    );
+    chartMap = dataVizResult.svgCharts;
+    console.log(`[Pipeline] Data Viz: ${dataVizResult.totalChartsGenerated} SVG charts generated`);
+    onProgress({ nodeName: "data_viz", currentStep: "done", progressPercent: 74, message: `${dataVizResult.totalChartsGenerated} графиков создано` });
+  } catch (err) {
+    console.error("[Pipeline] Data Viz failed, continuing without charts:", err);
+    onProgress({ nodeName: "data_viz", currentStep: "done", progressPercent: 74, message: "Пропуск визуализации (ошибка)" });
+  }
+
   // 6. HTML COMPOSER (parallel per slide)
-  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 73, message: "Сборка HTML-слайдов..." });
+  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 75, message: "Сборка HTML-слайдов..." });
 
   const slides: Array<{ layoutId: string; data: Record<string, any>; html: string }> = [];
 
@@ -971,6 +990,12 @@ export async function generatePresentation(
         if (imgUrl) {
           data.image = { url: imgUrl, alt: slideContent.title };
           data.backgroundImage = { url: imgUrl, alt: slideContent.title };
+        }
+
+        // Inject SVG chart if available
+        const svgChart = chartMap.get(slideContent.slide_number);
+        if (svgChart) {
+          injectChartIntoSlideData(data, svgChart, layoutName);
         }
 
         // Inject slide metadata for footer rendering

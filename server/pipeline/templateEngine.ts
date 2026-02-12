@@ -189,8 +189,12 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px;">
+    {% if chartSvg %}
+    <div style="width: 100%; max-width: 700px; max-height: 100%;">{{{ chartSvg }}}</div>
+    {% else %}
     <canvas id="chart-{{ _slide_index | default(0) }}" style="max-width: 100%; max-height: 100%;"></canvas>
+    {% endif %}
   </div>
 </div>`,
 
@@ -1029,6 +1033,16 @@ function renderTemplate(template: string, data: Record<string, any>): string {
 
   // Process if/elif/else blocks
   processed = processIfBlocks(processed, data);
+
+  // Replace raw HTML expressions {{{ ... }}} (no escaping, for SVG injection)
+  processed = processed.replace(/\{\{\{(.+?)\}\}\}/g, (_match, expr) => {
+    try {
+      const val = evalExpression(expr.trim(), data);
+      return val !== undefined && val !== null ? String(val) : "";
+    } catch {
+      return "";
+    }
+  });
 
   // Replace variable expressions {{ ... }}
   processed = processed.replace(/\{\{(.+?)\}\}/g, (_match, expr) => {

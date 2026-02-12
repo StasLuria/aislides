@@ -315,3 +315,31 @@
 - [x] Update frontend constants with new agent step (research)
 - [x] Write vitest tests for Research Agent (32 tests, 379 total)
 - [x] Verify end-to-end generation works with Research Agent
+
+## Sprint 5: Data Visualization Agent
+
+### SVG Chart Generators
+- [x] Create svgChartEngine.ts with pure SVG chart rendering (5 chart types)
+- [x] Implement vertical bar chart with labels, values, grid lines, animations
+- [x] Implement horizontal bar chart for comparison data
+- [x] Implement line chart with data points, gradient fill, smooth curves
+- [x] Implement pie chart with segments, labels, and legend
+- [x] Implement donut chart with center metric
+- [x] Add theme-aware color palettes (CSS variables)
+- [x] Add responsive sizing with viewBox
+
+### Data Visualization Agent
+- [x] Create dataVizAgent.ts with data extraction from slide content
+- [x] Implement data extraction from data_points and text patterns
+- [x] Implement chart type recommendation (recommendChartType) based on data patterns
+- [x] Implement LLM-based data detection for complex slides
+- [x] Add chart SVG injection into slide HTML (injectChartIntoSlideData)
+- [x] Add triple-brace {{{ }}} raw HTML support in template engine
+
+### Pipeline Integration
+- [x] Integrate into pipeline after Speaker Coach, before HTML Composer
+- [x] Update frontend constants with data_viz step
+- [x] Update chart-slide template to support SVG alongside canvas
+- [x] Write vitest tests for SVG generators (56 tests, 435 total)
+- [x] Write vitest tests for Data Visualization Agent
+- [x] Verify end-to-end generation with charts
