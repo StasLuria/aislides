@@ -352,3 +352,18 @@
   - Added smart column count: ≤3 items = 1 row, 4 items = 2x2 grid
   - Added overflow: hidden and text-overflow: ellipsis on descriptions (3-line clamp)
   - Reduced icon container 48→36px
+
+## Sprint 6: Template Overflow Audit
+
+- [x] Audit all 23 templates for overflow vulnerabilities (documented in TEMPLATE_AUDIT.md)
+- [x] Fix title overflow: all titles now have max font-size 36px, line-clamp 2, text-overflow ellipsis
+- [x] Fix content overflow: add overflow:hidden to all main containers
+- [x] Fix card/item overflow: add text-clamp to descriptions in all card-based templates
+- [x] Fix padding consistency: standardize to 36px 48px 32px outer padding
+- [x] Fix font-size consistency: standardize heading/body/label sizes
+- [x] Fix dynamic grid capping: process-steps, team-profiles, roadmap capped at 5 columns
+- [x] Fix table-slide: overflow:auto on table wrapper for scrollable tables
+- [x] Fix quote-slide: line-clamp 5 on blockquote text
+- [x] Fix template engine: add Jinja2 ternary expression support (x if condition else y)
+- [x] Write 85 new overflow tests (templateOverflow.test.ts)
+- [x] Run all 520 tests — all passing, no regressions

@@ -29,7 +29,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
   {% endif %}
   <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; padding-left: 32px; min-width: 0;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 48px; font-weight: 700; line-height: 1.1; margin: 0 0 20px 0;">{{ title }}</h1>
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0 0 20px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-bottom: 20px;"></div>
     {% if description %}
     <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.55; margin: 0 0 24px 0;">{{ description }}</p>
@@ -54,7 +54,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   <div style="position: absolute; top: 50%; left: 10%; width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,0.03); pointer-events: none; transform: translateY(-50%);"></div>
   <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; max-width: 900px;">
     <div style="width: 60px; height: 3px; background: rgba(255,255,255,0.4); border-radius: 2px; margin-bottom: 32px;"></div>
-    <h1 style="color: #ffffff; letter-spacing: -0.02em; font-size: 60px; font-weight: 700; line-height: 1.1; margin: 0 0 24px 0;">{{ title }}</h1>
+    <h1 style="color: #ffffff; letter-spacing: -0.02em; font-size: 52px; font-weight: 700; line-height: 1.1; margin: 0 0 24px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
     {% if subtitle %}
     <p style="color: rgba(255,255,255,0.85); max-width: 640px; font-size: 20px; line-height: 1.5; margin: 0;">{{ subtitle }}</p>
     {% endif %}
@@ -62,22 +62,22 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "text-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+  "text-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
     {% if icon and icon.url %}
     <div class="icon-circle"><img src="{{ icon.url }}" alt="{{ icon.name | default('') }}" /></div>
     {% endif %}
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
   </div>
-  <div class="accent-line" style="flex-shrink: 0; margin-bottom: 24px;"></div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center;">
-    <div style="display: flex; flex-direction: column; gap: 14px;">
+  <div class="accent-line" style="flex-shrink: 0; margin-bottom: 20px;"></div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
       {% for bullet in bullets | default([]) %}
       <div class="bullet-row">
         <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
         <div style="flex: 1; min-width: 0;">
-          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 17px; line-height: 1.3;">{{ bullet.title | default('') }}</div>
-          <div style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.55; margin-top: 4px;">{{ bullet.description | default('') }}</div>
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
         </div>
       </div>
       {% endfor %}
@@ -85,31 +85,31 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "two-column": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "two-column": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; width: 100%;">
-      <div class="card" style="display: flex; flex-direction: column;">
-        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ leftColumn.title | default('') }}</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; width: 100%;">
+      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; max-height: 100%;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 20px; font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ leftColumn.title | default('') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
           {% for bullet in leftColumn.bullets | default([]) %}
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
-            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ bullet }}</span>
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ bullet }}</span>
           </div>
           {% endfor %}
         </div>
       </div>
-      <div class="card" style="display: flex; flex-direction: column;">
-        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ rightColumn.title | default('') }}</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; max-height: 100%;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 20px; font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ rightColumn.title | default('') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
           {% for bullet in rightColumn.bullets | default([]) %}
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--secondary-accent-color, #3b82f6);"></div>
-            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ bullet }}</span>
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--secondary-accent-color, #3b82f6);"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ bullet }}</span>
           </div>
           {% endfor %}
         </div>
@@ -118,7 +118,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "image-text": `<div style="display: flex; height: 100%; padding: 40px 64px; gap: 32px;">
+  "image-text": `<div style="display: flex; height: 100%; padding: 36px 48px; gap: 24px; overflow: hidden;">
   <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; min-width: 0;">
     <div style="width: 100%; height: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
       {% if image and image.url %}
@@ -132,15 +132,15 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     </div>
   </div>
   <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-bottom: 20px;"></div>
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 32px; font-weight: 700; line-height: 1.15; margin: 0 0 12px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-bottom: 16px;"></div>
     <div style="display: flex; flex-direction: column; gap: 12px;">
       {% for bullet in bullets | default([]) %}
       <div style="display: flex; align-items: flex-start; gap: 12px;">
         <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
         <div style="flex: 1; min-width: 0;">
-          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px; line-height: 1.3;">{{ bullet.title | default('') }}</div>
-          <div style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.55; margin-top: 3px;">{{ bullet.description | default('') }}</div>
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 15px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.5; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
         </div>
       </div>
       {% endfor %}
@@ -156,7 +156,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   {% endif %}
   <div class="gradient-overlay-bottom" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></div>
   <div style="position: relative; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 0 64px 64px;">
-    <h1 style="color: #ffffff; font-size: 48px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0;">{{ title }}</h1>
+    <h1 style="color: #ffffff; font-size: 42px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
     {% if subtitle %}
     <p style="color: rgba(255,255,255,0.8); font-size: 20px; line-height: 1.5; max-width: 672px; margin: 0;">{{ subtitle }}</p>
     {% endif %}
@@ -172,7 +172,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   <div class="gradient-overlay-dark" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></div>
   <div style="position: relative; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 0 80px; text-align: center;">
     <div style="font-size: 80px; color: var(--primary-accent-color, #9333ea); opacity: 0.6; line-height: 1;">\"</div>
-    <blockquote style="color: #ffffff; font-size: 30px; line-height: 1.5; max-width: 768px; margin: 0 0 32px 0;">{{ quote }}</blockquote>
+    <blockquote style="color: #ffffff; font-size: 28px; line-height: 1.5; max-width: 768px; margin: 0 0 24px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;">{{ quote }}</blockquote>
     <div class="accent-line-center" style="margin-bottom: 16px;"></div>
     <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">{{ author | default('') }}</p>
     {% if role %}
@@ -181,9 +181,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "chart-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+  "chart-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line" style="margin-top: 16px;"></div>
     {% if description %}
     <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
@@ -198,16 +198,16 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "table-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "table-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border-color, #e5e7eb);">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: flex-start; overflow: hidden;">
+    <div style="width: 100%; border-radius: 16px; overflow: auto; border: 1px solid var(--card-border-color, #e5e7eb); max-height: 100%;">
       <table>
         <thead>
           <tr>
@@ -262,25 +262,25 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
     <div style="position: relative; width: 100%;">
-      <div style="position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: var(--primary-accent-color, #9333ea); opacity: 0.3;"></div>
-      <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: var(--primary-accent-color, #9333ea); opacity: 0.3;"></div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
         {% for event in events | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 20px; padding-left: 12px;">
+        <div style="display: flex; align-items: flex-start; gap: 16px; padding-left: 8px;">
           <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); flex-shrink: 0; display: flex; align-items: center; justify-content: center; z-index: 1;">
             <div style="width: 8px; height: 8px; border-radius: 50%; background: white;"></div>
           </div>
           <div style="flex: 1; min-width: 0;">
-            <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; font-weight: 600; margin-bottom: 4px;">{{ event.date | default('') }}</div>
-            <div style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 600;">{{ event.title }}</div>
+            <div style="color: var(--primary-accent-color, #9333ea); font-size: 12px; font-weight: 600; margin-bottom: 2px;">{{ event.date | default('') }}</div>
+            <div style="color: var(--text-heading-color, #111827); font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ event.title }}</div>
             {% if event.description %}
-            <div style="color: var(--text-body-color, #4b5563); font-size: 14px; margin-top: 4px;">{{ event.description }}</div>
+            <div style="color: var(--text-body-color, #4b5563); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.description }}</div>
             {% endif %}
           </div>
         </div>
@@ -290,21 +290,21 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "process-steps": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "process-steps": `{% set s_count = steps | default([]) | length %}{% set s_cols = s_count if s_count <= 5 else 5 %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat({{ steps | default([]) | length }}, 1fr); gap: 24px; width: 100%;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat({{ s_cols }}, 1fr); gap: 16px; width: 100%;">
       {% for step in steps | default([]) %}
-      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center;">
-          <span style="color: white; font-size: 24px; font-weight: 700;">{{ step.number | default(loop.index) }}</span>
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="color: white; font-size: 20px; font-weight: 700;">{{ step.number | default(loop.index) }}</span>
         </div>
-        <div style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 600;">{{ step.title }}</div>
+        <div style="color: var(--text-heading-color, #111827); font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ step.title }}</div>
         {% if step.description %}
-        <div style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.5;">{{ step.description }}</div>
+        <div style="color: var(--text-body-color, #4b5563); font-size: 12px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ step.description }}</div>
         {% endif %}
       </div>
       {% endfor %}
@@ -312,31 +312,31 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "comparison": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "comparison": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; width: 100%;">
-      <div class="card" style="border-left: 4px solid {{ optionA.color | default('#22c55e') }}; display: flex; flex-direction: column;">
-        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ optionA.title | default('Option A') }}</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; width: 100%;">
+      <div class="card" style="border-left: 4px solid {{ optionA.color | default('#22c55e') }}; display: flex; flex-direction: column; overflow: hidden;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 20px; font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ optionA.title | default('Option A') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
           {% for point in optionA.points | default([]) %}
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionA.color | default('#22c55e') }};"></div>
-            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ point }}</span>
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionA.color | default('#22c55e') }};"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ point }}</span>
           </div>
           {% endfor %}
         </div>
       </div>
-      <div class="card" style="border-left: 4px solid {{ optionB.color | default('#ef4444') }}; display: flex; flex-direction: column;">
-        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ optionB.title | default('Option B') }}</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="card" style="border-left: 4px solid {{ optionB.color | default('#ef4444') }}; display: flex; flex-direction: column; overflow: hidden;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 20px; font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ optionB.title | default('Option B') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
           {% for point in optionB.points | default([]) %}
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionB.color | default('#ef4444') }};"></div>
-            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ point }}</span>
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionB.color | default('#ef4444') }};"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ point }}</span>
           </div>
           {% endfor %}
         </div>
@@ -349,7 +349,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   <div class="slide-decor-circle slide-decor-top-right"></div>
   <div class="slide-decor-circle slide-decor-bottom-left"></div>
   <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;">
-    <h1 style="color: #ffffff; font-size: 60px; font-weight: 700; line-height: 1.05; margin: 0 0 16px 0;">{{ title | default('Спасибо!') }}</h1>
+    <h1 style="color: #ffffff; font-size: 52px; font-weight: 700; line-height: 1.05; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title | default('Спасибо!') }}</h1>
     <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
     {% if subtitle %}
     <p style="color: rgba(255,255,255,0.85); font-size: 20px; line-height: 1.5; max-width: 672px; margin: 0 0 32px 0;">{{ subtitle }}</p>
@@ -369,22 +369,22 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "agenda-table-of-contents": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "agenda-table-of-contents": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center;">
-    <div style="display: flex; flex-direction: column; gap: 14px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
       {% for section in sections | default([]) %}
-      <div style="display: flex; align-items: flex-start; gap: 20px; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 5%, white);">
-        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="color: white; font-weight: 700; font-size: 15px;">{{ section.number | default(loop.index) }}</span>
+      <div style="display: flex; align-items: flex-start; gap: 16px; padding: 10px 14px; border-radius: 10px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 5%, white);">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="color: white; font-weight: 700; font-size: 14px;">{{ section.number | default(loop.index) }}</span>
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="color: var(--text-heading-color, #111827); font-size: 17px; font-weight: 600;">{{ section.title }}</div>
+          <div style="color: var(--text-heading-color, #111827); font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ section.title }}</div>
           {% if section.description %}
-          <div style="color: var(--text-body-color, #4b5563); font-size: 14px; margin-top: 4px;">{{ section.description }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ section.description }}</div>
           {% endif %}
         </div>
       </div>
@@ -393,29 +393,29 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "team-profiles": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "team-profiles": `{% set t_count = teamMembers | default([]) | length %}{% set t_cols = t_count if t_count <= 5 else 5 %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if companyDescription %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; margin: 12px 0 0 0;">{{ companyDescription }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ companyDescription }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat({{ teamMembers | default([]) | length }}, 1fr); gap: 24px; width: 100%;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat({{ t_cols }}, 1fr); gap: 16px; width: 100%;">
       {% for member in teamMembers | default([]) %}
-      <div class="card" style="text-align: center;">
-        <div style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px; overflow: hidden; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, white);">
+      <div class="card" style="text-align: center; padding: 16px 12px; overflow: hidden;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 8px; overflow: hidden; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, white);">
           {% if member.image and member.image.url %}
           <img src="{{ member.image.url }}" alt="{{ member.name }}" style="width: 100%; height: 100%; object-fit: cover;" />
           {% else %}
-          <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: var(--primary-accent-color, #9333ea);">{{ member.name[0] | default('?') }}</div>
+          <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: var(--primary-accent-color, #9333ea);">{{ member.name[0] | default('?') }}</div>
           {% endif %}
         </div>
-        <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px;">{{ member.name }}</div>
-        <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; margin-top: 4px;">{{ member.role | default('') }}</div>
+        <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.name }}</div>
+        <div style="color: var(--primary-accent-color, #9333ea); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ member.role | default('') }}</div>
         {% if member.description %}
-        <div style="color: var(--text-body-color, #4b5563); font-size: 12px; margin-top: 8px; line-height: 1.4;">{{ member.description }}</div>
+        <div style="color: var(--text-body-color, #4b5563); font-size: 11px; margin-top: 6px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ member.description }}</div>
         {% endif %}
       </div>
       {% endfor %}
@@ -423,12 +423,12 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "logo-grid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "logo-grid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
@@ -446,12 +446,12 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "video-embed": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "video-embed": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
@@ -475,95 +475,95 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   // NEW LAYOUTS — Sprint 3
   // ═══════════════════════════════════════════════════════
 
-  "waterfall-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "waterfall-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 40px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 32px; overflow: hidden;">
     {% for bar in bars | default([]) %}
-    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-      <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ bar.value | default('') }}</div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0;">
+      <div style="font-size: 13px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">{{ bar.value | default('') }}</div>
       <div style="width: 100%; height: {{ bar.height | default('50') }}%; min-height: 24px; border-radius: 8px 8px 0 0; background: {{ bar.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative; display: flex; align-items: center; justify-content: center;">
         {% if bar.change %}
         <span style="font-size: 11px; font-weight: 600; color: white;">{{ bar.change }}</span>
         {% endif %}
       </div>
-      <div style="font-size: 12px; color: var(--text-body-color, #4b5563); text-align: center; font-weight: 500;">{{ bar.label | default('') }}</div>
+      <div style="font-size: 11px; color: var(--text-body-color, #4b5563); text-align: center; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">{{ bar.label | default('') }}</div>
     </div>
     {% endfor %}
   </div>
 </div>`,
 
-  "swot-analysis": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "swot-analysis": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 16px;">
-    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #22c55e 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #22c55e 20%, transparent); display: flex; flex-direction: column;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: #22c55e; display: flex; align-items: center; justify-content: center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px;">
+    <div style="border-radius: 12px; padding: 16px; background: color-mix(in srgb, #22c55e 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #22c55e 20%, transparent); display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0;">
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
-        <h2 style="color: #16a34a; font-size: 18px; font-weight: 700; margin: 0;">{{ strengths.title | default('Strengths') }}</h2>
+        <h2 style="color: #16a34a; font-size: 15px; font-weight: 700; margin: 0;">{{ strengths.title | default('Strengths') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
         {% for item in strengths.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 8px;">
-          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #22c55e;"></div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        <div style="display: flex; align-items: flex-start; gap: 6px;">
+          <div style="width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #22c55e;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
-    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #ef4444 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #ef4444 20%, transparent); display: flex; flex-direction: column;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: #ef4444; display: flex; align-items: center; justify-content: center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div style="border-radius: 12px; padding: 16px; background: color-mix(in srgb, #ef4444 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #ef4444 20%, transparent); display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0;">
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #ef4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <h2 style="color: #dc2626; font-size: 18px; font-weight: 700; margin: 0;">{{ weaknesses.title | default('Weaknesses') }}</h2>
+        <h2 style="color: #dc2626; font-size: 15px; font-weight: 700; margin: 0;">{{ weaknesses.title | default('Weaknesses') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
         {% for item in weaknesses.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 8px;">
-          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #ef4444;"></div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        <div style="display: flex; align-items: flex-start; gap: 6px;">
+          <div style="width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #ef4444;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
-    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #3b82f6 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #3b82f6 20%, transparent); display: flex; flex-direction: column;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: #3b82f6; display: flex; align-items: center; justify-content: center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <div style="border-radius: 12px; padding: 16px; background: color-mix(in srgb, #3b82f6 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #3b82f6 20%, transparent); display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0;">
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
-        <h2 style="color: #2563eb; font-size: 18px; font-weight: 700; margin: 0;">{{ opportunities.title | default('Opportunities') }}</h2>
+        <h2 style="color: #2563eb; font-size: 15px; font-weight: 700; margin: 0;">{{ opportunities.title | default('Opportunities') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
         {% for item in opportunities.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 8px;">
-          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #3b82f6;"></div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        <div style="display: flex; align-items: flex-start; gap: 6px;">
+          <div style="width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #3b82f6;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
-    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #f59e0b 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #f59e0b 20%, transparent); display: flex; flex-direction: column;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: #f59e0b; display: flex; align-items: center; justify-content: center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>
+    <div style="border-radius: 12px; padding: 16px; background: color-mix(in srgb, #f59e0b 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #f59e0b 20%, transparent); display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-shrink: 0;">
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #f59e0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>
         </div>
-        <h2 style="color: #d97706; font-size: 18px; font-weight: 700; margin: 0;">{{ threats.title | default('Threats') }}</h2>
+        <h2 style="color: #d97706; font-size: 15px; font-weight: 700; margin: 0;">{{ threats.title | default('Threats') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
         {% for item in threats.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 8px;">
-          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #f59e0b;"></div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        <div style="display: flex; align-items: flex-start; gap: 6px;">
+          <div style="width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #f59e0b;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 13px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
@@ -571,21 +571,21 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "funnel": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "funnel": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; overflow: hidden;">
     {% for stage in stages | default([]) %}
     {% set widthPercent = 100 - (loop.index0 * (60 / (stages | length))) %}
-    <div style="width: {{ widthPercent }}%; display: flex; align-items: center; border-radius: 12px; padding: 14px 24px; background: {{ stage.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative; min-height: 52px;">
-      <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
-        <div style="font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.9); min-width: 60px;">{{ stage.value | default('') }}</div>
+    <div style="width: {{ widthPercent }}%; display: flex; align-items: center; border-radius: 10px; padding: 10px 20px; background: {{ stage.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative; min-height: 44px;">
+      <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+        <div style="font-size: 24px; font-weight: 700; color: rgba(255,255,255,0.9); min-width: 50px;">{{ stage.value | default('') }}</div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 16px; font-weight: 600; color: #ffffff;">{{ stage.title | default('') }}</div>
+          <div style="font-size: 14px; font-weight: 600; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stage.title | default('') }}</div>
           {% if stage.description %}
-          <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px;">{{ stage.description }}</div>
+          <div style="font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stage.description }}</div>
           {% endif %}
         </div>
         {% if stage.conversion %}
@@ -597,38 +597,38 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "roadmap": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "roadmap": `{% set m_count = milestones | default([]) | length %}{% set m_cols = m_count if m_count <= 5 else 5 %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
     <div style="width: 100%; position: relative;">
       <div style="position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, transparent); border-radius: 2px; transform: translateY(-50%);"></div>
-      <div style="display: grid; grid-template-columns: repeat({{ milestones | default([]) | length }}, 1fr); gap: 16px; position: relative;">
+      <div style="display: grid; grid-template-columns: repeat({{ m_cols }}, 1fr); gap: 12px; position: relative;">
         {% for milestone in milestones | default([]) %}
         <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
           {% if loop.index0 % 2 == 0 %}
-          <div style="margin-bottom: 12px; min-height: 80px; display: flex; flex-direction: column; justify-content: flex-end;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
-            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 4px;">{{ milestone.title }}</div>
+          <div style="margin-bottom: 8px; min-height: 70px; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ milestone.title }}</div>
             {% if milestone.description %}
-            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ milestone.description }}</div>
+            <div style="font-size: 11px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ milestone.description }}</div>
             {% endif %}
           </div>
-          <div style="width: 20px; height: 20px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2;"></div>
-          <div style="min-height: 80px;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2; flex-shrink: 0;"></div>
+          <div style="min-height: 70px;"></div>
           {% else %}
-          <div style="min-height: 80px;"></div>
-          <div style="width: 20px; height: 20px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2;"></div>
-          <div style="margin-top: 12px; min-height: 80px; display: flex; flex-direction: column;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
-            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 4px;">{{ milestone.title }}</div>
+          <div style="min-height: 70px;"></div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2; flex-shrink: 0;"></div>
+          <div style="margin-top: 8px; min-height: 70px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ milestone.title }}</div>
             {% if milestone.description %}
-            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ milestone.description }}</div>
+            <div style="font-size: 11px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ milestone.description }}</div>
             {% endif %}
           </div>
           {% endif %}
@@ -639,29 +639,29 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "pyramid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "pyramid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
-    <div style="display: flex; width: 100%; max-width: 1000px; gap: 32px;">
-      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+    <div style="display: flex; width: 100%; max-width: 1000px; gap: 24px;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;">
         {% for level in levels | default([]) %}
         {% set widthPercent = 30 + (loop.index0 * (70 / (levels | length))) %}
-        <div style="width: {{ widthPercent }}%; padding: 16px 20px; text-align: center; border-radius: 8px; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative;">
-          <div style="font-size: 15px; font-weight: 600; color: #ffffff;">{{ level.title | default('') }}</div>
+        <div style="width: {{ widthPercent }}%; padding: 12px 16px; text-align: center; border-radius: 6px; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative;">
+          <div style="font-size: 13px; font-weight: 600; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ level.title | default('') }}</div>
         </div>
         {% endfor %}
       </div>
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px;">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; overflow: hidden;">
         {% for level in levels | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }};"></div>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }};"></div>
           <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ level.title | default('') }}</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ level.title | default('') }}</div>
             {% if level.description %}
-            <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.5;">{{ level.description }}</div>
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ level.description }}</div>
             {% endif %}
           </div>
         </div>
@@ -671,12 +671,12 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "matrix-2x2": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "matrix-2x2": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
     <div style="position: relative; width: 100%; max-width: 900px; aspect-ratio: 1.4;">
       <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--card-border-color, #e5e7eb); transform: translateX(-50%);"></div>
       <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: var(--card-border-color, #e5e7eb); transform: translateY(-50%);"></div>
@@ -688,17 +688,17 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       {% endif %}
       <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 16px; height: 100%; padding: 8px;">
         {% for quadrant in quadrants | default([]) %}
-        <div style="border-radius: 12px; padding: 20px; background: {{ quadrant.color | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 6%, var(--card-background-color, #ffffff))') }}; display: flex; flex-direction: column;">
-          <div style="font-size: 16px; font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 8px;">{{ quadrant.title | default('') }}</div>
+        <div style="border-radius: 10px; padding: 14px; background: {{ quadrant.color | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 6%, var(--card-background-color, #ffffff))') }}; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="font-size: 14px; font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 6px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ quadrant.title | default('') }}</div>
           {% if quadrant.description %}
-          <div style="font-size: 13px; color: var(--text-body-color, #4b5563); line-height: 1.5;">{{ quadrant.description }}</div>
+          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ quadrant.description }}</div>
           {% endif %}
           {% if quadrant.items %}
-          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 6px; overflow: hidden;">
             {% for item in quadrant.items %}
-            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); display: flex; align-items: center; gap: 6px;">
+            <div style="font-size: 11px; color: var(--text-body-color, #4b5563); display: flex; align-items: center; gap: 5px;">
               <div style="width: 4px; height: 4px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); flex-shrink: 0;"></div>
-              {{ item }}
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item }}</span>
             </div>
             {% endfor %}
           </div>
@@ -710,44 +710,44 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "pros-cons": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  "pros-cons": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;">
-    <div class="card" style="border-top: 4px solid #22c55e; display: flex; flex-direction: column; height: 100%;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-        <div style="width: 36px; height: 36px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; overflow: hidden;">
+    <div class="card" style="border-top: 4px solid #22c55e; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-shrink: 0;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2 style="color: #16a34a; font-size: 20px; font-weight: 700; margin: 0;">{{ pros.title | default('Advantages') }}</h2>
+        <h2 style="color: #16a34a; font-size: 18px; font-weight: 700; margin: 0;">{{ pros.title | default('Advantages') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
         {% for item in pros.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, #22c55e 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 20px; height: 20px; border-radius: 50%; background: color-mix(in srgb, #22c55e 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5;">{{ item }}</span>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
-    <div class="card" style="border-top: 4px solid #ef4444; display: flex; flex-direction: column; height: 100%;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-        <div style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <div class="card" style="border-top: 4px solid #ef4444; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-shrink: 0;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </div>
-        <h2 style="color: #dc2626; font-size: 20px; font-weight: 700; margin: 0;">{{ cons.title | default('Disadvantages') }}</h2>
+        <h2 style="color: #dc2626; font-size: 18px; font-weight: 700; margin: 0;">{{ cons.title | default('Disadvantages') }}</h2>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
         {% for item in cons.items | default([]) %}
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, #ef4444 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 20px; height: 20px; border-radius: 50%; background: color-mix(in srgb, #ef4444 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </div>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5;">{{ item }}</span>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ item }}</span>
         </div>
         {% endfor %}
       </div>
@@ -755,33 +755,33 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "checklist": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 20px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "checklist": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%;">
       {% for item in items | default([]) %}
-      <div style="display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04));">
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04));">
         {% if item.done %}
-        <div style="width: 24px; height: 24px; border-radius: 6px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style="width: 20px; height: 20px; border-radius: 5px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         {% else %}
-        <div style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--card-border-color, #d1d5db); flex-shrink: 0; margin-top: 1px;"></div>
+        <div style="width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--card-border-color, #d1d5db); flex-shrink: 0; margin-top: 1px;"></div>
         {% endif %}
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); line-height: 1.3;{% if item.done %} text-decoration: line-through; opacity: 0.6;{% endif %}">{{ item.title | default('') }}</div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-heading-color, #111827); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;{% if item.done %} text-decoration: line-through; opacity: 0.6;{% endif %}">{{ item.title | default('') }}</div>
           {% if item.description %}
-          <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 3px; line-height: 1.4;">{{ item.description }}</div>
+          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ item.description }}</div>
           {% endif %}
         </div>
         {% if item.status %}
-        <div style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; background: {{ item.statusColor | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent)') }}; color: {{ item.statusTextColor | default('var(--primary-accent-color, #9333ea)') }}; white-space: nowrap; flex-shrink: 0;">{{ item.status }}</div>
+        <div style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 20px; background: {{ item.statusColor | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent)') }}; color: {{ item.statusTextColor | default('var(--primary-accent-color, #9333ea)') }}; white-space: nowrap; flex-shrink: 0;">{{ item.status }}</div>
         {% endif %}
       </div>
       {% endfor %}
@@ -789,28 +789,28 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "highlight-stats": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; margin-bottom: 24px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 16px;"></div>
+  "highlight-stats": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.1; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%;">
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; border-radius: 20px; background: var(--slide-bg-accent-gradient, var(--primary-accent-color, #9333ea)); text-align: center;">
-        <div style="font-size: 64px; font-weight: 800; color: #ffffff; line-height: 1;">{{ mainStat.value | default('') }}</div>
-        <div style="font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 12px;">{{ mainStat.label | default('') }}</div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; border-radius: 16px; background: var(--slide-bg-accent-gradient, var(--primary-accent-color, #9333ea)); text-align: center;">
+        <div style="font-size: 56px; font-weight: 800; color: #ffffff; line-height: 1;">{{ mainStat.value | default('') }}</div>
+        <div style="font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">{{ mainStat.label | default('') }}</div>
         {% if mainStat.description %}
-        <div style="font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 8px; max-width: 280px;">{{ mainStat.description }}</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 6px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ mainStat.description }}</div>
         {% endif %}
       </div>
-      <div style="display: flex; flex-direction: column; gap: 16px; justify-content: center;">
+      <div style="display: flex; flex-direction: column; gap: 12px; justify-content: center; overflow: hidden;">
         {% for stat in supportingStats | default([]) %}
-        <div class="card" style="display: flex; align-items: center; gap: 16px;">
-          <div style="font-size: 32px; font-weight: 700; color: var(--primary-accent-color, #9333ea); min-width: 80px;">{{ stat.value | default('') }}</div>
+        <div class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
+          <div style="font-size: 28px; font-weight: 700; color: var(--primary-accent-color, #9333ea); min-width: 70px;">{{ stat.value | default('') }}</div>
           <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ stat.label | default('') }}</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
             {% if stat.description %}
-            <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ stat.description }}</div>
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
             {% endif %}
           </div>
         </div>
@@ -1250,6 +1250,18 @@ function evalCondition(condition: string, data: Record<string, any>): boolean {
 
 function evalExpression(expr: string, data: Record<string, any>): any {
   let trimmed = expr.trim();
+
+  // Handle Jinja2 ternary: value_if_true if condition else value_if_false
+  // e.g. "s_count if s_count <= 5 else 5"
+  const ternaryMatch = trimmed.match(/^(.+?)\s+if\s+(.+?)\s+else\s+(.+)$/);
+  if (ternaryMatch) {
+    const condition = evalCondition(ternaryMatch[2].trim(), data);
+    if (condition) {
+      return evalExpression(ternaryMatch[1].trim(), data);
+    } else {
+      return evalExpression(ternaryMatch[3].trim(), data);
+    }
+  }
 
   // Handle string literals
   if ((trimmed.startsWith("'") && trimmed.endsWith("'")) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
