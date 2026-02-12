@@ -140,7 +140,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
         <div style="flex: 1; min-width: 0;">
           <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 15px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
-          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-label-size, 13px); line-height: var(--at-body-lh, 1.5); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description | default('') }}
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-label-size, 13px); line-height: var(--at-body-lh, 1.5); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
         </div>
       </div>
       {% endfor %}

@@ -440,3 +440,11 @@
 - [x] Add inline editing CSS styles (hover highlights, focus outlines, save indicators)
 - [x] Write vitest tests for inline editing (30 tests, all passing)
 - [x] Add API client methods (getEditableSlide, patchSlideField)
+
+## Bug Fix — Viewer Layout Broken
+- [x] Root cause: image-text template had unclosed </div> in bullet loop (5 unclosed divs per slide)
+- [x] Fix template: added missing closing tag on line 143 of templateEngine.ts
+- [x] Fix parseSlides: replaced DOM-based querySelectorAll with regex-based splitting on raw HTML
+- [x] Verified all 26 templates have balanced div tags (automated Python checker)
+- [x] Verified all 8 slides render correctly in Viewer (visual inspection)
+- [x] All 623 tests passing

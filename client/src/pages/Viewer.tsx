@@ -49,15 +49,59 @@ function parseSlides(html: string): string[] {
   // Get all styles from head
   const headContent = doc.head.innerHTML;
 
-  // Try .slide-container first (our template wraps each slide in one)
-  let slideElements = doc.querySelectorAll(".slide-container");
+  // Strategy: use regex to split on slide-container boundaries in the raw HTML.
+  // This avoids DOM nesting issues caused by templates with unclosed divs,
+  // where querySelectorAll would find nested containers or :scope > would
+  // miss slides that got absorbed into a parent's DOM tree.
+  const slideContainerRegex = /<div class="slide-container">/g;
+  const matches: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = slideContainerRegex.exec(html)) !== null) {
+    matches.push(m.index);
+  }
+
+  if (matches.length > 1) {
+    // Split the raw HTML at each slide-container boundary
+    const rawSlides: string[] = [];
+    for (let i = 0; i < matches.length; i++) {
+      const start = matches[i];
+      const end = i + 1 < matches.length ? matches[i + 1] : html.indexOf("</body>") !== -1 ? html.indexOf("</body>") : html.length;
+      rawSlides.push(html.substring(start, end).trim());
+    }
+
+    // Extract Chart.js library and initialization scripts
+    const scripts = doc.querySelectorAll("script");
+    let chartLibScript = "";
+    const chartInitScripts: string[] = [];
+    scripts.forEach((s) => {
+      if (s.src && s.src.includes("chart.js")) {
+        chartLibScript = `<script src="${s.src}"><\/script>`;
+      } else if (s.textContent && s.textContent.includes("new Chart")) {
+        const initFns = s.textContent.match(/\(function\(\)[\s\S]*?\}\)\(\);/g) || [];
+        chartInitScripts.push(...initFns);
+      }
+    });
+
+    return rawSlides.map((slideHtml, idx) => {
+      const hasCanvas = slideHtml.includes("<canvas");
+      const chartInit = hasCanvas
+        ? chartInitScripts.find((s) => s.includes(`chart-${idx}`))
+        : null;
+
+      return `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8" />\n  ${headContent}\n  ${hasCanvas ? chartLibScript : ""}\n  <style>\n    html, body { margin: 0; padding: 0; overflow: hidden; width: 1280px; height: 720px; background: #fff; }\n    .slide-container { margin: 0 !important; padding: 0 !important; }\n    .slide-number { display: none !important; }\n  </style>\n</head>\n<body>${slideHtml}</body>\n</html>`;
+    });
+  }
+
+  // Fallback: try DOM-based extraction for single-slide or non-standard formats
+  let slideElements = doc.body.querySelectorAll(":scope > .slide-container");
   if (slideElements.length === 0) {
-    // Fallback to .slide
-    slideElements = doc.querySelectorAll(".slide");
+    slideElements = doc.body.querySelectorAll(".slide-container");
   }
   if (slideElements.length === 0) {
-    // Fallback to [data-slide]
-    slideElements = doc.querySelectorAll("[data-slide]");
+    slideElements = doc.body.querySelectorAll(".slide");
+  }
+  if (slideElements.length === 0) {
+    slideElements = doc.body.querySelectorAll("[data-slide]");
   }
 
   if (slideElements.length > 0) {
