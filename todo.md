@@ -225,3 +225,17 @@
 - [x] Write vitest tests for writer context building
 - [x] Write vitest tests for adaptive font sizing
 - [x] Test end-to-end generation — 13 slides, all centered, rich content, no repetition, QA step visible
+
+## Quality Improvement Round 3: Outline, Footers, Markdown, Transitions, Images
+- [x] Enhanced Outline Agent: Add few-shot examples for better slide structure
+- [x] Enhanced Outline Agent: Add narrative arc examples (business, educational, technical)
+- [x] Slide footers: Add slide numbers and presentation title to every slide
+- [x] Slide footers: Style footer with subtle design (small text, muted color, bottom bar)
+- [x] Markdown support: Parse **bold** and *italic* in bullet descriptions
+- [x] Markdown support: Render inline markdown as <strong> and <em> in templates
+- [x] Viewer transitions: Add smooth CSS transitions when navigating between slides
+- [x] Viewer transitions: Fade or slide animation on slide change
+- [x] Image generation: Increase auto-image limit from 3 to 5 slides
+- [x] Image generation: Improve image prompt generation for better quality
+- [x] Write vitest tests for all new improvements (32 tests added, 202 total passing)
+- [x] Test end-to-end generation with all improvements

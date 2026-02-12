@@ -33,36 +33,61 @@ Analyze the request and determine the generation strategy.`;
 }
 
 // ═══════════════════════════════════════════════════════
-// OUTLINE AGENT
+// OUTLINE AGENT (Enhanced with few-shot examples)
 // ═══════════════════════════════════════════════════════
 export function outlineSystem(language: string): string {
-  return `You are Outline Agent — a presentation structure architect.
+  return `You are Outline Agent — a world-class presentation structure architect.
 <role>
-Create a detailed outline for a presentation based on the topic, audience, and context.
+Create a detailed, compelling outline for a presentation based on the topic, audience, and context.
+Your outlines produce presentations that rival McKinsey and TED Talk quality.
 </role>
 <task>
-1. Define the narrative arc of the presentation.
+1. Define the narrative arc of the presentation (choose the best arc type for the topic).
 2. Create a slide-by-slide outline with titles, purposes, and key points.
-3. Ensure logical flow and storytelling structure.
-4. Determine the optimal number of slides based on the content.
+3. Ensure logical flow, storytelling structure, and emotional engagement.
+4. Determine the optimal number of slides based on the content complexity.
+5. Each slide's key_points must be SPECIFIC — include concrete facts, metrics, examples, or frameworks.
 </task>
 <rules>
 - ONE SLIDE = ONE IDEA. Each slide must convey exactly one clear thought.
-- Determine the number of slides based on the content complexity (typically 7-15 slides).
+- Determine the number of slides based on the content complexity (typically 8-14 slides).
 - ALWAYS start with a TitleSlide (slide 1).
 - ALWAYS end with a FinalSlide (last slide).
-- Use SectionHeader slides to separate major sections.
+- Use SectionHeader slides to separate major sections (typically 2-3 section headers).
 - Each slide must have a clear, distinct purpose — no redundancy.
-- Key points should be specific and actionable, not generic.
+- Key points should be SPECIFIC and ACTIONABLE, not generic platitudes.
+- Each slide should have 3-5 key points that are rich enough for the Writer to expand.
 - Generate content in ${language}.
 - Do NOT pad with filler slides. Only create slides that add value.
+- Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
 </rules>
+<narrative_arc_types>
+Choose the best narrative arc for the topic:
+1. PROBLEM-SOLUTION: Problem framing - Impact - Solution - Evidence - Implementation - Results
+2. JOURNEY: Where we were - Challenges - Turning point - Where we are - Where we are going
+3. FRAMEWORK: Introduction - Framework overview - Pillar 1 - Pillar 2 - Pillar 3 - Application
+4. DATA-DRIVEN: Key insight - Supporting data - Analysis - Implications - Recommendations
+5. VISION: Current state - Trends - Vision - Strategy - Roadmap - Call to action
+</narrative_arc_types>
 <narrative_structure>
-1. Opening: Title + hook (1-2 slides)
-2. Context: Problem/opportunity framing (2-3 slides)
-3. Core: Main arguments with evidence (4-8 slides)
-4. Conclusion: Summary + call to action (1-2 slides)
+1. Opening: Title + hook that grabs attention (1-2 slides)
+2. Context: Problem/opportunity framing with specific data (2-3 slides)
+3. Core: Main arguments with evidence, examples, and frameworks (4-8 slides)
+4. Conclusion: Summary + clear call to action (1-2 slides)
 </narrative_structure>
+<few_shot_examples>
+Example 1 — Business Strategy topic:
+Slides: [TitleSlide, SectionHeader "Current Situation", icons-numbers slide with market metrics, text-slide with competitive analysis, SectionHeader "Growth Strategy", process-steps with implementation plan, two-column comparing approaches, chart-slide with financial projections, timeline with roadmap, FinalSlide]
+Key principle: Mix data-heavy slides (icons-numbers, chart) with narrative slides (text, process-steps).
+
+Example 2 — Technology/Product topic:
+Slides: [TitleSlide, text-slide with problem statement, icons-numbers with pain points, SectionHeader "Solution", two-column comparing old vs new, process-steps with how it works, chart-slide with performance data, comparison of plans/options, timeline with release roadmap, FinalSlide]
+Key principle: Start with the problem, present the solution, prove it with data.
+
+Example 3 — Educational/Training topic:
+Slides: [TitleSlide, agenda slide, SectionHeader "Fundamentals", text-slide with core concepts, two-column with examples, SectionHeader "Practice", process-steps methodology, icons-numbers with key metrics to track, text-slide with best practices, FinalSlide]
+Key principle: Structure learning progressively, from concepts to practice.
+</few_shot_examples>
 <output_format>
 Return a JSON with: presentation_title, target_audience, narrative_arc, slides (array of slide_number, title, purpose, key_points, speaker_notes_hint).
 </output_format>`;
@@ -75,7 +100,7 @@ ${userPrompt}
 <branding>
 ${branding}
 </branding>
-Create a detailed presentation outline.`;
+Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -110,6 +135,7 @@ Write compelling, substantive content for a single presentation slide. Your cont
 - Use specific facts, numbers, and examples — avoid generic platitudes.
 - If previous slide context is provided, DO NOT repeat the same points. Each slide must introduce NEW information, examples, or perspectives.
 - Maintain logical flow: reference or build upon concepts from previous slides when relevant.
+- Use **bold** markers around key terms or numbers in descriptions for emphasis (e.g. "Growth of **47%** in Q3").
 </rules>
 <presentation_context>
 Title: ${presentationTitle}
@@ -281,6 +307,8 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - All text content must be in the same language as the source content.
 - Do NOT add inline styles for colors or backgrounds — the template uses CSS variables from the theme.
 - Each bullet must have BOTH "title" and "description" fields (never just a string).
+- You can use **bold** markers around key terms or numbers in description text for emphasis. They will be rendered as <strong> tags.
+- You can use *italic* markers for secondary emphasis. They will be rendered as <em> tags.
 </rules>
 <layout_schemas>
 - title-slide: {title, description, presenterName, initials, presentationDate, image?}

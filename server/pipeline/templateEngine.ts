@@ -3,6 +3,7 @@
  * Uses Nunjucks for Jinja2-compatible template rendering.
  * Templates are embedded as strings (ported from Python backend).
  */
+import { processSlideDataMarkdown } from "./markdownInline";
 
 // ═══════════════════════════════════════════════════════
 // LAYOUT TEMPLATES (Jinja2/Nunjucks syntax)
@@ -586,6 +587,45 @@ export const BASE_CSS = `/* ── Slide Foundation ─────────�
 .slide .overflow-hidden { overflow: hidden; }
 .slide .object-cover { object-fit: cover; }
 .slide .object-contain { object-fit: contain; }
+/* ── Slide Footer ──────────────────────────────────────── */
+.slide-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  z-index: 50;
+  pointer-events: none;
+}
+.slide-footer-title {
+  font-family: var(--body-font-family, 'Inter'), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-body-color, #4b5563);
+  opacity: 0.5;
+  letter-spacing: 0.02em;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slide-footer-number {
+  font-family: var(--body-font-family, 'Inter'), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-body-color, #4b5563);
+  opacity: 0.5;
+  letter-spacing: 0.05em;
+}
+/* Footer on accent slides (section-header) uses white text */
+.slide.slide-accent .slide-footer-title,
+.slide.slide-accent .slide-footer-number {
+  color: rgba(255, 255, 255, 0.5);
+}
 /* ── Decorative ──────────────────────────────────────── */
 .accent-line { width: 80px; height: 4px; background: var(--primary-accent-color); border-radius: 2px; }
 .accent-line-center { width: 80px; height: 4px; background: var(--primary-accent-color); margin-left: auto; margin-right: auto; border-radius: 2px; }
@@ -851,7 +891,25 @@ function evalExpression(expr: string, data: Record<string, any>): any {
 
 export function renderSlide(layoutId: string, slideData: Record<string, any>): string {
   const template = LAYOUT_TEMPLATES[layoutId] || LAYOUT_TEMPLATES["text-slide"];
-  return renderTemplate(template, slideData);
+  // Process inline markdown (**bold**, *italic*) in text fields
+  const processedData = processSlideDataMarkdown(slideData);
+  const content = renderTemplate(template, processedData);
+
+  // Add slide footer with slide number and presentation title
+  // Skip footer for title-slide and final-slide (they have their own branding)
+  const skipFooter = layoutId === "title-slide" || layoutId === "final-slide";
+  if (skipFooter) return content;
+
+  const slideNum = slideData._slideNumber || (slideData._slide_index != null ? (slideData._slide_index + 1) : "");
+  const totalSlides = slideData._totalSlides || "";
+  const presTitle = slideData._presentationTitle || "";
+
+  const footer = `<div class="slide-footer">
+    <span class="slide-footer-title">${escapeHtml(String(presTitle))}</span>
+    <span class="slide-footer-number">${slideNum}${totalSlides ? ` / ${totalSlides}` : ""}</span>
+  </div>`;
+
+  return content + footer;
 }
 
 export function renderPresentation(
@@ -862,7 +920,13 @@ export function renderPresentation(
   fontsUrl?: string,
 ): string {
   const renderedSlides = slides.map((slide, index) => {
-    const html = slide.html || renderSlide(slide.layoutId, { ...slide.data, _slide_index: index });
+    const html = slide.html || renderSlide(slide.layoutId, {
+      ...slide.data,
+      _slide_index: index,
+      _slideNumber: index + 1,
+      _totalSlides: slides.length,
+      _presentationTitle: presentationTitle,
+    });
     return html;
   });
 

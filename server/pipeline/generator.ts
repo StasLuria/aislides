@@ -691,8 +691,19 @@ async function selectSlidesForImages(
   )).join("\n");
 
   const result = await llmStructured<{ selections: ImageSelection[] }>(
-    `You are an art director for presentations. Select up to ${maxImages} slides that would benefit most from an illustration image. For each, write a concise image generation prompt in English (max 80 words) describing a professional, modern illustration that enhances the slide content. Prefer abstract/conceptual visuals over literal photos. Do NOT select slides about agendas, tables, or data.`,
-    `Here are the eligible slides:\n${slideSummaries}\n\nSelect up to ${maxImages} slides and provide image prompts.`,
+    `You are a world-class art director for corporate presentations. Select up to ${maxImages} slides that would benefit most from an illustration image. For each, write a detailed image generation prompt in English (60-100 words) that creates a stunning, professional visual.
+
+<prompt_guidelines>
+- Style: Modern, clean, professional. Think Dribbble/Behance quality.
+- Prefer: Abstract 3D renders, isometric illustrations, gradient mesh backgrounds with floating geometric shapes, data visualization art, conceptual metaphors.
+- Avoid: Stock photo cliches, clip art, cartoons, text in images, faces/people unless essential.
+- Color: Mention specific colors that match a professional palette (blues, purples, teals, warm gradients).
+- Composition: Describe depth, lighting, and spatial arrangement.
+- Always start with the style (e.g., "3D isometric illustration of...", "Abstract gradient composition with...", "Minimalist vector art showing...").
+</prompt_guidelines>
+
+Do NOT select slides about agendas, tables, pure data, or closing slides.`,
+    `Here are the eligible slides:\n${slideSummaries}\n\nSelect up to ${maxImages} slides and provide detailed, high-quality image prompts.`,
     "image_selections",
     {
       type: "object",
@@ -810,7 +821,7 @@ export async function generatePresentation(
     onProgress({ nodeName: "image", currentStep: "images", progressPercent: 60, message: "Подбор слайдов для иллюстраций..." });
 
     try {
-      const selections = await selectSlidesForImages(content, layoutMap, 3);
+      const selections = await selectSlidesForImages(content, layoutMap, 5);
 
       if (selections.length > 0) {
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 63, message: `Генерация ${selections.length} иллюстраций...` });
@@ -879,6 +890,11 @@ export async function generatePresentation(
           data.image = { url: imgUrl, alt: slideContent.title };
           data.backgroundImage = { url: imgUrl, alt: slideContent.title };
         }
+
+        // Inject slide metadata for footer rendering
+        data._slideNumber = slideContent.slide_number;
+        data._totalSlides = content.length;
+        data._presentationTitle = plannerResult.presentation_title;
 
         let html = renderSlide(layoutName, data);
 

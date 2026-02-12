@@ -163,6 +163,10 @@ export default function Viewer() {
   const [hasEdits, setHasEdits] = useState(false);
   const [isReassembling, setIsReassembling] = useState(false);
 
+  // Slide transition animation
+  const [slideTransition, setSlideTransition] = useState<"none" | "fade-in" | "slide-left" | "slide-right">("none");
+  const prevSlideRef = useRef(0);
+
   // Measure the main slide area
   const [mainSize, setMainSize] = useState({ w: 800, h: 500 });
 
@@ -255,10 +259,18 @@ export default function Viewer() {
 
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
-        setCurrentSlide((prev) => Math.min(prev + 1, totalSlides - 1));
+        setCurrentSlide((prev) => {
+          const next = Math.min(prev + 1, totalSlides - 1);
+          if (next !== prev) setSlideTransition("slide-left");
+          return next;
+        });
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        setCurrentSlide((prev) => Math.max(prev - 1, 0));
+        setCurrentSlide((prev) => {
+          const next = Math.max(prev - 1, 0);
+          if (next !== prev) setSlideTransition("slide-right");
+          return next;
+        });
       } else if (e.key === "Escape") {
         if (isEditing) {
           setIsEditing(false);
@@ -562,7 +574,10 @@ export default function Viewer() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => setCurrentSlide((prev) => Math.max(prev - 1, 0))}
+                onClick={() => {
+                  setSlideTransition("slide-right");
+                  setCurrentSlide((prev) => Math.max(prev - 1, 0));
+                }}
                 disabled={currentSlide === 0}
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -576,11 +591,10 @@ export default function Viewer() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() =>
-                  setCurrentSlide((prev) =>
-                    Math.min(prev + 1, totalSlides - 1)
-                  )
-                }
+                onClick={() => {
+                  setSlideTransition("slide-left");
+                  setCurrentSlide((prev) => Math.min(prev + 1, totalSlides - 1));
+                }}
                 disabled={currentSlide === totalSlides - 1}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -614,12 +628,13 @@ export default function Viewer() {
           {/* Slide display */}
           <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20">
             <div
-              className="rounded-lg overflow-hidden border border-border/30 shadow-2xl bg-white"
+              className={`rounded-lg overflow-hidden border border-border/30 shadow-2xl bg-white slide-transition ${slideTransition}`}
               style={{
                 width: mainSize.w,
                 height: mainSize.w * (720 / 1280),
                 maxHeight: mainSize.h,
               }}
+              onAnimationEnd={() => setSlideTransition("none")}
             >
               {hasSlides && slideHtmls[currentSlide] ? (
                 <SlideFrame
