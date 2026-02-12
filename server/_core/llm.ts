@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { withRetry } from "./retry";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -318,7 +319,56 @@ function buildPayload(params: InvokeParams, model: string): Record<string, unkno
 /** Timeout for individual LLM API calls (120 seconds) */
 const LLM_CALL_TIMEOUT_MS = 120_000;
 
+/** Max retries for LLM calls */
+const LLM_MAX_RETRIES = 2;
+
+/**
+ * Determine if an LLM error is retryable.
+ * Timeouts, network errors, 429, and 5xx are retryable.
+ * 4xx client errors (except 429) are NOT retryable.
+ */
+function isRetryableLLMError(err: unknown): boolean {
+  if (!(err instanceof Error)) return true;
+  const msg = err.message;
+
+  // Timeout → retryable
+  if (msg.includes("timed out")) return true;
+
+  // Network errors → retryable
+  if (msg.includes("ECONNRESET") || msg.includes("ECONNREFUSED") || msg.includes("fetch failed")) return true;
+
+  // Rate limit (429) → retryable
+  if (msg.includes("429")) return true;
+
+  // Usage exhausted → NOT retryable
+  if (msg.includes("usage exhausted")) return false;
+
+  // 4xx client errors → NOT retryable
+  const statusMatch = msg.match(/(\d{3})\s/);
+  if (statusMatch) {
+    const status = parseInt(statusMatch[1]);
+    if (status >= 400 && status < 500) return false;
+  }
+
+  // Everything else (5xx, unknown) → retryable
+  return true;
+}
+
 async function callApi(url: string, apiKey: string, payload: Record<string, unknown>): Promise<InvokeResult> {
+  return withRetry(
+    () => callApiOnce(url, apiKey, payload),
+    {
+      maxRetries: LLM_MAX_RETRIES,
+      initialDelayMs: 2_000,
+      maxDelayMs: 15_000,
+      label: "LLM callApi",
+      isRetryable: isRetryableLLMError,
+    },
+  );
+}
+
+/** Single attempt at calling the LLM API (no retry). */
+async function callApiOnce(url: string, apiKey: string, payload: Record<string, unknown>): Promise<InvokeResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LLM_CALL_TIMEOUT_MS);
 

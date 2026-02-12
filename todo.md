@@ -469,3 +469,12 @@
 - [x] Added per-image error logging in generateSlideImages() (warns but continues)
 - [x] Reset stuck presentation jp_mAkyYccX17ipm to failed status
 - [x] All 642 tests passing
+
+## Retry Logic for Image Generation
+- [x] Created generic withRetry() utility with exponential backoff + jitter (server/_core/retry.ts)
+- [x] Applied retry to generateImage(): 2 retries, 2s initial delay, retryable on timeout/network/5xx/429
+- [x] Applied retry to LLM callApi(): 2 retries, 2s initial delay, retryable on timeout/network/5xx/429
+- [x] Non-retryable errors (4xx client errors, usage exhausted) fail immediately
+- [x] Log retry attempts with warning messages including attempt count and delay
+- [x] Write vitest tests for retry behavior (11 tests: success, retry-then-succeed, exhaust, non-retryable, backoff, cap)
+- [x] All 653 tests passing
