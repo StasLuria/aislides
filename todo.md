@@ -737,3 +737,30 @@
 - [x] Rotate image styles across slides to avoid monotony (deterministic rotation based on slide index)
 - [x] Make image style match content type (data → abstract, people → photography, tech → modern)
 - [x] Added 8-12 diverse styles per topic category with content-aware selection
+
+## Chat-Based Presentation Creation Mode
+- [ ] Design chat state machine (init → structure_proposal → structure_approved → per_slide_content → per_slide_design → complete)
+- [ ] Create DB schema for chat sessions and messages (chatSessions, chatMessages tables)
+- [ ] Implement server-side chat orchestrator with LLM (structure proposal, per-slide content, per-slide design)
+- [ ] Build chat UI component (message list, input box, slide previews inline)
+- [ ] Integrate slide HTML rendering as preview cards in chat messages
+- [ ] Support "готово" to advance phases, corrections via free text
+- [ ] Support "готово + ещё слайд + описание" for mid-process slide addition
+- [ ] Auto-select theme/style via LLM based on context
+- [ ] Add /chat route and update navigation
+- [ ] Wire up streaming responses for LLM messages
+
+## Chat-Based Unified Presentation Creator
+- [x] DB schema: chat_sessions table (id, messages JSON, state, presentationId, mode, createdAt)
+- [x] Server: chat routes (/api/v1/chat/start, /api/v1/chat/:id/message, /api/v1/chat/:id/status)
+- [x] Server: chat orchestrator — LLM agent that manages conversation flow and state machine
+- [x] Server: state machine (idle → topic_received → mode_selection → structure → slide_by_slide → done)
+- [x] Server: integrate batch pipeline into chat (quick mode)
+- [x] Server: integrate step-by-step pipeline into chat (poshagovo mode)
+- [x] Frontend: ChatPage component with message list, input, and slide previews
+- [x] Frontend: message types (text, slide_preview, structure_preview, progress, mode_selection)
+- [x] Frontend: quick action buttons in chat (Быстро / Пошагово, Утвердить / Изменить)
+- [x] Frontend: slide preview rendering inside chat messages
+- [x] Frontend: progress indicator for batch mode inside chat
+- [x] Update App.tsx routing — chat as main entry point
+- [x] Update AppLayout navigation for chat

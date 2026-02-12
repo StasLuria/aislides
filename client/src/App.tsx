@@ -14,15 +14,20 @@ import Generate from "./pages/Generate";
 import Viewer from "./pages/Viewer";
 import History from "./pages/History";
 import Interactive from "./pages/Interactive";
+import ChatPage from "./pages/ChatPage";
 import AppLayout from "./components/AppLayout";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={ChatPage} />
+        <Route path="/chat" component={ChatPage} />
+        <Route path="/chat/:sessionId" component={ChatPage} />
+        <Route path="/create" component={Home} />
         <Route path="/generate/:id" component={Generate} />
         <Route path="/view/:id" component={Viewer} />
+        <Route path="/viewer/:id" component={Viewer} />
         <Route path="/history" component={History} />
         <Route path="/interactive/:id" component={Interactive} />
         <Route path="/404" component={NotFound} />

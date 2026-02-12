@@ -4,7 +4,7 @@
  */
 
 import { Link, useLocation } from "wouter";
-import { Presentation, Clock, Plus } from "lucide-react";
+import { Presentation, Clock, MessageSquare, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import ConnectionStatus from "./ConnectionStatus";
 
@@ -16,7 +16,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Создать", icon: Plus, section: "01" },
+    { href: "/", label: "Создать", icon: MessageSquare, section: "01" },
     { href: "/history", label: "История", icon: Clock, section: "02" },
   ];
 
@@ -47,7 +47,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {navItems.map((item) => {
                 const isActive =
                   item.href === "/"
-                    ? location === "/"
+                    ? location === "/" || location.startsWith("/chat")
                     : location.startsWith(item.href);
                 return (
                   <Link

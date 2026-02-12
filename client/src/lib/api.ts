@@ -674,6 +674,41 @@ class ApiClient {
     return data;
   }
 
+  // — Chat —
+
+  async createChatSession(): Promise<ChatSessionResponse> {
+    const { data } = await this.http.post<ChatSessionResponse>("/chat/sessions");
+    return data;
+  }
+
+  async listChatSessions(limit = 20): Promise<{ sessions: ChatSessionSummary[] }> {
+    const { data } = await this.http.get<{ sessions: ChatSessionSummary[] }>(
+      `/chat/sessions?limit=${limit}`,
+    );
+    return data;
+  }
+
+  async getChatSession(id: string): Promise<ChatSessionResponse> {
+    const { data } = await this.http.get<ChatSessionResponse>(`/chat/sessions/${id}`);
+    return data;
+  }
+
+  async sendChatMessage(
+    sessionId: string,
+    message: string,
+  ): Promise<ChatMessageResponse> {
+    const { data } = await this.http.post<ChatMessageResponse>(
+      `/chat/sessions/${sessionId}/messages`,
+      { message },
+      { timeout: 120000 }, // LLM calls can take time
+    );
+    return data;
+  }
+
+  async deleteChatSession(id: string): Promise<void> {
+    await this.http.delete(`/chat/sessions/${id}`);
+  }
+
   // — Health —
 
   async checkHealth(): Promise<{ status: string; version?: string }> {
@@ -684,6 +719,55 @@ class ApiClient {
       return { status: "unreachable" };
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// Chat Types
+// ═══════════════════════════════════════════════════════
+
+export interface ChatMessageData {
+  type?: "slide_preview" | "structure" | "progress" | "mode_selection" | "final_result" | "error";
+  slideHtml?: string;
+  slideIndex?: number;
+  structure?: Array<{ slideNumber: number; title: string; layoutHint: string }>;
+  presentationId?: string;
+  progress?: number;
+  buttons?: Array<{ label: string; action: string; variant?: "default" | "outline" }>;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  data?: ChatMessageData;
+  timestamp: number;
+}
+
+export interface ChatSessionResponse {
+  session_id: string;
+  topic?: string;
+  phase: string;
+  mode?: string;
+  messages: ChatMessage[];
+  presentation_id?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ChatSessionSummary {
+  session_id: string;
+  topic?: string;
+  phase: string;
+  mode?: string;
+  presentation_id?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ChatMessageResponse {
+  messages: ChatMessage[];
+  phase: string;
+  presentation_id?: string;
 }
 
 export const api = new ApiClient();

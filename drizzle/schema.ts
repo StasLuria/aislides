@@ -78,3 +78,42 @@ export const presentations = mysqlTable("presentations", {
 
 export type Presentation = typeof presentations.$inferSelect;
 export type InsertPresentation = typeof presentations.$inferInsert;
+
+/**
+ * Chat sessions — stores conversation history and state for the unified chat-based creator.
+ * Each chat session can optionally link to a presentation once generation starts.
+ */
+export const chatSessions = mysqlTable("chat_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Public-facing session ID */
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  /** Owner user ID (nullable for anonymous) */
+  userId: int("userId"),
+  /** Linked presentation ID (set when generation starts) */
+  presentationId: varchar("presentationId", { length: 64 }),
+  /** Chat state machine phase */
+  phase: mysqlEnum("phase", [
+    "greeting",
+    "topic_received",
+    "mode_selection",
+    "generating_quick",
+    "structure_review",
+    "slide_content",
+    "slide_design",
+    "completed",
+    "error",
+  ]).default("greeting").notNull(),
+  /** Selected generation mode */
+  mode: mysqlEnum("chatMode", ["quick", "stepbystep"]),
+  /** Full message history as JSON array */
+  messages: json("messages"),
+  /** Working state: outline, current slide index, accumulated slides, theme, etc. */
+  workingState: json("workingState"),
+  /** User's original prompt/topic */
+  topic: text("topic"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChatSession = typeof chatSessions.$inferSelect;
+export type InsertChatSession = typeof chatSessions.$inferInsert;
