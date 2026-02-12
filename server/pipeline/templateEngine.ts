@@ -1151,33 +1151,88 @@ function processForLoops(template: string, data: Record<string, any>): string {
 }
 
 function processIfBlocks(template: string, data: Record<string, any>): string {
-  // Handle {% if %}...{% elif %}...{% else %}...{% endif %}
-  const ifRegex = /\{%[-\s]*if\s+(.+?)\s*[-]?%\}([\s\S]*?)\{%[-\s]*endif\s*[-]?%\}/g;
   let result = template;
   let safety = 0;
 
-  while (ifRegex.test(result) && safety < 30) {
+  // Use balanced matching to handle nested {% if %}...{% endif %} blocks
+  while (result.includes("{% if") && safety < 30) {
     safety++;
-    result = result.replace(ifRegex, (_match, condition, body) => {
-      // Split on elif/else
-      const parts = splitIfBody(body);
 
-      for (const part of parts) {
-        if (part.type === "if" || part.type === "elif") {
-          const cond = part.type === "if" ? condition : part.condition;
-          if (evalCondition(cond, data)) {
-            return part.body;
-          }
-        } else if (part.type === "else") {
-          return part.body;
+    // Find the INNERMOST {% if %}...{% endif %} block (one with no nested {% if %} inside)
+    // This ensures we process from inside-out, handling nesting correctly
+    const ifStart = findInnermostIf(result);
+    if (ifStart === -1) break;
+
+    // Parse the if tag
+    const tagEnd = result.indexOf("%}", ifStart);
+    if (tagEnd === -1) break;
+    const tag = result.substring(ifStart, tagEnd + 2);
+    const tagMatch = tag.match(/\{%[-\s]*if\s+(.+?)\s*[-]?%\}/);
+    if (!tagMatch) break;
+    const condition = tagMatch[1];
+
+    // Find the matching endif (the first one, since we picked innermost if)
+    const bodyStart = tagEnd + 2;
+    const endifMatch = result.substring(bodyStart).match(/\{%[-\s]*endif\s*[-]?%\}/);
+    if (!endifMatch || endifMatch.index === undefined) break;
+    const endifStart = bodyStart + endifMatch.index;
+    const endifEnd = endifStart + endifMatch[0].length;
+
+    const body = result.substring(bodyStart, endifStart);
+    const before = result.substring(0, ifStart);
+    const after = result.substring(endifEnd);
+
+    // Split on elif/else and evaluate
+    const parts = splitIfBody(body);
+    let replacement = "";
+
+    for (const part of parts) {
+      if (part.type === "if" || part.type === "elif") {
+        const cond = part.type === "if" ? condition : part.condition;
+        if (evalCondition(cond!, data)) {
+          replacement = part.body;
+          break;
         }
+      } else if (part.type === "else") {
+        replacement = part.body;
+        break;
       }
-      return "";
-    });
-    ifRegex.lastIndex = 0;
+    }
+
+    result = before + replacement + after;
   }
 
   return result;
+}
+
+function findInnermostIf(template: string): number {
+  // Find the last {% if %} that appears before any {% endif %}
+  // This is the innermost one (no nested {% if %} between it and its {% endif %})
+  let lastIfPos = -1;
+  let searchPos = 0;
+
+  while (searchPos < template.length) {
+    const nextIf = template.indexOf("{% if", searchPos);
+    const nextEndif = template.indexOf("{% endif", searchPos);
+    // Also check whitespace variants
+    const nextEndif2 = template.indexOf("{%- endif", searchPos);
+    const nextEndif3 = template.indexOf("{%  endif", searchPos);
+
+    let actualEndif = nextEndif;
+    if (nextEndif2 !== -1 && (actualEndif === -1 || nextEndif2 < actualEndif)) actualEndif = nextEndif2;
+    if (nextEndif3 !== -1 && (actualEndif === -1 || nextEndif3 < actualEndif)) actualEndif = nextEndif3;
+
+    if (nextIf === -1) break;
+    if (actualEndif !== -1 && actualEndif < nextIf) {
+      // Found an endif before the next if — the last if we found is innermost
+      break;
+    }
+
+    lastIfPos = nextIf;
+    searchPos = nextIf + 5;
+  }
+
+  return lastIfPos;
 }
 
 function splitIfBody(body: string): Array<{ type: string; condition?: string; body: string }> {
@@ -1304,12 +1359,52 @@ function evalExpression(expr: string, data: Record<string, any>): any {
     }
   }
 
+  // Handle arithmetic operations: a % b, a * b, a + b, a - b, a / b
+  // Check for binary arithmetic operators (but not inside parentheses or strings)
+  const arithMatch = trimmed.match(/^(.+?)\s*([%*\/])\s*(.+)$/);
+  if (arithMatch) {
+    const left = evalExpression(arithMatch[1].trim(), data);
+    const right = evalExpression(arithMatch[3].trim(), data);
+    if (typeof left === 'number' && typeof right === 'number') {
+      switch (arithMatch[2]) {
+        case '%': return left % right;
+        case '*': return left * right;
+        case '/': return right !== 0 ? left / right : 0;
+      }
+    }
+  }
+  // Handle + and - separately (lower precedence, and - could be unary)
+  const addSubMatch = trimmed.match(/^(.+?)\s*([+\-])\s*(.+)$/);
+  if (addSubMatch && addSubMatch[1].trim()) {
+    const left = evalExpression(addSubMatch[1].trim(), data);
+    const right = evalExpression(addSubMatch[3].trim(), data);
+    if (typeof left === 'number' && typeof right === 'number') {
+      switch (addSubMatch[2]) {
+        case '+': return left + right;
+        case '-': return left - right;
+      }
+    }
+  }
+
+  // Handle parenthesized expressions: (expr)
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    return evalExpression(trimmed.slice(1, -1), data);
+  }
+
   // Handle dot notation and array access: a.b.c, a[0]
-  const parts = trimmed.split(/\.|\[|\]/g).filter(Boolean);
+  const parts = trimmed.split(/\./).filter(Boolean);
   let val: any = data;
   for (const part of parts) {
     if (val === undefined || val === null) return undefined;
-    val = val[part];
+    // Handle array access within part: e.g. items[0]
+    const bracketMatch = part.match(/^(\w+)\[(\d+)\]$/);
+    if (bracketMatch) {
+      val = val[bracketMatch[1]];
+      if (val === undefined || val === null) return undefined;
+      val = val[parseInt(bracketMatch[2])];
+    } else {
+      val = val[part];
+    }
   }
 
   return val;

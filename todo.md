@@ -367,3 +367,15 @@
 - [x] Fix template engine: add Jinja2 ternary expression support (x if condition else y)
 - [x] Write 85 new overflow tests (templateOverflow.test.ts)
 - [x] Run all 520 tests — all passing, no regressions
+
+## Sprint 6.1: Visual Overflow Testing & Engine Fixes
+
+- [x] Generate visual test HTML with all 23 templates using long content
+- [x] Inspect all 27 slides in browser for overflow issues
+- [x] Fix roadmap template: raw Jinja2 syntax was rendering as text
+- [x] Fix template engine: add arithmetic operators (%, *, /, +, -) to evalExpression
+- [x] Fix template engine: rewrite processIfBlocks for nested if/else/endif support (inside-out processing)
+- [x] Fix template engine: improve dot notation with proper bracket handling
+- [x] Verify roadmap renders alternating top/bottom milestones correctly
+- [x] All 520 tests passing, no regressions
+
