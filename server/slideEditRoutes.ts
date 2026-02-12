@@ -21,7 +21,7 @@ import { renderSlide, renderPresentation, BASE_CSS } from "./pipeline/templateEn
 import { getThemePreset } from "./pipeline/themes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
-import { buildEditableSlideHtml, getEditableFields } from "./pipeline/inlineFieldInjector";
+import { buildEditableSlideHtml, getEditableFields, setFieldValue } from "./pipeline/inlineFieldInjector";
 
 const router = Router();
 
@@ -398,7 +398,7 @@ router.get("/api/v1/presentations/:id/slides/:index/editable", async (req: Reque
       BASE_CSS,
     );
 
-    const fields = getEditableFields(slide.layoutId);
+    const fields = getEditableFields(slide.layoutId, slide.data);
 
     res.json({
       presentation_id: p.presentationId,
@@ -406,11 +406,7 @@ router.get("/api/v1/presentations/:id/slides/:index/editable", async (req: Reque
       layoutId: slide.layoutId,
       data: slide.data,
       html,
-      editableFields: fields.map(f => ({
-        key: f.key,
-        label: f.label,
-        multiline: !!f.multiline,
-      })),
+      editableFields: fields,
     });
   } catch (error: any) {
     console.error("[SlideEdit] Get editable slide error:", error);
@@ -455,15 +451,15 @@ router.patch("/api/v1/presentations/:id/slides/:index", async (req: Request, res
     }
 
     // Validate field is editable for this layout
-    const editableFields = getEditableFields(slides[index].layoutId);
+    const editableFields = getEditableFields(slides[index].layoutId, slides[index].data);
     const fieldDef = editableFields.find(f => f.key === field);
     if (!fieldDef) {
       res.status(422).json({ detail: `Field '${field}' is not editable for layout '${slides[index].layoutId}'` });
       return;
     }
 
-    // Update the specific field
-    slides[index].data[field] = value;
+    // Update the specific field using dot-notation path support
+    setFieldValue(slides[index].data, field, value);
 
     // Re-render the slide HTML
     const slideHtml = renderSlide(slides[index].layoutId, slides[index].data);

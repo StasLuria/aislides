@@ -507,3 +507,9 @@
 - [x] Console logging when density is escalated (for debugging)
 - [x] Write vitest tests: 20 tests (10 estimateContentHeight + 10 autoDensity), all passing
 - [x] All 684 tests passing
+
+## Bug Fix — Inline Editing Only Works for Title
+- [x] Diagnose why non-title fields (description, bullets, etc.) are not editable in inline mode
+- [x] Fix inlineFieldInjector to properly mark all text fields as contentEditable
+- [x] Test inline editing across multiple slide layouts (title-slide, text-slide, two-column, etc.)
+- [x] Write/update vitest tests
