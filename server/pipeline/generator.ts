@@ -765,9 +765,12 @@ async function generateSlideImages(
       }),
     );
 
-    for (const r of results) {
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
       if (r.status === "fulfilled" && r.value.url) {
         imageMap.set(r.value.slideNumber, r.value.url);
+      } else if (r.status === "rejected") {
+        console.warn(`[Pipeline] Image generation failed for slide ${batch[j]?.slide_number}: ${r.reason?.message || r.reason}`);
       }
     }
 

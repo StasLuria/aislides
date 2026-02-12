@@ -204,11 +204,17 @@ async function startGeneration(
       }).catch((err) => console.error("[Pipeline] DB update failed:", err));
     };
 
-    // Run the pipeline (slide count is auto-determined by AI)
-    const result = await generatePresentation(prompt, {
-      themePreset: config.theme_preset,
-      enableImages: config.enable_images !== false, // enabled by default
-    }, onProgress);
+    // Run the pipeline with overall timeout (10 minutes)
+    const PIPELINE_TIMEOUT_MS = 10 * 60 * 1000;
+    const result = await Promise.race([
+      generatePresentation(prompt, {
+        themePreset: config.theme_preset,
+        enableImages: config.enable_images !== false, // enabled by default
+      }, onProgress),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Pipeline timed out after 10 minutes")), PIPELINE_TIMEOUT_MS)
+      ),
+    ]);
 
     // Upload HTML to S3
     const fileKey = `presentations/${presentationId}/presentation-${nanoid(8)}.html`;

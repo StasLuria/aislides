@@ -315,24 +315,40 @@ function buildPayload(params: InvokeParams, model: string): Record<string, unkno
   return payload;
 }
 
+/** Timeout for individual LLM API calls (120 seconds) */
+const LLM_CALL_TIMEOUT_MS = 120_000;
+
 async function callApi(url: string, apiKey: string, payload: Record<string, unknown>): Promise<InvokeResult> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_CALL_TIMEOUT_MS);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      );
+    }
+
+    return (await response.json()) as InvokeResult;
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(`LLM API call timed out after ${LLM_CALL_TIMEOUT_MS / 1000}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return (await response.json()) as InvokeResult;
 }
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {

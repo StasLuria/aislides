@@ -18,6 +18,9 @@
 import { storagePut } from "server/storage";
 import { ENV } from "./env";
 
+/** Default timeout for image generation requests (60 seconds) */
+const IMAGE_GENERATION_TIMEOUT_MS = 60_000;
+
 export type GenerateImageOptions = {
   prompt: string;
   originalImages?: Array<{
@@ -25,6 +28,8 @@ export type GenerateImageOptions = {
     b64Json?: string;
     mimeType?: string;
   }>;
+  /** Timeout in milliseconds. Defaults to 60000 (60s). */
+  timeoutMs?: number;
 };
 
 export type GenerateImageResponse = {
@@ -50,43 +55,58 @@ export async function generateImage(
     baseUrl
   ).toString();
 
-  const response = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      original_images: options.originalImages || [],
-    }),
-  });
+  // Use AbortController for timeout
+  const timeoutMs = options.timeoutMs ?? IMAGE_GENERATION_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
-  }
+  try {
+    const response = await fetch(fullUrl, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "connect-protocol-version": "1",
+        authorization: `Bearer ${ENV.forgeApiKey}`,
+      },
+      body: JSON.stringify({
+        prompt: options.prompt,
+        original_images: options.originalImages || [],
+      }),
+      signal: controller.signal,
+    });
 
-  const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(
+        `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
+      );
+    }
+
+    const result = (await response.json()) as {
+      image: {
+        b64Json: string;
+        mimeType: string;
+      };
     };
-  };
-  const base64Data = result.image.b64Json;
-  const buffer = Buffer.from(base64Data, "base64");
+    const base64Data = result.image.b64Json;
+    const buffer = Buffer.from(base64Data, "base64");
 
-  // Save to S3
-  const { url } = await storagePut(
-    `generated/${Date.now()}.png`,
-    buffer,
-    result.image.mimeType
-  );
-  return {
-    url,
-  };
+    // Save to S3
+    const { url } = await storagePut(
+      `generated/${Date.now()}.png`,
+      buffer,
+      result.image.mimeType
+    );
+    return {
+      url,
+    };
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(`Image generation timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

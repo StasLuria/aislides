@@ -460,3 +460,12 @@
 - [x] Frontend: Current slide follows the dragged slide
 - [x] Write vitest tests for reorder validation and execution (19 tests, all passing)
 - [x] All 642 tests passing
+
+## Bug Fix — Generation Hangs at Image Generation Step
+- [x] Diagnosed: generateImage() and callApi() had no timeouts — fetch could hang indefinitely
+- [x] Added 60s AbortController timeout to generateImage() in _core/imageGeneration.ts
+- [x] Added 120s AbortController timeout to callApi() in _core/llm.ts
+- [x] Added 10-minute overall pipeline timeout via Promise.race in presentationRoutes.ts
+- [x] Added per-image error logging in generateSlideImages() (warns but continues)
+- [x] Reset stuck presentation jp_mAkyYccX17ipm to failed status
+- [x] All 642 tests passing

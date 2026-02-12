@@ -1,0 +1,18 @@
+{
+  "query": "SELECT presentationId, status, currentStep, progressPercent, errorInfo, updatedAt FROM presentations WHERE presentationId LIKE 'jp_mAky%' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT presentationId, status, currentStep, progressPercent, errorInfo, updatedAt FROM presentations WHERE presentationId LIKE 'jp_mAky%' LIMIT 1;",
+  "rows": [
+    {
+      "presentationId": "jp_mAkyYccX17ipm",
+      "status": "processing",
+      "currentStep": "images",
+      "progressPercent": "67",
+      "errorInfo": "NULL",
+      "updatedAt": "2026-02-12 13:15:58"
+    }
+  ],
+  "messages": [],
+  "stdout": "presentationId\tstatus\tcurrentStep\tprogressPercent\terrorInfo\tupdatedAt\njp_mAkyYccX17ipm\tprocessing\timages\t67\tNULL\t2026-02-12 13:15:58\n",
+  "stderr": "",
+  "execution_time_ms": 97
+}
