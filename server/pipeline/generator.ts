@@ -1102,6 +1102,26 @@ export async function generatePresentation(
     onProgress({ nodeName: "data_viz", currentStep: "done", progressPercent: 74, message: "Пропуск визуализации (ошибка)" });
   }
 
+  // 5.9. POST-CHART LAYOUT FIXUP: ensure chart-bearing slides use chart-capable layouts
+  const CHART_CAPABLE_LAYOUTS = new Set(["chart-slide", "stats-chart", "chart-text", "dual-chart"]);
+  const STATS_LIKE_LAYOUTS = new Set(["highlight-stats", "icons-numbers"]);
+  for (const [slideNum, svgChart] of Array.from(chartMap.entries())) {
+    const currentLayout = layoutMap.get(slideNum) || "text-slide";
+    if (!CHART_CAPABLE_LAYOUTS.has(currentLayout)) {
+      // Swap to an appropriate chart layout based on the current layout type
+      let newLayout: string;
+      if (STATS_LIKE_LAYOUTS.has(currentLayout)) {
+        newLayout = "stats-chart"; // stats + chart hybrid
+      } else if (currentLayout === "image-text" || currentLayout === "two-column" || currentLayout === "text-slide") {
+        newLayout = "chart-text"; // text/bullets + chart
+      } else {
+        newLayout = "chart-slide"; // generic full chart
+      }
+      console.log(`[Pipeline] Chart layout fixup: slide ${slideNum} "${currentLayout}" → "${newLayout}" (chart available)`);
+      layoutMap.set(slideNum, newLayout);
+    }
+  }
+
   // 6. HTML COMPOSER (parallel per slide)
   onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 75, message: "Сборка HTML-слайдов..." });
 

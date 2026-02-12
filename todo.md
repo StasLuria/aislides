@@ -560,8 +560,8 @@
 - [x] Update autoDensity height estimates for all new layouts
 - [x] Update generator fallback data for all new layouts
 - [x] Write vitest tests for all new layouts and themes (799 tests pass)
-- [ ] Create "dual-chart" layout — two charts side by side (deferred)
-- [ ] Create "risk-matrix" layout — 3x3 heatmap + mitigation cards (deferred)
+- [x] Create "dual-chart" layout — two charts side by side (implemented in Sprint 6)
+- [x] Create "risk-matrix" layout — 3x3 heatmap + mitigation cards (implemented in Sprint 6)
 
 ## Auto-Theme Selection (AI-based)
 - [x] Create theme classification mapping (topic → theme) — 12 themes with keyword rules + regex patterns
@@ -585,3 +585,10 @@
 - [x] Update dataVizAgent CHART_LAYOUTS for dual-chart
 - [x] Update injectChartIntoSlideData for dual-chart (leftChartSvg/rightChartSvg)
 - [x] Write vitest tests for both new layouts — 22 new tests (872 total pass)
+
+## Test Generation Results & Fixes
+- [x] Test 1: "Инвестиционный проект" — auto-theme selected executive_navy_red (LLM), timeline-horizontal and scenario-cards used
+- [x] Test 2: "Анализ рынка электромобилей" — auto-theme selected data_navy_blue (keyword), 6 SVG charts rendered
+- [x] Chart layout fixup working: 5 slides auto-switched to chart-capable layouts (stats-chart, chart-text, chart-slide)
+- [x] Strengthen Layout Agent prompt: limit text-slide to 1, image-text to 2, mandatory layout selection rules, diversity requirements for 10+ slide presentations
+- [x] All 872 tests pass after prompt improvements

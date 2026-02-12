@@ -268,7 +268,9 @@ Your goal is to create a visually diverse, professional presentation where every
   * Slide with advantages vs disadvantages analysis → pros-cons
   * Slide with detailed explanation of one topic → text-slide
   * Slide with tabular data → table-slide
-  * Slide with chartable numerical data → chart-slide or waterfall-chart
+  * Slide with chartable numerical data (percentages, growth rates, market size, financial projections) → stats-chart, chart-text, or chart-slide
+  * Slide with key metrics AND supporting data series → stats-chart (combines stat cards + chart)
+  * Slide with data analysis requiring explanation → chart-text (chart + bullet analysis)
   * Slide with revenue/cost breakdown showing incremental changes → waterfall-chart
   * Slide that introduces a new section → section-header
   * Slide with agenda/contents listing → agenda-table-of-contents
@@ -281,31 +283,50 @@ Your goal is to create a visually diverse, professional presentation where every
   * Slide with risk assessment, impact/probability analysis → risk-matrix
 </content_matching_rules>
 <diversity_rules>
-- Use at LEAST 6 unique layouts across the presentation (with 27 layouts available, aim for maximum variety).
-- No single layout may appear more than 2 times (except text-slide which can appear up to 3 times).
+- Use at LEAST 6 unique layouts across the presentation (with 33 layouts available, aim for maximum variety).
+- No single layout may appear more than 2 times.
 - Slide 1 MUST be title-slide.
 - Last slide MUST be final-slide.
-- After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline, funnel, pyramid, roadmap, highlight-stats).
+- After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline, funnel, pyramid, roadmap, highlight-stats, stats-chart, chart-text, hero-stat).
 - Alternate between text-heavy and visual layouts for rhythm.
-- CRITICAL: Avoid image-text, image-fullscreen, and quote-slide layouts unless the slide content explicitly mentions an image or a direct quote. These layouts require images — without them they show empty placeholders.
-- Prefer icons-numbers or highlight-stats for slides about results, achievements, or key statistics.
-- Prefer process-steps, timeline, or roadmap for slides about methodology, roadmap, or history.
+
+CRITICAL LAYOUT RESTRICTIONS:
+- NEVER use image-text or image-fullscreen unless the slide content explicitly mentions an image/photo/screenshot. These layouts require images — without them they show empty placeholders.
+- NEVER use quote-slide unless the content contains an actual quote from a named person.
+- NEVER use text-slide when the content has numerical data — use stats-chart, chart-text, chart-slide, or dual-chart instead.
+- LIMIT text-slide to maximum 1 usage per presentation. Prefer text-with-callout over text-slide.
+- LIMIT image-text to maximum 2 usages per presentation.
+
+MANDATORY LAYOUT SELECTION (use these FIRST before falling back to generic layouts):
+- Slide with 3-5 key metrics → icons-numbers or stats-chart
+- Slide with ONE dominant metric → hero-stat (not highlight-stats)
+- Slide with numerical data (%, growth, financial) → stats-chart or chart-text (MUST have chart)
+- Slide with two datasets to compare → dual-chart
+- Slide with sequential process → numbered-steps-v2 (preferred) or process-steps
+- Slide with chronological events (4-6 events) → timeline-horizontal (preferred) or timeline
+- Slide with product roadmap → roadmap
+- Slide with two opposing options → pros-cons or comparison
+- Slide with detailed explanation → text-with-callout (preferred) or text-slide
+- Slide with tabular data → table-slide
+- Slide with revenue/cost breakdown → waterfall-chart
+- Slide with SWOT analysis → swot-analysis
+- Slide with funnel/pipeline → funnel
+- Slide with hierarchy/framework → pyramid
+- Slide with 2x2 decision matrix → matrix-2x2
+- Slide with action items/checklist → checklist
+- Slide with scenario/forecast analysis → scenario-cards
+- Slide with risk assessment → risk-matrix
+- Slide with key takeaway/conclusion → text-with-callout
+
+DIVERSITY REQUIREMENTS:
+- EVERY presentation with 8+ slides MUST include at least 2 chart-capable layouts (stats-chart, chart-text, chart-slide, or dual-chart).
+- EVERY presentation with 10+ slides MUST include at least 3 different specialized layouts (from: stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout, dual-chart, risk-matrix, waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist).
 - Prefer swot-analysis for strategic analysis slides.
 - Prefer funnel for conversion/pipeline slides.
-- Prefer pros-cons for decision/trade-off slides.
 - Prefer pyramid for hierarchy/framework slides.
 - Prefer matrix-2x2 for prioritization/positioning slides.
 - Prefer checklist for action items/requirements slides.
 - Prefer waterfall-chart for financial breakdown slides.
-- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout, dual-chart, risk-matrix) when content matches — they create more visually engaging presentations than text-slide.
-- For data-heavy slides with both metrics and chart data, prefer stats-chart or chart-text over plain chart-slide.
-- For slides emphasizing ONE dramatic number, prefer hero-stat over highlight-stats.
-- For scenario/forecast analysis, prefer scenario-cards.
-- For step-by-step processes with results, prefer numbered-steps-v2 over process-steps.
-- For horizontal timelines with few events (4-6), prefer timeline-horizontal over timeline.
-- When a slide has a key takeaway or conclusion, prefer text-with-callout over text-slide.
-- For comparing two datasets visually (e.g., revenue vs costs, Q1 vs Q2), prefer dual-chart over chart-slide.
-- For risk assessment or impact/probability analysis, prefer risk-matrix.
 </diversity_rules>
 <output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
