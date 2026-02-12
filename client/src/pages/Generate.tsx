@@ -48,6 +48,7 @@ export default function Generate() {
   const [isFailed, setIsFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -221,6 +222,56 @@ export default function Generate() {
     }, 3000);
   };
 
+  const handleRetry = async () => {
+    if (!presentationId || isRetrying) return;
+    setIsRetrying(true);
+    try {
+      await api.retryPresentation(presentationId);
+
+      // Reset all UI state
+      setIsFailed(false);
+      setIsCompleted(false);
+      setErrorMessage(null);
+      setProgress(0);
+      setElapsedTime(0);
+      setCurrentAgent(null);
+      setSlidePreviewHtml(null);
+      setSlidePreviews([]);
+      setSteps(GENERATION_STEPS.map((s) => ({ key: s.key, status: "pending" })));
+
+      // Reconnect WebSocket
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+
+      try {
+        wsRef.current = api.connectWebSocket(
+          presentationId,
+          handleWSEvent,
+          () => startPolling(),
+          () => {
+            if (!isCompleted && !isFailed) startPolling();
+          }
+        );
+      } catch {
+        startPolling();
+      }
+      startPolling();
+
+      toast.success("Генерация перезапущена");
+    } catch (error: any) {
+      console.error("Retry failed:", error);
+      toast.error(error?.response?.data?.detail || "Не удалось перезапустить генерацию");
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   const handleCancel = async () => {
     try {
       toast.info("Генерация отменена");
@@ -362,14 +413,27 @@ export default function Generate() {
                 </Button>
               )}
               {isFailed && (
-                <Button
-                  onClick={() => navigate("/")}
-                  variant="outline"
-                  className="flex-1 gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Попробовать снова
-                </Button>
+                <>
+                  <Button
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="flex-1 gap-2"
+                  >
+                    {isRetrying ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4" />
+                    )}
+                    {isRetrying ? "Перезапуск..." : "Повторить"}
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/")}
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    Новая презентация
+                  </Button>
+                </>
               )}
               {!isCompleted && !isFailed && (
                 <Button
@@ -456,6 +520,20 @@ export default function Generate() {
                       <p className="text-[10px] text-muted-foreground font-mono mt-1 max-w-xs">
                         {errorMessage}
                       </p>
+                      <Button
+                        onClick={handleRetry}
+                        disabled={isRetrying}
+                        variant="outline"
+                        className="mt-4 gap-2"
+                        size="sm"
+                      >
+                        {isRetrying ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        )}
+                        {isRetrying ? "Перезапуск..." : "Повторить генерацию"}
+                      </Button>
                     </div>
                   )}
                 </div>

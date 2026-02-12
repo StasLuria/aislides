@@ -322,6 +322,13 @@ class ApiClient {
     await this.http.delete(`/presentations/${id}`);
   }
 
+  async retryPresentation(id: string): Promise<{ presentation_id: string; status: string; message: string }> {
+    const { data } = await this.http.post<{ presentation_id: string; status: string; message: string }>(
+      `/presentations/${id}/retry`,
+    );
+    return data;
+  }
+
   // — Interactive Mode —
 
   async startInteractive(req: { prompt: string; config?: Record<string, unknown> }): Promise<InteractiveStartResponse> {

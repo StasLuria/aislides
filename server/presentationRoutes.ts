@@ -1,12 +1,13 @@
 /**
  * Presentation API Routes — Express REST endpoints matching the FastAPI backend contract.
  * Routes:
- *   POST   /api/v1/presentations          — create a new presentation
- *   GET    /api/v1/presentations           — list presentations
- *   GET    /api/v1/presentations/:id       — get presentation details
- *   GET    /api/v1/presentations/:id/html  — get the full HTML
- *   DELETE /api/v1/presentations/:id       — delete a presentation
- *   GET    /health                         — health check
+ *   POST   /api/v1/presentations              — create a new presentation
+ *   GET    /api/v1/presentations               — list presentations
+ *   GET    /api/v1/presentations/:id           — get presentation details
+ *   GET    /api/v1/presentations/:id/html      — get the full HTML
+ *   DELETE /api/v1/presentations/:id           — delete a presentation
+ *   POST   /api/v1/presentations/:id/retry     — retry a failed presentation
+ *   GET    /health                             — health check
  */
 import { Router, Request, Response } from "express";
 import {
@@ -165,6 +166,45 @@ router.delete("/api/v1/presentations/:id", async (req: Request, res: Response) =
     res.json({ success: true });
   } catch (error: any) {
     console.error("[API] Delete presentation error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ── Retry Failed Presentation ──────────────────────────
+router.post("/api/v1/presentations/:id/retry", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "failed") {
+      res.status(400).json({ detail: `Cannot retry presentation with status '${p.status}'. Only failed presentations can be retried.` });
+      return;
+    }
+
+    // Reset the presentation state
+    await updatePresentationProgress(p.presentationId, {
+      status: "processing",
+      currentStep: "starting",
+      progressPercent: 0,
+      errorInfo: {},
+    });
+
+    // Re-run the pipeline in background
+    const config = (p.config as Record<string, any>) || {};
+    startGeneration(p.presentationId, p.prompt, config).catch((err) => {
+      console.error(`[Pipeline] Retry fatal error for ${p.presentationId}:`, err);
+    });
+
+    res.json({
+      presentation_id: p.presentationId,
+      status: "processing",
+      message: "Pipeline restarted",
+    });
+  } catch (error: any) {
+    console.error("[API] Retry presentation error:", error);
     res.status(500).json({ detail: error.message || "Internal server error" });
   }
 });

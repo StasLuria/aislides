@@ -478,3 +478,15 @@
 - [x] Log retry attempts with warning messages including attempt count and delay
 - [x] Write vitest tests for retry behavior (11 tests: success, retry-then-succeed, exhaust, non-retryable, backoff, cap)
 - [x] All 653 tests passing
+
+## Retry Button on Generation Error
+- [x] Backend: POST /api/v1/presentations/:id/retry endpoint to restart failed pipeline
+- [x] Backend: Reset presentation status, clear error info, re-run generatePresentation
+- [x] Backend: Validate only "failed" status can be retried (400 for other statuses)
+- [x] Frontend: Show "Повторить" button in both left panel and right preview area on error
+- [x] Frontend: handleRetry resets all UI state, reconnects WS, restarts polling
+- [x] Frontend: Loading state with spinner during retry
+- [x] Frontend: "Новая презентация" button as alternative to retry
+- [x] API client: api.retryPresentation() method added
+- [x] Write vitest tests for retry endpoint (11 tests, all passing)
+- [x] All 664 tests passing
