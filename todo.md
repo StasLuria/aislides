@@ -562,3 +562,13 @@
 - [x] Write vitest tests for all new layouts and themes (799 tests pass)
 - [ ] Create "dual-chart" layout — two charts side by side (deferred)
 - [ ] Create "risk-matrix" layout — 3x3 heatmap + mitigation cards (deferred)
+
+## Auto-Theme Selection (AI-based)
+- [x] Create theme classification mapping (topic → theme) — 12 themes with keyword rules + regex patterns
+- [x] Implement themeSelector agent with LLM-based analysis — structured JSON output with theme_id + reason
+- [x] Add keyword-based fast matching (no LLM needed for obvious cases) — instant scoring with confidence levels
+- [x] Integrate auto-selection into batch generation pipeline (generator.ts)
+- [x] Integrate auto-selection into interactive generation pipeline (interactiveRoutes.ts)
+- [x] Add "auto" option to frontend theme selector with Wand2 icon and description
+- [x] Set "auto" as default theme selection mode
+- [x] Write vitest tests for theme selection logic — 51 new tests (850 total pass)

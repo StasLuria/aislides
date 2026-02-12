@@ -31,6 +31,7 @@ import {
 } from "./pipeline/generator";
 import { renderSlide, renderPresentation } from "./pipeline/templateEngine";
 import { getThemePreset } from "./pipeline/themes";
+import { autoSelectTheme } from "./pipeline/themeSelector";
 import { wsManager } from "./wsManager";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
@@ -737,7 +738,18 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
         message: "Создание визуальной темы...",
       });
 
-      const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+      let themePreset;
+      if (config.theme_preset === "auto" || !config.theme_preset) {
+        // Use presentation title + branding as the prompt for theme selection
+        const themePrompt = `${plannerResult.presentation_title} — ${plannerResult.branding.industry} ${plannerResult.branding.style_preference}`;
+        const autoResult = await autoSelectTheme(themePrompt);
+        themePreset = getThemePreset(autoResult.themeId);
+        console.log(`[Interactive] Auto-selected theme: ${autoResult.themeId} (${autoResult.method})`);
+        // Save the resolved theme back to config for subsequent operations
+        config.theme_preset = autoResult.themeId;
+      } else {
+        themePreset = getThemePreset(config.theme_preset);
+      }
       const theme = await runTheme(
         plannerResult.presentation_title,
         plannerResult.branding,

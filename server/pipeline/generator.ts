@@ -28,6 +28,7 @@ import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
+import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -932,9 +933,20 @@ export async function generatePresentation(
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
   }
 
-  // 4. THEME — use predefined preset when available
-  onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 48, message: "Создание визуальной темы..." });
-  const themePreset = getThemePreset(config.themePreset || "corporate_blue");
+  // 4. THEME — auto-select or use predefined preset
+  onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 48, message: "Подбор визуальной темы..." });
+  let themePreset: ThemePreset;
+  let themeSelectionInfo: ThemeSelectionResult | null = null;
+
+  if (config.themePreset === "auto" || !config.themePreset) {
+    // Auto-select theme based on content
+    themeSelectionInfo = await autoSelectTheme(prompt);
+    themePreset = getThemePreset(themeSelectionInfo.themeId);
+    console.log(`[Pipeline] Auto-selected theme: ${themeSelectionInfo.themeId} (${themeSelectionInfo.method}, ${themeSelectionInfo.confidence}) — ${themeSelectionInfo.reason}`);
+    onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 49, message: `Тема: ${themePreset.nameRu}` });
+  } else {
+    themePreset = getThemePreset(config.themePreset);
+  }
   const theme = await runTheme(
     plannerResult.presentation_title,
     plannerResult.branding,

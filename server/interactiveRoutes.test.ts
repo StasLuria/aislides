@@ -62,6 +62,18 @@ vi.mock("./pipeline/themes", () => ({
     mood: "professional",
     dark: false,
   }),
+  THEME_PRESETS: [
+    { id: "corporate_blue", name: "Corporate Blue", nameRu: "Корпоративный синий", mood: "professional", cssVariables: ":root {}", fontsUrl: "", previewColor: "", previewGradient: "" },
+  ],
+}));
+
+vi.mock("./pipeline/themeSelector", () => ({
+  autoSelectTheme: vi.fn().mockResolvedValue({
+    themeId: "corporate_blue",
+    method: "keyword",
+    confidence: "high",
+    reason: "test mock",
+  }),
 }));
 
 vi.mock("./presentationDb", () => ({

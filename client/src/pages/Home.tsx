@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";  // still used for mode selector
 import { toast } from "sonner";
-import { ArrowRight, Sparkles, Layers, Zap, FileText, ImageIcon } from "lucide-react";
+import { ArrowRight, Sparkles, Layers, Zap, FileText, ImageIcon, Wand2 } from "lucide-react";
 import api from "@/lib/api";
 import type { GenerationMode } from "@/lib/api";
 import { THEME_PRESETS } from "@/lib/constants";
@@ -27,7 +27,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<GenerationMode>("batch");
-  const [theme, setTheme] = useState("corporate_blue");
+  const [theme, setTheme] = useState("auto");
   const [enableImages, setEnableImages] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -224,11 +224,47 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Theme selector — visual gradient grid */}
+            {/* Theme selector — visual gradient grid with auto option */}
             <div className="space-y-3">
               <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Тема дизайна
               </Label>
+
+              {/* Auto-theme option */}
+              <button
+                type="button"
+                onClick={() => setTheme("auto")}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                  theme === "auto"
+                    ? "bg-primary/8 border-primary/40 ring-2 ring-primary/30"
+                    : "border-border/50 hover:bg-secondary/40 hover:border-border"
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                  theme === "auto"
+                    ? "bg-primary/15 text-primary"
+                    : "bg-secondary/60 text-muted-foreground"
+                }`}>
+                  <Wand2 className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className={`text-sm font-medium transition-colors ${
+                    theme === "auto" ? "text-primary" : "text-foreground/80"
+                  }`}>
+                    Автоподбор
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    AI подберёт тему под содержание презентации
+                  </div>
+                </div>
+                {theme === "auto" && (
+                  <div className="ml-auto">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  </div>
+                )}
+              </button>
+
+              {/* Manual theme grid */}
               <div className="grid grid-cols-5 gap-2">
                 {THEME_PRESETS.map((t) => {
                   const isSelected = theme === t.id;
