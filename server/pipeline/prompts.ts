@@ -372,7 +372,23 @@ export function layoutUser(slidesSummary: string): string {
   return `<slides>
 ${slidesSummary}
 </slides>
-Select the optimal layout for each slide, ensuring diversity and visual rhythm.`;
+<instructions>
+Select the optimal layout for each slide, ensuring diversity and visual rhythm.
+
+IMPORTANT: Each slide includes content analysis tags:
+- [CONTENT TYPE: X] — the detected content type (data_heavy, process, comparison, timeline, metrics, etc.)
+- [RECOMMENDED: layout1 | layout2 | layout3] — layouts that best match the content type (use these as strong hints)
+- [HAS N DATA POINTS] — the slide has structured data that should be visualized
+- [NUMERIC DENSITY: N%] — percentage of numeric tokens (high = data-heavy slide)
+- [N BULLETS] — number of bullet points in the content
+
+You MUST strongly prefer the [RECOMMENDED] layouts when they are provided. Only deviate if:
+1. The recommended layout was already used on another slide (diversity)
+2. The recommended layout would create adjacency with the same layout on a neighboring slide
+3. You have a compelling design reason to choose a different layout that still matches the content type
+
+When no [RECOMMENDED] tag is present, use your judgment based on the content matching rules.
+</instructions>`;
 }
 
 // ═══════════════════════════════════════════════════════

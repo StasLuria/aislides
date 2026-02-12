@@ -649,7 +649,7 @@
 - [x] LLM picks chart type based on data semantics
 - [x] Keep local data extraction as Phase 1, LLM holistic review as Phase 2
 - [x] Update tests to match new behavior (all 904 pass)
-- [ ] Test with real generation and verify quality
+- [x] Test with real generation and verify quality (9 unique layouts / 11 slides, content-aware matching working)
 
 ## Quality Improvement: Step 2 — Better Content Quality
 - [x] Improve Writer Agent prompt: added quality_principles (Show don't tell, Specificity, Variety, Insight, Brevity), anti-patterns with examples
@@ -657,9 +657,9 @@
 - [x] Improve bullet descriptions: anti-patterns section shows bad vs good examples in Russian
 
 ## Quality Improvement: Step 3 — Better Design Quality
-- [ ] Improve Layout Agent: smarter layout selection based on content type
-- [ ] Improve Design Critique: stronger visual harmony checks
-- [ ] Better layout diversity through content-aware assignment
+- [x] Improve Layout Agent: smarter layout selection based on content type
+- [x] Improve Design Critique: stronger visual harmony checks
+- [x] Better layout diversity through content-aware assignment
 
 ## Quality Improvement: Step 4 — Better Image Selection
 - [ ] Improve image prompt generation for more relevant results
@@ -692,3 +692,12 @@
 - [x] Layout Agent: no text generation, skip
 - [x] Fallback data builder: ensure fallback strings use target language
 - [x] Test with Russian prompt and verify all content is in Russian (12/12 slides fully Russian)
+
+## Smarter Layout Agent — Content-Aware Layout Selection
+- [x] Audit current Layout Agent prompt and post-processing logic
+- [x] Add content-type detection: identify data-heavy, process, comparison, timeline, quote slides from Writer output
+- [x] Create content-to-layout mapping rules (data → chart-text/stats-chart, process → process-steps, comparison → comparison/pros-cons, timeline → timeline/timeline-horizontal, quote → quote-slide)
+- [x] Add post-LLM layout override: if content type strongly matches a layout, enforce it
+- [x] Improve Layout Agent prompt with content-aware examples and rules
+- [x] Ensure layout diversity is maintained alongside content-aware selection
+- [x] Test with real generation and verify layout quality (9 unique layouts / 11 slides, comparison→comparison, stats→hero-stat, KPI→chart-text)

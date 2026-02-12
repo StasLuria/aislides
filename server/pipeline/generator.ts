@@ -29,6 +29,7 @@ import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
+import { analyzeAllSlides, buildEnrichedSlidesSummary, applyContentAwareOverrides, type ContentAnalysis } from "./contentAnalyzer";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -409,13 +410,16 @@ export async function runTheme(
   });
 }
 
-export async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
-  const slidesSummary = content
-    .map(
-      (s) =>
-        `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${s.data_points.length > 0 ? " [HAS DATA]" : ""}`,
-    )
-    .join("\n");
+export async function runLayout(content: SlideContent[], contentAnalyses?: ContentAnalysis[]): Promise<LayoutDecision[]> {
+  // Use enriched summary if content analyses are available
+  const slidesSummary = contentAnalyses
+    ? buildEnrichedSlidesSummary(content, contentAnalyses)
+    : content
+        .map(
+          (s) =>
+            `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${s.data_points.length > 0 ? " [HAS DATA]" : ""}`,
+        )
+        .join("\n");
 
   const result = await llmStructured<{ decisions: LayoutDecision[] }>(
     LAYOUT_SYSTEM,
@@ -1010,12 +1014,24 @@ export async function generatePresentation(
     themePreset,
   );
 
-  // 5. LAYOUT
+  // 4.9. CONTENT ANALYSIS — deterministic content-type detection
+  onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 53, message: "Анализ типов контента..." });
+  const contentAnalyses = analyzeAllSlides(content);
+  const analysisLog = contentAnalyses
+    .filter(a => a.contentType !== "title" && a.contentType !== "closing")
+    .map(a => `  slide ${a.slideNumber}: ${a.contentType} (${(a.confidence * 100).toFixed(0)}%) → [${a.recommendedLayouts.slice(0, 2).join(", ")}] signals=[${a.signals.join(", ")}]`)
+    .join("\n");
+  console.log(`[Pipeline] Content analysis:\n${analysisLog}`);
+
+  // 5. LAYOUT — with enriched content analysis hints
   onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 55, message: "Выбор макетов для слайдов..." });
-  const layoutDecisions = await runLayout(content);
+  const layoutDecisions = await runLayout(content, contentAnalyses);
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
+
+  // 5.0.5. CONTENT-AWARE OVERRIDE: fix layouts that contradict content type
+  applyContentAwareOverrides(layoutMap, contentAnalyses);
 
   // 5.1. POST-LAYOUT ADJACENCY FIX: prevent consecutive same layouts
   {
