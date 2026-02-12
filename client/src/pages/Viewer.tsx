@@ -32,6 +32,8 @@ import {
   Save,
   Loader2,
   GripVertical,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import {
   DndContext,
@@ -343,6 +345,12 @@ export default function Viewer() {
   const [hasEdits, setHasEdits] = useState(false);
   const [isReassembling, setIsReassembling] = useState(false);
 
+  // Auto-save state
+  type AutoSaveStatus = "idle" | "pending" | "reassembling" | "saved" | "error";
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const reassembleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Backwards compat
   const isEditing = editMode !== "off";
 
@@ -572,6 +580,64 @@ export default function Viewer() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Reassemble — re-render full HTML and upload to S3
+  const handleReassemble = useCallback(async () => {
+    setIsReassembling(true);
+    setAutoSaveStatus("reassembling");
+    try {
+      const result = await api.reassemblePresentation(presentationId);
+
+      // Fetch the new HTML
+      const html = await api.fetchPresentationHtml(result.html_url);
+      setFullHtml(html);
+      const slides = parseSlides(html);
+      setSlideHtmls(slides);
+
+      // Update presentation result URLs
+      setPresentation((prev) => prev ? {
+        ...prev,
+        result_urls: { ...prev.result_urls, html_preview: result.html_url },
+      } : prev);
+
+      setHasEdits(false);
+      setAutoSaveStatus("saved");
+
+      // Clear previous status timer
+      if (autoSaveStatusTimerRef.current) clearTimeout(autoSaveStatusTimerRef.current);
+      autoSaveStatusTimerRef.current = setTimeout(() => setAutoSaveStatus("idle"), 3000);
+    } catch (error) {
+      console.error("Failed to reassemble:", error);
+      setAutoSaveStatus("error");
+      toast.error("Не удалось пересобрать презентацию");
+
+      if (autoSaveStatusTimerRef.current) clearTimeout(autoSaveStatusTimerRef.current);
+      autoSaveStatusTimerRef.current = setTimeout(() => setAutoSaveStatus("idle"), 5000);
+    } finally {
+      setIsReassembling(false);
+    }
+  }, [presentationId]);
+
+  // Schedule auto-reassemble with debounce (2s after last edit)
+  const scheduleAutoReassemble = useCallback(() => {
+    // Clear any existing timer
+    if (reassembleTimerRef.current) {
+      clearTimeout(reassembleTimerRef.current);
+    }
+    setAutoSaveStatus("pending");
+
+    reassembleTimerRef.current = setTimeout(() => {
+      handleReassemble();
+    }, 2000);
+  }, [handleReassemble]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (reassembleTimerRef.current) clearTimeout(reassembleTimerRef.current);
+      if (autoSaveStatusTimerRef.current) clearTimeout(autoSaveStatusTimerRef.current);
+    };
+  }, []);
+
   // Handle slide update from sidebar editor
   const handleSlideUpdated = useCallback(
     (index: number, response: SlideEditResponse) => {
@@ -603,8 +669,9 @@ export default function Viewer() {
       });
 
       setHasEdits(true);
+      scheduleAutoReassemble();
     },
-    [],
+    [scheduleAutoReassemble],
   );
 
   // Handle inline field save
@@ -624,41 +691,12 @@ export default function Viewer() {
 
       // Note: We don't update slideHtmls here because the inline editor
       // already shows the updated text. The slideHtmls will be refreshed
-      // when switching away from inline mode or on reassemble.
+      // automatically by the debounced auto-reassemble.
       setHasEdits(true);
+      scheduleAutoReassemble();
     },
-    [],
+    [scheduleAutoReassemble],
   );
-
-  // Reassemble — re-render full HTML and upload to S3
-  const handleReassemble = async () => {
-    setIsReassembling(true);
-    try {
-      const result = await api.reassemblePresentation(presentationId);
-
-      // Fetch the new HTML
-      const html = await api.fetchPresentationHtml(result.html_url);
-      setFullHtml(html);
-      const slides = parseSlides(html);
-      setSlideHtmls(slides);
-
-      // Update presentation result URLs
-      if (presentation) {
-        setPresentation({
-          ...presentation,
-          result_urls: { ...presentation.result_urls, html_preview: result.html_url },
-        });
-      }
-
-      setHasEdits(false);
-      toast.success("Презентация пересобрана и сохранена");
-    } catch (error) {
-      console.error("Failed to reassemble:", error);
-      toast.error("Не удалось пересобрать презентацию");
-    } finally {
-      setIsReassembling(false);
-    }
-  };
 
   // Download HTML
   const handleDownload = () => {
@@ -831,25 +869,42 @@ export default function Viewer() {
 
           {/* Actions */}
           <div className="p-3 border-t border-border/50 space-y-2">
-            {hasEdits && (
-              <Button
-                onClick={handleReassemble}
-                size="sm"
-                className="w-full gap-2 text-xs"
-                disabled={isReassembling}
+            {/* Auto-save status indicator */}
+            {autoSaveStatus !== "idle" && (
+              <div
+                className={`
+                  flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-medium transition-all duration-300
+                  ${autoSaveStatus === "pending" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : ""}
+                  ${autoSaveStatus === "reassembling" ? "bg-primary/10 text-primary border border-primary/20" : ""}
+                  ${autoSaveStatus === "saved" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : ""}
+                  ${autoSaveStatus === "error" ? "bg-red-500/10 text-red-400 border border-red-500/20" : ""}
+                `}
               >
-                {isReassembling ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Пересборка...
-                  </>
-                ) : (
+                {autoSaveStatus === "pending" && (
                   <>
                     <Save className="w-3.5 h-3.5" />
-                    Сохранить все изменения
+                    Ожидание сохранения...
                   </>
                 )}
-              </Button>
+                {autoSaveStatus === "reassembling" && (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Сохранение...
+                  </>
+                )}
+                {autoSaveStatus === "saved" && (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    Все изменения сохранены
+                  </>
+                )}
+                {autoSaveStatus === "error" && (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Ошибка сохранения
+                  </>
+                )}
+              </div>
             )}
             <Button
               onClick={handleDownload}

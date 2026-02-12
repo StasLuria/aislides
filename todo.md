@@ -513,3 +513,12 @@
 - [x] Fix inlineFieldInjector to properly mark all text fields as contentEditable
 - [x] Test inline editing across multiple slide layouts (title-slide, text-slide, two-column, etc.)
 - [x] Write/update vitest tests
+
+## Auto-Save for Inline Editing
+- [x] Analyze current manual save flow (pendingChanges, handleSaveAll)
+- [x] Implement debounced auto-save with 2s debounce + auto-reassemble
+- [x] Replace manual "Save all changes" button with auto-save status indicator
+- [x] Show save status: pending → reassembling → saved → idle (or error)
+- [x] Handle save errors gracefully with toast notification + auto-reset
+- [x] Test auto-save across multiple edits and slide switches
+- [x] Write/update vitest tests (11 tests in autoSave.test.ts)
