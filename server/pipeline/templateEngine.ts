@@ -465,6 +465,355 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     </div>
   </div>
 </div>`,
+
+  // ═══════════════════════════════════════════════════════
+  // NEW LAYOUTS — Sprint 3
+  // ═══════════════════════════════════════════════════════
+
+  "waterfall-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 40px;">
+    {% for bar in bars | default([]) %}
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ bar.value | default('') }}</div>
+      <div style="width: 100%; height: {{ bar.height | default('50') }}%; min-height: 24px; border-radius: 8px 8px 0 0; background: {{ bar.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative; display: flex; align-items: center; justify-content: center;">
+        {% if bar.change %}
+        <span style="font-size: 11px; font-weight: 600; color: white;">{{ bar.change }}</span>
+        {% endif %}
+      </div>
+      <div style="font-size: 12px; color: var(--text-body-color, #4b5563); text-align: center; font-weight: 500;">{{ bar.label | default('') }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>`,
+
+  "swot-analysis": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 16px;">
+    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #22c55e 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #22c55e 20%, transparent); display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #22c55e; display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <h2 style="color: #16a34a; font-size: 18px; font-weight: 700; margin: 0;">{{ strengths.title | default('Strengths') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in strengths.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #22c55e;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #ef4444 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #ef4444 20%, transparent); display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #ef4444; display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h2 style="color: #dc2626; font-size: 18px; font-weight: 700; margin: 0;">{{ weaknesses.title | default('Weaknesses') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in weaknesses.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #ef4444;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #3b82f6 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #3b82f6 20%, transparent); display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #3b82f6; display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h2 style="color: #2563eb; font-size: 18px; font-weight: 700; margin: 0;">{{ opportunities.title | default('Opportunities') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in opportunities.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #3b82f6;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="border-radius: 16px; padding: 24px; background: color-mix(in srgb, #f59e0b 8%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, #f59e0b 20%, transparent); display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #f59e0b; display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>
+        </div>
+        <h2 style="color: #d97706; font-size: 18px; font-weight: 700; margin: 0;">{{ threats.title | default('Threats') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in threats.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: #f59e0b;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "funnel": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+    {% for stage in stages | default([]) %}
+    {% set widthPercent = 100 - (loop.index0 * (60 / (stages | length))) %}
+    <div style="width: {{ widthPercent }}%; display: flex; align-items: center; border-radius: 12px; padding: 14px 24px; background: {{ stage.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative; min-height: 52px;">
+      <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+        <div style="font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.9); min-width: 60px;">{{ stage.value | default('') }}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 16px; font-weight: 600; color: #ffffff;">{{ stage.title | default('') }}</div>
+          {% if stage.description %}
+          <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px;">{{ stage.description }}</div>
+          {% endif %}
+        </div>
+        {% if stage.conversion %}
+        <div style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.15); padding: 4px 10px; border-radius: 20px;">{{ stage.conversion }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>`,
+
+  "roadmap": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="width: 100%; position: relative;">
+      <div style="position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, transparent); border-radius: 2px; transform: translateY(-50%);"></div>
+      <div style="display: grid; grid-template-columns: repeat({{ milestones | default([]) | length }}, 1fr); gap: 16px; position: relative;">
+        {% for milestone in milestones | default([]) %}
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+          {% if loop.index0 % 2 == 0 %}
+          <div style="margin-bottom: 12px; min-height: 80px; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
+            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 4px;">{{ milestone.title }}</div>
+            {% if milestone.description %}
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ milestone.description }}</div>
+            {% endif %}
+          </div>
+          <div style="width: 20px; height: 20px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2;"></div>
+          <div style="min-height: 80px;"></div>
+          {% else %}
+          <div style="min-height: 80px;"></div>
+          <div style="width: 20px; height: 20px; border-radius: 50%; background: {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; border: 3px solid var(--card-background-color, #ffffff); box-shadow: 0 0 0 2px {{ milestone.color | default('var(--primary-accent-color, #9333ea)') }}; z-index: 2;"></div>
+          <div style="margin-top: 12px; min-height: 80px; display: flex; flex-direction: column;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ milestone.date | default('') }}</div>
+            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); margin-top: 4px;">{{ milestone.title }}</div>
+            {% if milestone.description %}
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ milestone.description }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "pyramid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="display: flex; width: 100%; max-width: 1000px; gap: 32px;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        {% for level in levels | default([]) %}
+        {% set widthPercent = 30 + (loop.index0 * (70 / (levels | length))) %}
+        <div style="width: {{ widthPercent }}%; padding: 16px 20px; text-align: center; border-radius: 8px; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }}; position: relative;">
+          <div style="font-size: 15px; font-weight: 600; color: #ffffff;">{{ level.title | default('') }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px;">
+        {% for level in levels | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ level.color | default('var(--primary-accent-color, #9333ea)') }};"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ level.title | default('') }}</div>
+            {% if level.description %}
+            <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 2px; line-height: 1.5;">{{ level.description }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "matrix-2x2": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="position: relative; width: 100%; max-width: 900px; aspect-ratio: 1.4;">
+      <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--card-border-color, #e5e7eb); transform: translateX(-50%);"></div>
+      <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: var(--card-border-color, #e5e7eb); transform: translateY(-50%);"></div>
+      {% if axisX %}
+      <div style="position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 600; color: var(--text-body-color, #4b5563); letter-spacing: 0.05em;">{{ axisX }}</div>
+      {% endif %}
+      {% if axisY %}
+      <div style="position: absolute; left: -32px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: 13px; font-weight: 600; color: var(--text-body-color, #4b5563); letter-spacing: 0.05em; white-space: nowrap;">{{ axisY }}</div>
+      {% endif %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 16px; height: 100%; padding: 8px;">
+        {% for quadrant in quadrants | default([]) %}
+        <div style="border-radius: 12px; padding: 20px; background: {{ quadrant.color | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 6%, var(--card-background-color, #ffffff))') }}; display: flex; flex-direction: column;">
+          <div style="font-size: 16px; font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 8px;">{{ quadrant.title | default('') }}</div>
+          {% if quadrant.description %}
+          <div style="font-size: 13px; color: var(--text-body-color, #4b5563); line-height: 1.5;">{{ quadrant.description }}</div>
+          {% endif %}
+          {% if quadrant.items %}
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+            {% for item in quadrant.items %}
+            <div style="font-size: 12px; color: var(--text-body-color, #4b5563); display: flex; align-items: center; gap: 6px;">
+              <div style="width: 4px; height: 4px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); flex-shrink: 0;"></div>
+              {{ item }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "pros-cons": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;">
+    <div class="card" style="border-top: 4px solid #22c55e; display: flex; flex-direction: column; height: 100%;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="color: #16a34a; font-size: 20px; font-weight: 700; margin: 0;">{{ pros.title | default('Advantages') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for item in pros.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, #22c55e 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #ef4444; display: flex; flex-direction: column; height: 100%;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </div>
+        <h2 style="color: #dc2626; font-size: 20px; font-weight: 700; margin: 0;">{{ cons.title | default('Disadvantages') }}</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for item in cons.items | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, #ef4444 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.5;">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "checklist": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%;">
+      {% for item in items | default([]) %}
+      <div style="display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04));">
+        {% if item.done %}
+        <div style="width: 24px; height: 24px; border-radius: 6px; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        {% else %}
+        <div style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--card-border-color, #d1d5db); flex-shrink: 0; margin-top: 1px;"></div>
+        {% endif %}
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827); line-height: 1.3;{% if item.done %} text-decoration: line-through; opacity: 0.6;{% endif %}">{{ item.title | default('') }}</div>
+          {% if item.description %}
+          <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 3px; line-height: 1.4;">{{ item.description }}</div>
+          {% endif %}
+        </div>
+        {% if item.status %}
+        <div style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; background: {{ item.statusColor | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent)') }}; color: {{ item.statusTextColor | default('var(--primary-accent-color, #9333ea)') }}; white-space: nowrap; flex-shrink: 0;">{{ item.status }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>`,
+
+  "highlight-stats": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%;">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; border-radius: 20px; background: var(--slide-bg-accent-gradient, var(--primary-accent-color, #9333ea)); text-align: center;">
+        <div style="font-size: 64px; font-weight: 800; color: #ffffff; line-height: 1;">{{ mainStat.value | default('') }}</div>
+        <div style="font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 12px;">{{ mainStat.label | default('') }}</div>
+        {% if mainStat.description %}
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 8px; max-width: 280px;">{{ mainStat.description }}</div>
+        {% endif %}
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; justify-content: center;">
+        {% for stat in supportingStats | default([]) %}
+        <div class="card" style="display: flex; align-items: center; gap: 16px;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--primary-accent-color, #9333ea); min-width: 80px;">{{ stat.value | default('') }}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 15px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ stat.label | default('') }}</div>
+            {% if stat.description %}
+            <div style="font-size: 13px; color: var(--text-body-color, #4b5563); margin-top: 2px;">{{ stat.description }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -695,38 +1044,92 @@ function renderTemplate(template: string, data: Record<string, any>): string {
 }
 
 function processForLoops(template: string, data: Record<string, any>): string {
-  const forRegex = /\{%[-\s]*for\s+(\w+)\s+in\s+(.+?)\s*[-]?%\}([\s\S]*?)\{%[-\s]*endfor\s*[-]?%\}/g;
   let result = template;
   let safety = 0;
 
-  while (forRegex.test(result) && safety < 20) {
+  // Use balanced matching: find outermost {% for %}...{% endfor %} pairs
+  while (result.includes("{% for") && safety < 20) {
     safety++;
-    result = result.replace(forRegex, (_match, itemVar, listExpr, body) => {
-      const list = evalExpression(listExpr.trim(), data);
-      if (!Array.isArray(list)) return "";
+    const forStart = result.search(/\{%[-\s]*for\s+/);
+    if (forStart === -1) break;
 
-      return list
-        .map((item, index) => {
-          const loopData = {
-            ...data,
-            [itemVar]: item,
-            loop: { index: index + 1, index0: index, first: index === 0, last: index === list.length - 1, length: list.length },
-          };
-          let rendered = processForLoops(body, loopData);
-          rendered = processIfBlocks(rendered, loopData);
-          rendered = rendered.replace(/\{\{(.+?)\}\}/g, (_m, expr) => {
-            try {
-              const val = evalExpression(expr.trim(), loopData);
-              return val !== undefined && val !== null ? String(val) : "";
-            } catch {
-              return "";
-            }
-          });
-          return rendered;
-        })
-        .join("");
-    });
-    forRegex.lastIndex = 0;
+    // Parse the for tag
+    const tagEnd = result.indexOf("%}", forStart);
+    if (tagEnd === -1) break;
+    const tag = result.substring(forStart, tagEnd + 2);
+    const tagMatch = tag.match(/\{%[-\s]*for\s+(\w+)\s+in\s+(.+?)\s*[-]?%\}/);
+    if (!tagMatch) break;
+
+    const itemVar = tagMatch[1];
+    const listExpr = tagMatch[2];
+
+    // Find the matching endfor by counting nesting depth
+    let depth = 1;
+    let pos = tagEnd + 2;
+    let endforStart = -1;
+    let endforEnd = -1;
+    while (depth > 0 && pos < result.length) {
+      const nextFor = result.indexOf("{% for", pos);
+      const nextEndfor = result.indexOf("{% endfor", pos);
+      // Also check whitespace variants
+      const nextEndfor2 = result.indexOf("{%- endfor", pos);
+      const nextEndfor3 = result.indexOf("{%  endfor", pos);
+      
+      // Find earliest endfor variant
+      let actualEndfor = nextEndfor;
+      if (nextEndfor2 !== -1 && (actualEndfor === -1 || nextEndfor2 < actualEndfor)) actualEndfor = nextEndfor2;
+      if (nextEndfor3 !== -1 && (actualEndfor === -1 || nextEndfor3 < actualEndfor)) actualEndfor = nextEndfor3;
+
+      if (actualEndfor === -1) break;
+
+      if (nextFor !== -1 && nextFor < actualEndfor) {
+        depth++;
+        pos = nextFor + 6;
+      } else {
+        depth--;
+        if (depth === 0) {
+          endforStart = actualEndfor;
+          endforEnd = result.indexOf("%}", actualEndfor) + 2;
+          break;
+        }
+        pos = actualEndfor + 10;
+      }
+    }
+
+    if (endforStart === -1 || endforEnd === -1) break;
+
+    const body = result.substring(tagEnd + 2, endforStart);
+    const before = result.substring(0, forStart);
+    const after = result.substring(endforEnd);
+
+    const list = evalExpression(listExpr.trim(), data);
+    if (!Array.isArray(list)) {
+      result = before + after;
+      continue;
+    }
+
+    const rendered = list
+      .map((item, index) => {
+        const loopData = {
+          ...data,
+          [itemVar]: item,
+          loop: { index: index + 1, index0: index, first: index === 0, last: index === list.length - 1, length: list.length },
+        };
+        let itemRendered = processForLoops(body, loopData);
+        itemRendered = processIfBlocks(itemRendered, loopData);
+        itemRendered = itemRendered.replace(/\{\{(.+?)\}\}/g, (_m, expr) => {
+          try {
+            const val = evalExpression(expr.trim(), loopData);
+            return val !== undefined && val !== null ? String(val) : "";
+          } catch {
+            return "";
+          }
+        });
+        return itemRendered;
+      })
+      .join("");
+
+    result = before + rendered + after;
   }
 
   return result;

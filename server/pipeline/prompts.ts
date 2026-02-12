@@ -223,7 +223,7 @@ Your goal is to create a visually diverse, professional presentation where every
 1. title-slide — Opening slide with image area and title. ONLY for slide 1.
 2. section-header — Section divider with large centered heading on accent background. Use for transitioning between major sections.
 3. text-slide — Text with 4-5 bullet points (title + description each) and optional icon. Best for detailed explanations.
-4. two-column — Two equal columns with headers and 3-5 bullets each. Best for comparisons, pros/cons, or parallel topics.
+4. two-column — Two equal columns with headers and 3-5 bullets each. Best for comparisons or parallel topics.
 5. image-text — Image left, text right. ONLY use if the content explicitly mentions an image/photo/screenshot.
 6. image-fullscreen — Full-bleed background image. ONLY use if content explicitly has an image.
 7. quote-slide — Featured quote on background. ONLY use if the content contains an actual quote from a person.
@@ -235,29 +235,55 @@ Your goal is to create a visually diverse, professional presentation where every
 13. comparison — Side-by-side comparison with colored borders. Best for before/after, option A vs B.
 14. final-slide — Closing slide with thank you. ONLY for the last slide.
 15. agenda-table-of-contents — Numbered agenda items. Use for table of contents or agenda slides.
+16. waterfall-chart — Vertical bar chart showing incremental changes (revenue breakdown, cost analysis). Data: bars with value, height%, label, color, change.
+17. swot-analysis — 2x2 grid with Strengths (green), Weaknesses (red), Opportunities (blue), Threats (amber). Best for strategic analysis. Data: strengths/weaknesses/opportunities/threats each with title + items[].
+18. funnel — Narrowing funnel stages from top to bottom. Best for sales funnels, conversion pipelines, user journeys. Data: stages with title, value, description, conversion, color.
+19. roadmap — Horizontal timeline with alternating above/below milestones. Best for product roadmaps, project plans, strategic timelines. Data: milestones with date, title, description, color.
+20. pyramid — Hierarchical pyramid (narrow top, wide bottom) with descriptions. Best for organizational hierarchies, priority frameworks, Maslow-type models. Data: levels with title, description, color.
+21. matrix-2x2 — 2x2 decision matrix with axis labels. Best for prioritization (effort/impact), risk assessment, strategic positioning. Data: quadrants with title, description, items[], axisX, axisY.
+22. pros-cons — Two-column layout with green checkmarks (pros) and red X marks (cons). Best for decision analysis, trade-offs. Data: pros/cons each with title + items[].
+23. checklist — Grid of checklist items with done/pending status. Best for requirements, action items, readiness assessments. Data: items with title, description, done (boolean), status.
+24. highlight-stats — One large hero statistic on accent background + 2-3 supporting stats. Best for emphasizing a single key metric with context. Data: mainStat + supportingStats[].
 </available_layouts>
 <content_matching_rules>
 - Match layout to content type:
-  * Slide with 3-5 key metrics/numbers/percentages → icons-numbers
+  * Slide with 3-5 key metrics/numbers/percentages → icons-numbers or highlight-stats
+  * Slide with ONE dominant metric + supporting data → highlight-stats
   * Slide with sequential process or methodology → process-steps
-  * Slide with chronological events or roadmap → timeline
-  * Slide with two opposing options or perspectives → comparison or two-column
+  * Slide with chronological events or roadmap → timeline or roadmap
+  * Slide with product/project roadmap spanning months/quarters → roadmap
+  * Slide with two opposing options or perspectives → comparison, two-column, or pros-cons
+  * Slide with advantages vs disadvantages analysis → pros-cons
   * Slide with detailed explanation of one topic → text-slide
   * Slide with tabular data → table-slide
-  * Slide with chartable numerical data → chart-slide
+  * Slide with chartable numerical data → chart-slide or waterfall-chart
+  * Slide with revenue/cost breakdown showing incremental changes → waterfall-chart
   * Slide that introduces a new section → section-header
   * Slide with agenda/contents listing → agenda-table-of-contents
+  * Slide with SWOT analysis or strategic 4-quadrant analysis → swot-analysis
+  * Slide with sales/marketing funnel or conversion pipeline → funnel
+  * Slide with hierarchy, priority levels, or layered framework → pyramid
+  * Slide with 2x2 decision matrix or prioritization grid → matrix-2x2
+  * Slide with action items, requirements, or readiness checklist → checklist
 </content_matching_rules>
 <diversity_rules>
-- Use at LEAST 5 unique layouts across the presentation.
-- No single layout may appear more than 3 times (except text-slide which can appear up to 4 times).
+- Use at LEAST 6 unique layouts across the presentation (with 27 layouts available, aim for maximum variety).
+- No single layout may appear more than 2 times (except text-slide which can appear up to 3 times).
 - Slide 1 MUST be title-slide.
 - Last slide MUST be final-slide.
-- After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline).
+- After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline, funnel, pyramid, roadmap, highlight-stats).
 - Alternate between text-heavy and visual layouts for rhythm.
-- CRITICAL: Avoid image-text, image-fullscreen, and quote-slide layouts unless the slide content explicitly mentions an image or a direct quote. These layouts require images — without them they show empty placeholders. Prefer text-slide, two-column, icons-numbers, process-steps, timeline, or comparison.
-- Prefer icons-numbers for slides about results, achievements, or key statistics.
-- Prefer process-steps or timeline for slides about methodology, roadmap, or history.
+- CRITICAL: Avoid image-text, image-fullscreen, and quote-slide layouts unless the slide content explicitly mentions an image or a direct quote. These layouts require images — without them they show empty placeholders.
+- Prefer icons-numbers or highlight-stats for slides about results, achievements, or key statistics.
+- Prefer process-steps, timeline, or roadmap for slides about methodology, roadmap, or history.
+- Prefer swot-analysis for strategic analysis slides.
+- Prefer funnel for conversion/pipeline slides.
+- Prefer pros-cons for decision/trade-off slides.
+- Prefer pyramid for hierarchy/framework slides.
+- Prefer matrix-2x2 for prioritization/positioning slides.
+- Prefer checklist for action items/requirements slides.
+- Prefer waterfall-chart for financial breakdown slides.
+- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats) when content matches — they create more visually engaging presentations than text-slide.
 </diversity_rules>
 <output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
@@ -325,6 +351,15 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - final-slide: {title, subtitle, thankYouText}
 - quote-slide: {title, quote, author, role?}
 - agenda-table-of-contents: {title, sections: [{number, title, description}]}
+- waterfall-chart: {title, description?, bars: [{label, value, height (number 10-100), color?, change?}]} — height is percentage of max bar. Provide 5-8 bars.
+- swot-analysis: {title, strengths: {title, items: [string]}, weaknesses: {title, items: [string]}, opportunities: {title, items: [string]}, threats: {title, items: [string]}} — 3-5 items per quadrant.
+- funnel: {title, stages: [{title, value, description?, conversion?, color}]} — 4-6 stages from widest to narrowest. Use distinct colors per stage.
+- roadmap: {title, description?, milestones: [{date, title, description?, color?}]} — 4-6 milestones. Dates can be quarters (Q1 2026) or months.
+- pyramid: {title, levels: [{title, description?, color}]} — 3-5 levels from top (narrowest) to bottom (widest). Top = most important.
+- matrix-2x2: {title, axisX?, axisY?, quadrants: [{title, description?, items?: [string], color?}]} — exactly 4 quadrants (top-left, top-right, bottom-left, bottom-right).
+- pros-cons: {title, pros: {title, items: [string]}, cons: {title, items: [string]}} — 4-6 items per side.
+- checklist: {title, description?, items: [{title, description?, done: boolean, status?, statusColor?, statusTextColor?}]} — 6-8 items in a grid.
+- highlight-stats: {title, mainStat: {value, label, description?}, supportingStats: [{value, label, description?}]} — 1 hero stat + 2-3 supporting stats.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

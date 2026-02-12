@@ -284,3 +284,20 @@
 - [x] Update frontend constants with new agent step (design_critic)
 - [x] Write vitest tests for all validators (62 tests, 322 total)
 - [x] Verify end-to-end generation works with Design Critic
+
+## Sprint 3: New Layout Templates
+
+### New Layouts (8-10 templates)
+- [x] Waterfall Chart — каскадная диаграмма для финансовых данных (рост/падение)
+- [x] SWOT Analysis — четырёхквадрантная матрица (Strengths, Weaknesses, Opportunities, Threats)
+- [x] Funnel — воронка для маркетинга/продаж (этапы конверсии)
+- [x] Roadmap — горизонтальная timeline с этапами и милестоунами
+- [x] Pyramid — иерархическая пирамида (3-5 уровней)
+- [x] Matrix 2x2 — матрица для позиционирования/приоритизации
+- [x] Pros & Cons — два столбца за/против с иконками
+- [x] Checklist — список задач с чекбоксами и статусами
+- [x] Highlight Stats — hero-метрика с поддерживающими статистиками (вместо Agenda, т.к. agenda уже есть)
+- [x] Register all new layouts in layout selector and prompts (27 layouts total)
+- [x] Fix template engine: balanced matching for nested for-loops
+- [x] Write vitest tests for all new templates (25 tests, 347 total)
+- [x] Verify end-to-end generation with new layouts
