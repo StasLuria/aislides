@@ -4,6 +4,7 @@
  * Templates are embedded as strings (ported from Python backend).
  */
 import { processSlideDataMarkdown } from "./markdownInline";
+import { autoDensity } from "./autoDensity";
 
 // ═══════════════════════════════════════════════════════
 // LAYOUT TEMPLATES (Jinja2/Nunjucks syntax)
@@ -1710,8 +1711,9 @@ export function renderSlide(layoutId: string, slideData: Record<string, any>): s
   // Process inline markdown (**bold**, *italic*) in text fields
   const processedData = processSlideDataMarkdown(slideData);
 
-  // Compute content density and inject into template data as _density
-  const density = computeDensity(layoutId, slideData);
+  // Compute content density and apply auto-density fallback
+  const initialDensity = computeDensity(layoutId, slideData);
+  const density = autoDensity(layoutId, slideData, initialDensity);
   processedData._density = density;
 
   let content = renderTemplate(template, processedData);

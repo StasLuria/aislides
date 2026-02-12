@@ -497,3 +497,13 @@
 - [x] Reduced description -webkit-line-clamp from 3 to 2 to save vertical space
 - [x] Checked all 26 templates — no other overflow or div-balance issues found
 - [x] All 664 tests passing
+
+## Auto-Density Fallback
+- [x] Studied density system: computeDensity → autoDensity → renderSlide pipeline
+- [x] Created server/pipeline/autoDensity.ts with estimateContentHeight() for 16 layout types
+- [x] Implemented auto-density escalation: normal → compact → dense based on estimated height vs 622px available
+- [x] Height estimation uses per-density CSS params (font sizes, padding, gaps, line clamps)
+- [x] Integrated into renderSlide: computeDensity → autoDensity → injectDensityClass
+- [x] Console logging when density is escalated (for debugging)
+- [x] Write vitest tests: 20 tests (10 estimateContentHeight + 10 autoDensity), all passing
+- [x] All 684 tests passing
