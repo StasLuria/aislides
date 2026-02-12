@@ -25,6 +25,7 @@ import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing"
 import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
+import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -976,6 +977,39 @@ export async function generatePresentation(
       message: `Собрано ${Math.min(i + batchSize, content.length)} из ${content.length} слайдов`,
       slidePreview: batchResults[batchResults.length - 1]?.html,
     });
+  }
+
+  // 6.5. DESIGN CRITIC — validate visual quality and apply CSS fixes
+  onProgress({ nodeName: "design_critic", currentStep: "design_review", progressPercent: 92, message: "Проверка визуального качества..." });
+  try {
+    const designSlides: SlideDesignData[] = slides.map((s, i) => ({
+      slideNumber: i + 1,
+      layoutId: s.layoutId,
+      data: s.data,
+      html: s.html,
+    }));
+    const critique = runDesignCritic(designSlides, theme.css_variables);
+
+    // Apply CSS fixes to slides that have issues
+    for (const [slideIdx, cssFix] of Array.from(critique.cssFixesPerSlide.entries())) {
+      const idx = slideIdx - 1; // Convert 1-based to 0-based
+      if (idx >= 0 && idx < slides.length && cssFix.trim()) {
+        slides[idx].html = `<style>${cssFix}</style>${slides[idx].html}`;
+      }
+    }
+
+    const errorCount = critique.issues.filter(i => i.severity === "error").length;
+    const warnCount = critique.issues.filter(i => i.severity === "warning").length;
+    console.log(`[Pipeline] Design critique: score ${critique.overallScore}/10, ${errorCount} errors, ${warnCount} warnings, ${critique.cssFixesPerSlide.size} fixes applied`);
+    onProgress({
+      nodeName: "design_critic",
+      currentStep: "design_review",
+      progressPercent: 94,
+      message: `Дизайн: ${critique.overallScore}/10 (${critique.cssFixesPerSlide.size} исправлений)`,
+    });
+  } catch (err) {
+    console.error("[Pipeline] Design critic failed, continuing:", err);
+    onProgress({ nodeName: "design_critic", currentStep: "design_review", progressPercent: 94, message: "Пропуск проверки дизайна" });
   }
 
   // 7. ASSEMBLY

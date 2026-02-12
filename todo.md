@@ -267,3 +267,20 @@
 - [x] Integrate into pipeline after image generation, before HTML composition
 - [x] Write vitest tests for Speaker Coach (22 tests, 260 total)
 - [x] Verify end-to-end generation works with Speaker Coach
+
+## Sprint 2: Design Critic Agent
+
+### Design Critic Agent
+- [x] Create designCriticAgent.ts with visual quality validation
+- [x] Implement contrast checker (WCAG AA compliance for text/background)
+- [x] Implement text overflow detection (content exceeding slide bounds)
+- [x] Implement layout balance validation (vertical centering, spacing)
+- [x] Implement color harmony checker (theme consistency across slides)
+- [x] Implement font sizing validator (readability at presentation distance)
+- [x] Implement whitespace and content density validator
+- [x] Implement cross-slide consistency checker (layout variety)
+- [x] Add auto-fix capabilities — CSS overrides for contrast, overflow, font issues
+- [x] Integrate into pipeline after HTML Composer, before final assembly
+- [x] Update frontend constants with new agent step (design_critic)
+- [x] Write vitest tests for all validators (62 tests, 322 total)
+- [x] Verify end-to-end generation works with Design Critic

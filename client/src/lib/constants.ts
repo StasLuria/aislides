@@ -77,6 +77,12 @@ export const AGENTS = {
     icon: "🔧",
     team: "design" as const,
   },
+  design_critic: {
+    name: "Design Critic",
+    nameRu: "Критик дизайна",
+    icon: "🎨",
+    team: "design" as const,
+  },
   reviewer: {
     name: "Reviewer Agent",
     nameRu: "Агент-ревьюер",
@@ -98,6 +104,7 @@ export const GENERATION_STEPS = [
   { key: "images", label: "Генерация иллюстраций", agent: "image", percent: 70 },
   { key: "speaker_notes", label: "Заметки спикера", agent: "speaker_coach", percent: 72 },
   { key: "composing", label: "Сборка HTML", agent: "html_composer", percent: 85 },
+  { key: "design_review", label: "Проверка дизайна", agent: "design_critic", percent: 92 },
   { key: "review", label: "Проверка качества", agent: "reviewer", percent: 95 },
   { key: "completed", label: "Готово", agent: "reviewer", percent: 100 },
 ] as const;
