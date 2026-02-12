@@ -22,6 +22,9 @@ import { getThemePreset, type ThemePreset } from "./themes";
 import { generateImage } from "../_core/imageGeneration";
 import { validateSlideData, autoFixSlideData } from "./qaAgent";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
+import { runStorytellingAgent } from "./storytellingAgent";
+import { runOutlineCritic } from "./outlineCritic";
+import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -790,13 +793,46 @@ export async function generatePresentation(
   const language = plannerResult.language || "ru";
 
   // 2. OUTLINE
-  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 15, message: "Создание структуры презентации..." });
-  const outline = await runOutline(prompt, plannerResult.branding, language);
+  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
+  const rawOutline = await runOutline(prompt, plannerResult.branding, language);
+
+  // 2.5. OUTLINE CRITIC — validate and improve outline structure
+  onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
+  let outline = rawOutline;
+  try {
+    const criticResult = await runOutlineCritic(rawOutline);
+    outline = criticResult.outline;
+    const { critique } = criticResult;
+    if (critique.improved_outline) {
+      console.log(`[Pipeline] Outline improved by critic (score: ${critique.score}/10, ${critique.issues.length} issues)`);
+    } else {
+      console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
+    }
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: `Структура проверена (${critique.score}/10)` });
+  } catch (err) {
+    console.error("[Pipeline] Outline critic failed, using original outline:", err);
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
+  }
 
   // 3. WRITER (parallel)
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 25, message: `Написание контента для ${outline.slides.length} слайдов...` });
-  const content = await runWriterParallel(outline, language);
-  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
+  const rawContent = await runWriterParallel(outline, language);
+  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 38, message: "Контент готов" });
+
+  // 3.5. STORYTELLING AGENT — transform titles to action titles + narrative coherence
+  onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 40, message: "Улучшение нарратива и заголовков..." });
+  let content = rawContent;
+  try {
+    const storytellingResult = await runStorytellingAgent(rawContent, outline);
+    content = storytellingResult.enhancedContent;
+    if (storytellingResult.narrativeThread) {
+      console.log(`[Pipeline] Narrative thread: ${storytellingResult.narrativeThread}`);
+    }
+    onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Нарратив улучшен" });
+  } catch (err) {
+    console.error("[Pipeline] Storytelling agent failed, using original content:", err);
+    onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
+  }
 
   // 4. THEME — use predefined preset when available
   onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 48, message: "Создание визуальной темы..." });
@@ -868,8 +904,30 @@ export async function generatePresentation(
   // Also fix title-slide if it has no image — keep title-slide but it will use the placeholder gracefully
   // (title-slide always has the placeholder fallback, so no remap needed)
 
+  // 5.7. SPEAKER COACH — generate professional speaker notes
+  onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 71, message: "Генерация заметок спикера..." });
+  try {
+    const coachResult = await runSpeakerCoach(
+      content,
+      plannerResult.presentation_title,
+      outline.target_audience || "Широкая аудитория",
+      layoutMap,
+    );
+    // Apply speaker notes to content (enriches the notes field)
+    const enrichedContent = applySpeakerNotes(content, coachResult);
+    // Update content in-place for downstream HTML composition
+    for (let i = 0; i < content.length; i++) {
+      content[i] = enrichedContent[i];
+    }
+    console.log(`[Pipeline] Speaker notes generated (~${coachResult.total_estimated_minutes} min presentation)`);
+    onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 72, message: `Заметки готовы (~${coachResult.total_estimated_minutes} мин)` });
+  } catch (err) {
+    console.error("[Pipeline] Speaker coach failed, continuing with basic notes:", err);
+    onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 72, message: "Пропуск заметок (ошибка)" });
+  }
+
   // 6. HTML COMPOSER (parallel per slide)
-  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 72, message: "Сборка HTML-слайдов..." });
+  onProgress({ nodeName: "composer", currentStep: "composing", progressPercent: 73, message: "Сборка HTML-слайдов..." });
 
   const slides: Array<{ layoutId: string; data: Record<string, any>; html: string }> = [];
 

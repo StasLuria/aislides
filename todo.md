@@ -239,3 +239,31 @@
 - [x] Image generation: Improve image prompt generation for better quality
 - [x] Write vitest tests for all new improvements (32 tests added, 202 total passing)
 - [x] Test end-to-end generation with all improvements
+
+## Sprint 1: Agent Architecture Improvements
+
+### Task 1: Storytelling Agent
+- [x] Create storytellingAgent.ts with action titles enforcement
+- [x] Add narrative coherence check (logical transitions between slides)
+- [x] Add transition phrases generation for speaker flow
+- [x] Integrate into pipeline after Writer, before Layout
+- [x] Write vitest tests for Storytelling Agent (17 tests, 219 total)
+- [x] Verify end-to-end generation works with Storytelling Agent
+
+### Task 2: Outline Critic Agent
+- [x] Create outlineCritic.ts with structure validation
+- [x] Check Pyramid Principle compliance
+- [x] Check MECE structure of arguments
+- [x] Check slide type balance and variety
+- [x] Integrate into pipeline after Outline Agent with retry loop
+- [x] Write vitest tests for Outline Critic (19 tests, 238 total)
+- [x] Verify end-to-end generation works with Outline Critic
+
+### Task 3: Speaker Coach Agent
+- [x] Create speakerCoachAgent.ts with professional notes generation
+- [x] Generate talking points (not slide text repetition)
+- [x] Add transition phrases between slides
+- [x] Add timing hints per slide + audience engagement cues + delivery tips
+- [x] Integrate into pipeline after image generation, before HTML composition
+- [x] Write vitest tests for Speaker Coach (22 tests, 260 total)
+- [x] Verify end-to-end generation works with Speaker Coach

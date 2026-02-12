@@ -17,10 +17,22 @@ export const AGENTS = {
     icon: "📋",
     team: "content" as const,
   },
+  outline_critic: {
+    name: "Outline Critic",
+    nameRu: "Критик структуры",
+    icon: "🔍",
+    team: "content" as const,
+  },
   writer: {
     name: "Writer Agent",
     nameRu: "Агент-писатель",
     icon: "✍️",
+    team: "content" as const,
+  },
+  storytelling: {
+    name: "Storytelling Agent",
+    nameRu: "Агент нарратива",
+    icon: "📖",
     team: "content" as const,
   },
   search: {
@@ -53,6 +65,12 @@ export const AGENTS = {
     icon: "📊",
     team: "design" as const,
   },
+  speaker_coach: {
+    name: "Speaker Coach",
+    nameRu: "Коуч спикера",
+    icon: "🎙️",
+    team: "content" as const,
+  },
   html_composer: {
     name: "HTML Composer",
     nameRu: "HTML-композитор",
@@ -70,14 +88,16 @@ export const AGENTS = {
 // Generation steps in order
 export const GENERATION_STEPS = [
   { key: "planning", label: "Планирование", agent: "master_planner", percent: 5 },
-  { key: "outline", label: "Структура", agent: "outline", percent: 15 },
+  { key: "outline", label: "Структура", agent: "outline", percent: 12 },
+  { key: "critique", label: "Проверка структуры", agent: "outline_critic", percent: 22 },
   { key: "research", label: "Исследование", agent: "search", percent: 25 },
-  { key: "writing", label: "Написание контента", agent: "writer", percent: 40 },
+  { key: "writing", label: "Написание контента", agent: "writer", percent: 38 },
+  { key: "storytelling", label: "Улучшение нарратива", agent: "storytelling", percent: 45 },
   { key: "layout", label: "Выбор макетов", agent: "layout", percent: 50 },
   { key: "theme", label: "Дизайн темы", agent: "theme", percent: 60 },
   { key: "images", label: "Генерация иллюстраций", agent: "image", percent: 70 },
-  { key: "charts", label: "Создание графиков", agent: "chart", percent: 78 },
-  { key: "composing", label: "Сборка HTML", agent: "html_composer", percent: 88 },
+  { key: "speaker_notes", label: "Заметки спикера", agent: "speaker_coach", percent: 72 },
+  { key: "composing", label: "Сборка HTML", agent: "html_composer", percent: 85 },
   { key: "review", label: "Проверка качества", agent: "reviewer", percent: 95 },
   { key: "completed", label: "Готово", agent: "reviewer", percent: 100 },
 ] as const;
