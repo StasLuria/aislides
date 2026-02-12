@@ -35,10 +35,10 @@ export const AGENTS = {
     icon: "📖",
     team: "content" as const,
   },
-  search: {
-    name: "Search Agent",
-    nameRu: "Агент поиска",
-    icon: "🔍",
+  research: {
+    name: "Research Agent",
+    nameRu: "Агент исследования",
+    icon: "🔬",
     team: "content" as const,
   },
   layout: {
@@ -96,7 +96,7 @@ export const GENERATION_STEPS = [
   { key: "planning", label: "Планирование", agent: "master_planner", percent: 5 },
   { key: "outline", label: "Структура", agent: "outline", percent: 12 },
   { key: "critique", label: "Проверка структуры", agent: "outline_critic", percent: 22 },
-  { key: "research", label: "Исследование", agent: "search", percent: 25 },
+  { key: "researching", label: "Исследование фактов", agent: "research", percent: 28 },
   { key: "writing", label: "Написание контента", agent: "writer", percent: 38 },
   { key: "storytelling", label: "Улучшение нарратива", agent: "storytelling", percent: 45 },
   { key: "layout", label: "Выбор макетов", agent: "layout", percent: 50 },

@@ -26,6 +26,7 @@ import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
+import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -222,6 +223,7 @@ export async function runWriterSingle(
   targetAudience: string,
   language: string,
   previousContext?: string,
+  researchContext?: string,
 ): Promise<SlideContent> {
   const system = writerSystem(language, presentationTitle, allTitles, targetAudience);
   const user = writerUser(
@@ -230,6 +232,7 @@ export async function runWriterSingle(
     slideInfo.purpose,
     slideInfo.key_points.join(", "),
     previousContext,
+    researchContext,
   );
 
   const result = await llmStructured<{ slide: SlideContent }>(system, user, "WriterOutput", {
@@ -286,6 +289,7 @@ export async function runWriterParallel(
   outline: OutlineResult,
   language: string,
   onSlideWritten?: (slideNum: number, total: number) => void,
+  researchContextFormatter?: (slideNumber: number) => string,
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
   const results: SlideContent[] = [];
@@ -308,6 +312,7 @@ export async function runWriterParallel(
           outline.target_audience,
           language,
           previousContext,
+          researchContextFormatter?.(slide.slide_number),
         ).catch(
           (err): SlideContent => {
             console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
@@ -815,10 +820,28 @@ export async function generatePresentation(
     onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
   }
 
-  // 3. WRITER (parallel)
-  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 25, message: `Написание контента для ${outline.slides.length} слайдов...` });
-  const rawContent = await runWriterParallel(outline, language);
-  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 38, message: "Контент готов" });
+  // 2.7. RESEARCH AGENT — gather facts and statistics for content enrichment
+  onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 23, message: "Исследование фактов и статистики..." });
+  let researchContext: ResearchContext | null = null;
+  try {
+    const researchResult = await runResearchAgent(outline, (msg) => {
+      onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 24, message: msg });
+    });
+    researchContext = researchResult.context;
+    console.log(`[Pipeline] Research: ${researchResult.totalFacts} facts for ${researchResult.slidesResearched} slides`);
+    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 28, message: `Найдено ${researchResult.totalFacts} фактов` });
+  } catch (err) {
+    console.error("[Pipeline] Research agent failed, proceeding without research:", err);
+    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 28, message: "Пропуск исследования (ошибка)" });
+  }
+
+  // 3. WRITER (parallel) — with research context injection
+  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 30, message: `Написание контента для ${outline.slides.length} слайдов...` });
+  const researchFormatter = researchContext
+    ? (slideNumber: number) => formatResearchForWriter(slideNumber, researchContext!)
+    : undefined;
+  const rawContent = await runWriterParallel(outline, language, undefined, researchFormatter);
+  onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
 
   // 3.5. STORYTELLING AGENT — transform titles to action titles + narrative coherence
   onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 40, message: "Улучшение нарратива и заголовков..." });

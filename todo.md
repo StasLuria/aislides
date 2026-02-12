@@ -301,3 +301,17 @@
 - [x] Fix template engine: balanced matching for nested for-loops
 - [x] Write vitest tests for all new templates (25 tests, 347 total)
 - [x] Verify end-to-end generation with new layouts
+
+## Sprint 4: Research Agent
+
+### Research Agent — Fact & Statistics Enrichment
+- [x] Create researchAgent.ts with LLM-based research capabilities
+- [x] Implement search query generation from outline topics (8 research focus categories)
+- [x] Implement fact extraction and data enrichment via LLM structured output
+- [x] Add source citation tracking (source_hint, year, confidence level)
+- [x] Fix regex priority order for research focus detection (competitive/challenge before technology)
+- [x] Add research context injection into Writer prompts (<research_data> tags)
+- [x] Integrate into pipeline between Outline Critic and Writer
+- [x] Update frontend constants with new agent step (research)
+- [x] Write vitest tests for Research Agent (32 tests, 379 total)
+- [x] Verify end-to-end generation works with Research Agent

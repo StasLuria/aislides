@@ -136,6 +136,7 @@ Write compelling, substantive content for a single presentation slide. Your cont
 - If previous slide context is provided, DO NOT repeat the same points. Each slide must introduce NEW information, examples, or perspectives.
 - Maintain logical flow: reference or build upon concepts from previous slides when relevant.
 - Use **bold** markers around key terms or numbers in descriptions for emphasis (e.g. "Growth of **47%** in Q3").
+- If <research_data> is provided, PRIORITIZE using those verified facts and statistics over generic statements. Integrate research data naturally into bullet points, data_points, and speaker notes. Cite sources where provided (e.g. "по данным McKinsey").
 </rules>
 <presentation_context>
 Title: ${presentationTitle}
@@ -147,12 +148,14 @@ Return a JSON with: slide (object with slide_number, title, text, notes, data_po
 </output_format>`;
 }
 
-export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string): string {
+export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string, researchContext?: string): string {
   const contextSection = previousContext
     ? `\n<previous_slides_context>\n${previousContext}\n</previous_slides_context>\n<instruction>Use this context to maintain narrative flow and avoid repeating the same points. Build upon what was already covered. Each slide must add NEW information.</instruction>`
     : "";
 
-  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${contextSection}\nWrite the content for this slide.`;
+  const researchSection = researchContext || "";
+
+  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${contextSection}${researchSection}\nWrite the content for this slide.`;
 }
 
 // ═══════════════════════════════════════════════════════
