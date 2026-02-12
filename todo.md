@@ -490,3 +490,10 @@
 - [x] API client: api.retryPresentation() method added
 - [x] Write vitest tests for retry endpoint (11 tests, all passing)
 - [x] All 664 tests passing
+
+## Bug Fix — Metrics Slide Overflow
+- [x] Diagnosed: icons-numbers template grid cards overflowed 720px with 4+ metrics + descriptions
+- [x] Fixed: added grid-template-rows, max-height:100%, overflow:hidden on grid; reduced card padding/gaps/icon sizes
+- [x] Reduced description -webkit-line-clamp from 3 to 2 to save vertical space
+- [x] Checked all 26 templates — no other overflow or div-balance issues found
+- [x] All 664 tests passing
