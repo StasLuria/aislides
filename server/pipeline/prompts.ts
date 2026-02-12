@@ -247,6 +247,13 @@ Your goal is to create a visually diverse, professional presentation where every
 22. pros-cons — Two-column layout with green checkmarks (pros) and red X marks (cons). Best for decision analysis, trade-offs. Data: pros/cons each with title + items[].
 23. checklist — Grid of checklist items with done/pending status. Best for requirements, action items, readiness assessments. Data: items with title, description, done (boolean), status.
 24. highlight-stats — One large hero statistic on accent background + 2-3 supporting stats. Best for emphasizing a single key metric with context. Data: mainStat + supportingStats[].
+25. stats-chart — Left: 3-4 stat cards with values and change indicators. Right: SVG chart. Best for data-heavy slides combining key metrics with visualization. Data: stats[] + chartData.
+26. chart-text — Left: chart visualization. Right: description + bullet points explaining the data. Best for analytical slides that need both chart and textual analysis. Data: chartData + bullets[].
+27. hero-stat — Left panel (accent bg): one giant statistic. Right panel: title + supporting stats. Best for dramatic emphasis on a single number with context. Data: mainStat + supportingStats[].
+28. scenario-cards — 2-3 equal-width cards with colored top borders, each representing a scenario (optimistic/base/pessimistic). Best for scenario analysis, forecasting. Data: scenarios[] with label, title, value, points[], probability.
+29. numbered-steps-v2 — Vertical numbered steps with large circle numbers, connector lines, and optional result badges. Best for methodologies, action plans. Data: steps[] with number, title, description, result.
+30. timeline-horizontal — Horizontal timeline with alternating above/below content and dot markers on a line. Best for chronological data with 4-6 events. Data: events[] with date, title, description.
+31. text-with-callout — Standard bullet list + bottom callout bar with key insight. Best for slides that need a summary takeaway. Data: bullets[] + callout string.
 </available_layouts>
 <content_matching_rules>
 - Match layout to content type:
@@ -286,7 +293,13 @@ Your goal is to create a visually diverse, professional presentation where every
 - Prefer matrix-2x2 for prioritization/positioning slides.
 - Prefer checklist for action items/requirements slides.
 - Prefer waterfall-chart for financial breakdown slides.
-- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats) when content matches — they create more visually engaging presentations than text-slide.
+- ACTIVELY USE new layouts (waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, highlight-stats, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout) when content matches — they create more visually engaging presentations than text-slide.
+- For data-heavy slides with both metrics and chart data, prefer stats-chart or chart-text over plain chart-slide.
+- For slides emphasizing ONE dramatic number, prefer hero-stat over highlight-stats.
+- For scenario/forecast analysis, prefer scenario-cards.
+- For step-by-step processes with results, prefer numbered-steps-v2 over process-steps.
+- For horizontal timelines with few events (4-6), prefer timeline-horizontal over timeline.
+- When a slide has a key takeaway or conclusion, prefer text-with-callout over text-slide.
 </diversity_rules>
 <output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
@@ -363,6 +376,13 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - pros-cons: {title, pros: {title, items: [string]}, cons: {title, items: [string]}} — 4-6 items per side.
 - checklist: {title, description?, items: [{title, description?, done: boolean, status?, statusColor?, statusTextColor?}]} — 6-8 items in a grid.
 - highlight-stats: {title, mainStat: {value, label, description?}, supportingStats: [{value, label, description?}]} — 1 hero stat + 2-3 supporting stats.
+- stats-chart: {title, stats: [{value, label, description?, change?, changeDirection?: 'up'|'down'|'neutral'}], chartData: {type, labels: [string], datasets: [{label, data: [number]}]}, source?} — 3-4 stat cards on left + chart on right. changeDirection controls badge color (green/red).
+- chart-text: {title, description?, bullets: [{title, description}], chartData: {type, labels: [string], datasets: [{label, data: [number]}]}, source?} — Chart on left + text analysis on right. 3-4 bullets explaining the chart data.
+- hero-stat: {title, mainStat: {value, label, description?}, supportingStats: [{value, label, description?}], callout?} — Giant stat on accent panel (left) + supporting stats (right). callout is optional bottom insight bar.
+- scenario-cards: {title, description?, scenarios: [{label, title, value?, points: [string], color, probability?}]} — 2-3 scenario cards. Colors: green (#16a34a) for optimistic, blue (#2563eb) for base, red (#dc2626) for pessimistic.
+- numbered-steps-v2: {title, steps: [{number, title, description, result?}]} — Vertical steps with circles and connector lines. result is optional badge (e.g. "+15%", "Done").
+- timeline-horizontal: {title, description?, events: [{date, title, description?, highlight?: boolean}]} — Horizontal timeline. Set highlight=true for the current/key event.
+- text-with-callout: {title, bullets: [{title, description}], callout?, source?, icon?} — Standard bullets + bottom callout bar with key insight.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

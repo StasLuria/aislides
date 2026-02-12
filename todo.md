@@ -543,3 +543,22 @@
 - [x] Handle slide container overflow gracefully (iframe dynamic height via postMessage + MutationObserver)
 - [x] Test across all slide layouts (title-slide, two-column, text-slide, image-text, final-slide)
 - [x] Write/update vitest tests (8 new auto-expand tests)
+
+## Manus-Style Design Improvements (Design Diversity)
+- [x] Add Navy+Red theme preset (executive_navy_red)
+- [x] Add Navy+Red+Blue theme preset (data_navy_blue)
+- [x] Create "stats-chart" layout — left stat cards + right SVG chart
+- [x] Create "chart-text" layout — left text/bullets + right chart
+- [x] Create "hero-stat" layout — accent panel with giant stat + supporting stats
+- [x] Create "scenario-cards" layout — color-coded scenario cards with probability
+- [x] Create "numbered-steps-v2" layout — circle-numbered vertical steps with connectors
+- [x] Create "timeline-horizontal" layout — horizontal timeline with alternating events
+- [x] Create "text-with-callout" layout — bullets + callout bar + source citation
+- [x] Update layout agent prompts with new layout schemas
+- [x] Update QA agent with validation for new layouts
+- [x] Update dataVizAgent CHART_LAYOUTS for stats-chart and chart-text
+- [x] Update autoDensity height estimates for all new layouts
+- [x] Update generator fallback data for all new layouts
+- [x] Write vitest tests for all new layouts and themes (799 tests pass)
+- [ ] Create "dual-chart" layout — two charts side by side (deferred)
+- [ ] Create "risk-matrix" layout — 3x3 heatmap + mitigation cards (deferred)

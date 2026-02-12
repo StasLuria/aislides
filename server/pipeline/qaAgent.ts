@@ -105,6 +105,34 @@ const LAYOUT_REQUIREMENTS: Record<string, LayoutRequirement> = {
   "video-embed": {
     requiredFields: ["title"],
   },
+  "stats-chart": {
+    requiredFields: ["title", "stats"],
+    minMetrics: 2,
+  },
+  "chart-text": {
+    requiredFields: ["title"],
+    minBullets: 2,
+    bulletNeedsTitleAndDesc: true,
+  },
+  "hero-stat": {
+    requiredFields: ["title", "mainStat"],
+  },
+  "scenario-cards": {
+    requiredFields: ["title", "scenarios"],
+  },
+  "numbered-steps-v2": {
+    requiredFields: ["title", "steps"],
+    minSteps: 3,
+  },
+  "timeline-horizontal": {
+    requiredFields: ["title", "events"],
+    minEvents: 3,
+  },
+  "text-with-callout": {
+    requiredFields: ["title", "bullets"],
+    minBullets: 3,
+    bulletNeedsTitleAndDesc: true,
+  },
 };
 
 // ═══════════════════════════════════════════════════════

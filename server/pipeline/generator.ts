@@ -578,6 +578,76 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
         description: b.description,
       }));
       break;
+    case "stats-chart":
+      data.stats = content.data_points.slice(0, 4).map((dp) => ({
+        value: dp.value + (dp.unit ? ` ${dp.unit}` : ""),
+        label: dp.label,
+        description: "",
+      }));
+      if (data.stats.length === 0) {
+        data.stats = bullets.slice(0, 4).map((b) => ({
+          value: "—",
+          label: b.title,
+          description: b.description,
+        }));
+      }
+      data.chartData = {
+        type: "bar",
+        labels: content.data_points.map((dp) => dp.label).slice(0, 6),
+        datasets: [{ label: content.title, data: content.data_points.map((dp) => parseFloat(dp.value) || 0).slice(0, 6) }],
+      };
+      break;
+    case "chart-text":
+      data.description = content.key_message;
+      data.bullets = bullets.slice(0, 4);
+      data.chartData = {
+        type: "bar",
+        labels: content.data_points.map((dp) => dp.label).slice(0, 6),
+        datasets: [{ label: content.title, data: content.data_points.map((dp) => parseFloat(dp.value) || 0).slice(0, 6) }],
+      };
+      break;
+    case "hero-stat":
+      if (content.data_points.length > 0) {
+        const mainDp = content.data_points[0];
+        data.mainStat = { value: mainDp.value + (mainDp.unit ? ` ${mainDp.unit}` : ""), label: mainDp.label, description: "" };
+        data.supportingStats = content.data_points.slice(1, 4).map((dp) => ({
+          value: dp.value + (dp.unit ? ` ${dp.unit}` : ""),
+          label: dp.label,
+          description: "",
+        }));
+      } else {
+        data.mainStat = { value: "—", label: content.title, description: "" };
+        data.supportingStats = bullets.slice(0, 3).map((b) => ({ value: "—", label: b.title, description: b.description }));
+      }
+      break;
+    case "scenario-cards":
+      const scenarioColors = ["#16a34a", "#2563eb", "#dc2626"];
+      const scenarioLabels = ["Оптимистичный", "Базовый", "Пессимистичный"];
+      data.scenarios = bullets.slice(0, 3).map((b, i) => ({
+        label: scenarioLabels[i] || `Сценарий ${i + 1}`,
+        title: b.title,
+        points: [b.description || ""],
+        color: scenarioColors[i] || "#6366f1",
+      }));
+      break;
+    case "numbered-steps-v2":
+      data.steps = bullets.slice(0, 5).map((b, i) => ({
+        number: i + 1,
+        title: b.title,
+        description: b.description,
+      }));
+      break;
+    case "timeline-horizontal":
+      data.events = bullets.slice(0, 6).map((b, i) => ({
+        date: `Этап ${i + 1}`,
+        title: b.title,
+        description: b.description,
+      }));
+      break;
+    case "text-with-callout":
+      data.bullets = bullets.slice(0, 5);
+      data.callout = content.key_message || "";
+      break;
     default:
       data.bullets = bullets.slice(0, 5);
   }

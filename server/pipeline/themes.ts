@@ -271,6 +271,56 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(101, 163, 13, 0.08);
 }`,
   },
+  {
+    id: "executive_navy_red",
+    name: "Executive Navy & Red",
+    nameRu: "Деловой тёмно-синий",
+    previewColor: "#DC2626",
+    previewGradient: "linear-gradient(135deg, #1a1a3e, #dc2626)",
+    mood: "Executive, authoritative, high-contrast. Navy and red for corporate strategy and leadership presentations.",
+    fontsUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap",
+    cssVariables: `:root {
+  --card-background-color: #ffffff;
+  --card-background-gradient: linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%);
+  --slide-bg-gradient: linear-gradient(135deg, #f8f9fc 0%, #f0f1f5 50%, #f5f6fa 100%);
+  --slide-bg-accent-gradient: linear-gradient(135deg, #0f0f2d 0%, #1a1a3e 50%, #252550 100%);
+  --text-heading-color: #1a1a3e;
+  --text-body-color: #4a4a6a;
+  --primary-accent-color: #dc2626;
+  --primary-accent-light: #fca5a5;
+  --secondary-accent-color: #1a1a3e;
+  --heading-font-family: 'Manrope';
+  --body-font-family: 'Inter';
+  --decorative-shape-color: rgba(220, 38, 38, 0.06);
+  --card-border-color: rgba(26, 26, 62, 0.10);
+  --card-shadow: 0 4px 24px rgba(26, 26, 62, 0.08);
+}`,
+  },
+  {
+    id: "data_navy_blue",
+    name: "Data Navy & Blue",
+    nameRu: "Аналитический синий",
+    previewColor: "#2563EB",
+    previewGradient: "linear-gradient(135deg, #1a1a3e, #2563eb, #dc2626)",
+    mood: "Data-driven, analytical, chart-heavy. Navy base with blue and red accents for data presentations.",
+    fontsUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap",
+    cssVariables: `:root {
+  --card-background-color: #ffffff;
+  --card-background-gradient: linear-gradient(180deg, #ffffff 0%, #f0f4ff 100%);
+  --slide-bg-gradient: linear-gradient(135deg, #f8f9fc 0%, #eef2ff 50%, #f0f4ff 100%);
+  --slide-bg-accent-gradient: linear-gradient(135deg, #0f0f2d 0%, #1a1a3e 50%, #1e3a8a 100%);
+  --text-heading-color: #1a1a3e;
+  --text-body-color: #475569;
+  --primary-accent-color: #2563eb;
+  --primary-accent-light: #93bbfd;
+  --secondary-accent-color: #dc2626;
+  --heading-font-family: 'Manrope';
+  --body-font-family: 'Inter';
+  --decorative-shape-color: rgba(37, 99, 235, 0.06);
+  --card-border-color: rgba(26, 26, 62, 0.10);
+  --card-shadow: 0 4px 24px rgba(37, 99, 235, 0.08);
+}`,
+  },
 ];
 
 /**

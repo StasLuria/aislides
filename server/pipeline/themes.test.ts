@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { getThemePreset, isDarkTheme, listThemeIds, THEME_PRESETS } from "./themes";
 
 describe("Theme Presets", () => {
-  it("should have exactly 10 theme presets", () => {
-    expect(THEME_PRESETS).toHaveLength(10);
+  it("should have exactly 12 theme presets", () => {
+    expect(THEME_PRESETS).toHaveLength(12);
   });
 
   it("should have unique IDs", () => {
@@ -69,7 +69,7 @@ describe("Theme Presets", () => {
 
   it("listThemeIds should return all theme IDs", () => {
     const ids = listThemeIds();
-    expect(ids).toHaveLength(10);
+    expect(ids).toHaveLength(12);
     expect(ids).toContain("corporate_blue");
     expect(ids).toContain("cosmic_dark");
     expect(ids).toContain("citrus_energy");

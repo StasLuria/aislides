@@ -173,7 +173,7 @@ const SKIP_CHART_LAYOUTS = new Set([
 ]);
 
 /** Layouts that already have chart support */
-const CHART_LAYOUTS = new Set(["chart-slide", "waterfall-chart"]);
+const CHART_LAYOUTS = new Set(["chart-slide", "waterfall-chart", "stats-chart", "chart-text"]);
 
 /**
  * Determine if a slide should get a chart and what type.

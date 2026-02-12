@@ -319,6 +319,69 @@ export function estimateContentHeight(
       return headerH + rows * logoH + (rows - 1) * p.gap;
     }
 
+    case "stats-chart":
+    case "chart-text": {
+      // Two-column: stats/text left + chart right — height is max of both
+      const stats = data.stats || [];
+      const bullets = data.bullets || [];
+      const items = stats.length > 0 ? stats : bullets;
+      let leftH = 0;
+      for (const item of items) {
+        leftH += p.valueSize * 1.1 + p.smallSize * 1.3 + p.tinySize * 1.3 + p.gapSm + p.cardPadding;
+      }
+      // Chart side is bounded by container, doesn't overflow
+      return headerH + Math.max(leftH, 200) + (data.source ? 30 : 0);
+    }
+
+    case "hero-stat": {
+      // Left accent panel + right stats — static layout
+      const supportingStats = data.supportingStats || [];
+      const rightH = supportingStats.length * (p.valueSize * 1.1 + p.smallSize * 1.3 + p.gapSm + p.cardPadding);
+      return Math.max(headerH + rightH + (data.callout ? 50 : 0), AVAILABLE_HEIGHT * 0.8);
+    }
+
+    case "scenario-cards": {
+      const scenarios = data.scenarios || [];
+      let maxCardH = 0;
+      for (const s of scenarios) {
+        const points = s.points || [];
+        const cardH = 40 + 24 + (s.value ? 36 : 0) + points.length * (p.tinySize * 1.4 + 6) + (s.probability ? 30 : 0) + p.cardPadding * 2;
+        maxCardH = Math.max(maxCardH, cardH);
+      }
+      return headerH + maxCardH;
+    }
+
+    case "numbered-steps-v2": {
+      const steps = data.steps || [];
+      let stepsH = 0;
+      for (const step of steps) {
+        const titleLines = clampLines(estimateTextLines(step?.title || "", p.bodySize, 800), 1);
+        const descLines = clampLines(estimateTextLines(step?.description || "", p.smallSize, 800), p.descClamp);
+        stepsH += 48 + titleLines * (p.bodySize * p.bodyLh) + descLines * (p.smallSize * 1.4) + p.gapSm + 8;
+      }
+      return headerH + stepsH;
+    }
+
+    case "timeline-horizontal": {
+      // Horizontal — height is fixed (alternating above/below)
+      return headerH + 200; // Fixed height for horizontal timeline
+    }
+
+    case "text-with-callout": {
+      const bullets = data.bullets || [];
+      let bulletsH = 0;
+      for (const bullet of bullets) {
+        const text = typeof bullet === "string" ? bullet : bullet?.text || bullet?.title || "";
+        const desc = typeof bullet === "object" ? bullet?.description || "" : "";
+        const titleLines = clampLines(estimateTextLines(text, p.bodySize), p.bulletClamp);
+        const descLines = desc ? clampLines(estimateTextLines(desc, p.smallSize), p.descClamp) : 0;
+        bulletsH += titleLines * (p.bodySize * p.bodyLh) + descLines * (p.smallSize * 1.4) + p.gapSm + 8;
+      }
+      const calloutH = data.callout ? 50 : 0;
+      const sourceH = data.source ? 20 : 0;
+      return headerH + bulletsH + calloutH + sourceH;
+    }
+
     default:
       // Unknown layout — assume it fits
       return AVAILABLE_HEIGHT;

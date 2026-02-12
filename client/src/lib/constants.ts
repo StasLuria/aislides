@@ -122,6 +122,8 @@ export const THEME_PRESETS = [
   { id: "arctic_frost", name: "Arctic Frost", nameRu: "Арктический мороз", color: "#6366F1", gradient: "linear-gradient(135deg, #e0e7ff, #c7d2fe, #a5b4fc)", dark: false },
   { id: "midnight_noir", name: "Midnight Noir", nameRu: "Полночный нуар", color: "#F59E0B", gradient: "linear-gradient(135deg, #1c1917, #292524, #f59e0b)", dark: true },
   { id: "citrus_energy", name: "Citrus Energy", nameRu: "Цитрусовая энергия", color: "#84CC16", gradient: "linear-gradient(135deg, #4d7c0f, #a3e635)", dark: false },
+  { id: "executive_navy_red", name: "Executive Navy & Red", nameRu: "Деловой тёмно-синий", color: "#DC2626", gradient: "linear-gradient(135deg, #1a1a3e, #dc2626)", dark: false },
+  { id: "data_navy_blue", name: "Data Navy & Blue", nameRu: "Аналитический синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1a1a3e, #2563eb, #dc2626)", dark: false },
 ] as const;
 
 // Layout names

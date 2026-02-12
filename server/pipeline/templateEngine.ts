@@ -821,6 +821,268 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     </div>
   </div>
 </div>`,
+
+  // ═══════════════════════════════════════════════════════
+  // MANUS-STYLE LAYOUTS (Sprint 4)
+  // ═══════════════════════════════════════════════════════
+
+  "stats-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; gap: 12px; justify-content: center; overflow: hidden;">
+      {% for stat in stats | default([]) %}
+      <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px;">
+        <div style="min-width: 80px;">
+          <div style="font-size: var(--at-value-size, 28px); font-weight: 700; color: var(--primary-accent-color, #6366f1); line-height: 1;">{{ stat.value | default('') }}</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: var(--at-small-size, 14px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
+          {% if stat.description %}
+          <div style="font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
+          {% endif %}
+        </div>
+        {% if stat.change %}
+        <div style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; white-space: nowrap; {% if stat.changeDirection == 'up' %}color: #16a34a; background: rgba(22,163,74,0.1);{% elif stat.changeDirection == 'down' %}color: #dc2626; background: rgba(220,38,38,0.1);{% else %}color: var(--text-body-color); background: rgba(0,0,0,0.05);{% endif %}">{{ stat.change }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; overflow: hidden;">
+      {% if chartSvg %}
+      <div style="width: 100%; max-height: 100%;">{{{ chartSvg }}}</div>
+      {% elif chartPlaceholder %}
+      <div class="card" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px;">
+        <div style="text-align: center; color: var(--text-body-color, #4b5563);">
+          <div style="font-size: 48px; margin-bottom: 8px; opacity: 0.3;">📊</div>
+          <div style="font-size: 14px;">{{ chartPlaceholder }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if source %}
+  <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+  </div>
+  {% endif %}
+</div>`,
+
+  "chart-text": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; overflow: hidden;">
+    <div style="display: flex; align-items: center; justify-content: center; overflow: hidden;">
+      {% if chartSvg %}
+      <div style="width: 100%; max-height: 100%;">{{{ chartSvg }}}</div>
+      {% elif chartPlaceholder %}
+      <div class="card" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px;">
+        <div style="text-align: center; color: var(--text-body-color, #4b5563);">
+          <div style="font-size: 48px; margin-bottom: 8px; opacity: 0.3;">📊</div>
+          <div style="font-size: 14px;">{{ chartPlaceholder }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div style="display: flex; flex-direction: column; justify-content: center; gap: var(--at-gap-sm, 12px); overflow: hidden;">
+      {% if description %}
+      <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: var(--at-body-lh, 1.5); margin: 0 0 8px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
+      {% endif %}
+      {% for bullet in bullets | default([]) %}
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #6366f1);"></div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-small-size, 14px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          {% if bullet.description %}
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% if source %}
+  <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+  </div>
+  {% endif %}
+</div>`,
+
+  "hero-stat": `<div style="display: flex; height: 100%; overflow: hidden;">
+  <div style="width: 45%; background: var(--slide-bg-accent-gradient, var(--primary-accent-color, #6366f1)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -80px; right: -80px; width: 250px; height: 250px; border-radius: 50%; background: rgba(255,255,255,0.06); pointer-events: none;"></div>
+    <div style="position: absolute; bottom: -60px; left: -60px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.04); pointer-events: none;"></div>
+    <div style="position: relative; z-index: 10; text-align: center;">
+      <div style="font-size: 72px; font-weight: 800; color: #ffffff; line-height: 1; letter-spacing: -0.02em;">{{ mainStat.value | default('') }}</div>
+      <div style="font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 12px;">{{ mainStat.label | default('') }}</div>
+      {% if mainStat.description %}
+      <div style="font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 8px; max-width: 280px;">{{ mainStat.description }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 36px 48px 32px; overflow: hidden;">
+    <div style="flex-shrink: 0; margin-bottom: 20px;">
+      <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 32px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+      <div class="accent-line" style="margin-top: 12px;"></div>
+    </div>
+    <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; overflow: hidden;">
+      {% for stat in supportingStats | default([]) %}
+      <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px;">
+        <div style="font-size: 24px; font-weight: 700; color: var(--primary-accent-color, #6366f1); min-width: 70px;">{{ stat.value | default('') }}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stat.label | default('') }}</div>
+          {% if stat.description %}
+          <div style="font-size: 12px; color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ stat.description }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if callout %}
+    <div style="flex-shrink: 0; margin-top: 12px; padding: 12px 16px; border-radius: 10px; background: color-mix(in srgb, var(--primary-accent-color, #6366f1) 6%, white); border-left: 3px solid var(--primary-accent-color, #6366f1);">
+      <div style="font-size: 12px; color: var(--text-body-color, #4b5563);">{{ callout }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>`,
+
+  "scenario-cards": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat({{ scenarios | default([]) | length }}, 1fr); gap: 16px; overflow: hidden;">
+    {% for scenario in scenarios | default([]) %}
+    <div class="card" style="display: flex; flex-direction: column; padding: 20px; overflow: hidden; border-top: 4px solid {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }};">
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }}; margin-bottom: 8px;">{{ scenario.label | default('') }}</div>
+      <div style="font-size: var(--at-subtitle-size, 18px); font-weight: 700; color: var(--text-heading-color, #111827); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ scenario.title | default('') }}</div>
+      {% if scenario.value %}
+      <div style="font-size: 28px; font-weight: 800; color: {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }}; margin-bottom: 8px;">{{ scenario.value }}</div>
+      {% endif %}
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
+        {% for point in scenario.points | default([]) %}
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div style="width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: {{ scenario.color | default('var(--primary-accent-color, #6366f1)') }}; opacity: 0.5;"></div>
+          <span style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ point }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% if scenario.probability %}
+      <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+        <div style="font-size: 11px; color: var(--text-body-color, #4b5563);">Вероятность: <strong style="color: {{ scenario.color | default('var(--primary-accent-color)') }};">{{ scenario.probability }}</strong></div>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>`,
+
+  "numbered-steps-v2": `{% set s2_count = steps | default([]) | length %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; overflow: hidden;">
+    {% for step in steps | default([]) %}
+    <div style="display: flex; align-items: flex-start; gap: 20px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: {% if loop.index == 1 %}var(--primary-accent-color, #6366f1){% else %}color-mix(in srgb, var(--primary-accent-color, #6366f1) 12%, white){% endif %}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="font-size: 18px; font-weight: 700; color: {% if loop.index == 1 %}#ffffff{% else %}var(--primary-accent-color, #6366f1){% endif %};">{{ step.number | default(loop.index) }}</span>
+      </div>
+      <div style="flex: 1; min-width: 0; padding-top: 4px;">
+        <div style="font-size: var(--at-body-size, 16px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ step.title | default('') }}</div>
+        {% if step.description %}
+        <div style="font-size: var(--at-small-size, 13px); color: var(--text-body-color, #4b5563); margin-top: 4px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ step.description }}</div>
+        {% endif %}
+      </div>
+      {% if step.result %}
+      <div style="flex-shrink: 0; padding: 6px 14px; border-radius: 8px; background: color-mix(in srgb, var(--primary-accent-color, #6366f1) 8%, white); font-size: 12px; font-weight: 600; color: var(--primary-accent-color, #6366f1); white-space: nowrap;">{{ step.result }}</div>
+      {% endif %}
+    </div>
+    {% if not loop.last %}
+    <div style="margin-left: 24px; width: 1px; height: 8px; background: var(--card-border-color, rgba(0,0,0,0.1));"></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>`,
+
+  "timeline-horizontal": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+    <div style="position: relative; padding: 0 20px;">
+      <div style="position: absolute; left: 20px; right: 20px; top: 50%; height: 3px; background: linear-gradient(90deg, var(--primary-accent-color, #6366f1), var(--primary-accent-light, rgba(99,102,241,0.3))); border-radius: 2px;"></div>
+      <div style="display: grid; grid-template-columns: repeat({{ events | default([]) | length }}, 1fr); gap: 8px; position: relative;">
+        {% for event in events | default([]) %}
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+          {% if loop.index % 2 == 1 %}
+          <div style="margin-bottom: 12px; min-height: 80px; display: flex; flex-direction: column; justify-content: flex-end;">
+            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
+            {% if event.description %}
+            <div style="font-size: var(--at-tiny-size, 11px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.description }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+          <div style="width: 14px; height: 14px; border-radius: 50%; background: {% if event.highlight %}var(--primary-accent-color, #6366f1){% else %}#ffffff{% endif %}; border: 3px solid var(--primary-accent-color, #6366f1); flex-shrink: 0; z-index: 1;"></div>
+          <div style="font-size: 11px; font-weight: 600; color: var(--primary-accent-color, #6366f1); margin-top: 6px; margin-bottom: 6px;">{{ event.date | default('') }}</div>
+          {% if loop.index % 2 == 0 %}
+          <div style="min-height: 80px;">
+            <div style="font-size: var(--at-small-size, 13px); font-weight: 600; color: var(--text-heading-color, #111827); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">{{ event.title | default('') }}</div>
+            {% if event.description %}
+            <div style="font-size: var(--at-tiny-size, 11px); color: var(--text-body-color, #4b5563); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.description }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "text-with-callout": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; display: flex; align-items: center; gap: var(--at-gap, 16px); margin-bottom: 16px;">
+    {% if icon and icon.url %}
+    <div class="icon-circle" style="width: var(--at-icon-size, 48px); height: var(--at-icon-size, 48px);"><img src="{{ icon.url }}" alt="{{ icon.name | default('') }}" /></div>
+    {% endif %}
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+  </div>
+  <div class="accent-line" style="flex-shrink: 0; margin-bottom: 16px;"></div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; gap: var(--at-gap-sm, 10px);">
+      {% for bullet in bullets | default([]) %}
+      <div class="bullet-row" style="padding: var(--at-gap-sm, 10px) var(--at-gap, 16px);">
+        <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: var(--at-body-size, 15px); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-bullet-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-small-size, 13px); line-height: var(--at-body-lh, 1.5); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ bullet.description | default('') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% if callout %}
+  <div style="flex-shrink: 0; margin-top: 12px; padding: 14px 20px; border-radius: 12px; background: color-mix(in srgb, var(--primary-accent-color, #6366f1) 6%, white); border-left: 4px solid var(--primary-accent-color, #6366f1);">
+    <div style="font-size: 13px; font-weight: 500; color: var(--text-heading-color, #111827); line-height: 1.4;">{{ callout }}</div>
+  </div>
+  {% endif %}
+  {% if source %}
+  <div style="flex-shrink: 0; margin-top: 6px;">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+  </div>
+  {% endif %}
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════
