@@ -679,3 +679,16 @@
 - [x] Fix dual-chart SVG injection: generate alternative chart type for right panel instead of duplicating
 - [x] Add max-per-type layout limit (max ceil(totalSlides/5) per non-exempt layout type)
 - [x] Design Critique Agent scoring improved: 1/10 → 10/10 on latest generation
+
+## Language Consistency Enforcement
+- [x] Audit all agent prompts for language enforcement gaps
+- [x] Master Planner: ensure detected language is passed downstream to all agents
+- [x] Outline Agent: enforce output language matches detected language
+- [x] Writer Agent: enforce all content (title, text, bullets, key_message) in target language
+- [x] Storytelling Agent: enforce action titles and transitions in target language
+- [x] HTML Composer Agent: enforce all slide data (title, description, bullets, metrics, labels) in target language
+- [x] DataViz Agent: enforce chart labels, units, and insights in target language
+- [x] Design Critic Agent: check for language mixing as a validation rule
+- [x] Layout Agent: no text generation, skip
+- [x] Fallback data builder: ensure fallback strings use target language
+- [x] Test with Russian prompt and verify all content is in Russian (12/12 slides fully Russian)

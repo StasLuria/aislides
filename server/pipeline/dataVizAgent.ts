@@ -253,6 +253,7 @@ interface LLMChartPlan {
 async function getSmartChartPlan(
   candidates: SlideDataCandidate[],
   totalSlides: number,
+  language: string = "ru",
 ): Promise<LLMChartPlan> {
   const slideSummaries = candidates.map(c => {
     const dataStr = c.data.map(d => `${d.label}: ${d.value}`).join(", ");
@@ -300,6 +301,7 @@ DIVERSITY REQUIREMENT:
 LABELS:
 - Provide SHORT LABELS (max 12 chars) for each data point to prevent axis truncation
 - Abbreviate intelligently: "Возобновляемая энергетика" → "ВИЭ", "Инфраструктура" → "Инфрастр."
+- CRITICAL: All labels MUST be in ${language === "ru" ? "Russian" : language}. Do NOT translate Russian labels to English.
 
 Return JSON with your decisions.`;
 
@@ -312,7 +314,8 @@ For each slide, decide:
 2. What chart type BEST fits the data semantics? (NOT default to bar — think about what the data represents)
 3. Provide short axis labels (max 12 chars)
 
-IMPORTANT: Before returning, review your chart_type choices. If most are "bar", reconsider — real data usually has a mix of comparisons, distributions, and trends.`;
+IMPORTANT: Before returning, review your chart_type choices. If most are "bar", reconsider — real data usually has a mix of comparisons, distributions, and trends.
+CRITICAL: All short labels MUST remain in ${language === "ru" ? "Russian" : language}. Do NOT translate them to English.`;
 
   try {
     const response = await invokeLLM({
@@ -381,7 +384,8 @@ IMPORTANT: Before returning, review your chart_type choices. If most are "bar", 
  * Use LLM to extract chartable data from slide content when local extraction fails.
  * Only called for slides that have chart-specific layouts but no locally extracted data.
  */
-export async function extractChartDataWithLLM(slide: SlideContent): Promise<DataVizDecision | null> {
+export async function extractChartDataWithLLM(slide: SlideContent, language: string = "ru"): Promise<DataVizDecision | null> {
+  const langName = language === "ru" ? "Russian" : language;
   const system = `You are a data extraction specialist. Analyze the slide content and extract numeric data that can be visualized as a chart.
 
 Rules:
@@ -393,7 +397,8 @@ Rules:
 - Use "horizontal-bar" for rankings or comparisons of 4+ items
 - If the data represents parts of a whole, use "donut" with center_label and center_value
 - Return has_chartable_data: false if no clear numeric data exists
-- Keep labels SHORT (max 12 characters) — abbreviate if needed`;
+- Keep labels SHORT (max 12 characters) — abbreviate if needed
+- CRITICAL: All labels, center_label, and unit MUST be in ${langName}. Do NOT translate to English.`;
 
   const user = `Slide ${slide.slide_number}: "${slide.title}"
 
@@ -490,6 +495,7 @@ export async function runDataVizAgent(
   layoutMap: Map<number, string>,
   _maxCharts: number = 10, // kept for API compat, but LLM decides the actual count
   onProgress?: (message: string) => void,
+  language: string = "ru",
 ): Promise<DataVizResult> {
   const decisions: DataVizDecision[] = [];
   const svgCharts = new Map<number, string>();
@@ -530,7 +536,7 @@ export async function runDataVizAgent(
   if (candidates.length > 0) {
     onProgress?.(`Анализ ${candidates.length} слайдов с данными...`);
     
-    const plan = await getSmartChartPlan(candidates, content.length);
+    const plan = await getSmartChartPlan(candidates, content.length, language);
 
     for (const llmDecision of plan.decisions) {
       if (!llmDecision.needs_chart) continue;
@@ -570,7 +576,7 @@ export async function runDataVizAgent(
     onProgress?.(`Извлечение данных для ${chartLayoutSlides.length} графиков...`);
     
     const llmResults = await Promise.all(
-      chartLayoutSlides.map(slide => extractChartDataWithLLM(slide).catch(() => null))
+      chartLayoutSlides.map(slide => extractChartDataWithLLM(slide, language).catch(() => null))
     );
 
     for (const result of llmResults) {

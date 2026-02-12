@@ -450,9 +450,10 @@ export async function runHtmlComposer(
   slideContent: SlideContent,
   layoutName: string,
   themeCss: string,
+  language?: string,
 ): Promise<Record<string, any>> {
   const layoutTemplate = getLayoutTemplate(layoutName);
-  const system = htmlComposerSystem();
+  const system = htmlComposerSystem(undefined, language);
   const user = htmlComposerUser(
     layoutName,
     layoutTemplate || `Layout: ${layoutName}`,
@@ -461,6 +462,7 @@ export async function runHtmlComposer(
     slideContent.notes,
     slideContent.key_message,
     themeCss,
+    language,
   );
 
   // The composer returns the data object for the template
@@ -720,8 +722,9 @@ export async function runHtmlComposerWithQA(
   layoutName: string,
   themeCss: string,
   maxRetries: number = 1,
+  language?: string,
 ): Promise<Record<string, any>> {
-  let data = await runHtmlComposer(slideContent, layoutName, themeCss);
+  let data = await runHtmlComposer(slideContent, layoutName, themeCss, language);
 
   // Step 1: Validate
   let qa = validateSlideData(data, layoutName);
@@ -745,7 +748,7 @@ export async function runHtmlComposerWithQA(
 
     // Re-run HTML Composer with the QA feedback
     const layoutTemplate = getLayoutTemplate(layoutName);
-    const system = htmlComposerSystem(qa.feedbackForRetry);
+    const system = htmlComposerSystem(qa.feedbackForRetry, language);
     const user = htmlComposerUser(
       layoutName,
       layoutTemplate || `Layout: ${layoutName}`,
@@ -754,6 +757,7 @@ export async function runHtmlComposerWithQA(
       slideContent.notes,
       slideContent.key_message,
       themeCss,
+      language,
     );
 
     const rawResponse = await llmText(system, user).catch(() => "");
@@ -974,7 +978,7 @@ export async function generatePresentation(
   onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 40, message: "Улучшение нарратива и заголовков..." });
   let content = rawContent;
   try {
-    const storytellingResult = await runStorytellingAgent(rawContent, outline);
+    const storytellingResult = await runStorytellingAgent(rawContent, outline, language);
     content = storytellingResult.enhancedContent;
     if (storytellingResult.narrativeThread) {
       console.log(`[Pipeline] Narrative thread: ${storytellingResult.narrativeThread}`);
@@ -1166,6 +1170,7 @@ export async function generatePresentation(
       layoutMap,
       6,
       (msg) => onProgress({ nodeName: "data_viz", currentStep: "generating", progressPercent: 73, message: msg }),
+      language,
     );
     chartMap = dataVizResult.svgCharts;
     console.log(`[Pipeline] Data Viz: ${dataVizResult.totalChartsGenerated} SVG charts generated`);
@@ -1207,7 +1212,7 @@ export async function generatePresentation(
     const batchResults = await Promise.all(
       batch.map(async (slideContent) => {
         const layoutName = layoutMap.get(slideContent.slide_number) || "text-slide";
-        const data = await runHtmlComposerWithQA(slideContent, layoutName, theme.css_variables).catch(() =>
+        const data = await runHtmlComposerWithQA(slideContent, layoutName, theme.css_variables, 1, language).catch(() =>
           buildFallbackData(slideContent, layoutName),
         );
 
@@ -1267,7 +1272,7 @@ export async function generatePresentation(
       data: s.data,
       html: s.html,
     }));
-    const critique = runDesignCritic(designSlides, theme.css_variables);
+    const critique = runDesignCritic(designSlides, theme.css_variables, language);
 
     // Apply CSS fixes to slides that have issues
     for (const [slideIdx, cssFix] of Array.from(critique.cssFixesPerSlide.entries())) {

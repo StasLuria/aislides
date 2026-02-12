@@ -16,7 +16,7 @@ import { invokeLLM } from "../_core/llm";
 
 export interface DesignIssue {
   slideNumber: number;
-  category: "contrast" | "overflow" | "balance" | "font_size" | "whitespace" | "color_harmony" | "consistency";
+  category: "contrast" | "overflow" | "balance" | "font_size" | "whitespace" | "color_harmony" | "consistency" | "language_mixing";
   severity: "error" | "warning" | "info";
   message: string;
   fix?: string; // CSS fix suggestion
@@ -697,6 +697,84 @@ export function generateCssFixes(issues: DesignIssue[]): Map<number, string> {
 }
 
 // ═══════════════════════════════════════════════════════
+// LANGUAGE MIXING CHECK
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Check for language mixing in slide content.
+ * When the target language is Russian, flag English-only titles or descriptions.
+ * Allowed exceptions: proper nouns, abbreviations (AI, IoT, SaaS, etc.), currency symbols.
+ */
+export function checkLanguageMixing(
+  slideNumber: number,
+  data: Record<string, any>,
+  language: string,
+): DesignIssue[] {
+  if (language !== "ru") return []; // Only enforce for Russian for now
+
+  const issues: DesignIssue[] = [];
+
+  // Regex: text that is primarily Latin characters (>70% Latin letters)
+  // Allows: numbers, symbols, short abbreviations
+  const isPrimarilyLatin = (text: string): boolean => {
+    if (!text || text.length < 4) return false;
+    // Remove known exceptions: abbreviations, numbers, symbols, URLs
+    const cleaned = text
+      .replace(/\b(AI|IoT|SaaS|API|CRM|ERP|IT|ML|NLP|B2B|B2C|ROI|KPI|CEO|CTO|CFO|HR|PR|R&D|MVP|SLA|SDK|UI|UX|VR|AR|ESG|IPO|GDP|GW|MW|kW|TWh|GWh)\b/gi, "")
+      .replace(/[\d$€¥%+\-.,;:()\[\]{}#@&*/=<>|\\"'`~!?\u2014\u2013\u2026\u00b0]/g, "")
+      .replace(/https?:\/\/\S+/g, "")
+      .trim();
+    if (cleaned.length < 3) return false;
+    const latinChars = (cleaned.match(/[a-zA-Z]/g) || []).length;
+    const cyrillicChars = (cleaned.match(/[\u0400-\u04FF]/g) || []).length;
+    const totalAlpha = latinChars + cyrillicChars;
+    if (totalAlpha === 0) return false;
+    return latinChars / totalAlpha > 0.7;
+  };
+
+  // Check title
+  const title = data.title;
+  if (typeof title === "string" && isPrimarilyLatin(title)) {
+    issues.push({
+      slideNumber,
+      category: "language_mixing",
+      severity: "warning",
+      message: `Slide ${slideNumber}: Title "${title.substring(0, 50)}..." appears to be in English instead of Russian`,
+    });
+  }
+
+  // Check subtitle
+  const subtitle = data.subtitle || data.description;
+  if (typeof subtitle === "string" && isPrimarilyLatin(subtitle)) {
+    issues.push({
+      slideNumber,
+      category: "language_mixing",
+      severity: "warning",
+      message: `Slide ${slideNumber}: Subtitle/description appears to be in English instead of Russian`,
+    });
+  }
+
+  // Check bullets
+  const bullets = data.bullets;
+  if (Array.isArray(bullets)) {
+    for (const bullet of bullets) {
+      const bulletTitle = typeof bullet === "string" ? bullet : bullet?.title;
+      if (typeof bulletTitle === "string" && isPrimarilyLatin(bulletTitle)) {
+        issues.push({
+          slideNumber,
+          category: "language_mixing",
+          severity: "info",
+          message: `Slide ${slideNumber}: Bullet "${bulletTitle.substring(0, 40)}" appears to be in English`,
+        });
+        break; // One warning per slide is enough
+      }
+    }
+  }
+
+  return issues;
+}
+
+// ═══════════════════════════════════════════════════════
 // MAIN CRITIC FUNCTION
 // ═══════════════════════════════════════════════════════
 
@@ -711,6 +789,7 @@ export function generateCssFixes(issues: DesignIssue[]): Map<number, string> {
 export function runDesignCritic(
   slides: SlideDesignData[],
   themeCssVariables: string,
+  language?: string,
 ): DesignCritiqueResult {
   const themeVars = parseThemeVariables(themeCssVariables);
   const allIssues: DesignIssue[] = [];
@@ -723,6 +802,9 @@ export function runDesignCritic(
     allIssues.push(...checkFontSizing(slide.slideNumber, slide.html, slide.layoutId));
     allIssues.push(...checkWhitespace(slide.slideNumber, slide.data, slide.layoutId));
     allIssues.push(...checkColorHarmony(slide.slideNumber, slide.html, themeVars));
+    if (language) {
+      allIssues.push(...checkLanguageMixing(slide.slideNumber, slide.data, language));
+    }
   }
 
   // Run cross-slide validators

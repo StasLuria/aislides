@@ -57,9 +57,9 @@ Your outlines produce presentations that rival McKinsey and TED Talk quality.
 - Each slide must have a clear, distinct purpose — no redundancy.
 - Key points should be SPECIFIC and ACTIONABLE, not generic platitudes.
 - Each slide should have 3-5 key points that are rich enough for the Writer to expand.
-- Generate content in ${language}.
+- CRITICAL: Generate ALL content in ${language}. ALL slide titles, purposes, key_points, and narrative_arc MUST be in ${language}. Do NOT use English titles when the language is Russian.
 - Do NOT pad with filler slides. Only create slides that add value.
-- Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
+- Slide titles should be engaging and specific (not generic like "Обзор" or "Введение").
 - CRITICAL: Slide titles MUST be SHORT — maximum 8-10 words (60 characters). Long titles get truncated in templates. Use subtitle or key_points for details.
 - KEY POINTS QUALITY: Each key point MUST include a specific fact, statistic, example, or named entity. The Writer Agent will expand these into bullet points, so they must be concrete enough to research and elaborate.
   BAD key point: "Важность инноваций в отрасли"
@@ -149,8 +149,18 @@ INSTEAD write like this:
 - "Tesla сократила стоимость батарей на **56%** за 3 года благодаря вертикальной интеграции"
 - "По данным WHO, **3.5 млн** врачей используют AI-диагностику ежедневно"
 </anti_patterns>
+<CRITICAL_LANGUAGE_RULE>
+ALL output MUST be written in ${language}.
+- title: MUST be in ${language}
+- text (all bullet points): MUST be in ${language}
+- notes (speaker notes): MUST be in ${language}
+- key_message: MUST be in ${language}
+- data_points labels: MUST be in ${language}
+Do NOT mix languages. Do NOT write titles or bullet points in English when the target language is Russian.
+Exception: proper nouns (company names like Tesla, McKinsey), technical abbreviations (AI, IoT, SaaS), and currency/unit symbols ($, €, %, ГВт) may remain in their original form.
+</CRITICAL_LANGUAGE_RULE>
 <rules>
-- Write in ${language}.
+- Write in ${language}. ALL text output must be in ${language}.
 - Be SUBSTANTIVE but slide-appropriate — not paragraphs, but rich bullet points with both titles and descriptions.
 - Speaker notes should expand on the slide content with talking points (3-5 sentences).
 - If the slide topic involves data, extract it as structured data_points (array of {label, value, unit}). Provide at least 3 data points.
@@ -368,16 +378,21 @@ Select the optimal layout for each slide, ensuring diversity and visual rhythm.`
 // ═══════════════════════════════════════════════════════
 // HTML COMPOSER AGENT
 // ═══════════════════════════════════════════════════════
-export function htmlComposerSystem(reviewFeedback?: string): string {
+export function htmlComposerSystem(reviewFeedback?: string, language?: string): string {
   const feedbackSection = reviewFeedback
     ? `\n<review_feedback>\nPrevious attempt was rejected. Fix these issues:\n${reviewFeedback}\n</review_feedback>`
+    : "";
+
+  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language || "the same language as the source content";
+  const langRule = language
+    ? `\n<CRITICAL_LANGUAGE_RULE>\nALL text content in the output JSON MUST be written in ${langName}.\nThis includes: titles, descriptions, labels, bullets, subtitles, callouts, insights, thankYouText, and any other text fields.\nDo NOT use English words or phrases when the target language is Russian.\nException: proper nouns (company names, product names), technical abbreviations (AI, IoT, SaaS), currency symbols ($, €), and unit abbreviations (%, ГВт, млрд) may remain in their original form.\n</CRITICAL_LANGUAGE_RULE>`
     : "";
 
   return `You are HTML Composer Agent — a frontend developer who populates slide templates with content.
 <role>
 Transform slide content into structured data that fills the HTML template for the assigned layout.
 The templates use CSS variables for theming (gradients, colors, shadows) — you only need to provide the DATA, not the styling.
-</role>
+</role>${langRule}
 <task>
 1. Read the layout template to understand what data fields it expects.
 2. Transform the slide content into the template's data schema.
@@ -400,7 +415,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
   Format: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}
   NEVER use emoji characters (like 📌 📊 🎯) as icons — they render incorrectly in templates.
   Common icon names: trending-up, users, shield, target, bar-chart, clock, zap, star, heart, globe, award, check-circle, dollar-sign, percent, activity.
-- All text content must be in the same language as the source content.
+- ALL text content MUST be in ${langName}.
 - Do NOT add inline styles for colors or backgrounds — the template uses CSS variables from the theme.
 - Each bullet must have BOTH "title" and "description" fields (never just a string).
 - You can use **bold** markers around key terms or numbers in description text for emphasis. They will be rendered as <strong> tags.
@@ -453,7 +468,10 @@ export function htmlComposerUser(
   slideNotes: string,
   keyMessage: string,
   themeCss: string,
+  language?: string,
 ): string {
+  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language || "the source language";
+  const langReminder = language ? `\nCRITICAL REMINDER: ALL text in the output JSON MUST be in ${langName}. Do NOT output English text if the target language is Russian.` : "";
   return `<layout>
 Name: ${layoutName}
 Template structure:
@@ -468,5 +486,5 @@ Key message: ${keyMessage}
 <theme>
 ${themeCss}
 </theme>
-Transform the content into the correct data structure for this layout template.`;
+Transform the content into the correct data structure for this layout template.${langReminder}`;
 }
