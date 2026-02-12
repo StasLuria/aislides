@@ -610,3 +610,6 @@
 - [x] Frontend: Show uploaded file info (name, type, word count) with remove option
 - [x] Frontend: Pass source_file object to API on presentation creation
 - [x] Write vitest tests for file extraction — 32 new tests (904 total pass)
+
+## Bug Fixes
+- [x] Fix slide thumbnail sidebar not scrolling past slide 7 in Viewer page (added overflow-hidden to parent + flex-1 min-h-0 to ScrollArea)
