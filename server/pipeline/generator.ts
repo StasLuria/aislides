@@ -37,6 +37,8 @@ import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 export interface GenerationConfig {
   themePreset?: string;
   enableImages?: boolean;
+  /** Extracted text content from uploaded source file */
+  sourceContent?: string;
 }
 
 export interface PipelineProgress {
@@ -153,10 +155,10 @@ async function llmText(systemPrompt: string, userPrompt: string): Promise<string
 // AGENT FUNCTIONS
 // ═══════════════════════════════════════════════════════
 
-export async function runPlanner(prompt: string): Promise<PlannerResult> {
+export async function runPlanner(prompt: string, sourceContent?: string): Promise<PlannerResult> {
   return llmStructured<PlannerResult>(
     MASTER_PLANNER_SYSTEM,
-    masterPlannerUser(prompt),
+    masterPlannerUser(prompt, sourceContent),
     "MasterPlannerOutput",
     {
       type: "object",
@@ -186,10 +188,11 @@ export async function runOutline(
   prompt: string,
   branding: PlannerResult["branding"],
   language: string,
+  sourceContent?: string,
 ): Promise<OutlineResult> {
   const system = outlineSystem(language);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr);
+  const user = outlineUser(prompt, brandingStr, sourceContent);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -915,15 +918,16 @@ export async function generatePresentation(
   fullHtml: string;
 }> {
   const enableImages = config.enableImages !== false; // enabled by default
+  const sourceContent = config.sourceContent;
 
   // 1. PLANNER
-  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: "Анализ темы и планирование..." });
-  const plannerResult = await runPlanner(prompt);
+  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: sourceContent ? "Анализ документа и планирование..." : "Анализ темы и планирование..." });
+  const plannerResult = await runPlanner(prompt, sourceContent);
   const language = plannerResult.language || "ru";
 
   // 2. OUTLINE
-  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
-  const rawOutline = await runOutline(prompt, plannerResult.branding, language);
+  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: sourceContent ? "Создание структуры на основе документа..." : "Создание структуры презентации..." });
+  const rawOutline = await runOutline(prompt, plannerResult.branding, language, sourceContent);
 
   // 2.5. OUTLINE CRITIC — validate and improve outline structure
   onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });

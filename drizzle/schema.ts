@@ -64,6 +64,14 @@ export const presentations = mysqlTable("presentations", {
   language: varchar("language", { length: 10 }).default("ru"),
   /** Theme CSS variables */
   themeCss: text("themeCss"),
+  /** Source file URL (S3) */
+  sourceFileUrl: text("sourceFileUrl"),
+  /** Source file name */
+  sourceFileName: varchar("sourceFileName", { length: 512 }),
+  /** Source file type */
+  sourceFileType: varchar("sourceFileType", { length: 16 }),
+  /** Extracted text content from source file (for pipeline context) */
+  sourceContent: text("sourceContent"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

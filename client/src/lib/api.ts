@@ -27,10 +27,29 @@ export type GenerationMode = "batch" | "interactive";
 export interface CreatePresentationRequest {
   prompt: string;
   mode?: GenerationMode;
+  source_file?: {
+    s3_url: string;
+    filename: string;
+    file_type: string;
+    extracted_context: string;
+  };
   config?: {
     theme_preset?: string;
     enable_images?: boolean;
   } | null;
+}
+
+export interface FileUploadResponse {
+  file_id: string;
+  filename: string;
+  file_type: string;
+  word_count: number;
+  page_count?: number;
+  was_truncated: boolean;
+  s3_url: string;
+  context_preview?: string;
+  _extracted_context: string;
+  _s3_url: string;
 }
 
 export interface PresentationResponse {
@@ -442,6 +461,32 @@ class ApiClient {
 
     const { data } = await this.http.post<UploadImageResponse>(
       `/interactive/${id}/upload-image`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        },
+      },
+    );
+    return data;
+  }
+
+  // — Source File Upload —
+
+  async uploadSourceFile(
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<FileUploadResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const { data } = await this.http.post<FileUploadResponse>(
+      "/upload-source-file",
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },

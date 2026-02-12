@@ -25,11 +25,11 @@ Analyze the user's request and determine the generation strategy.
 Return a JSON object with fields: source_type, language, presentation_title, branding (object with company_name, industry, style_preference, color_hint).
 </output_format>`;
 
-export function masterPlannerUser(userPrompt: string): string {
-  return `<user_request>
-${userPrompt}
-</user_request>
-Analyze the request and determine the generation strategy.`;
+export function masterPlannerUser(userPrompt: string, sourceContent?: string): string {
+  const sourceSection = sourceContent
+    ? `\n<source_material>\nThe user has uploaded a document with the following content. Use this as the PRIMARY source of information for the presentation:\n${sourceContent}\n</source_material>`
+    : "";
+  return `<user_request>\n${userPrompt}\n</user_request>${sourceSection}\nAnalyze the request and determine the generation strategy.${sourceContent ? " Pay special attention to the uploaded source material — extract key facts, figures, and structure from it." : ""}`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -93,14 +93,11 @@ Return a JSON with: presentation_title, target_audience, narrative_arc, slides (
 </output_format>`;
 }
 
-export function outlineUser(userPrompt: string, branding: string): string {
-  return `<topic>
-${userPrompt}
-</topic>
-<branding>
-${branding}
-</branding>
-Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
+export function outlineUser(userPrompt: string, branding: string, sourceContent?: string): string {
+  const sourceSection = sourceContent
+    ? `\n<source_material>\nThe user uploaded a document. Use its content as the PRIMARY basis for the outline. Extract key themes, data points, and structure:\n${sourceContent}\n</source_material>`
+    : "";
+  return `<topic>\n${userPrompt}\n</topic>\n<branding>\n${branding}\n</branding>${sourceSection}\nCreate a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.${sourceContent ? " IMPORTANT: Base the outline primarily on the uploaded source material. Use its facts, figures, and arguments as the foundation." : ""}`;
 }
 
 // ═══════════════════════════════════════════════════════

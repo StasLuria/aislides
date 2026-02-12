@@ -592,3 +592,21 @@
 - [x] Chart layout fixup working: 5 slides auto-switched to chart-capable layouts (stats-chart, chart-text, chart-slide)
 - [x] Strengthen Layout Agent prompt: limit text-slide to 1, image-text to 2, mandatory layout selection rules, diversity requirements for 10+ slide presentations
 - [x] All 872 tests pass after prompt improvements
+
+## File Upload as Source Material for Presentations
+- [x] Backend: POST /api/v1/upload-source-file endpoint (multipart/form-data via multer)
+- [x] Backend: Text extraction from PDF (pdf-parse v2 PDFParse class)
+- [x] Backend: Text extraction from DOCX (mammoth extractRawText)
+- [x] Backend: Text extraction from TXT/MD/CSV (direct Buffer.toString)
+- [x] Backend: Text extraction from PPTX (jszip + XML regex parsing)
+- [x] Backend: Upload original file to S3 via storagePut, return s3_url
+- [x] Backend: Content summarization for large files (LLM-based summarizeExtractedContent)
+- [x] Backend: Pass extracted text as sourceContent to Planner, Outline, and Writer agents
+- [x] Backend: Update presentation creation API to accept source_file object
+- [x] Backend: DB schema updated with sourceFileUrl, sourceFileName, sourceFileType, sourceContent columns
+- [x] Frontend: File upload zone on Home.tsx with drag-and-drop + click (Paperclip icon)
+- [x] Frontend: File type validation (PDF, DOCX, TXT, PPTX, MD, CSV) and size limit (10MB)
+- [x] Frontend: Upload progress indicator with spinner
+- [x] Frontend: Show uploaded file info (name, type, word count) with remove option
+- [x] Frontend: Pass source_file object to API on presentation creation
+- [x] Write vitest tests for file extraction — 32 new tests (904 total pass)

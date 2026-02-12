@@ -22,6 +22,13 @@
       "when": 1770816429827,
       "tag": "0002_exotic_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1770922178761,
+      "tag": "0003_narrow_rhino",
+      "breakpoints": true
     }
   ]
 }
