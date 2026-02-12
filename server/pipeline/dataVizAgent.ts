@@ -1,24 +1,22 @@
 /**
- * Data Visualization Agent — analyzes slide content to detect data-rich slides
- * and generates SVG charts to replace or enhance chart-slide layouts.
+ * Data Visualization Agent — Smart, LLM-driven chart decisions.
+ * 
+ * Instead of hardcoded skip-lists and forced limits, this agent:
+ * 1. Locally extracts numeric data from all slides (data_points + text patterns)
+ * 2. Sends a holistic summary to LLM: "Here are all slides with data. Which ones
+ *    truly benefit from a chart? What chart type fits each one?"
+ * 3. LLM returns contextual decisions based on content semantics
+ * 4. SVG charts are generated only for LLM-approved slides
  * 
  * Pipeline position: After Layout decisions, before HTML Composer.
- * The agent:
- * 1. Scans all slides for numeric data (data_points, text patterns)
- * 2. Determines which slides would benefit from charts
- * 3. Selects optimal chart type based on data shape and context
- * 4. Generates SVG charts via the SVG Chart Engine
- * 5. Injects chart SVG into slide data for template rendering
  */
 
 import { invokeLLM } from "../_core/llm";
 import {
   renderChart,
-  recommendChartType,
   type ChartConfig,
   type ChartDataPoint,
   type ChartType,
-  type ChartResult,
 } from "./svgChartEngine";
 import type { SlideContent } from "./generator";
 
@@ -162,44 +160,52 @@ export function detectUnit(slide: SlideContent): string | undefined {
 }
 
 // ═══════════════════════════════════════════════════════
-// CHART TYPE SELECTION
+// LOCAL SLIDE ANALYSIS (pre-LLM)
 // ═══════════════════════════════════════════════════════
 
-/** Layouts that should NOT get auto-charts */
-const SKIP_CHART_LAYOUTS = new Set([
+/** Layouts where charts are structurally impossible */
+const STRUCTURAL_SKIP = new Set([
   "title-slide", "final-slide", "section-header", "quote-slide",
-  "image-text", "image-fullscreen", "agenda-table-of-contents",
-  "checklist", "pros-cons",
-  // Additional layouts that are self-sufficient without charts
-  "text-slide", "text-with-callout", "two-column", "icons-numbers",
-  "process-steps", "timeline", "team-profiles", "comparison-table",
+  "image-fullscreen", "agenda-table-of-contents",
 ]);
 
-/** Layouts that already have chart support */
-const CHART_LAYOUTS = new Set(["chart-slide", "waterfall-chart", "stats-chart", "chart-text", "dual-chart"]);
+/** Layouts that already have built-in chart areas */
+const CHART_LAYOUTS = new Set([
+  "chart-slide", "waterfall-chart", "stats-chart", "chart-text", "dual-chart",
+]);
+
+interface SlideDataCandidate {
+  slideNumber: number;
+  title: string;
+  layout: string;
+  data: ChartDataPoint[];
+  unit?: string;
+  source: "data_points" | "text_extraction";
+  hasChartLayout: boolean;
+  textSummary: string; // Brief content for LLM context
+}
 
 /**
- * Determine if a slide should get a chart and what type.
+ * Analyze a single slide for chartable data (local, no LLM).
+ * Returns a candidate if data is found, null otherwise.
+ * No layout filtering except structural impossibilities.
  */
 export function analyzeSlideForChart(
   slide: SlideContent,
   layoutName: string,
 ): DataVizDecision | null {
-  // Skip layouts that don't benefit from charts
-  if (SKIP_CHART_LAYOUTS.has(layoutName)) return null;
+  // Only skip layouts where charts are structurally impossible
+  if (STRUCTURAL_SKIP.has(layoutName)) return null;
 
   // Try extracting data from data_points first (highest confidence)
   const dpData = extractFromDataPoints(slide);
   if (dpData && dpData.length >= 2) {
-    const chartType = recommendChartType(dpData, slide.title + " " + slide.key_message);
-    const unit = detectUnit(slide);
-    
     return {
       slideNumber: slide.slide_number,
-      chartType,
+      chartType: "bar", // placeholder — LLM will decide the real type
       data: dpData,
       title: slide.title,
-      unit,
+      unit: detectUnit(slide),
       confidence: "high",
       source: "data_points",
     };
@@ -208,15 +214,12 @@ export function analyzeSlideForChart(
   // Try extracting from text (medium confidence)
   const textData = extractFromText(slide.text);
   if (textData && textData.length >= 2) {
-    const chartType = recommendChartType(textData, slide.title + " " + slide.key_message);
-    const unit = detectUnit(slide);
-
     return {
       slideNumber: slide.slide_number,
-      chartType,
+      chartType: "bar", // placeholder
       data: textData,
       title: slide.title,
-      unit,
+      unit: detectUnit(slide),
       confidence: "medium",
       source: "text_extraction",
     };
@@ -226,21 +229,157 @@ export function analyzeSlideForChart(
 }
 
 // ═══════════════════════════════════════════════════════
-// LLM-BASED DATA EXTRACTION (for slides with implicit data)
+// LLM-BASED HOLISTIC CHART DECISIONS
 // ═══════════════════════════════════════════════════════
 
-interface LLMChartExtraction {
-  has_chartable_data: boolean;
+interface LLMChartDecision {
+  slide_number: number;
+  needs_chart: boolean;
   chart_type: ChartType;
-  data_points: Array<{ label: string; value: number }>;
-  unit?: string;
-  center_label?: string;
-  center_value?: string;
+  reasoning: string;
+  short_labels: Array<{ original: string; short: string }>;
+}
+
+interface LLMChartPlan {
+  decisions: LLMChartDecision[];
+}
+
+/**
+ * Ask LLM to review ALL candidate slides holistically and decide:
+ * - Which slides truly benefit from a chart (not just "have numbers")
+ * - What chart type best fits each slide's data and message
+ * - Short labels for chart axes (to prevent truncation)
+ */
+async function getSmartChartPlan(
+  candidates: SlideDataCandidate[],
+  totalSlides: number,
+): Promise<LLMChartPlan> {
+  const slideSummaries = candidates.map(c => {
+    const dataStr = c.data.map(d => `${d.label}: ${d.value}`).join(", ");
+    return `Slide ${c.slideNumber} (layout: ${c.layout}): "${c.title}"
+  Data: [${dataStr}] ${c.unit ? `(unit: ${c.unit})` : ""}
+  Content: ${c.textSummary}
+  Has chart area in layout: ${c.hasChartLayout}`;
+  }).join("\n\n");
+
+  const system = `You are a presentation data visualization expert. You review slide content and decide which slides genuinely benefit from a chart visualization.
+
+WHEN TO ADD A CHART:
+- A chart should ADD VALUE — make data easier to understand than text alone
+- Do NOT add charts just because numbers exist. "Revenue grew 15%" is fine as text.
+- DO add charts when comparing 3+ items, showing distributions, or illustrating trends
+- Slides with chart-specific layouts (stats-chart, chart-text, chart-slide) should almost always get charts
+- Consider the WHOLE presentation: avoid chart overload. For 8-12 slides, 2-4 charts is ideal.
+
+CHART TYPE SELECTION — CRITICAL RULES:
+You MUST select chart type based on what the DATA represents, NOT default to bar charts.
+
+1. "pie" — Use when data shows SHARES/PROPORTIONS of a whole (market share, budget allocation, demographic breakdown). Values should roughly sum to 100% or represent parts of a total.
+   Example: "Solar 35%, Wind 28%, Hydro 22%, Other 15%" → pie
+
+2. "donut" — Same as pie but when there is a KEY TOTAL to highlight in the center.
+   Example: "Total investment $50B: US $20B, EU $15B, China $10B, Other $5B" → donut with center "$50B"
+
+3. "line" — Use for TIME SERIES, TRENDS, GROWTH over periods, year-over-year data, projections.
+   Example: "2020: $2B, 2021: $3B, 2022: $4.5B, 2023: $6B" → line
+   Example: "Temperature +0.5°C, +0.8°C, +1.1°C, +1.5°C by decade" → line
+
+4. "bar" — Use ONLY for comparing DISCRETE CATEGORIES of the same metric (not time-based).
+   Example: "Agriculture loss $50B, Infrastructure $30B, Health $20B" → bar
+
+5. "horizontal-bar" — Use for RANKINGS, lists sorted by value, or when labels are long.
+   Example: "Country A: 85 points, Country B: 72, Country C: 65, Country D: 58" → horizontal-bar
+
+DIVERSITY REQUIREMENT:
+- Review ALL your decisions together before finalizing
+- If you selected "bar" for more than 2 slides, RE-EVALUATE: can any of them be pie, donut, line, or horizontal-bar?
+- Ask yourself: "Is this truly a category comparison, or is it shares/trends/rankings?"
+- It is WRONG to use bar chart for percentage distributions that sum to ~100%
+- It is WRONG to use bar chart for time-series data
+
+LABELS:
+- Provide SHORT LABELS (max 12 chars) for each data point to prevent axis truncation
+- Abbreviate intelligently: "Возобновляемая энергетика" → "ВИЭ", "Инфраструктура" → "Инфрастр."
+
+Return JSON with your decisions.`;
+
+  const user = `Presentation has ${totalSlides} slides total. Here are ${candidates.length} slides with numeric data:
+
+${slideSummaries}
+
+For each slide, decide:
+1. Does it genuinely need a chart? (not just "has numbers")
+2. What chart type BEST fits the data semantics? (NOT default to bar — think about what the data represents)
+3. Provide short axis labels (max 12 chars)
+
+IMPORTANT: Before returning, review your chart_type choices. If most are "bar", reconsider — real data usually has a mix of comparisons, distributions, and trends.`;
+
+  try {
+    const response = await invokeLLM({
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "chart_plan",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              decisions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    slide_number: { type: "integer" },
+                    needs_chart: { type: "boolean" },
+                    chart_type: {
+                      type: "string",
+                      enum: ["bar", "horizontal-bar", "line", "pie", "donut"],
+                    },
+                    reasoning: { type: "string" },
+                    short_labels: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          original: { type: "string" },
+                          short: { type: "string" },
+                        },
+                        required: ["original", "short"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["slide_number", "needs_chart", "chart_type", "reasoning", "short_labels"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["decisions"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const rawContent = response.choices?.[0]?.message?.content;
+    if (!rawContent || typeof rawContent !== "string") {
+      return { decisions: [] };
+    }
+
+    return JSON.parse(rawContent) as LLMChartPlan;
+  } catch (err) {
+    console.error("[DataViz] LLM chart plan failed:", err);
+    return { decisions: [] };
+  }
 }
 
 /**
  * Use LLM to extract chartable data from slide content when local extraction fails.
- * Only called for slides that have chart-slide or waterfall-chart layouts.
+ * Only called for slides that have chart-specific layouts but no locally extracted data.
  */
 export async function extractChartDataWithLLM(slide: SlideContent): Promise<DataVizDecision | null> {
   const system = `You are a data extraction specialist. Analyze the slide content and extract numeric data that can be visualized as a chart.
@@ -253,7 +392,8 @@ Rules:
 - Use "bar" for comparisons of 2-6 items
 - Use "horizontal-bar" for rankings or comparisons of 4+ items
 - If the data represents parts of a whole, use "donut" with center_label and center_value
-- Return has_chartable_data: false if no clear numeric data exists`;
+- Return has_chartable_data: false if no clear numeric data exists
+- Keep labels SHORT (max 12 characters) — abbreviate if needed`;
 
   const user = `Slide ${slide.slide_number}: "${slide.title}"
 
@@ -307,16 +447,18 @@ Extract chartable data as JSON.`;
     });
 
     const rawContent = response.choices?.[0]?.message?.content;
-    if (!rawContent || typeof rawContent !== 'string') return null;
+    if (!rawContent || typeof rawContent !== "string") return null;
 
-    const result: LLMChartExtraction = JSON.parse(rawContent);
-    
-    if (!result.has_chartable_data || result.data_points.length < 2) return null;
+    const result = JSON.parse(rawContent);
+
+    if (!result.has_chartable_data || !result.data_points || result.data_points.length < 2) {
+      return null;
+    }
 
     return {
       slideNumber: slide.slide_number,
       chartType: result.chart_type,
-      data: result.data_points.map(dp => ({ label: dp.label, value: dp.value })),
+      data: result.data_points.map((dp: { label: string; value: number }) => ({ label: dp.label, value: dp.value })),
       title: slide.title,
       unit: result.unit || undefined,
       centerLabel: result.center_label || undefined,
@@ -337,16 +479,16 @@ Extract chartable data as JSON.`;
 /**
  * Run the Data Visualization Agent on all slides.
  * 
- * @param content - All slide content from the Writer
- * @param layoutMap - Layout decisions for each slide
- * @param maxCharts - Maximum number of charts to generate (default 6)
- * @param onProgress - Optional progress callback
- * @returns DataVizResult with SVG charts mapped to slide numbers
+ * Uses a two-phase approach:
+ * Phase 1: Local data extraction from all slides
+ * Phase 2: LLM holistic review — decides which slides truly need charts and what type
+ * Phase 3: LLM extraction for chart-layout slides without local data
+ * Phase 4: SVG chart generation
  */
 export async function runDataVizAgent(
   content: SlideContent[],
   layoutMap: Map<number, string>,
-  maxCharts: number = 3,
+  _maxCharts: number = 10, // kept for API compat, but LLM decides the actual count
   onProgress?: (message: string) => void,
 ): Promise<DataVizResult> {
   const decisions: DataVizDecision[] = [];
@@ -354,16 +496,71 @@ export async function runDataVizAgent(
 
   onProgress?.("Анализ данных в слайдах...");
 
-  // Phase 1: Local analysis — scan all slides for chartable data
+  // ── Phase 1: Local data extraction ──
+  const candidates: SlideDataCandidate[] = [];
+
   for (const slide of content) {
     const layout = layoutMap.get(slide.slide_number) || "text-slide";
-    const decision = analyzeSlideForChart(slide, layout);
-    if (decision) {
-      decisions.push(decision);
+    
+    // Skip only structurally impossible layouts
+    if (STRUCTURAL_SKIP.has(layout)) continue;
+
+    const dpData = extractFromDataPoints(slide);
+    const textData = !dpData ? extractFromText(slide.text) : null;
+    const data = dpData || textData;
+
+    if (data && data.length >= 2) {
+      // Build a brief text summary for LLM context
+      const textSummary = (slide.text || "").slice(0, 200);
+      
+      candidates.push({
+        slideNumber: slide.slide_number,
+        title: slide.title,
+        layout,
+        data,
+        unit: detectUnit(slide),
+        source: dpData ? "data_points" : "text_extraction",
+        hasChartLayout: CHART_LAYOUTS.has(layout),
+        textSummary,
+      });
     }
   }
 
-  // Phase 2: LLM extraction for chart-slide layouts that didn't get local data
+  // ── Phase 2: LLM holistic review ──
+  if (candidates.length > 0) {
+    onProgress?.(`Анализ ${candidates.length} слайдов с данными...`);
+    
+    const plan = await getSmartChartPlan(candidates, content.length);
+
+    for (const llmDecision of plan.decisions) {
+      if (!llmDecision.needs_chart) continue;
+
+      const candidate = candidates.find(c => c.slideNumber === llmDecision.slide_number);
+      if (!candidate) continue;
+
+      // Apply short labels from LLM
+      let chartData = candidate.data;
+      if (llmDecision.short_labels && llmDecision.short_labels.length > 0) {
+        const labelMap = new Map(llmDecision.short_labels.map(sl => [sl.original, sl.short]));
+        chartData = chartData.map(dp => ({
+          label: labelMap.get(dp.label) || dp.label,
+          value: dp.value,
+        }));
+      }
+
+      decisions.push({
+        slideNumber: candidate.slideNumber,
+        chartType: llmDecision.chart_type,
+        data: chartData,
+        title: candidate.title,
+        unit: candidate.unit,
+        confidence: candidate.source === "data_points" ? "high" : "medium",
+        source: candidate.source,
+      });
+    }
+  }
+
+  // ── Phase 3: LLM extraction for chart-layout slides without data ──
   const chartLayoutSlides = content.filter(s => {
     const layout = layoutMap.get(s.slide_number) || "text-slide";
     return CHART_LAYOUTS.has(layout) && !decisions.some(d => d.slideNumber === s.slide_number);
@@ -381,40 +578,12 @@ export async function runDataVizAgent(
     }
   }
 
-  // Phase 3: Sort by confidence and ensure chart type diversity
-  decisions.sort((a, b) => {
-    const confOrder = { high: 0, medium: 1, low: 2 };
-    return confOrder[a.confidence] - confOrder[b.confidence];
-  });
+  // ── Phase 4: Generate SVG charts ──
+  if (decisions.length > 0) {
+    onProgress?.(`Генерация ${decisions.length} SVG-графиков...`);
+  }
 
-  // Enforce chart type diversity: avoid using the same chart type twice
-  const selectedDecisions: DataVizDecision[] = [];
-  const usedChartTypes = new Set<ChartType>();
-  const DIVERSE_CHART_ROTATION: ChartType[] = ["bar", "donut", "horizontal-bar", "line", "pie"];
-  
   for (const decision of decisions) {
-    if (selectedDecisions.length >= maxCharts) break;
-    
-    if (usedChartTypes.has(decision.chartType)) {
-      // Find an alternative chart type that hasn't been used
-      const alternative = DIVERSE_CHART_ROTATION.find(t => !usedChartTypes.has(t));
-      if (alternative) {
-        decision.chartType = alternative;
-      } else {
-        continue; // Skip if all chart types are already used
-      }
-    }
-    
-    usedChartTypes.add(decision.chartType);
-    selectedDecisions.push(decision);
-  }
-
-  // Phase 4: Generate SVG charts
-  if (selectedDecisions.length > 0) {
-    onProgress?.(`Генерация ${selectedDecisions.length} SVG-графиков...`);
-  }
-
-  for (const decision of selectedDecisions) {
     try {
       const chartConfig: ChartConfig = {
         type: decision.chartType,
@@ -440,7 +609,7 @@ export async function runDataVizAgent(
   onProgress?.(`Готово: ${svgCharts.size} графиков`);
 
   return {
-    decisions: selectedDecisions,
+    decisions,
     svgCharts,
     totalChartsGenerated: svgCharts.size,
   };
@@ -461,8 +630,6 @@ export function injectChartIntoSlideData(
 ): Record<string, any> {
   if (layoutName === "dual-chart") {
     // For dual-chart, inject the same chart into both panels
-    // (the LLM generates separate chartData.left and chartData.right,
-    //  but the SVG engine produces one chart from the primary data)
     data.leftChartSvg = svgChart;
     data.rightChartSvg = svgChart;
     data.hasChart = true;

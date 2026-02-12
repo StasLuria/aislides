@@ -640,3 +640,27 @@
 - [x] Improve chart type diversity — added diversity enforcement: no duplicate chart types per presentation
 - [x] Update dataVizAgent to limit chart assignments (max 3 per presentation)
 - [x] Update SVG chart rendering to handle long labels (word wrap via renderWrappedLabel, increased bottom margins)
+
+## Quality Improvement: Step 1 — Smart DataViz Agent
+- [x] Remove hardcoded SKIP_CHART_LAYOUTS restrictions (replaced with minimal STRUCTURAL_SKIP)
+- [x] Remove hardcoded maxCharts=3 limit (LLM decides count)
+- [x] Remove forced chart type rotation (LLM picks types based on data semantics)
+- [x] Add LLM-based holistic analysis via getSmartChartPlan()
+- [x] LLM picks chart type based on data semantics
+- [x] Keep local data extraction as Phase 1, LLM holistic review as Phase 2
+- [x] Update tests to match new behavior (all 904 pass)
+- [ ] Test with real generation and verify quality
+
+## Quality Improvement: Step 2 — Better Content Quality
+- [x] Improve Writer Agent prompt: added quality_principles (Show don't tell, Specificity, Variety, Insight, Brevity), anti-patterns with examples
+- [x] Improve Outline Agent: added KEY POINTS QUALITY rule requiring specific facts/stats, CONTENT DIVERSITY rule
+- [x] Improve bullet descriptions: anti-patterns section shows bad vs good examples in Russian
+
+## Quality Improvement: Step 3 — Better Design Quality
+- [ ] Improve Layout Agent: smarter layout selection based on content type
+- [ ] Improve Design Critique: stronger visual harmony checks
+- [ ] Better layout diversity through content-aware assignment
+
+## Quality Improvement: Step 4 — Better Image Selection
+- [ ] Improve image prompt generation for more relevant results
+- [ ] Better image-to-slide matching

@@ -250,7 +250,7 @@ describe("analyzeSlideForChart", () => {
   });
 
   it("should detect chart opportunity from data_points", () => {
-    const result = analyzeSlideForChart(makeSlide(), "stats-chart");
+    const result = analyzeSlideForChart(makeSlide(), "text-slide");
     expect(result).not.toBeNull();
     expect(result!.confidence).toBe("high");
     expect(result!.source).toBe("data_points");
@@ -282,7 +282,7 @@ describe("analyzeSlideForChart", () => {
       data_points: [],
       text: "• Sales: 42M\n• Profit: 15M\n• Growth: 25%",
     });
-    const result = analyzeSlideForChart(slide, "highlight-stats");
+    const result = analyzeSlideForChart(slide, "text-slide");
     expect(result).not.toBeNull();
     expect(result!.source).toBe("text_extraction");
     expect(result!.confidence).toBe("medium");

@@ -61,6 +61,10 @@ Your outlines produce presentations that rival McKinsey and TED Talk quality.
 - Do NOT pad with filler slides. Only create slides that add value.
 - Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
 - CRITICAL: Slide titles MUST be SHORT — maximum 8-10 words (60 characters). Long titles get truncated in templates. Use subtitle or key_points for details.
+- KEY POINTS QUALITY: Each key point MUST include a specific fact, statistic, example, or named entity. The Writer Agent will expand these into bullet points, so they must be concrete enough to research and elaborate.
+  BAD key point: "Важность инноваций в отрасли"
+  GOOD key point: "AI-диагностика сокращает ошибки на 30% (Stanford Medicine, 2024)"
+- CONTENT DIVERSITY: Ensure slides cover DIFFERENT angles of the topic. Avoid multiple slides that essentially say the same thing from different perspectives. Each slide must add genuinely new information.
 </rules>
 <narrative_arc_types>
 Choose the best narrative arc for the topic:
@@ -105,9 +109,9 @@ export function outlineUser(userPrompt: string, branding: string, sourceContent?
 // WRITER AGENT
 // ═══════════════════════════════════════════════════════
 export function writerSystem(language: string, presentationTitle: string, allSlidesTitles: string, targetAudience: string): string {
-  return `You are Writer Agent — a professional copywriter for presentation slides.
+  return `You are Writer Agent — a world-class presentation content strategist.
 <role>
-Write compelling, substantive content for a single presentation slide. Your content must be rich enough to fill the slide visually — no half-empty slides.
+Write compelling, substantive content for a single presentation slide. Your content must be rich, specific, and visually balanced — no half-empty slides, no generic filler.
 </role>
 <task>
 1. Write the main text content for the slide based on the outline.
@@ -115,16 +119,36 @@ Write compelling, substantive content for a single presentation slide. Your cont
 3. Extract structured data points if the slide needs charts or tables.
 4. Formulate a key takeaway message.
 </task>
+<quality_principles>
+- SHOW, DON'T TELL: Instead of "AI is transforming healthcare" → "AI diagnostics detect cancer **18% more accurately** than radiologists (Stanford, 2024)"
+- SPECIFICITY: Every bullet must contain at least one concrete fact, number, example, or named entity. No vague statements.
+- VARIETY: Each bullet must cover a DIFFERENT aspect. Never repeat the same idea in different words.
+- INSIGHT: Go beyond obvious statements. Add surprising facts, counterintuitive data, or expert perspectives.
+- BREVITY WITH DEPTH: Short text that packs maximum information density.
+</quality_principles>
 <content_density_rules>
 - CRITICAL: Each slide must have ENOUGH content to fill the visual space. Empty-looking slides are unacceptable.
 - For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (2-5 words, MAX 40 characters) AND a description (1 sentence, 10-25 words, MAX 150 characters).
 - CRITICAL: Keep titles SHORT (2-5 words). Keep descriptions CONCISE (1 short sentence). Avoid long compound sentences. If a point is complex, split into two bullets.
-- For data slides: provide 3-5 data points with specific numbers, percentages, or metrics.
-- For comparison slides: provide 4-5 points per side.
-- For process/timeline slides: provide 4-6 steps/events with descriptions.
+- For data slides: provide 3-5 data points with specific numbers, percentages, or metrics. Each data point MUST have a real-world source or context.
+- For comparison slides: provide 4-5 points per side with concrete differences, not vague qualities.
+- For process/timeline slides: provide 4-6 steps/events with descriptions that include expected outcomes or metrics.
 - Text field format: Use structured bullet points separated by newlines. Each bullet should follow the pattern: "**Title**: Description sentence."
 - NEVER write just 1-2 vague bullet points. If the topic seems narrow, expand with examples, statistics, or implications.
 </content_density_rules>
+<anti_patterns>
+NEVER write content like this:
+- "Это важный аспект, который нужно учитывать" — too vague, says nothing
+- "Значительный рост показателей" — what growth? what metrics? be specific
+- "Эксперты считают, что..." — which experts? name them or cite the source
+- "Множество преимуществ" — list the specific advantages with numbers
+- "В современном мире" — cliché, skip it entirely
+
+INSTEAD write like this:
+- "Рост выручки на **34%** за Q3 2025 (McKinsey Digital Report)"
+- "Tesla сократила стоимость батарей на **56%** за 3 года благодаря вертикальной интеграции"
+- "По данным WHO, **3.5 млн** врачей используют AI-диагностику ежедневно"
+</anti_patterns>
 <rules>
 - Write in ${language}.
 - Be SUBSTANTIVE but slide-appropriate — not paragraphs, but rich bullet points with both titles and descriptions.
