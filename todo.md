@@ -194,3 +194,17 @@
 - [x] Implement fallback in LLM helper: try built-in API first, fall back to OpenAI on failure (gpt-4o model)
 - [x] Test slide generation with OpenAI fallback (36 sec, 9 slides)
 - [x] Verify slide rendering fixes visually with new generation — all 3 critical issues confirmed fixed
+
+## Quality Overhaul: Slide Templates & Content
+- [x] Audit all templates for vertical centering issues
+- [x] Fix image-text: text content must be vertically centered alongside image, not pushed to bottom
+- [x] Fix two-column: content cards must be vertically centered, not top-aligned with empty bottom half
+- [x] Fix section-header: content only in top 40%, bottom 60% empty — must fill entire slide
+- [x] Add display:flex + align-items:center to ALL slide containers for proper vertical centering (all 18 templates rewritten with inline styles)
+- [x] Add missing CSS utility classes to BASE_CSS (h-full, w-full, h-2, w-2, w-10, h-10, w-20, h-20, h-80, mt-2)
+- [x] Improve Writer Agent prompt: require 4-5 bullet points with title+description, specific numbers/facts
+- [x] Improve Layout Agent prompt: content-matching rules, better diversity, avoid image layouts without images
+- [x] Improve HTML Composer prompt: minimum content density per layout type (4-5 bullets, 3-4 metrics, 4-5 steps)
+- [x] Fix fallback data builder: use proper icon objects instead of emoji strings
+- [x] Write vitest tests for template vertical centering (11 new tests — 128 total passing)
+- [x] Test with multiple topics and verify visual quality — 11 slides generated, all properly centered, content fills slides well

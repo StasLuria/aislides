@@ -9,134 +9,74 @@
 // ═══════════════════════════════════════════════════════
 
 const LAYOUT_TEMPLATES: Record<string, string> = {
-  "title-slide": `<div class="relative z-10 flex h-full px-16 pt-12 pb-8">
+  "title-slide": `<div style="position: relative; z-index: 10; display: flex; height: 100%; padding: 48px 64px 32px;">
   <div class="slide-decor-circle slide-decor-top-right"></div>
   <div class="slide-decor-circle slide-decor-bottom-left"></div>
   {% if image and image.url %}
-  <div class="flex-1 flex items-center justify-center pr-8">
-    <div class="w-full max-w-lg h-80 rounded-2xl overflow-hidden shadow-lg">
-      <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" class="w-full h-full object-cover" />
+  <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; padding-right: 32px; min-width: 0;">
+    <div style="width: 100%; max-width: 512px; height: 320px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+      <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" style="width: 100%; height: 100%; object-fit: cover;" />
     </div>
   </div>
   {% else %}
-  <div class="flex-1 flex items-center justify-center pr-8">
-    <div class="w-full max-w-lg h-80 rounded-2xl overflow-hidden shadow-lg" style="background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, white), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 15%, white)); position: relative;">
+  <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; padding-right: 32px; min-width: 0;">
+    <div style="width: 100%; max-width: 512px; height: 320px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, white), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 15%, white)); position: relative;">
       <div style="position: absolute; top: -30px; right: -30px; width: 180px; height: 180px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 12%, transparent);"></div>
       <div style="position: absolute; bottom: -20px; left: -20px; width: 120px; height: 120px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, transparent);"></div>
       <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, transparent);"></div>
     </div>
   </div>
   {% endif %}
-  <div class="flex-1 flex flex-col justify-center pl-8 space-y-6">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold leading-tight">{{ title }}</h1>
-    <div class="accent-line"></div>
+  <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; padding-left: 32px; min-width: 0;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 48px; font-weight: 700; line-height: 1.1; margin: 0 0 20px 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-bottom: 20px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg leading-relaxed">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.55; margin: 0 0 24px 0;">{{ description }}</p>
     {% endif %}
-    <div class="rounded-lg p-4 border" style="border-color: #e5e7eb; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--primary-accent-color, #9333ea);">
-          <span class="font-bold text-sm text-white">{{ initials | default('') }}</span>
+    <div style="border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--primary-accent-color, #9333ea);">
+          <span style="font-weight: 700; font-size: 14px; color: white;">{{ initials | default('') }}</span>
         </div>
-        <div class="flex flex-col">
-          <span style="color: var(--text-heading-color, #111827);" class="text-lg font-bold">{{ presenterName | default('') }}</span>
-          <span style="color: var(--text-body-color, #4b5563);" class="text-sm font-medium">{{ presentationDate | default('') }}</span>
+        <div style="display: flex; flex-direction: column;">
+          <span style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 700;">{{ presenterName | default('') }}</span>
+          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; font-weight: 500;">{{ presentationDate | default('') }}</span>
         </div>
       </div>
     </div>
   </div>
 </div>`,
 
-  "section-header": `<div class="flex flex-col items-center justify-center h-full px-16 text-center" style="background: var(--slide-bg-accent-gradient, var(--primary-accent-color)); position: relative; overflow: hidden;">
-  <!-- Decorative circles -->
+  "section-header": `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 0 64px; text-align: center; background: var(--slide-bg-accent-gradient, var(--primary-accent-color)); position: relative; overflow: hidden;">
   <div style="position: absolute; top: -120px; right: -120px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,0.06); pointer-events: none;"></div>
   <div style="position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); pointer-events: none;"></div>
   <div style="position: absolute; top: 50%; left: 10%; width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,0.03); pointer-events: none; transform: translateY(-50%);"></div>
-  <div class="relative z-10 flex flex-col items-center" style="max-width: 900px;">
+  <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; max-width: 900px;">
     <div style="width: 60px; height: 3px; background: rgba(255,255,255,0.4); border-radius: 2px; margin-bottom: 32px;"></div>
-    <h1 style="color: #ffffff; letter-spacing: -0.02em;" class="text-6xl font-bold leading-tight mb-6">{{ title }}</h1>
+    <h1 style="color: #ffffff; letter-spacing: -0.02em; font-size: 60px; font-weight: 700; line-height: 1.1; margin: 0 0 24px 0;">{{ title }}</h1>
     {% if subtitle %}
-    <p style="color: rgba(255,255,255,0.85); max-width: 640px;" class="text-xl leading-relaxed">{{ subtitle }}</p>
+    <p style="color: rgba(255,255,255,0.85); max-width: 640px; font-size: 20px; line-height: 1.5; margin: 0;">{{ subtitle }}</p>
     {% endif %}
     <div style="width: 60px; height: 3px; background: rgba(255,255,255,0.4); border-radius: 2px; margin-top: 32px;"></div>
   </div>
 </div>`,
 
-  "text-slide": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="flex items-center gap-4 mb-6" style="flex-shrink: 0;">
+  "text-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
     {% if icon and icon.url %}
     <div class="icon-circle"><img src="{{ icon.url }}" alt="{{ icon.name | default('') }}" /></div>
     {% endif %}
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
   </div>
-  <div class="accent-line mb-6" style="flex-shrink: 0;"></div>
-  <div style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-4">
-    {% for bullet in bullets | default([]) %}
-    <div class="bullet-row">
-      <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: var(--primary-accent-color, #9333ea);"></div>
-      <div>
-        <div style="color: var(--text-heading-color, #111827);" class="font-semibold text-base">{{ bullet.title | default('') }}</div>
-        <div style="color: var(--text-body-color, #4b5563);" class="text-sm leading-relaxed mt-1">{{ bullet.description | default('') }}</div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>`,
-
-  "two-column": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="text-center mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line-center mt-4"></div>
-  </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px;">
-    <div class="card" style="overflow: hidden; display: flex; flex-direction: column; min-height: 0;">
-      <h2 style="color: var(--text-heading-color, #111827); flex-shrink: 0;" class="text-2xl font-semibold mb-4">{{ leftColumn.title | default('') }}</h2>
-      <ul style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-3">
-        {% for bullet in leftColumn.bullets | default([]) %}
-        <li class="flex items-start gap-3">
-          <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: var(--primary-accent-color, #9333ea);"></div>
-          <span style="color: var(--text-body-color, #4b5563);" class="text-base">{{ bullet }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    <div class="card" style="overflow: hidden; display: flex; flex-direction: column; min-height: 0;">
-      <h2 style="color: var(--text-heading-color, #111827); flex-shrink: 0;" class="text-2xl font-semibold mb-4">{{ rightColumn.title | default('') }}</h2>
-      <ul style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-3">
-        {% for bullet in rightColumn.bullets | default([]) %}
-        <li class="flex items-start gap-3">
-          <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: var(--secondary-accent-color, #3b82f6);"></div>
-          <span style="color: var(--text-body-color, #4b5563);" class="text-base">{{ bullet }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-</div>`,
-
-  "image-text": `<div class="flex h-full px-16 pt-10 pb-10 gap-8">
-  <div class="flex-1 flex items-center justify-center">
-    <div class="w-full h-full rounded-2xl overflow-hidden shadow-lg">
-      {% if image and image.url %}
-      <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" class="w-full h-full object-cover" />
-      {% else %}
-      <div class="w-full h-full" style="background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, #f3f4f6), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, #f3f4f6)); position: relative; overflow: hidden;">
-        <div style="position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent);"></div>
-        <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 8%, transparent);"></div>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-  <div class="flex-1 flex flex-col justify-center">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-4xl font-bold mb-4">{{ title }}</h1>
-    <div class="accent-line mb-6"></div>
-    <div class="space-y-3">
+  <div class="accent-line" style="flex-shrink: 0; margin-bottom: 24px;"></div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
       {% for bullet in bullets | default([]) %}
-      <div class="flex items-start gap-3">
-        <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: var(--primary-accent-color, #9333ea);"></div>
-        <div>
-          <div style="color: var(--text-heading-color, #111827);" class="font-semibold text-base">{{ bullet.title | default('') }}</div>
-          <div style="color: var(--text-body-color, #4b5563);" class="text-sm leading-relaxed mt-1">{{ bullet.description | default('') }}</div>
+      <div class="bullet-row">
+        <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 17px; line-height: 1.3;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: 15px; line-height: 1.55; margin-top: 4px;">{{ bullet.description | default('') }}</div>
         </div>
       </div>
       {% endfor %}
@@ -144,45 +84,108 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "image-fullscreen": `<div class="relative h-full overflow-hidden">
+  "two-column": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; width: 100%;">
+      <div class="card" style="display: flex; flex-direction: column;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ leftColumn.title | default('') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for bullet in leftColumn.bullets | default([]) %}
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ bullet }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card" style="display: flex; flex-direction: column;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ rightColumn.title | default('') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for bullet in rightColumn.bullets | default([]) %}
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--secondary-accent-color, #3b82f6);"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ bullet }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`,
+
+  "image-text": `<div style="display: flex; height: 100%; padding: 40px 64px; gap: 32px;">
+  <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; min-width: 0;">
+    <div style="width: 100%; height: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+      {% if image and image.url %}
+      <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" style="width: 100%; height: 100%; object-fit: cover;" />
+      {% else %}
+      <div style="width: 100%; height: 100%; background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, #f3f4f6), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, #f3f4f6)); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent);"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 8%, transparent);"></div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 36px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-bottom: 20px;"></div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for bullet in bullets | default([]) %}
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; background: var(--primary-accent-color, #9333ea);"></div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px; line-height: 1.3;">{{ bullet.title | default('') }}</div>
+          <div style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.55; margin-top: 3px;">{{ bullet.description | default('') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>`,
+
+  "image-fullscreen": `<div style="position: relative; height: 100%; overflow: hidden;">
   {% if backgroundImage and backgroundImage.url %}
-  <img src="{{ backgroundImage.url }}" alt="{{ backgroundImage.alt | default('') }}" class="absolute inset-0 w-full h-full object-cover" />
+  <img src="{{ backgroundImage.url }}" alt="{{ backgroundImage.alt | default('') }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
   {% else %}
-  <div class="absolute inset-0" style="background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
+  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
   {% endif %}
-  <div class="gradient-overlay-bottom absolute inset-0 z-10"></div>
-  <div class="relative z-20 flex flex-col justify-end h-full px-16 pb-16">
-    <h1 class="text-white text-5xl font-bold leading-tight mb-4">{{ title }}</h1>
+  <div class="gradient-overlay-bottom" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></div>
+  <div style="position: relative; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 0 64px 64px;">
+    <h1 style="color: #ffffff; font-size: 48px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0;">{{ title }}</h1>
     {% if subtitle %}
-    <p class="text-white/80 text-xl leading-relaxed max-w-2xl">{{ subtitle }}</p>
+    <p style="color: rgba(255,255,255,0.8); font-size: 20px; line-height: 1.5; max-width: 672px; margin: 0;">{{ subtitle }}</p>
     {% endif %}
   </div>
 </div>`,
 
-  "quote-slide": `<div class="relative h-full overflow-hidden">
+  "quote-slide": `<div style="position: relative; height: 100%; overflow: hidden;">
   {% if backgroundImage and backgroundImage.url %}
-  <img src="{{ backgroundImage.url }}" alt="{{ backgroundImage.alt | default('') }}" class="absolute inset-0 w-full h-full object-cover" />
+  <img src="{{ backgroundImage.url }}" alt="{{ backgroundImage.alt | default('') }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" />
   {% else %}
-  <div class="absolute inset-0" style="background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
+  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
   {% endif %}
-  <div class="gradient-overlay-dark absolute inset-0 z-10"></div>
-  <div class="relative z-20 flex flex-col items-center justify-center h-full px-20 text-center">
-    <div style="font-size: 80px; color: var(--primary-accent-color, #9333ea); opacity: 0.6; line-height: 1;">"</div>
-    <blockquote class="text-white text-3xl leading-relaxed max-w-3xl mb-8">{{ quote }}</blockquote>
-    <div class="accent-line-center mb-4"></div>
-    <p class="text-white text-lg font-semibold">{{ author | default('') }}</p>
+  <div class="gradient-overlay-dark" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></div>
+  <div style="position: relative; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 0 80px; text-align: center;">
+    <div style="font-size: 80px; color: var(--primary-accent-color, #9333ea); opacity: 0.6; line-height: 1;">\"</div>
+    <blockquote style="color: #ffffff; font-size: 30px; line-height: 1.5; max-width: 768px; margin: 0 0 32px 0;">{{ quote }}</blockquote>
+    <div class="accent-line-center" style="margin-bottom: 16px;"></div>
+    <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">{{ author | default('') }}</p>
     {% if role %}
-    <p class="text-white/70 text-base">{{ role }}</p>
+    <p style="color: rgba(255,255,255,0.7); font-size: 16px; margin: 4px 0 0 0;">{{ role }}</p>
     {% endif %}
   </div>
 </div>`,
 
-  "chart-slide": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "chart-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg leading-relaxed mt-3">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
@@ -190,47 +193,49 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "table-slide": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "table-slide": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg leading-relaxed mt-3">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="rounded-xl border" style="border-color: #e5e7eb;">
-    <table>
-      <thead>
-        <tr>
-          {% for header in headers | default([]) %}
-          <th>{{ header }}</th>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border-color, #e5e7eb);">
+      <table>
+        <thead>
+          <tr>
+            {% for header in headers | default([]) %}
+            <th>{{ header }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows | default([]) %}
+          <tr>
+            {% for cell in row %}
+            <td>{{ cell }}</td>
+            {% endfor %}
+          </tr>
           {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows | default([]) %}
-        <tr>
-          {% for cell in row %}
-          <td>{{ cell }}</td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>`,
 
   "icons-numbers": `{% set m_count = metrics | default([]) | length %}
 {% set m_count = m_count if m_count > 0 else 1 %}
-<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="text-center" style="margin-bottom: 40px; flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4" style="margin-left: auto; margin-right: auto;"></div>
+<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 32px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-    <div style="display: grid; grid-template-columns: repeat({{ m_count }}, 1fr); gap: 40px; width: 100%; max-width: 1100px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; justify-content: center; align-items: center;">
+    <div style="display: grid; grid-template-columns: repeat({{ m_count }}, 1fr); gap: 32px; width: 100%; max-width: 1100px;">
       {% for metric in metrics | default([]) %}
-      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; min-width: 0; overflow: hidden; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); border-radius: 16px; padding: 32px 20px; box-shadow: var(--card-shadow, 0 4px 24px rgba(0,0,0,0.08));">
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); border-radius: 16px; padding: 28px 16px; box-shadow: var(--card-shadow, 0 4px 24px rgba(0,0,0,0.08));">
         {% if metric.icon and metric.icon.url %}
         <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <img src="{{ metric.icon.url }}" alt="" style="width: 24px; height: 24px; filter: brightness(0) saturate(100%);" />
@@ -240,7 +245,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
           <span style="color: var(--primary-accent-color, #9333ea); font-size: 20px; font-weight: 700;">{{ forloop.counter }}</span>
         </div>
         {% endif %}
-        <div style="color: var(--text-heading-color, #111827); font-size: 44px; font-weight: 700; line-height: 1.1;">{{ metric.value }}</div>
+        <div style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1;">{{ metric.value }}</div>
         <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">{{ metric.label }}</div>
         {% if metric.description %}
         <div style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; max-width: 220px;">{{ metric.description }}</div>
@@ -251,15 +256,15 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "timeline": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
     <div style="position: relative; width: 100%;">
       <div style="position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: var(--primary-accent-color, #9333ea); opacity: 0.3;"></div>
-      <div class="space-y-6">
+      <div style="display: flex; flex-direction: column; gap: 20px;">
         {% for event in events | default([]) %}
         <div style="display: flex; align-items: flex-start; gap: 20px; padding-left: 12px;">
           <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); flex-shrink: 0; display: flex; align-items: center; justify-content: center; z-index: 1;">
@@ -279,10 +284,10 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "process-steps": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "process-steps": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
     <div style="display: grid; grid-template-columns: repeat({{ steps | default([]) | length }}, 1fr); gap: 24px; width: 100%;">
@@ -301,150 +306,158 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "comparison": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="text-center mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line-center mt-4"></div>
+  "comparison": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 24px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 16px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px;">
-    <div class="card" style="border-left: 4px solid {{ optionA.color | default('#22c55e') }}; overflow: hidden; display: flex; flex-direction: column; min-height: 0;">
-      <h2 style="color: var(--text-heading-color, #111827); flex-shrink: 0;" class="text-2xl font-semibold mb-4">{{ optionA.title | default('Option A') }}</h2>
-      <ul style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-3">
-        {% for point in optionA.points | default([]) %}
-        <li class="flex items-start gap-3">
-          <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: {{ optionA.color | default('#22c55e') }};"></div>
-          <span style="color: var(--text-body-color, #4b5563);" class="text-base">{{ point }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    <div class="card" style="border-left: 4px solid {{ optionB.color | default('#ef4444') }}; overflow: hidden; display: flex; flex-direction: column; min-height: 0;">
-      <h2 style="color: var(--text-heading-color, #111827); flex-shrink: 0;" class="text-2xl font-semibold mb-4">{{ optionB.title | default('Option B') }}</h2>
-      <ul style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-3">
-        {% for point in optionB.points | default([]) %}
-        <li class="flex items-start gap-3">
-          <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" style="background: {{ optionB.color | default('#ef4444') }};"></div>
-          <span style="color: var(--text-body-color, #4b5563);" class="text-base">{{ point }}</span>
-        </li>
-        {% endfor %}
-      </ul>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; width: 100%;">
+      <div class="card" style="border-left: 4px solid {{ optionA.color | default('#22c55e') }}; display: flex; flex-direction: column;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ optionA.title | default('Option A') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for point in optionA.points | default([]) %}
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionA.color | default('#22c55e') }};"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ point }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card" style="border-left: 4px solid {{ optionB.color | default('#ef4444') }}; display: flex; flex-direction: column;">
+        <h2 style="color: var(--text-heading-color, #111827); font-size: 22px; font-weight: 600; margin: 0 0 16px 0;">{{ optionB.title | default('Option B') }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for point in optionB.points | default([]) %}
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: {{ optionB.color | default('#ef4444') }};"></div>
+            <span style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5;">{{ point }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </div>
 </div>`,
 
-  "final-slide": `<div class="flex flex-col items-center justify-center h-full px-16 text-center" style="background: var(--slide-bg-accent-gradient, var(--primary-accent-color));">
+  "final-slide": `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 0 64px; text-align: center; background: var(--slide-bg-accent-gradient, var(--primary-accent-color)); position: relative; overflow: hidden;">
   <div class="slide-decor-circle slide-decor-top-right"></div>
   <div class="slide-decor-circle slide-decor-bottom-left"></div>
-  <div class="relative z-10 flex flex-col items-center">
-  <h1 style="color: #ffffff;" class="text-6xl font-bold mb-4">{{ title | default('Спасибо!') }}</h1>
-  <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
-  {% if subtitle %}
-  <p style="color: rgba(255,255,255,0.85);" class="text-xl leading-relaxed max-w-2xl mb-8">{{ subtitle }}</p>
-  {% endif %}
-  {% if thankYouText %}
-  <p style="color: rgba(255,255,255,0.8);" class="text-lg mb-8">{{ thankYouText }}</p>
-  {% endif %}
-  {% if contactInfo %}
-  <div class="flex flex-col items-center gap-3 mt-8">
-    {% for contact in contactInfo %}
-    <div class="flex items-center gap-3">
-      <span style="color: rgba(255,255,255,0.9);" class="text-lg">{{ contact.value }}</span>
+  <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;">
+    <h1 style="color: #ffffff; font-size: 60px; font-weight: 700; line-height: 1.05; margin: 0 0 16px 0;">{{ title | default('Спасибо!') }}</h1>
+    <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
+    {% if subtitle %}
+    <p style="color: rgba(255,255,255,0.85); font-size: 20px; line-height: 1.5; max-width: 672px; margin: 0 0 32px 0;">{{ subtitle }}</p>
+    {% endif %}
+    {% if thankYouText %}
+    <p style="color: rgba(255,255,255,0.8); font-size: 18px; margin: 0 0 32px 0;">{{ thankYouText }}</p>
+    {% endif %}
+    {% if contactInfo %}
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 24px;">
+      {% for contact in contactInfo %}
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="color: rgba(255,255,255,0.9); font-size: 18px;">{{ contact.value }}</span>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+    {% endif %}
   </div>
 </div>`,
 
-  "agenda-table-of-contents": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "agenda-table-of-contents": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; overflow: hidden;" class="space-y-4">
-    {% for section in sections | default([]) %}
-    <div class="flex items-start gap-6 p-4 rounded-xl" style="background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 5%, white);">
-      <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <span style="color: white; font-weight: 700;">{{ section.number | default(loop.index) }}</span>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      {% for section in sections | default([]) %}
+      <div style="display: flex; align-items: flex-start; gap: 20px; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 5%, white);">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="color: white; font-weight: 700; font-size: 15px;">{{ section.number | default(loop.index) }}</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: var(--text-heading-color, #111827); font-size: 17px; font-weight: 600;">{{ section.title }}</div>
+          {% if section.description %}
+          <div style="color: var(--text-body-color, #4b5563); font-size: 14px; margin-top: 4px;">{{ section.description }}</div>
+          {% endif %}
+        </div>
       </div>
-      <div>
-        <div style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 600;">{{ section.title }}</div>
-        {% if section.description %}
-        <div style="color: var(--text-body-color, #4b5563); font-size: 14px; margin-top: 4px;">{{ section.description }}</div>
-        {% endif %}
-      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>`,
 
-  "team-profiles": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "team-profiles": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
     {% if companyDescription %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg mt-3">{{ companyDescription }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; margin: 12px 0 0 0;">{{ companyDescription }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat({{ teamMembers | default([]) | length }}, 1fr); gap: 24px; align-items: center;">
-    {% for member in teamMembers | default([]) %}
-    <div class="card" style="text-align: center; overflow: hidden;">
-      <div style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px; overflow: hidden; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, white);">
-        {% if member.image and member.image.url %}
-        <img src="{{ member.image.url }}" alt="{{ member.name }}" class="w-full h-full object-cover" />
-        {% else %}
-        <div class="w-full h-full flex items-center justify-center" style="font-size: 28px; font-weight: 700; color: var(--primary-accent-color, #9333ea);">{{ member.name[0] | default('?') }}</div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center;">
+    <div style="display: grid; grid-template-columns: repeat({{ teamMembers | default([]) | length }}, 1fr); gap: 24px; width: 100%;">
+      {% for member in teamMembers | default([]) %}
+      <div class="card" style="text-align: center;">
+        <div style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px; overflow: hidden; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, white);">
+          {% if member.image and member.image.url %}
+          <img src="{{ member.image.url }}" alt="{{ member.name }}" style="width: 100%; height: 100%; object-fit: cover;" />
+          {% else %}
+          <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: var(--primary-accent-color, #9333ea);">{{ member.name[0] | default('?') }}</div>
+          {% endif %}
+        </div>
+        <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px;">{{ member.name }}</div>
+        <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; margin-top: 4px;">{{ member.role | default('') }}</div>
+        {% if member.description %}
+        <div style="color: var(--text-body-color, #4b5563); font-size: 12px; margin-top: 8px; line-height: 1.4;">{{ member.description }}</div>
         {% endif %}
       </div>
-      <div style="color: var(--text-heading-color, #111827); font-weight: 600; font-size: 16px;">{{ member.name }}</div>
-      <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; margin-top: 4px;">{{ member.role | default('') }}</div>
-      {% if member.description %}
-      <div style="color: var(--text-body-color, #4b5563); font-size: 12px; margin-top: 8px; line-height: 1.4;">{{ member.description }}</div>
-      {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>`,
 
-  "logo-grid": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6" style="flex-shrink: 0;">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "logo-grid": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg mt-3">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; margin: 12px 0 0 0;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: center; justify-items: center;">
-    {% for logo in logos | default([]) %}
-    <div class="card" style="width: 200px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
-      {% if logo.image and logo.image.url %}
-      <img src="{{ logo.image.url }}" alt="{{ logo.name }}" style="max-width: 120px; max-height: 60px; object-fit: contain;" />
-      {% else %}
-      <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ logo.name }}</div>
-      {% endif %}
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; width: 100%; align-items: center; justify-items: center;">
+      {% for logo in logos | default([]) %}
+      <div class="card" style="width: 200px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+        {% if logo.image and logo.image.url %}
+        <img src="{{ logo.image.url }}" alt="{{ logo.name }}" style="max-width: 120px; max-height: 60px; object-fit: contain;" />
+        {% else %}
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-heading-color, #111827);">{{ logo.name }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>`,
 
-  "video-embed": `<div class="flex flex-col h-full px-16 pt-10 pb-10">
-  <div class="mb-6">
-    <h1 style="color: var(--text-heading-color, #111827);" class="text-5xl font-bold">{{ title }}</h1>
-    <div class="accent-line mt-4"></div>
+  "video-embed": `<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
+  <div style="flex-shrink: 0; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 16px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563);" class="text-lg leading-relaxed mt-4">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.5; margin: 12px 0 0 0;">{{ description }}</p>
     {% endif %}
   </div>
-  <div class="flex-1 flex items-center justify-center">
-    <div class="relative block rounded-2xl overflow-hidden shadow-xl" style="width: 800px; height: 450px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="position: relative; width: 800px; height: 400px; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
       {% if thumbnailImage and thumbnailImage.url %}
-      <img src="{{ thumbnailImage.url }}" alt="{{ thumbnailImage.alt | default('Video thumbnail') }}" class="w-full h-full object-cover" />
+      <img src="{{ thumbnailImage.url }}" alt="{{ thumbnailImage.alt | default('Video thumbnail') }}" style="width: 100%; height: 100%; object-fit: cover;" />
       {% else %}
-      <div class="w-full h-full" style="background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
+      <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e);"></div>
       {% endif %}
-      <div class="absolute inset-0" style="background: rgba(0,0,0,0.3);"></div>
-      <div class="absolute inset-0 flex items-center justify-center">
-        <div class="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl" style="background: var(--primary-accent-color, #9333ea);">
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3);"></div>
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--primary-accent-color, #9333ea); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
       </div>
@@ -490,6 +503,20 @@ export const BASE_CSS = `/* ── Slide Foundation ─────────�
 .slide .gap-6 { gap: 24px; }
 .slide .gap-8 { gap: 32px; }
 .slide .flex-shrink-0 { flex-shrink: 0; }
+.slide .flex-wrap { flex-wrap: wrap; }
+/* ── Sizing ──────────────────────────────────────────── */
+.slide .h-full { height: 100%; }
+.slide .w-full { width: 100%; }
+.slide .min-h-0 { min-height: 0; }
+.slide .w-2 { width: 8px; }
+.slide .h-2 { height: 8px; }
+.slide .w-9 { width: 36px; }
+.slide .h-9 { height: 36px; }
+.slide .w-10 { width: 40px; }
+.slide .h-10 { height: 40px; }
+.slide .w-20 { width: 80px; }
+.slide .h-20 { height: 80px; }
+.slide .h-80 { height: 320px; }
 /* ── Spacing ─────────────────────────────────────────── */
 .slide .px-16 { padding-left: 64px; padding-right: 64px; }
 .slide .px-20 { padding-left: 80px; padding-right: 80px; }
@@ -506,7 +533,9 @@ export const BASE_CSS = `/* ── Slide Foundation ─────────�
 .slide .mb-8 { margin-bottom: 32px; }
 .slide .mt-3 { margin-top: 12px; }
 .slide .mt-4 { margin-top: 16px; }
+.slide .mt-2 { margin-top: 8px; }
 .slide .mt-8 { margin-top: 32px; }
+.slide .mt-1 { margin-top: 4px; }
 .slide .space-y-3 > * + * { margin-top: 12px; }
 .slide .space-y-4 > * + * { margin-top: 16px; }
 .slide .space-y-6 > * + * { margin-top: 24px; }

@@ -457,18 +457,18 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       data.rightColumn = { title: "Детали", bullets: bullets.slice(mid).map((b) => b.title) };
       break;
     case "icons-numbers":
-      data.metrics = content.data_points.slice(0, 4).map((dp) => ({
+      data.metrics = content.data_points.slice(0, 4).map((dp, i) => ({
         label: dp.label,
         value: dp.value + (dp.unit ? ` ${dp.unit}` : ""),
         description: "",
-        icon: "📊",
+        icon: { name: "bar-chart", url: "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/bar-chart.svg" },
       }));
       if (data.metrics.length === 0) {
-        data.metrics = bullets.slice(0, 4).map((b) => ({
+        data.metrics = bullets.slice(0, 4).map((b, i) => ({
           label: b.title,
           value: "—",
           description: b.description,
-          icon: "📌",
+          icon: { name: "target", url: "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/target.svg" },
         }));
       }
       break;
