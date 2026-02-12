@@ -343,3 +343,12 @@
 - [x] Write vitest tests for SVG generators (56 tests, 435 total)
 - [x] Write vitest tests for Data Visualization Agent
 - [x] Verify end-to-end generation with charts
+
+## Bug Fixes
+
+- [x] Fix icons-numbers template: content overflows slide, cards too large, title cut off
+  - Reduced title font-size 42→30px with 2-line clamp
+  - Reduced card padding 28→16px, gap 32→16px, value font 42→28px
+  - Added smart column count: ≤3 items = 1 row, 4 items = 2x2 grid
+  - Added overflow: hidden and text-overflow: ellipsis on descriptions (3-line clamp)
+  - Reduced icon container 48→36px

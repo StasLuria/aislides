@@ -232,28 +232,29 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
 
   "icons-numbers": `{% set m_count = metrics | default([]) | length %}
 {% set m_count = m_count if m_count > 0 else 1 %}
-<div style="display: flex; flex-direction: column; height: 100%; padding: 48px 64px 40px;">
-  <div style="flex-shrink: 0; text-align: center; margin-bottom: 32px;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0;">{{ title }}</h1>
-    <div class="accent-line-center" style="margin-top: 16px;"></div>
+{% set cols = m_count if m_count <= 3 else (m_count <= 4 ? 2 : 3) %}
+<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 30px; font-weight: 700; line-height: 1.2; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; justify-content: center; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat({{ m_count }}, 1fr); gap: 32px; width: 100%; max-width: 1100px;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat({{ cols }}, 1fr); gap: 16px; width: 100%; max-width: 1000px;">
       {% for metric in metrics | default([]) %}
-      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); border-radius: 16px; padding: 28px 16px; box-shadow: var(--card-shadow, 0 4px 24px rgba(0,0,0,0.08));">
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); border-radius: 12px; padding: 16px 12px; box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,0.06));">
         {% if metric.icon and metric.icon.url %}
-        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <img src="{{ metric.icon.url }}" alt="" style="width: 24px; height: 24px; filter: brightness(0) saturate(100%);" />
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="{{ metric.icon.url }}" alt="" style="width: 18px; height: 18px; filter: brightness(0) saturate(100%);" />
         </div>
         {% else %}
-        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="color: var(--primary-accent-color, #9333ea); font-size: 20px; font-weight: 700;">{{ forloop.counter }}</span>
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="color: var(--primary-accent-color, #9333ea); font-size: 16px; font-weight: 700;">{{ forloop.counter }}</span>
         </div>
         {% endif %}
-        <div style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1;">{{ metric.value }}</div>
-        <div style="color: var(--primary-accent-color, #9333ea); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">{{ metric.label }}</div>
+        <div style="color: var(--text-heading-color, #111827); font-size: 28px; font-weight: 700; line-height: 1.1;">{{ metric.value }}</div>
+        <div style="color: var(--primary-accent-color, #9333ea); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">{{ metric.label }}</div>
         {% if metric.description %}
-        <div style="color: var(--text-body-color, #4b5563); font-size: 14px; line-height: 1.5; max-width: 220px;">{{ metric.description }}</div>
+        <div style="color: var(--text-body-color, #4b5563); font-size: 12px; line-height: 1.4; max-width: 200px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ metric.description }}</div>
         {% endif %}
       </div>
       {% endfor %}
