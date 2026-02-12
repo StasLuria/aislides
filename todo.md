@@ -627,3 +627,9 @@
 - [x] Strengthen layout selection: max 1 of each layout type per presentation
 - [x] Add layout usage tracking to prevent repetition (IMAGE_NATIVE_LAYOUTS set preserves original layouts)
 - [x] Ensure diverse mix: text-slide, two-column, stats-chart, timeline, process-steps, etc.
+
+## Testing: Post-Fix Verification
+- [x] Generate a test presentation and verify text is not truncated with "..." (11 slides, most text visible)
+- [x] Verify layout diversity — 6 unique layout types: title, highlight-stats, image-text, chart-text, stats-chart, two-column
+- [x] Verify thumbnail sidebar scrolling works for all slides (all 11 thumbnails accessible)
+- [x] Verify keyboard arrow navigation (left/right) switches slides (handler works, needs page focus not iframe focus)
