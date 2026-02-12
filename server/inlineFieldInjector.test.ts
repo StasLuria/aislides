@@ -605,6 +605,77 @@ describe("generateInlineEditScript", () => {
     expect(script).toContain("[data-field]:focus");
   });
 
+  // ═══════════════════════════════════════════════════════
+  // Image editing overlay tests
+  // ═══════════════════════════════════════════════════════
+
+  it("includes image editing overlay styles", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+      image: { url: "https://example.com/img.jpg", alt: "test" },
+    });
+    expect(script).toContain(".img-edit-overlay");
+    expect(script).toContain("inline-image-click");
+  });
+
+  it("includes drag-and-drop support for images", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+      image: { url: "https://example.com/img.jpg", alt: "test" },
+    });
+    expect(script).toContain("dragover");
+    expect(script).toContain("drop");
+    expect(script).toContain("inline-image-drop");
+  });
+
+  it("includes gradient placeholder detection for image overlays", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+    });
+    expect(script).toContain("linear-gradient");
+    expect(script).toContain("img-edit-overlay");
+  });
+
+  it("includes replace button text for images", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // All scripts should contain the image overlay code
+    expect(script).toContain("\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c"); // Заменить
+    expect(script).toContain("\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c"); // Добавить
+  });
+
+  it("includes file type validation for image uploads", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+    });
+    expect(script).toContain("image/jpeg");
+    expect(script).toContain("image/png");
+    expect(script).toContain("image/webp");
+    expect(script).toContain("image/gif");
+  });
+
+  it("includes file size validation (5MB limit)", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+    });
+    expect(script).toContain("5 * 1024 * 1024");
+  });
+
+  it("sends image data as base64 via postMessage", () => {
+    const script = generateInlineEditScript("image-text", {
+      title: "Test",
+      bullets: [{ title: "B1", description: "D1" }],
+    });
+    expect(script).toContain("FileReader");
+    expect(script).toContain("readAsDataURL");
+  });
+
   it("truncates long field values to 80 chars", () => {
     const longTitle = "A".repeat(200);
     const script = generateInlineEditScript("title-slide", {

@@ -522,3 +522,15 @@
 - [x] Handle save errors gracefully with toast notification + auto-reset
 - [x] Test auto-save across multiple edits and slide switches
 - [x] Write/update vitest tests (11 tests in autoSave.test.ts)
+
+## Inline Image Editing
+- [x] Analyze current image upload/replace architecture (slideEditRoutes, InlineEditableSlide, templateEngine)
+- [x] Add image overlay in iframe: detect img + gradient placeholder elements, show hover overlay with "Replace/Add image" button
+- [x] Implement file picker dialog triggered by clicking on image overlay
+- [x] Implement drag-and-drop support for image replacement on slides
+- [x] Upload new image via existing POST /presentations/:id/slides/:index/image endpoint
+- [x] Auto-reassemble slide after image replacement (reuse auto-save debounce)
+- [x] Update thumbnail after image change
+- [x] Handle image validation (file type, size limit 5MB)
+- [x] Test inline image editing across slide types (title-slide, image-text, image-fullscreen)
+- [x] Write/update vitest tests (7 new image editing tests added)

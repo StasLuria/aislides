@@ -506,6 +506,67 @@ export function generateInlineEditScript(
     [data-field] {
       position: relative;
     }
+
+    /* Image editing overlay styles */
+    .img-edit-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .img-edit-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+      border-radius: 4px;
+      z-index: 50;
+    }
+    .img-edit-wrapper:hover .img-edit-overlay,
+    .img-edit-overlay.drag-over {
+      opacity: 1;
+    }
+    .img-edit-overlay.drag-over {
+      background: rgba(99, 102, 241, 0.55);
+      outline: 3px dashed #6366f1;
+      outline-offset: -3px;
+    }
+    .img-edit-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.95);
+      color: #1f2937;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .img-edit-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .img-edit-hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.8);
+      font-family: 'Inter', sans-serif;
+    }
+    .img-edit-drag-hint {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      font-family: 'Inter', sans-serif;
+    }
   \`;
   document.head.appendChild(style);
 
@@ -714,10 +775,177 @@ export function generateInlineEditScript(
     el.addEventListener('dragstart', function(e) { e.preventDefault(); });
   });
 
+  // ═══════════════════════════════════════════════════════
+  // IMAGE EDITING — overlay on <img> elements AND placeholder divs
+  // ═══════════════════════════════════════════════════════
+  var imageCount = 0;
+
+  // Helper: standard overlay button HTML
+  var overlayBtnHtml = '<button class="img-edit-btn">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
+    'Заменить изображение</button>' +
+    '<div class="img-edit-hint">или перетащите файл сюда</div>';
+
+  var addPlaceholderBtnHtml = '<button class="img-edit-btn">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
+    'Добавить изображение</button>' +
+    '<div class="img-edit-hint">или перетащите файл сюда</div>';
+
+  // Helper: validate file type and size
+  function validateImageFile(file) {
+    var validTypes = ['image/jpeg','image/png','image/webp','image/gif'];
+    if (validTypes.indexOf(file.type) === -1) {
+      window.parent.postMessage({ type: 'inline-image-error', message: 'Поддерживаются только JPEG, PNG, WebP и GIF' }, '*');
+      return false;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      window.parent.postMessage({ type: 'inline-image-error', message: 'Файл слишком большой (макс. 5 МБ)' }, '*');
+      return false;
+    }
+    return true;
+  }
+
+  // Helper: attach click handler to overlay button
+  function attachClickHandler(overlay, idx, getCurrentSrc) {
+    var btn = overlay.querySelector('.img-edit-btn');
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage({ type: 'inline-image-click', imageIndex: idx, currentSrc: getCurrentSrc() }, '*');
+      });
+    }
+  }
+
+  // Helper: attach drag-and-drop handlers to overlay
+  function attachDragHandlers(overlay, idx, btnHtml, onPreview) {
+    overlay.addEventListener('dragenter', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      overlay.classList.add('drag-over');
+      overlay.innerHTML = '<div class="img-edit-drag-hint">Отпустите для замены</div>';
+    });
+    overlay.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); });
+    overlay.addEventListener('dragleave', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      if (!overlay.contains(e.relatedTarget)) {
+        overlay.classList.remove('drag-over');
+        overlay.innerHTML = btnHtml;
+        attachClickHandler(overlay, idx, function() { return ''; });
+      }
+    });
+    overlay.addEventListener('drop', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      overlay.classList.remove('drag-over');
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length > 0) {
+        var file = files[0];
+        if (!validateImageFile(file)) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          if (onPreview) onPreview(ev.target.result);
+          overlay.innerHTML = overlayBtnHtml;
+          attachClickHandler(overlay, idx, function() { return ''; });
+          window.parent.postMessage({ type: 'inline-image-drop', imageIndex: idx, fileName: file.name, fileType: file.type, fileSize: file.size, dataUrl: ev.target.result }, '*');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // 1) Real <img> elements
+  var images = slide.querySelectorAll('img');
+  images.forEach(function(img, imgIdx) {
+    if (img.closest('.slide-footer')) return;
+    var rect = img.getBoundingClientRect();
+    if (rect.width < 40 || rect.height < 40) return;
+
+    imageCount++;
+    var myIdx = imageCount - 1;
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'img-edit-wrapper';
+    var imgStyle = window.getComputedStyle(img);
+    wrapper.style.width = imgStyle.width;
+    wrapper.style.height = imgStyle.height;
+    if (img.style.borderRadius) wrapper.style.borderRadius = img.style.borderRadius;
+    wrapper.style.overflow = 'hidden';
+    img.parentNode.insertBefore(wrapper, img);
+    wrapper.appendChild(img);
+
+    var overlay = document.createElement('div');
+    overlay.className = 'img-edit-overlay';
+    overlay.innerHTML = overlayBtnHtml;
+    wrapper.appendChild(overlay);
+
+    attachClickHandler(overlay, myIdx, function() { return img.src; });
+    attachDragHandlers(overlay, myIdx, overlayBtnHtml, function(dataUrl) { img.src = dataUrl; });
+  });
+
+  // 2) Placeholder divs (gradient containers used when no image URL is set)
+  //    These are divs with linear-gradient background inside a container with border-radius and overflow:hidden
+  //    Typically: parent has border-radius >= 12px, overflow: hidden, and child has linear-gradient
+  var allDivs = slide.querySelectorAll('div');
+  allDivs.forEach(function(div) {
+    // Check if this div has a linear-gradient background and is large enough to be an image placeholder
+    var style = div.getAttribute('style') || '';
+    if (style.indexOf('linear-gradient') === -1) return;
+    // Must be inside a container with overflow:hidden and border-radius
+    var parent = div.parentElement;
+    if (!parent) return;
+    var parentStyle = parent.getAttribute('style') || '';
+    if (parentStyle.indexOf('overflow') === -1 || parentStyle.indexOf('border-radius') === -1) return;
+    // Skip small elements
+    var rect = div.getBoundingClientRect();
+    if (rect.width < 100 || rect.height < 100) return;
+    // Skip if already processed (has img-edit-overlay)
+    if (div.querySelector('.img-edit-overlay')) return;
+    if (div.closest('.img-edit-wrapper')) return;
+    // Skip footer
+    if (div.closest('.slide-footer')) return;
+    // Check parent dimensions match (should be the main image container)
+    var parentRect = parent.getBoundingClientRect();
+    if (parentRect.width < 100 || parentRect.height < 100) return;
+
+    imageCount++;
+    var myIdx = imageCount - 1;
+
+    // Make the parent the wrapper (it already has position, overflow, border-radius)
+    parent.classList.add('img-edit-wrapper');
+    parent.style.position = 'relative';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'img-edit-overlay';
+    overlay.style.opacity = '1'; // Always visible on placeholder
+    overlay.style.background = 'rgba(0, 0, 0, 0.25)';
+    overlay.innerHTML = addPlaceholderBtnHtml;
+    parent.appendChild(overlay);
+
+    attachClickHandler(overlay, myIdx, function() { return ''; });
+    attachDragHandlers(overlay, myIdx, addPlaceholderBtnHtml, function(dataUrl) {
+      // Replace the gradient placeholder with an img element
+      var newImg = document.createElement('img');
+      newImg.src = dataUrl;
+      newImg.style.width = '100%';
+      newImg.style.height = '100%';
+      newImg.style.objectFit = 'cover';
+      parent.replaceChild(newImg, div);
+      // Update overlay to show "replace" instead of "add"
+      overlay.innerHTML = overlayBtnHtml;
+      overlay.style.opacity = '';
+      overlay.style.background = '';
+      attachClickHandler(overlay, myIdx, function() { return newImg.src; });
+    });
+  });
+
+  // Also handle drag events on the whole slide body to prevent browser defaults
+  document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
+  document.body.addEventListener('drop', function(e) { e.preventDefault(); });
+
   // Notify parent that inline editing is ready
   window.parent.postMessage({
     type: 'inline-edit-ready',
-    fieldCount: document.querySelectorAll('[data-field]').length
+    fieldCount: document.querySelectorAll('[data-field]').length,
+    imageCount: imageCount
   }, '*');
 })();
 <\/script>`;

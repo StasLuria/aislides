@@ -674,6 +674,41 @@ export default function Viewer() {
     [scheduleAutoReassemble],
   );
 
+  // Handle inline image replacement
+  const handleImageReplaced = useCallback(
+    (index: number, response: SlideEditResponse) => {
+      // Update the slide HTML in the viewer
+      const newHtml = response.html;
+      setSlideHtmls((prev) => {
+        const updated = [...prev];
+        const parsed = parseSlides(newHtml);
+        if (parsed.length > 0) {
+          updated[index] = parsed[0];
+        } else {
+          updated[index] = newHtml;
+        }
+        return updated;
+      });
+
+      // Update slide data
+      setSlideDataList((prev) => {
+        const updated = [...prev];
+        if (updated[index]) {
+          updated[index] = {
+            ...updated[index],
+            layoutId: response.layoutId,
+            data: response.data,
+          };
+        }
+        return updated;
+      });
+
+      setHasEdits(true);
+      scheduleAutoReassemble();
+    },
+    [scheduleAutoReassemble],
+  );
+
   // Handle inline field save
   const handleInlineFieldSaved = useCallback(
     (index: number, field: string, value: string, response: InlineFieldPatchResponse) => {
@@ -1024,6 +1059,7 @@ export default function Viewer() {
                   containerWidth={mainSize.w}
                   containerHeight={slideDisplayH}
                   onFieldSaved={handleInlineFieldSaved}
+                  onImageReplaced={handleImageReplaced}
                 />
               ) : hasSlides && slideHtmls[currentSlide] ? (
                 <SlideFrame
