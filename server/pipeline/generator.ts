@@ -665,7 +665,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       };
       data.chartData = {
         left: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [10, 20, 30, 40] }] },
-        right: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [15, 25, 35, 45] }] },
+        right: { type: "line", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Тренд", data: [15, 25, 35, 45] }] },
       };
       break;
     case "risk-matrix":
@@ -1012,6 +1012,63 @@ export async function generatePresentation(
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
+
+  // 5.1. POST-LAYOUT ADJACENCY FIX: prevent consecutive same layouts
+  {
+    const sortedSlideNums = Array.from(layoutMap.keys()).sort((a, b) => a - b);
+    const EXEMPT_LAYOUTS = new Set(["title-slide", "final-slide", "section-header"]);
+    const ALTERNATIVE_LAYOUTS = [
+      "text-with-callout", "numbered-steps-v2", "process-steps", "timeline-horizontal",
+      "icons-numbers", "comparison", "two-column", "checklist", "scenario-cards",
+    ];
+    for (let i = 1; i < sortedSlideNums.length; i++) {
+      const prevNum = sortedSlideNums[i - 1];
+      const currNum = sortedSlideNums[i];
+      const prevLayout = layoutMap.get(prevNum)!;
+      const currLayout = layoutMap.get(currNum)!;
+      if (prevLayout === currLayout && !EXEMPT_LAYOUTS.has(currLayout)) {
+        // Find a replacement that differs from both prev and next
+        const nextLayout = i + 1 < sortedSlideNums.length ? layoutMap.get(sortedSlideNums[i + 1]) : undefined;
+        const replacement = ALTERNATIVE_LAYOUTS.find(l => l !== prevLayout && l !== nextLayout);
+        if (replacement) {
+          console.log(`[Pipeline] Adjacency fix: slide ${currNum} "${currLayout}" → "${replacement}" (was same as slide ${prevNum})`);
+          layoutMap.set(currNum, replacement);
+        }
+      }
+    }
+
+    // 5.1b. MAX-PER-TYPE LIMIT: prevent any non-exempt layout from appearing more than maxPerType times
+    const totalSlides = sortedSlideNums.length;
+    const maxPerType = Math.max(2, Math.ceil(totalSlides / 5)); // e.g. 13 slides → max 3 per type
+    const layoutCounts = new Map<string, number>();
+    for (const num of sortedSlideNums) {
+      const layout = layoutMap.get(num)!;
+      layoutCounts.set(layout, (layoutCounts.get(layout) || 0) + 1);
+    }
+    // Iterate and replace over-represented layouts
+    for (const num of sortedSlideNums) {
+      const layout = layoutMap.get(num)!;
+      if (EXEMPT_LAYOUTS.has(layout)) continue;
+      if ((layoutCounts.get(layout) || 0) > maxPerType) {
+        const prevNum = sortedSlideNums[sortedSlideNums.indexOf(num) - 1];
+        const nextIdx = sortedSlideNums.indexOf(num) + 1;
+        const nextNum = nextIdx < sortedSlideNums.length ? sortedSlideNums[nextIdx] : undefined;
+        const prevLayout = prevNum !== undefined ? layoutMap.get(prevNum) : undefined;
+        const nextLayout = nextNum !== undefined ? layoutMap.get(nextNum) : undefined;
+        // Find a replacement that isn't overused and differs from neighbors
+        const replacement = ALTERNATIVE_LAYOUTS.find(l => {
+          const lCount = layoutCounts.get(l) || 0;
+          return lCount < maxPerType && l !== prevLayout && l !== nextLayout && l !== layout;
+        });
+        if (replacement) {
+          console.log(`[Pipeline] Max-per-type fix: slide ${num} "${layout}" → "${replacement}" (${layoutCounts.get(layout)} > ${maxPerType})`);
+          layoutMap.set(num, replacement);
+          layoutCounts.set(layout, (layoutCounts.get(layout) || 1) - 1);
+          layoutCounts.set(replacement, (layoutCounts.get(replacement) || 0) + 1);
+        }
+      }
+    }
+  }
 
   // 5.5. IMAGE GENERATION (between layout and HTML composer)
   let imageMap = new Map<number, string>();

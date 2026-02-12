@@ -629,9 +629,10 @@ export function injectChartIntoSlideData(
   layoutName: string,
 ): Record<string, any> {
   if (layoutName === "dual-chart") {
-    // For dual-chart, inject the same chart into both panels
+    // For dual-chart, use the primary chart for the left panel
     data.leftChartSvg = svgChart;
-    data.rightChartSvg = svgChart;
+    // Generate a visually different chart for the right panel
+    data.rightChartSvg = generateAlternativeChart(data, svgChart);
     data.hasChart = true;
   } else {
     data.chartSvg = svgChart;
@@ -644,4 +645,44 @@ export function injectChartIntoSlideData(
   }
 
   return data;
+}
+
+/**
+ * Generate an alternative chart for the right panel of dual-chart layout.
+ * Uses chartData.right if available, otherwise transforms the primary chart data.
+ */
+function generateAlternativeChart(
+  data: Record<string, any>,
+  primarySvg: string,
+): string {
+  try {
+    // If the data has explicit right chart data, use it
+    const rightData = data.chartData?.right;
+    if (rightData && rightData.labels && rightData.datasets?.[0]?.data) {
+      const chartPoints: ChartDataPoint[] = rightData.labels.map((label: string, i: number) => ({
+        label,
+        value: rightData.datasets[0].data[i] || 0,
+      }));
+      // Pick a different chart type from the left
+      const leftType = data.chartData?.left?.type || "bar";
+      const altTypes: ChartType[] = ["horizontal-bar", "line", "donut", "bar"];
+      const altType = altTypes.find(t => t !== leftType) || "horizontal-bar";
+      const result = renderChart({
+        type: altType,
+        data: chartPoints,
+        title: data.rightChart?.title,
+        unit: rightData.datasets[0].label,
+        showGrid: true,
+        showValues: true,
+        showLegend: altType === "pie" || altType === "donut",
+        width: altType === "pie" || altType === "donut" ? 500 : 600,
+        height: 340,
+      });
+      return result.svg;
+    }
+    // Fallback: return the primary SVG (same as before)
+    return primarySvg;
+  } catch {
+    return primarySvg;
+  }
 }

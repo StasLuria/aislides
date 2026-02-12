@@ -351,7 +351,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   <div class="slide-decor-circle slide-decor-top-right"></div>
   <div class="slide-decor-circle slide-decor-bottom-left"></div>
   <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;">
-    <h1 style="color: #ffffff; font-size: 52px; font-weight: 700; line-height: 1.05; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ title | default('Спасибо!') }}</h1>
+    <h1 style="color: #ffffff; font-size: 42px; font-weight: 700; line-height: 1.15; margin: 0 0 16px 0; max-width: 800px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title | default('Спасибо!') }}</h1>
     <div style="width: 80px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; margin-bottom: 24px;"></div>
     {% if subtitle %}
     <p style="color: rgba(255,255,255,0.85); font-size: 20px; line-height: 1.5; max-width: 672px; margin: 0 0 32px 0;">{{ subtitle }}</p>

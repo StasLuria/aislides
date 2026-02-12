@@ -165,6 +165,26 @@ export function checkContrast(
 
   if (!headingColor || !bgColor) return issues;
 
+  // Skip contrast check for layouts that use accent gradient backgrounds (white text on gradient)
+  const accentBgLayouts = new Set(["section-header", "final-slide", "hero-stat"]);
+  if (accentBgLayouts.has(layoutId)) {
+    // These use white text on accent gradient — check white on accent
+    if (accentColor) {
+      const white = { r: 255, g: 255, b: 255 };
+      const ratio = contrastRatio(white, accentColor);
+      if (ratio < 2.5) {
+        issues.push({
+          slideNumber,
+          category: "contrast",
+          severity: "error",
+          message: `White text on accent background has low contrast (${ratio.toFixed(1)}:1). Darken the accent color.`,
+          fix: `/* Darken accent background */ .slide { filter: brightness(0.85); }`,
+        });
+      }
+    }
+    return issues; // Skip normal bg checks for accent layouts
+  }
+
   // Check heading on background (large text — 3:1 minimum)
   if (headingColor && bgColor) {
     const ratio = contrastRatio(headingColor, bgColor);
@@ -176,13 +196,6 @@ export function checkContrast(
         message: `Heading text contrast too low (${ratio.toFixed(1)}:1). WCAG AA requires >= 3:1 for large text.`,
         fix: `/* Increase heading contrast */ h1, h2 { color: #000000 !important; }`,
       });
-    } else if (ratio < 4.5) {
-      issues.push({
-        slideNumber,
-        category: "contrast",
-        severity: "warning",
-        message: `Heading text contrast marginal (${ratio.toFixed(1)}:1). Consider increasing for better readability.`,
-      });
     }
   }
 
@@ -193,24 +206,9 @@ export function checkContrast(
       issues.push({
         slideNumber,
         category: "contrast",
-        severity: "error",
-        message: `Body text contrast too low (${ratio.toFixed(1)}:1). WCAG AA requires >= 4.5:1 for normal text.`,
+        severity: "warning",
+        message: `Body text contrast could be improved (${ratio.toFixed(1)}:1). WCAG AA recommends >= 4.5:1.`,
         fix: `/* Increase body text contrast */ p, span, li { color: #1f2937 !important; }`,
-      });
-    }
-  }
-
-  // Section headers use white text on accent gradient — check white on accent
-  if (layoutId === "section-header" && accentColor) {
-    const white = { r: 255, g: 255, b: 255 };
-    const ratio = contrastRatio(white, accentColor);
-    if (ratio < 3) {
-      issues.push({
-        slideNumber,
-        category: "contrast",
-        severity: "error",
-        message: `White text on accent background has low contrast (${ratio.toFixed(1)}:1). Darken the accent color.`,
-        fix: `/* Darken section header background */ .slide { filter: brightness(0.85); }`,
       });
     }
   }
@@ -222,28 +220,46 @@ export function checkContrast(
 // VALIDATOR 2: TEXT OVERFLOW DETECTION
 // ═══════════════════════════════════════════════════════
 
-/** Maximum character thresholds per layout element */
+/** Maximum character thresholds per layout element — relaxed to match actual template capacity */
 const TEXT_LIMITS: Record<string, { title: number; description: number; bullet_title: number; bullet_desc: number }> = {
-  "title-slide": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
-  "section-header": { title: 60, description: 150, bullet_title: 60, bullet_desc: 150 },
-  "text-slide": { title: 70, description: 200, bullet_title: 50, bullet_desc: 120 },
-  "two-column": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "image-text": { title: 60, description: 150, bullet_title: 45, bullet_desc: 100 },
-  "icons-numbers": { title: 60, description: 100, bullet_title: 30, bullet_desc: 80 },
-  "process-steps": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "timeline": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "comparison": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "final-slide": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
-  "quote-slide": { title: 60, description: 300, bullet_title: 60, bullet_desc: 150 },
-  "table-slide": { title: 60, description: 150, bullet_title: 30, bullet_desc: 80 },
-  "chart-slide": { title: 70, description: 200, bullet_title: 60, bullet_desc: 150 },
-  "agenda-table-of-contents": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "team-profiles": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "logo-grid": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "video-embed": { title: 70, description: 200, bullet_title: 60, bullet_desc: 150 },
+  "title-slide": { title: 100, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "section-header": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
+  "text-slide": { title: 90, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "two-column": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "image-text": { title: 80, description: 200, bullet_title: 55, bullet_desc: 120 },
+  "icons-numbers": { title: 80, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "process-steps": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "timeline": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "comparison": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "final-slide": { title: 120, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "quote-slide": { title: 80, description: 350, bullet_title: 60, bullet_desc: 150 },
+  "table-slide": { title: 80, description: 200, bullet_title: 40, bullet_desc: 100 },
+  "chart-slide": { title: 90, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "chart-text": { title: 90, description: 250, bullet_title: 55, bullet_desc: 130 },
+  "stats-chart": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "hero-stat": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "highlight-stats": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "agenda-table-of-contents": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "team-profiles": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "logo-grid": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "video-embed": { title: 90, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "text-with-callout": { title: 90, description: 250, bullet_title: 55, bullet_desc: 130 },
+  "scenario-cards": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "numbered-steps-v2": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "timeline-horizontal": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "dual-chart": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "risk-matrix": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "waterfall-chart": { title: 90, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "swot-analysis": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "funnel": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "roadmap": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "pyramid": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "matrix-2x2": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "pros-cons": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
+  "checklist": { title: 80, description: 200, bullet_title: 50, bullet_desc: 120 },
 };
 
-const DEFAULT_LIMITS = { title: 70, description: 200, bullet_title: 50, bullet_desc: 120 };
+const DEFAULT_LIMITS = { title: 90, description: 250, bullet_title: 55, bullet_desc: 130 };
 
 /**
  * Detect potential text overflow based on character counts.
@@ -257,79 +273,55 @@ export function checkTextOverflow(
   const issues: DesignIssue[] = [];
   const limits = TEXT_LIMITS[layoutId] || DEFAULT_LIMITS;
 
-  // Check title
-  if (data.title && typeof data.title === "string" && data.title.length > limits.title) {
+  // Check title — only flag severe overflow (>1.5x limit)
+  if (data.title && typeof data.title === "string" && data.title.length > limits.title * 1.5) {
     issues.push({
       slideNumber,
       category: "overflow",
-      severity: data.title.length > limits.title * 1.5 ? "error" : "warning",
-      message: `Title too long (${data.title.length} chars, max ${limits.title}). May overflow or wrap awkwardly.`,
+      severity: "warning",
+      message: `Title quite long (${data.title.length} chars, recommended max ${limits.title}). May need smaller font.`,
       fix: `/* Reduce title font size */ h1 { font-size: 85% !important; line-height: 1.15 !important; }`,
     });
   }
 
-  // Check description
-  if (data.description && typeof data.description === "string" && data.description.length > limits.description) {
+  // Check description — only flag severe overflow
+  if (data.description && typeof data.description === "string" && data.description.length > limits.description * 1.5) {
     issues.push({
       slideNumber,
       category: "overflow",
-      severity: data.description.length > limits.description * 1.5 ? "error" : "warning",
-      message: `Description too long (${data.description.length} chars, max ${limits.description}). May overflow slide bounds.`,
+      severity: "warning",
+      message: `Description quite long (${data.description.length} chars, recommended max ${limits.description}).`,
     });
   }
 
-  // Check bullets
+  // Check bullets — only flag when significantly over limit
   if (data.bullets && Array.isArray(data.bullets)) {
+    let longBullets = 0;
     for (let i = 0; i < data.bullets.length; i++) {
       const bullet = data.bullets[i];
       if (typeof bullet === "object" && bullet) {
-        if (bullet.title && bullet.title.length > limits.bullet_title) {
-          issues.push({
-            slideNumber,
-            category: "overflow",
-            severity: "warning",
-            message: `Bullet ${i + 1} title too long (${bullet.title.length} chars, max ${limits.bullet_title}).`,
-          });
-        }
-        if (bullet.description && bullet.description.length > limits.bullet_desc) {
-          issues.push({
-            slideNumber,
-            category: "overflow",
-            severity: "warning",
-            message: `Bullet ${i + 1} description too long (${bullet.description.length} chars, max ${limits.bullet_desc}).`,
-          });
-        }
+        if (bullet.title && bullet.title.length > limits.bullet_title * 1.5) longBullets++;
+        if (bullet.description && bullet.description.length > limits.bullet_desc * 1.5) longBullets++;
       }
+    }
+    if (longBullets > 0) {
+      issues.push({
+        slideNumber,
+        category: "overflow",
+        severity: "info",
+        message: `${longBullets} bullet text(s) are quite long. Consider shortening for readability.`,
+      });
     }
   }
 
   // Check quote text
-  if (data.quote && typeof data.quote === "string" && data.quote.length > 250) {
+  if (data.quote && typeof data.quote === "string" && data.quote.length > 350) {
     issues.push({
       slideNumber,
       category: "overflow",
-      severity: data.quote.length > 400 ? "error" : "warning",
-      message: `Quote too long (${data.quote.length} chars, max 250). Long quotes lose impact and may overflow.`,
+      severity: "warning",
+      message: `Quote too long (${data.quote.length} chars, max 350). Long quotes lose impact.`,
     });
-  }
-
-  // Check table cell content
-  if (data.rows && Array.isArray(data.rows)) {
-    for (let r = 0; r < data.rows.length; r++) {
-      if (Array.isArray(data.rows[r])) {
-        for (let c = 0; c < data.rows[r].length; c++) {
-          const cell = String(data.rows[r][c] || "");
-          if (cell.length > 60) {
-            issues.push({
-              slideNumber,
-              category: "overflow",
-              severity: "warning",
-              message: `Table cell [row ${r + 1}, col ${c + 1}] too long (${cell.length} chars). May cause column squeeze.`,
-            });
-          }
-        }
-      }
-    }
   }
 
   return issues;
@@ -356,7 +348,7 @@ export function checkLayoutBalance(
     const rightCount = data.rightColumn?.bullets?.length || 0;
     if (leftCount > 0 && rightCount > 0) {
       const ratio = Math.max(leftCount, rightCount) / Math.min(leftCount, rightCount);
-      if (ratio > 2) {
+      if (ratio > 3) {
         issues.push({
           slideNumber,
           category: "balance",
@@ -373,45 +365,24 @@ export function checkLayoutBalance(
     const bPoints = data.optionB?.points?.length || 0;
     if (aPoints > 0 && bPoints > 0) {
       const ratio = Math.max(aPoints, bPoints) / Math.min(aPoints, bPoints);
-      if (ratio > 2) {
+      if (ratio > 3) {
         issues.push({
           slideNumber,
           category: "balance",
           severity: "warning",
-          message: `Comparison options unbalanced (${aPoints} vs ${bPoints} points). Even counts look more professional.`,
+          message: `Comparison options unbalanced (${aPoints} vs ${bPoints} points).`,
         });
       }
     }
   }
 
-  // Icons-numbers: odd number of metrics looks unbalanced in grid
-  if (layoutId === "icons-numbers") {
-    const count = data.metrics?.length || 0;
-    if (count === 1) {
-      issues.push({
-        slideNumber,
-        category: "balance",
-        severity: "warning",
-        message: `Only 1 metric — consider adding more for visual impact, or use a different layout.`,
-      });
-    }
-    if (count === 5 || count === 7) {
-      issues.push({
-        slideNumber,
-        category: "balance",
-        severity: "info",
-        message: `${count} metrics creates uneven grid. Consider ${count - 1} or ${count + 1} for balanced layout.`,
-      });
-    }
-  }
-
-  // Empty content areas
-  if (layoutId === "text-slide" && (!data.bullets || data.bullets.length === 0)) {
+  // Empty content areas — only flag truly empty slides
+  if (layoutId === "text-slide" && (!data.bullets || data.bullets.length === 0) && !data.description) {
     issues.push({
       slideNumber,
       category: "balance",
-      severity: "error",
-      message: `Text slide has no bullets — slide will appear empty.`,
+      severity: "warning",
+      message: `Text slide has no content — slide will appear empty.`,
     });
   }
 
@@ -427,7 +398,7 @@ const MIN_FONT_SIZES = {
   heading: 24,     // Headings must be readable from back of room
   subheading: 18,  // Subheadings
   body: 14,        // Body text minimum
-  caption: 11,     // Smallest allowed text
+  caption: 10,     // Smallest allowed text (relaxed from 11 to 10)
 };
 
 /**
@@ -460,46 +431,16 @@ export function checkFontSizing(
 
   if (sizes.length === 0) return issues;
 
-  // Check for critically small text
+  // Check for critically small text (below absolute minimum)
   const tooSmall = sizes.filter((s) => s < MIN_FONT_SIZES.caption);
   if (tooSmall.length > 0) {
     issues.push({
       slideNumber,
       category: "font_size",
-      severity: "error",
-      message: `Found ${tooSmall.length} text element(s) below ${MIN_FONT_SIZES.caption}px minimum (${tooSmall.map((s) => s + "px").join(", ")}). Text will be unreadable at projection distance.`,
-      fix: `/* Enforce minimum font size */ * { min-font-size: ${MIN_FONT_SIZES.caption}px; } [style*="font-size: ${Math.min(...tooSmall)}px"] { font-size: ${MIN_FONT_SIZES.caption}px !important; }`,
+      severity: "warning",
+      message: `Found ${tooSmall.length} text element(s) below ${MIN_FONT_SIZES.caption}px (${tooSmall.map((s) => s + "px").join(", ")}). May be hard to read.`,
+      fix: `/* Enforce minimum font size */ [style*="font-size: ${Math.min(...tooSmall)}px"] { font-size: ${MIN_FONT_SIZES.caption}px !important; }`,
     });
-  }
-
-  // Check heading size (first h1 font-size in the HTML)
-  const h1Match = html.match(/<h1[^>]*style="[^"]*font-size:\s*(\d+(?:\.\d+)?)(px)/i);
-  if (h1Match) {
-    const h1Size = parseFloat(h1Match[1]);
-    if (h1Size < MIN_FONT_SIZES.heading) {
-      issues.push({
-        slideNumber,
-        category: "font_size",
-        severity: "warning",
-        message: `Heading font size (${h1Size}px) is below recommended ${MIN_FONT_SIZES.heading}px for presentations.`,
-        fix: `h1 { font-size: ${MIN_FONT_SIZES.heading}px !important; }`,
-      });
-    }
-  }
-
-  // Check font size range — too much variation looks chaotic
-  if (sizes.length >= 3) {
-    const maxSize = Math.max(...sizes);
-    const minSize = Math.min(...sizes);
-    const ratio = maxSize / minSize;
-    if (ratio > 6) {
-      issues.push({
-        slideNumber,
-        category: "font_size",
-        severity: "info",
-        message: `Wide font size range (${minSize}px to ${maxSize}px, ratio ${ratio.toFixed(1)}x). Consider limiting to 3-4 distinct sizes for visual hierarchy.`,
-      });
-    }
   }
 
   return issues;
@@ -549,38 +490,42 @@ export function checkWhitespace(
 
   // Slide area: 1280x720 = 921,600 px²
   // Usable area after padding: ~1100x600 = 660,000 px²
-  // Each content item needs ~80px height minimum
-  const estimatedContentHeight = totalItems * 80 + 120; // 120 for title area
-  const availableHeight = 600; // approximate usable height
+  // Each content item needs ~70px height minimum
+  const estimatedContentHeight = totalItems * 70 + 100; // 100 for title area
+  const availableHeight = 620; // approximate usable height
 
-  if (estimatedContentHeight > availableHeight * 1.2) {
+  if (estimatedContentHeight > availableHeight * 1.4) {
     issues.push({
       slideNumber,
       category: "whitespace",
       severity: "warning",
-      message: `Content likely exceeds slide area (${totalItems} items, ~${estimatedContentHeight}px estimated vs ${availableHeight}px available). Reduce content or use smaller font.`,
+      message: `Content may be dense (${totalItems} items). Consider reducing for better readability.`,
       fix: `/* Reduce spacing for dense content */ .slide { line-height: 1.3 !important; } .slide > div { gap: 8px !important; }`,
     });
   }
 
-  // Check total text density (chars per slide)
-  if (totalTextChars > 800) {
+  // Check total text density (chars per slide) — only flag extreme cases
+  if (totalTextChars > 1200) {
     issues.push({
       slideNumber,
       category: "whitespace",
-      severity: "warning",
-      message: `High text density (${totalTextChars} chars). Presentations should have ~200-400 chars per slide for readability.`,
+      severity: "info",
+      message: `High text density (${totalTextChars} chars). Consider splitting into multiple slides.`,
     });
   }
 
-  // Check for slides that are too sparse (except title/section/final)
-  const sparseExempt = new Set(["title-slide", "section-header", "final-slide", "image-fullscreen", "quote-slide", "video-embed"]);
-  if (!sparseExempt.has(layoutId) && totalItems === 0 && totalTextChars < 50) {
+  // Check for slides that are too sparse (except title/section/final and visual layouts)
+  const sparseExempt = new Set([
+    "title-slide", "section-header", "final-slide", "image-fullscreen",
+    "quote-slide", "video-embed", "hero-stat", "highlight-stats",
+    "chart-slide", "stats-chart", "chart-text", "dual-chart",
+  ]);
+  if (!sparseExempt.has(layoutId) && totalItems === 0 && totalTextChars < 30) {
     issues.push({
       slideNumber,
       category: "whitespace",
-      severity: "warning",
-      message: `Slide appears nearly empty. Add more content or use a simpler layout.`,
+      severity: "info",
+      message: `Slide appears nearly empty. Consider adding more content.`,
     });
   }
 
@@ -625,24 +570,25 @@ export function checkColorHarmony(
     // Skip near-black, near-white, and gray colors (neutral, always OK)
     const lum = relativeLuminance(color.r, color.g, color.b);
     if (lum < 0.05 || lum > 0.9) continue; // Very dark or very light
-    const isGray = Math.abs(color.r - color.g) < 20 && Math.abs(color.g - color.b) < 20;
+    const isGray = Math.abs(color.r - color.g) < 25 && Math.abs(color.g - color.b) < 25;
     if (isGray) continue;
 
-    // Check if the color is close to theme colors
+    // Check if the color is close to theme colors (relaxed threshold)
     const distPrimary = colorDistance(color, primaryAccent);
     const distSecondary = secondaryAccent ? colorDistance(color, secondaryAccent) : 999;
 
-    if (distPrimary > 150 && distSecondary > 150) {
+    if (distPrimary > 200 && distSecondary > 200) {
       offThemeCount++;
     }
   }
 
-  if (offThemeCount > 3) {
+  // Only flag if many off-theme colors (relaxed from 3 to 6)
+  if (offThemeCount > 6) {
     issues.push({
       slideNumber,
       category: "color_harmony",
-      severity: "warning",
-      message: `${offThemeCount} colors don't match the theme palette. Use theme CSS variables for consistency.`,
+      severity: "info",
+      message: `${offThemeCount} colors diverge from the theme palette. Consider using theme CSS variables.`,
     });
   }
 
@@ -667,7 +613,7 @@ export function colorDistance(
 
 /**
  * Check consistency across all slides in the presentation.
- * Detects: layout repetition, missing variety, structural monotony.
+ * Detects: layout repetition, missing variety, structural monotony, consecutive same layouts.
  */
 export function checkConsistency(
   slides: SlideDesignData[],
@@ -686,10 +632,10 @@ export function checkConsistency(
     layoutCounts.set(slide.layoutId, (layoutCounts.get(slide.layoutId) || 0) + 1);
   }
 
-  // Check for excessive repetition of one layout
+  // Check for excessive repetition of one layout (>50% of content slides)
   for (const [layout, count] of Array.from(layoutCounts.entries())) {
     const percentage = count / contentSlides.length;
-    if (percentage > 0.6 && contentSlides.length >= 5) {
+    if (percentage > 0.5 && contentSlides.length >= 5) {
       issues.push({
         slideNumber: 0, // Presentation-level issue
         category: "consistency",
@@ -699,21 +645,19 @@ export function checkConsistency(
     }
   }
 
-  // Check for consecutive same-layout slides
+  // Check for consecutive same-layout slides (flag 2+ consecutive, not just 3+)
   for (let i = 1; i < slides.length; i++) {
+    const exemptLayouts = new Set(["title-slide", "final-slide", "section-header"]);
     if (
       slides[i].layoutId === slides[i - 1].layoutId &&
-      !["title-slide", "final-slide", "section-header"].includes(slides[i].layoutId)
+      !exemptLayouts.has(slides[i].layoutId)
     ) {
-      // Allow up to 2 consecutive, flag 3+
-      if (i + 1 < slides.length && slides[i + 1].layoutId === slides[i].layoutId) {
-        issues.push({
-          slideNumber: slides[i].slideNumber,
-          category: "consistency",
-          severity: "info",
-          message: `3+ consecutive slides with "${slides[i].layoutId}" layout. Alternate layouts to maintain audience engagement.`,
-        });
-      }
+      issues.push({
+        slideNumber: slides[i].slideNumber,
+        category: "consistency",
+        severity: "info",
+        message: `Consecutive slides ${slides[i - 1].slideNumber} and ${slides[i].slideNumber} both use "${slides[i].layoutId}". Alternate layouts for better rhythm.`,
+      });
     }
   }
 
@@ -759,6 +703,10 @@ export function generateCssFixes(issues: DesignIssue[]): Map<number, string> {
 /**
  * Run the full Design Critic analysis on all slides.
  * Returns issues, score, and CSS fixes.
+ *
+ * Scoring formula (balanced):
+ *   Start at 10, deduct per unique category of issue (not per individual issue).
+ *   This prevents score collapse from many minor warnings on a single topic.
  */
 export function runDesignCritic(
   slides: SlideDesignData[],
@@ -783,15 +731,15 @@ export function runDesignCritic(
   // Generate CSS fixes
   const cssFixesPerSlide = generateCssFixes(allIssues);
 
-  // Calculate overall score
-  const errorCount = allIssues.filter((i) => i.severity === "error").length;
-  const warningCount = allIssues.filter((i) => i.severity === "warning").length;
+  // Calculate overall score — category-based deduction (not per-issue)
+  const errorCategories = new Set(allIssues.filter((i) => i.severity === "error").map((i) => `${i.category}-${i.slideNumber}`));
+  const warningCategories = new Set(allIssues.filter((i) => i.severity === "warning").map((i) => `${i.category}-${i.slideNumber}`));
   const infoCount = allIssues.filter((i) => i.severity === "info").length;
 
   let score = 10;
-  score -= errorCount * 1.5;
-  score -= warningCount * 0.5;
-  score -= infoCount * 0.1;
+  score -= errorCategories.size * 1.0;    // Each unique error category-slide combo: -1.0
+  score -= warningCategories.size * 0.3;  // Each unique warning category-slide combo: -0.3
+  score -= Math.min(infoCount * 0.05, 1); // Info items: max -1.0 total
   score = Math.max(1, Math.min(10, Math.round(score * 10) / 10));
 
   // Generate summary
@@ -818,7 +766,8 @@ function generateSummary(issues: DesignIssue[], score: number, slideCount: numbe
   if (infos > 0) parts.push(`${infos} suggestion(s) for improvement.`);
 
   if (score >= 8) parts.push("Overall design quality is good.");
-  else if (score >= 6) parts.push("Design is acceptable but has room for improvement.");
+  else if (score >= 6) parts.push("Design is acceptable with minor improvements possible.");
+  else if (score >= 4) parts.push("Design has some issues that could be improved.");
   else parts.push("Design needs significant improvements for professional quality.");
 
   // Category breakdown

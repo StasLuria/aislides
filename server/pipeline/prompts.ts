@@ -312,6 +312,8 @@ Your goal is to create a visually diverse, professional presentation where every
 - Last slide MUST be final-slide.
 - After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline, funnel, pyramid, roadmap, highlight-stats, stats-chart, chart-text, hero-stat).
 - Alternate between text-heavy and visual layouts for rhythm.
+- NEVER place the same layout on two consecutive slides. Every slide must use a DIFFERENT layout from its immediate neighbor.
+- Specifically: hero-stat, highlight-stats, icons-numbers — these stat-focused layouts must NOT appear back-to-back.
 
 CRITICAL LAYOUT RESTRICTIONS:
 - NEVER use image-text or image-fullscreen unless the slide content explicitly mentions an image/photo/screenshot. These layouts require images — without them they show empty placeholders.
@@ -435,7 +437,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - numbered-steps-v2: {title, steps: [{number, title, description, result?}]} — Vertical steps with circles and connector lines. result is optional badge (e.g. "+15%", "Done").
 - timeline-horizontal: {title, description?, events: [{date, title, description?, highlight?: boolean}]} — Horizontal timeline. Set highlight=true for the current/key event.
 - text-with-callout: {title, bullets: [{title, description}], callout?, source?, icon?} — Standard bullets + bottom callout bar with key insight.
-- dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data.
+- dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data. IMPORTANT: Use DIFFERENT chart types for left and right (e.g., left: bar, right: line; or left: pie, right: bar) to create visual contrast.
 - risk-matrix: {title, description?, matrixColumns: [string], matrixRows: [{label, cells: [{label, value?, color, textColor?}]}], matrixLegend: [{label, color}], mitigationTitle?, mitigations: [{title, description?, color, priority?}], source?} — 3x3 heatmap grid + mitigation cards. Use colors: green (#dcfce7/#166534) for low risk, yellow (#fef9c3/#854d0e) for medium, orange (#fed7aa/#9a3412) for high, red (#fecaca/#991b1b) for critical.
 </layout_schemas>${feedbackSection}
 <output_format>

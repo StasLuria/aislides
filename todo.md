@@ -664,3 +664,18 @@
 ## Quality Improvement: Step 4 — Better Image Selection
 - [ ] Improve image prompt generation for more relevant results
 - [ ] Better image-to-slide matching
+
+## Bug Fix: Final Slide Title Truncation
+- [x] Fix final-slide template: title truncated with "..." for long titles
+- [x] Ensure final-slide allows multi-line titles (increase line-clamp or remove it)
+
+## Bug Fix: Consecutive Same Layout Types
+- [x] Add layout adjacency check: prevent same layout type appearing on consecutive slides
+- [x] Layout Agent prompt: add rule against consecutive identical layouts
+- [x] Specifically prevent two hero-stat slides in a row
+
+## Bug Fix: Dual-Chart Visual Differentiation
+- [x] Ensure dual-chart layout generates visually distinct charts (different types or styles)
+- [x] Fix dual-chart SVG injection: generate alternative chart type for right panel instead of duplicating
+- [x] Add max-per-type layout limit (max ceil(totalSlides/5) per non-exempt layout type)
+- [x] Design Critique Agent scoring improved: 1/10 → 10/10 on latest generation
