@@ -448,3 +448,15 @@
 - [x] Verified all 26 templates have balanced div tags (automated Python checker)
 - [x] Verified all 8 slides render correctly in Viewer (visual inspection)
 - [x] All 623 tests passing
+
+## Drag & Drop Slide Reordering in Viewer
+- [x] Backend: POST /api/v1/presentations/:id/reorder endpoint (accepts new slide order array)
+- [x] Backend: Reorder slideData, finalHtmlSlides, and reassemble full HTML
+- [x] Frontend: Add @dnd-kit DnD to Viewer sidebar thumbnails (SortableSlideThumb component)
+- [x] Frontend: Visual feedback during drag (opacity, shadow, ring highlight, GripVertical handle)
+- [x] Frontend: Call reorder API after drop, optimistic update with rollback on error
+- [x] Frontend: Toast notification after reorder ("Слайд X → Y")
+- [x] Frontend: Loading indicator during backend save
+- [x] Frontend: Current slide follows the dragged slide
+- [x] Write vitest tests for reorder validation and execution (19 tests, all passing)
+- [x] All 642 tests passing

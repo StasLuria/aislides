@@ -205,6 +205,13 @@ export interface ReassembleResponse {
   slide_count: number;
 }
 
+export interface ReorderResponse {
+  presentation_id: string;
+  html_url: string;
+  slide_count: number;
+  order: number[];
+}
+
 export interface EditableFieldInfo {
   key: string;
   label: string;
@@ -581,6 +588,14 @@ class ApiClient {
   async reassemblePresentation(id: string): Promise<ReassembleResponse> {
     const { data } = await this.http.post<ReassembleResponse>(
       `/presentations/${id}/reassemble`,
+    );
+    return data;
+  }
+
+  async reorderSlides(id: string, order: number[]): Promise<ReorderResponse> {
+    const { data } = await this.http.post<ReorderResponse>(
+      `/presentations/${id}/reorder`,
+      { order },
     );
     return data;
   }

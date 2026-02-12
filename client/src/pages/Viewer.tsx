@@ -12,7 +12,7 @@
  * to fit them into the viewport. Thumbnails use the same approach at a smaller scale.
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,9 +31,25 @@ import {
   PanelRightOpen,
   Save,
   Loader2,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import api from "@/lib/api";
-import type { PresentationDetail, SlideData, SlideEditResponse, InlineFieldPatchResponse } from "@/lib/api";
+import type { PresentationDetail, SlideData, SlideEditResponse, InlineFieldPatchResponse, ReorderResponse } from "@/lib/api";
 import SlideEditor from "@/components/SlideEditor";
 import InlineEditableSlide from "@/components/InlineEditableSlide";
 
@@ -217,6 +233,96 @@ function SlideFrame({
   );
 }
 
+/**
+ * SortableSlideThumb — a draggable thumbnail for the sidebar.
+ * Uses @dnd-kit/sortable for drag-and-drop reordering.
+ */
+function SortableSlideThumb({
+  id,
+  index,
+  isActive,
+  hasSlides,
+  slideHtml,
+  thumbW,
+  thumbH,
+  onClick,
+}: {
+  id: string;
+  index: number;
+  isActive: boolean;
+  hasSlides: boolean;
+  slideHtml: string | undefined;
+  thumbW: number;
+  thumbH: number;
+  onClick: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : "auto",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        w-full rounded-md overflow-hidden border-2 transition-colors
+        ${isActive
+          ? "border-primary shadow-md shadow-primary/20"
+          : "border-border/30 hover:border-border/60"
+        }
+        ${isDragging ? "shadow-lg ring-2 ring-primary/30" : ""}
+      `}
+    >
+      <div className="flex items-center gap-1 p-1.5">
+        {/* Drag handle */}
+        <button
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          className="shrink-0 cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted/50 text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors touch-none"
+          tabIndex={-1}
+          aria-label={`Перетащить слайд ${index + 1}`}
+        >
+          <GripVertical className="w-3 h-3" />
+        </button>
+        <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <button
+          onClick={onClick}
+          className="flex-1 rounded overflow-hidden bg-white cursor-pointer"
+          style={{ width: thumbW, height: thumbH }}
+        >
+          {hasSlides && slideHtml ? (
+            <SlideFrame
+              html={slideHtml}
+              containerWidth={thumbW}
+              containerHeight={thumbH}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-secondary/50">
+              <Layers className="w-3 h-3 text-muted-foreground/30" />
+            </div>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type EditMode = "off" | "inline" | "sidebar";
 
 export default function Viewer() {
@@ -239,6 +345,16 @@ export default function Viewer() {
 
   // Backwards compat
   const isEditing = editMode !== "off";
+
+  // DnD reordering state
+  const [isReordering, setIsReordering] = useState(false);
+
+  // DnD sensors — require 5px movement to start drag (prevents accidental drags)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  );
 
   // Slide transition animation
   const [slideTransition, setSlideTransition] = useState<"none" | "fade-in" | "slide-left" | "slide-right">("none");
@@ -327,6 +443,90 @@ export default function Viewer() {
 
   // Keyboard navigation
   const totalSlides = slideHtmls.length || (presentation?.slide_count || 0);
+
+  // Stable slide IDs for DnD (must be strings)
+  const slideIds = useMemo(
+    () => Array.from({ length: totalSlides }, (_, i) => `slide-${i}`),
+    [totalSlides],
+  );
+
+  // Handle drag end — reorder slides
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = parseInt((active.id as string).replace("slide-", ""));
+      const newIndex = parseInt((over.id as string).replace("slide-", ""));
+
+      if (isNaN(oldIndex) || isNaN(newIndex)) return;
+
+      // Optimistic local reorder
+      setSlideHtmls((prev) => arrayMove(prev, oldIndex, newIndex));
+      setSlideDataList((prev) => arrayMove(prev, oldIndex, newIndex));
+
+      // Adjust current slide selection to follow the moved slide
+      if (currentSlide === oldIndex) {
+        setCurrentSlide(newIndex);
+      } else if (oldIndex < currentSlide && newIndex >= currentSlide) {
+        setCurrentSlide((prev) => prev - 1);
+      } else if (oldIndex > currentSlide && newIndex <= currentSlide) {
+        setCurrentSlide((prev) => prev + 1);
+      }
+
+      // Build the new order array: maps new position -> old position
+      const order = arrayMove(
+        Array.from({ length: totalSlides }, (_, i) => i),
+        oldIndex,
+        newIndex,
+      );
+
+      // Call backend
+      setIsReordering(true);
+      try {
+        const result = await api.reorderSlides(presentationId, order);
+
+        // Fetch the new full HTML
+        const html = await api.fetchPresentationHtml(result.html_url);
+        setFullHtml(html);
+        const slides = parseSlides(html);
+        setSlideHtmls(slides);
+
+        // Re-fetch slide data to stay in sync
+        const slidesData = await api.getSlides(presentationId);
+        setSlideDataList(slidesData.slides);
+
+        // Update presentation result URLs
+        if (presentation) {
+          setPresentation({
+            ...presentation,
+            result_urls: { ...presentation.result_urls, html_preview: result.html_url },
+          });
+        }
+
+        toast.success(`Слайд ${oldIndex + 1} → ${newIndex + 1}`);
+      } catch (error) {
+        console.error("Failed to reorder slides:", error);
+        toast.error("Не удалось изменить порядок слайдов");
+
+        // Revert optimistic update — re-fetch from server
+        try {
+          const htmlUrl = presentation?.result_urls?.html_preview || presentation?.result_urls?.html;
+          if (htmlUrl) {
+            const html = await api.fetchPresentationHtml(htmlUrl);
+            setSlideHtmls(parseSlides(html));
+          }
+          const slidesData = await api.getSlides(presentationId);
+          setSlideDataList(slidesData.slides);
+        } catch (revertError) {
+          console.error("Failed to revert reorder:", revertError);
+        }
+      } finally {
+        setIsReordering(false);
+      }
+    },
+    [currentSlide, totalSlides, presentationId, presentation],
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -593,46 +793,40 @@ export default function Viewer() {
             </p>
           </div>
 
-          {/* Slide thumbnails */}
+          {/* Slide thumbnails with drag & drop */}
           <ScrollArea className="flex-1">
-            <div className="p-3 space-y-2">
-              {Array.from({ length: totalSlides }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentSlide(i)}
-                  className={`
-                    w-full rounded-md overflow-hidden border-2 transition-all
-                    ${
-                      currentSlide === i
-                        ? "border-primary shadow-md shadow-primary/20"
-                        : "border-border/30 hover:border-border/60"
-                    }
-                  `}
-                >
-                  <div className="flex items-center gap-2 p-1.5">
-                    <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div
-                      className="rounded overflow-hidden bg-white"
-                      style={{ width: THUMB_W, height: THUMB_H }}
-                    >
-                      {hasSlides && slideHtmls[i] ? (
-                        <SlideFrame
-                          html={slideHtmls[i]}
-                          containerWidth={THUMB_W}
-                          containerHeight={THUMB_H}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                          <Layers className="w-3 h-3 text-muted-foreground/30" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={slideIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="p-3 space-y-2">
+                  {slideIds.map((id, i) => (
+                    <SortableSlideThumb
+                      key={id}
+                      id={id}
+                      index={i}
+                      isActive={currentSlide === i}
+                      hasSlides={hasSlides}
+                      slideHtml={slideHtmls[i]}
+                      thumbW={THUMB_W}
+                      thumbH={THUMB_H}
+                      onClick={() => setCurrentSlide(i)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+            {isReordering && (
+              <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Сохранение...
+              </div>
+            )}
           </ScrollArea>
 
           {/* Actions */}

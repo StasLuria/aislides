@@ -12,6 +12,7 @@
  *   DELETE /api/v1/presentations/:id/slides/:index/image      — remove slide image
  *   POST   /api/v1/presentations/:id/slides/:index/layout     — change slide layout
  *   POST   /api/v1/presentations/:id/reassemble               — re-render full HTML from edited slides
+ *   POST   /api/v1/presentations/:id/reorder                  — rearrange slides in a new order
  */
 import { Router, Request, Response } from "express";
 import multer from "multer";
@@ -626,6 +627,101 @@ router.post("/api/v1/presentations/:id/reassemble", async (req: Request, res: Re
     });
   } catch (error: any) {
     console.error("[SlideEdit] Reassemble error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// POST reorder — rearrange slides in a new order
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/presentations/:id/reorder", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides to reorder" });
+      return;
+    }
+
+    const { order } = req.body;
+
+    // Validate order array
+    if (!Array.isArray(order)) {
+      res.status(422).json({ detail: "order must be an array of slide indices" });
+      return;
+    }
+
+    if (order.length !== slides.length) {
+      res.status(422).json({ detail: `order length (${order.length}) must match slide count (${slides.length})` });
+      return;
+    }
+
+    // Validate all indices are present exactly once
+    const sorted = [...order].sort((a, b) => a - b);
+    const expected = Array.from({ length: slides.length }, (_, i) => i);
+    if (JSON.stringify(sorted) !== JSON.stringify(expected)) {
+      res.status(422).json({ detail: "order must contain each index from 0 to " + (slides.length - 1) + " exactly once" });
+      return;
+    }
+
+    // Reorder slides
+    const reorderedSlides = order.map((idx: number) => slides[idx]);
+
+    // Save reordered slides to DB
+    await updatePresentationProgress(req.params.id, {
+      finalHtmlSlides: reorderedSlides,
+    });
+
+    // Re-render full presentation HTML
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+    const language = p.language || "ru";
+
+    const renderedSlides = reorderedSlides.map((s: any) => ({
+      layoutId: s.layoutId,
+      data: s.data,
+      html: renderSlide(s.layoutId, s.data),
+    }));
+
+    const fullHtml = renderPresentation(
+      renderedSlides,
+      p.themeCss || themePreset.cssVariables,
+      p.title || "Presentation",
+      language,
+      themePreset.fontsUrl,
+    );
+
+    // Upload new HTML to S3
+    const fileKey = `presentations/${req.params.id}/presentation-reordered-${nanoid(8)}.html`;
+    const { url: htmlUrl } = await storagePut(fileKey, fullHtml, "text/html");
+
+    // Update result URLs
+    const resultUrls = (p.resultUrls as Record<string, any>) || {};
+    resultUrls.html_preview = htmlUrl;
+
+    await updatePresentationProgress(req.params.id, {
+      resultUrls,
+    });
+
+    res.json({
+      presentation_id: p.presentationId,
+      html_url: htmlUrl,
+      slide_count: reorderedSlides.length,
+      order,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Reorder error:", error);
     res.status(500).json({ detail: error.message || "Internal server error" });
   }
 });
