@@ -147,6 +147,26 @@ router.patch("/api/v1/chat/sessions/:id/title", async (req: Request, res: Respon
   }
 });
 
+// ── Update Session Metadata (for custom template) ───────────────
+router.patch("/api/v1/chat/sessions/:id/metadata", async (req: Request, res: Response) => {
+  try {
+    const session = await getChatSession(req.params.id);
+    if (!session) {
+      res.status(404).json({ detail: "Session not found" });
+      return;
+    }
+
+    const { updateChatSession } = await import("./chatDb");
+    const currentMeta = (session.metadata as Record<string, any>) || {};
+    const newMeta = { ...currentMeta, ...req.body };
+    await updateChatSession(req.params.id, { metadata: newMeta });
+    res.json({ success: true, metadata: newMeta });
+  } catch (error: any) {
+    console.error("[Chat API] Update metadata error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
 // ── Delete Session ─────────────────────────────────────────
 router.delete("/api/v1/chat/sessions/:id", async (req: Request, res: Response) => {
   try {

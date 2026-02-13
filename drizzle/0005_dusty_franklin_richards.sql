@@ -1,0 +1,22 @@
+CREATE TABLE `custom_templates` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`templateId` varchar(64) NOT NULL,
+	`userId` int,
+	`name` varchar(256) NOT NULL,
+	`description` text,
+	`sourceFileUrl` text NOT NULL,
+	`sourceFilename` varchar(512) NOT NULL,
+	`sourceMimeType` varchar(128) NOT NULL,
+	`thumbnailUrl` text,
+	`cssVariables` text,
+	`fontsUrl` text,
+	`colorPalette` json,
+	`fontFamilies` json,
+	`mood` text,
+	`status` enum('uploading','analyzing','ready','error') NOT NULL DEFAULT 'uploading',
+	`errorMessage` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `custom_templates_id` PRIMARY KEY(`id`),
+	CONSTRAINT `custom_templates_templateId_unique` UNIQUE(`templateId`)
+);

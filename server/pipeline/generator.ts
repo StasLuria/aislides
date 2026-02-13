@@ -37,6 +37,12 @@ import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 export interface GenerationConfig {
   themePreset?: string;
   enableImages?: boolean;
+  /** Custom template CSS variables (overrides theme preset when provided) */
+  customCssVariables?: string;
+  /** Custom template fonts URL */
+  customFontsUrl?: string;
+  /** Custom template ID for reference */
+  customTemplateId?: string;
 }
 
 export interface PipelineProgress {
@@ -981,12 +987,26 @@ export async function generatePresentation(
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
   }
 
-  // 4. THEME — auto-select or use predefined preset
+  // 4. THEME — auto-select, use predefined preset, or apply custom template
   onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 48, message: "Подбор визуальной темы..." });
   let themePreset: ThemePreset;
   let themeSelectionInfo: ThemeSelectionResult | null = null;
 
-  if (config.themePreset === "auto" || !config.themePreset) {
+  if (config.customCssVariables) {
+    // Use custom template CSS
+    themePreset = {
+      id: config.customTemplateId ? `custom_${config.customTemplateId}` : "custom",
+      name: "Custom Template",
+      nameRu: "Пользовательский шаблон",
+      previewColor: "#6366f1",
+      previewGradient: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+      cssVariables: config.customCssVariables,
+      fontsUrl: config.customFontsUrl || "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
+      mood: "Custom user template",
+    };
+    console.log(`[Pipeline] Using custom template: ${config.customTemplateId || 'inline'}`);
+    onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 49, message: "Тема: Пользовательский шаблон" });
+  } else if (config.themePreset === "auto" || !config.themePreset) {
     // Auto-select theme based on content
     themeSelectionInfo = await autoSelectTheme(prompt);
     themePreset = getThemePreset(themeSelectionInfo.themeId);

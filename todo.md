@@ -718,3 +718,24 @@
 - [x] Fix: loadSession handles 404 by redirecting to /chat (deleted/missing sessions)
 - [x] Deleted 3 remaining orphan sessions from DB
 - [x] 937 tests passing
+
+## Custom Template Upload Feature
+- [x] DB: Create customTemplates table (templateId, userId, name, description, s3Url, thumbnailUrl, cssVariables, fontsUrl, metadata, status)
+- [x] DB: Push migration with pnpm db:push
+- [x] Backend: POST /api/v1/templates/upload — upload PPTX/HTML file, store in S3
+- [x] Backend: Template parser — extract colors, fonts, styles from PPTX (jszip + xml parsing)
+- [x] Backend: LLM analysis — analyze uploaded template and generate CSS variables (ThemePreset format)
+- [x] Backend: GET /api/v1/templates — list user's custom templates
+- [x] Backend: GET /api/v1/templates/:id — get template details with CSS preview
+- [x] Backend: DELETE /api/v1/templates/:id — delete a custom template
+- [x] Backend: Generate thumbnail preview for uploaded template (color palette + gradient preview)
+- [x] Pipeline: Accept customTemplateId in GenerationConfig
+- [x] Pipeline: Load custom template CSS and apply during generation (replaces theme preset)
+- [x] Pipeline: Pass custom template to chatOrchestrator for both quick and step-by-step modes
+- [x] Frontend: Template management integrated into chat settings panel (no separate page needed)
+- [x] Frontend: Template upload button in settings panel (PPTX, HTML)
+- [x] Frontend: Template preview card with color dot and gradient preview
+- [x] Frontend: Template selector in chat settings panel (alongside theme presets)
+- [x] Frontend: "Мои шаблоны" section in settings panel with upload + select + delete
+- [x] Write vitest tests for template parsing and CSS generation (16 new tests — 953 total passing)
+- [x] End-to-end test: verified UI renders correctly, API endpoints respond, template selection works

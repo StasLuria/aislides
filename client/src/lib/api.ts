@@ -24,6 +24,26 @@ export type PresentationStatus =
 
 export type GenerationMode = "batch" | "interactive";
 
+export interface CustomTemplateListItem {
+  template_id: string;
+  name: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  color_palette: Array<{ name: string; hex: string }> | null;
+  font_families: string[] | null;
+  mood: string | null;
+  status: "uploading" | "analyzing" | "ready" | "error";
+  css_variables: string | null;
+  fonts_url: string | null;
+  created_at: string;
+}
+
+export interface CustomTemplateDetail extends CustomTemplateListItem {
+  source_file_url: string;
+  source_filename: string;
+  error_message: string | null;
+}
+
 export interface CreatePresentationRequest {
   prompt: string;
   mode?: GenerationMode;
@@ -677,6 +697,60 @@ class ApiClient {
   }>> {
     const { data } = await axios.get(`/api/v1/chat/sessions/${sessionId}/files`);
     return data;
+  }
+
+  // — Custom Templates —
+
+  async uploadTemplate(
+    file: File,
+    name?: string,
+    onProgress?: (percent: number) => void,
+  ): Promise<{
+    template_id: string;
+    name: string;
+    status: string;
+    message: string;
+  }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (name) formData.append("name", name);
+
+    const { data } = await axios.post("/api/v1/templates/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded * 100) / e.total));
+        }
+      },
+    });
+    return data;
+  }
+
+  async listTemplates(): Promise<Array<CustomTemplateListItem>> {
+    const { data } = await axios.get("/api/v1/templates");
+    return data;
+  }
+
+  async getTemplate(templateId: string): Promise<CustomTemplateDetail> {
+    const { data } = await axios.get(`/api/v1/templates/${templateId}`);
+    return data;
+  }
+
+  async deleteTemplate(templateId: string): Promise<void> {
+    await axios.delete(`/api/v1/templates/${templateId}`);
+  }
+
+  async setSessionTemplate(
+    sessionId: string,
+    templateId: string | null,
+    cssVariables?: string,
+    fontsUrl?: string,
+  ): Promise<void> {
+    await axios.patch(`/api/v1/chat/sessions/${sessionId}/metadata`, {
+      customTemplateId: templateId,
+      customCssVariables: cssVariables || null,
+      customFontsUrl: fontsUrl || null,
+    });
   }
 
   // — Health —

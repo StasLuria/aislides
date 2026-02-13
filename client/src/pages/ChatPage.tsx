@@ -26,11 +26,16 @@ import {
   ChevronDown,
   X,
   Check,
+  Upload,
+  Trash2,
+  Loader2,
+  FileUp,
+  LayoutTemplate,
 } from "lucide-react";
 import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
 import FileUploadButton, { FileChips, type AttachedFile } from "@/components/FileUploadButton";
-import api from "@/lib/api";
+import api, { type CustomTemplateListItem } from "@/lib/api";
 import { THEME_PRESETS } from "@/lib/constants";
 
 // ═══════════════════════════════════════════════════════
@@ -41,12 +46,21 @@ interface ChatSettings {
   mode: "quick" | "step";
   themePreset: string;
   slideCount: number;
+  /** Custom template ID (when user selects their own template) */
+  customTemplateId?: string | null;
+  customTemplateName?: string | null;
+  customCssVariables?: string | null;
+  customFontsUrl?: string | null;
 }
 
 const DEFAULT_SETTINGS: ChatSettings = {
   mode: "quick",
   themePreset: "auto",
   slideCount: 10,
+  customTemplateId: null,
+  customTemplateName: null,
+  customCssVariables: null,
+  customFontsUrl: null,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -272,8 +286,80 @@ function SettingsPanel({
   onChange: (s: ChatSettings) => void;
   onClose: () => void;
 }) {
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplateListItem[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load custom templates on mount
+  useEffect(() => {
+    setLoadingTemplates(true);
+    api.listTemplates()
+      .then((templates) => setCustomTemplates(templates.filter(t => t.status === "ready")))
+      .catch(() => {})
+      .finally(() => setLoadingTemplates(false));
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const result = await api.uploadTemplate(file, undefined, (p) => setUploadProgress(p));
+      toast.success(`Шаблон "${result.name}" загружен и анализируется`);
+      // Refresh templates list after a delay (analysis takes time)
+      setTimeout(async () => {
+        const templates = await api.listTemplates();
+        setCustomTemplates(templates.filter(t => t.status === "ready"));
+      }, 5000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Ошибка загрузки шаблона");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      await api.deleteTemplate(templateId);
+      setCustomTemplates(prev => prev.filter(t => t.template_id !== templateId));
+      if (settings.customTemplateId === templateId) {
+        onChange({ ...settings, themePreset: "auto", customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null });
+      }
+      toast.success("Шаблон удалён");
+    } catch {
+      toast.error("Ошибка удаления");
+    }
+  };
+
+  const selectCustomTemplate = (template: CustomTemplateListItem) => {
+    onChange({
+      ...settings,
+      themePreset: "custom",
+      customTemplateId: template.template_id,
+      customTemplateName: template.name,
+      customCssVariables: template.css_variables || null,
+      customFontsUrl: template.fonts_url || null,
+    });
+  };
+
+  const clearCustomTemplate = () => {
+    onChange({
+      ...settings,
+      themePreset: "auto",
+      customTemplateId: null,
+      customTemplateName: null,
+      customCssVariables: null,
+      customFontsUrl: null,
+    });
+  };
+
   return (
-    <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg p-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg p-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-[400px] overflow-y-auto">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">Настройки генерации</span>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
@@ -286,9 +372,9 @@ function SettingsPanel({
         <label className="text-xs text-muted-foreground mb-2 block">Тема дизайна</label>
         <div className="flex flex-wrap gap-1.5">
           <button
-            onClick={() => onChange({ ...settings, themePreset: "auto" })}
+            onClick={() => { clearCustomTemplate(); onChange({ ...settings, themePreset: "auto", customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null }); }}
             className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
-              settings.themePreset === "auto"
+              settings.themePreset === "auto" && !settings.customTemplateId
                 ? "border-primary bg-primary/5 text-primary font-medium"
                 : "border-border hover:border-primary/30 text-muted-foreground"
             }`}
@@ -298,9 +384,9 @@ function SettingsPanel({
           {THEME_PRESETS.map((t) => (
             <button
               key={t.id}
-              onClick={() => onChange({ ...settings, themePreset: t.id })}
+              onClick={() => onChange({ ...settings, themePreset: t.id, customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null })}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
-                settings.themePreset === t.id
+                settings.themePreset === t.id && !settings.customTemplateId
                   ? "border-primary bg-primary/5 text-primary font-medium"
                   : "border-border hover:border-primary/30 text-muted-foreground"
               }`}
@@ -313,6 +399,80 @@ function SettingsPanel({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Custom Templates */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs text-muted-foreground flex items-center gap-1">
+            <LayoutTemplate className="w-3 h-3" />
+            Мои шаблоны
+          </label>
+          <label className="cursor-pointer">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pptx,.html,.htm"
+              className="hidden"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border border-dashed border-primary/30 text-primary hover:bg-primary/5 transition-colors cursor-pointer">
+              {uploading ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> {uploadProgress}%</>
+              ) : (
+                <><Upload className="w-3 h-3" /> Загрузить</>
+              )}
+            </span>
+          </label>
+        </div>
+
+        {loadingTemplates ? (
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-2">
+            <Loader2 className="w-3 h-3 animate-spin" /> Загрузка шаблонов...
+          </div>
+        ) : customTemplates.length === 0 ? (
+          <div className="text-[11px] text-muted-foreground/60 py-2">
+            Нет загруженных шаблонов. Загрузите PPTX или HTML файл.
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {customTemplates.map((t) => (
+              <div key={t.template_id} className="group relative">
+                <button
+                  onClick={() => selectCustomTemplate(t)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-colors pr-6 ${
+                    settings.customTemplateId === t.template_id
+                      ? "border-primary bg-primary/5 text-primary font-medium"
+                      : "border-border hover:border-primary/30 text-muted-foreground"
+                  }`}
+                >
+                  {t.color_palette && t.color_palette.length > 0 ? (
+                    <span className="flex -space-x-0.5">
+                      {t.color_palette.slice(0, 3).map((c, i) => (
+                        <span
+                          key={i}
+                          className="w-2.5 h-2.5 rounded-full border border-white/50"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                      ))}
+                    </span>
+                  ) : (
+                    <LayoutTemplate className="w-3 h-3" />
+                  )}
+                  {t.name}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(t.template_id); }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                  title="Удалить шаблон"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Slide count */}
@@ -347,7 +507,12 @@ function SettingsChips({ settings }: { settings: ChatSettings }) {
 
   // Mode is selected via chat buttons, not settings
 
-  if (settings.themePreset !== "auto") {
+  if (settings.customTemplateId && settings.customTemplateName) {
+    chips.push({
+      label: `Шаблон: ${settings.customTemplateName}`,
+      icon: <LayoutTemplate className="w-3 h-3" />,
+    });
+  } else if (settings.themePreset !== "auto") {
     const preset = THEME_PRESETS.find((t) => t.id === settings.themePreset);
     if (preset) {
       chips.push({
@@ -470,6 +635,21 @@ export default function ChatPage() {
     if (!sessionId) {
       const newId = await createSession();
       navigate(`/chat/${newId}`, { replace: true });
+
+      // Apply custom template metadata to the session before first message
+      if (settings.customTemplateId) {
+        try {
+          await api.setSessionTemplate(
+            newId,
+            settings.customTemplateId,
+            settings.customCssVariables || undefined,
+            settings.customFontsUrl || undefined,
+          );
+        } catch (err) {
+          console.error("[ChatPage] Failed to set template on session:", err);
+        }
+      }
+
       // Upload files first if any, then send message
       if (filesToUpload.length > 0) {
         await uploadFilesToSession(newId, filesToUpload);
@@ -489,7 +669,7 @@ export default function ChatPage() {
 
     await sendMessage(trimmed);
     setRefreshTrigger((p) => p + 1);
-  }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession]);
+  }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession, settings]);
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {

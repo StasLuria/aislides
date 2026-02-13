@@ -13,7 +13,7 @@ import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import type { ChatMessage, ChatAction } from "../drizzle/schema";
 import { getChatSession, updateChatSession, appendMessage, getSessionFiles } from "./chatDb";
-import { generatePresentation, type PipelineProgress } from "./pipeline/generator";
+import { generatePresentation, type PipelineProgress, type GenerationConfig } from "./pipeline/generator";
 import {
   createPresentation,
   updatePresentationProgress,
@@ -477,10 +477,20 @@ async function startQuickGeneration(
   await appendMessage(sessionId, startMsg);
 
   try {
+    // Build generation config — check for custom template in session metadata
+    const sessionMeta = (session.metadata as Record<string, any>) || {};
+    const genConfig: GenerationConfig = {
+      themePreset: sessionMeta.customTemplateId ? undefined : "auto",
+      enableImages: true,
+      customCssVariables: sessionMeta.customCssVariables || undefined,
+      customFontsUrl: sessionMeta.customFontsUrl || undefined,
+      customTemplateId: sessionMeta.customTemplateId || undefined,
+    };
+
     // Run the pipeline with progress streaming + slide previews
     const result = await generatePresentation(
       enrichedTopic,
-      { themePreset: "auto", enableImages: true },
+      genConfig,
       (progress: PipelineProgress) => {
         writer({
           type: "progress",
@@ -730,9 +740,19 @@ async function handleStructureApproval(
     const topic = session.topic || "";
 
     try {
+      // Build generation config — check for custom template in session metadata
+      const stepMeta = (session.metadata as Record<string, any>) || {};
+      const stepGenConfig: GenerationConfig = {
+        themePreset: stepMeta.customTemplateId ? undefined : "auto",
+        enableImages: true,
+        customCssVariables: stepMeta.customCssVariables || undefined,
+        customFontsUrl: stepMeta.customFontsUrl || undefined,
+        customTemplateId: stepMeta.customTemplateId || undefined,
+      };
+
       const result = await generatePresentation(
         topic,
-        { themePreset: "auto", enableImages: true },
+        stepGenConfig,
         (progress: PipelineProgress) => {
           writer({
             type: "progress",

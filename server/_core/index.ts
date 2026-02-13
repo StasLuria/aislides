@@ -11,6 +11,7 @@ import { registerPresentationRoutes } from "../presentationRoutes";
 import { registerInteractiveRoutes } from "../interactiveRoutes";
 import { registerSlideEditRoutes } from "../slideEditRoutes";
 import { registerChatRoutes } from "../chatRoutes";
+import { registerTemplateRoutes } from "../templateRoutes";
 import { wsManager } from "../wsManager";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -54,6 +55,9 @@ async function startServer() {
 
   // Chat API — /api/v1/chat/*
   registerChatRoutes(app);
+
+  // Custom Templates API — /api/v1/templates/*
+  registerTemplateRoutes(app);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

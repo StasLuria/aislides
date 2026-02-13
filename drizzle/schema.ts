@@ -155,3 +155,46 @@ export const chatFiles = mysqlTable("chat_files", {
 
 export type ChatFile = typeof chatFiles.$inferSelect;
 export type InsertChatFile = typeof chatFiles.$inferInsert;
+
+/**
+ * Custom templates table — stores user-uploaded presentation templates.
+ * Templates are analyzed by LLM to extract CSS variables, fonts, and style metadata.
+ */
+export const customTemplates = mysqlTable("custom_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Public-facing template ID */
+  templateId: varchar("templateId", { length: 64 }).notNull().unique(),
+  /** Owner user ID (nullable for anonymous) */
+  userId: int("userId"),
+  /** Template display name */
+  name: varchar("name", { length: 256 }).notNull(),
+  /** Template description */
+  description: text("description"),
+  /** Original uploaded file URL in S3 */
+  sourceFileUrl: text("sourceFileUrl").notNull(),
+  /** Original filename */
+  sourceFilename: varchar("sourceFilename", { length: 512 }).notNull(),
+  /** MIME type of source file */
+  sourceMimeType: varchar("sourceMimeType", { length: 128 }).notNull(),
+  /** Thumbnail preview URL in S3 */
+  thumbnailUrl: text("thumbnailUrl"),
+  /** Extracted CSS variables (full :root block) */
+  cssVariables: text("cssVariables"),
+  /** Google Fonts URL for the template fonts */
+  fontsUrl: text("fontsUrl"),
+  /** Extracted color palette as JSON [{name, hex}] */
+  colorPalette: json("colorPalette").$type<Array<{name: string; hex: string}>>(),
+  /** Extracted font families as JSON */
+  fontFamilies: json("fontFamilies").$type<Array<string>>(),
+  /** LLM-generated mood/style description */
+  mood: text("mood"),
+  /** Processing status */
+  status: mysqlEnum("status", ["uploading", "analyzing", "ready", "error"]).default("uploading").notNull(),
+  /** Error message if processing failed */
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomTemplate = typeof customTemplates.$inferSelect;
+export type InsertCustomTemplate = typeof customTemplates.$inferInsert;
