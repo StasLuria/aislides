@@ -131,6 +131,9 @@ Write compelling, substantive content for a single presentation slide. Your cont
 - Be SUBSTANTIVE but slide-appropriate — not paragraphs, but rich bullet points with both titles and descriptions.
 - Speaker notes should expand on the slide content with talking points (3-5 sentences).
 - If the slide topic involves data, extract it as structured data_points (array of {label, value, unit}). Provide at least 3 data points.
+- data_points LABEL rules: Keep labels SHORT (max 2-3 words). Use abbreviations. Years: "2024", quarters: "Q1", countries: short names ("США", "Китай").
+- data_points UNIT rules: Use ONE standard unit for ALL points: "%", "$", "€", "₽", "млн", "млрд", "тыс", "шт", "ГВт" etc. For percentages use "%" with 0-100 values. For currency use symbol ("$", "₽"). For large numbers normalize to millions/billions. NEVER use compound units like "млн долларов". If no unit applies, use empty string.
+- data_points VALUE rules: Values must be plain numbers (e.g. "42", "3.5", "150"). Do NOT include units in the value field.
 - The key_message should be one impactful sentence that captures the slide's essence.
 - Use specific facts, numbers, and examples — avoid generic platitudes.
 - If previous slide context is provided, DO NOT repeat the same points. Each slide must introduce NEW information, examples, or perspectives.

@@ -79,9 +79,92 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function truncateLabel(label: string, maxLen: number = 12): string {
+function truncateLabel(label: string, maxLen: number = 18): string {
   if (label.length <= maxLen) return label;
+  // For single words (no spaces), show the full word to avoid cutting Russian words mid-word
+  if (!label.includes(" ") && !label.includes("-")) return label;
   return label.substring(0, maxLen - 1) + "…";
+}
+
+/**
+ * Wrap a long label into multiple lines for SVG <text> elements.
+ * Returns an array of lines that fit within maxCharsPerLine.
+ */
+function wrapLabel(label: string, maxCharsPerLine: number = 14, maxLines: number = 2): string[] {
+  if (label.length <= maxCharsPerLine) return [label];
+  
+  const words = label.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+  
+  for (const word of words) {
+    if (currentLine.length === 0) {
+      currentLine = word;
+    } else if ((currentLine + " " + word).length <= maxCharsPerLine) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+      if (lines.length >= maxLines - 1) break;
+    }
+  }
+  
+  if (currentLine) {
+    if (lines.length >= maxLines) {
+      // Append remaining text to last line, truncate if multi-word
+      const combined = lines[lines.length - 1] + " " + currentLine;
+      lines[lines.length - 1] = truncateLabel(combined, maxCharsPerLine);
+    } else {
+      // Single words that exceed the limit are kept intact (don't truncate Russian words)
+      lines.push(truncateLabel(currentLine, maxCharsPerLine));
+    }
+  }
+  
+  return lines.length > 0 ? lines : [truncateLabel(label, maxCharsPerLine)];
+}
+
+/**
+ * Render a multi-line SVG <text> element using <tspan> elements.
+ */
+function renderMultiLineLabel(x: number, y: number, label: string, opts: {
+  maxCharsPerLine?: number;
+  maxLines?: number;
+  fontSize?: number;
+  fill?: string;
+  textAnchor?: string;
+  rotate?: number;
+} = {}): string {
+  const {
+    maxCharsPerLine = 14,
+    maxLines = 2,
+    fontSize: baseFontSize = 10,
+    fill = "#6b7280",
+    textAnchor = "middle",
+    rotate,
+  } = opts;
+  
+  const lines = wrapLabel(label, maxCharsPerLine, maxLines);
+  
+  // Reduce font size for long single-word labels that couldn't be wrapped
+  const maxLineLen = Math.max(...lines.map(l => l.length));
+  let fontSize = baseFontSize;
+  if (maxLineLen > maxCharsPerLine + 4) {
+    // Scale down proportionally for very long labels
+    fontSize = Math.max(7, Math.round(baseFontSize * maxCharsPerLine / maxLineLen));
+  }
+  const lineHeight = fontSize + 3;
+  
+  if (lines.length === 1) {
+    const transform = rotate ? ` transform="rotate(${rotate}, ${x}, ${y})"` : "";
+    return `<text x="${x}" y="${y}" text-anchor="${textAnchor}" fill="${fill}" font-size="${fontSize}" font-family="Inter, sans-serif"${transform}>${escapeXml(lines[0])}</text>`;
+  }
+  
+  const transform = rotate ? ` transform="rotate(${rotate}, ${x}, ${y})"` : "";
+  const tspans = lines.map((line, i) => 
+    `<tspan x="${x}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+  ).join("");
+  
+  return `<text text-anchor="${textAnchor}" fill="${fill}" font-size="${fontSize}" font-family="Inter, sans-serif"${transform}>${tspans}</text>`;
 }
 
 function formatValue(value: number, unit?: string): string {
@@ -95,7 +178,16 @@ function formatValue(value: number, unit?: string): string {
   } else {
     formatted = value.toFixed(1);
   }
-  return unit ? `${formatted}${unit}` : formatted;
+  if (!unit) return formatted;
+  // Prefix units (currency symbols) go before the number
+  if (unit === "$" || unit === "€" || unit === "₽" || unit === "£" || unit === "¥") {
+    return `${unit}${formatted}`;
+  }
+  // Suffix units: add space for word-like units, no space for symbols like %
+  if (unit === "%" || unit.length === 1) {
+    return `${formatted}${unit}`;
+  }
+  return `${formatted} ${unit}`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -106,7 +198,10 @@ export function renderBarChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 20, bottom: 50, left: 60 };
+  // Adaptive bottom margin: increase for long labels
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  const needsExtraSpace = maxLabelLen > 12;
+  const margin = { top: 30, right: 20, bottom: needsExtraSpace ? 70 : 50, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -146,7 +241,12 @@ export function renderBarChart(config: ChartConfig): string {
         <animate attributeName="y" from="${margin.top + chartH}" to="${y}" dur="0.6s" fill="freeze" />
       </rect>
       ${valueLabel}
-      <text x="${labelX}" y="${height - margin.bottom + 18}" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label))}</text>
+      ${renderMultiLineLabel(labelX, height - margin.bottom + 16, d.label, {
+        maxCharsPerLine: needsExtraSpace ? 14 : 18,
+        maxLines: needsExtraSpace ? 2 : 1,
+        fontSize: 10,
+        textAnchor: "middle",
+      })}
     </g>`;
   });
 
@@ -169,7 +269,10 @@ export function renderHorizontalBarChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 20, right: 60, bottom: 20, left: 120 };
+  // Adaptive left margin for long labels
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  const leftMargin = maxLabelLen > 16 ? 160 : maxLabelLen > 10 ? 130 : 120;
+  const margin = { top: 20, right: 60, bottom: 20, left: leftMargin };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -188,7 +291,7 @@ export function renderHorizontalBarChart(config: ChartConfig): string {
     }
 
     return `<g>
-      <text x="${margin.left - 8}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 16))}</text>
+      <text x="${margin.left - 8}" y="${y + barHeight / 2 + 4}" text-anchor="end" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 22))}</text>
       <rect x="${margin.left}" y="${y}" width="${barW}" height="${barHeight}" rx="4" fill="${color}" opacity="0.9">
         <animate attributeName="width" from="0" to="${barW}" dur="0.6s" fill="freeze" />
       </rect>
@@ -212,7 +315,10 @@ export function renderLineChart(config: ChartConfig): string {
   const { data, width = 600, height = 360, showGrid = true, showValues = true, unit } = config;
   if (data.length === 0) return renderEmptyChart(width, height, "No data");
 
-  const margin = { top: 30, right: 30, bottom: 50, left: 60 };
+  // Adaptive bottom margin for long labels
+  const maxLabelLen = Math.max(...data.map(d => d.label.length));
+  const needsExtraSpace = maxLabelLen > 12;
+  const margin = { top: 30, right: 30, bottom: needsExtraSpace ? 70 : 50, left: 60 };
   const chartW = width - margin.left - margin.right;
   const chartH = height - margin.top - margin.bottom;
 
@@ -255,7 +361,12 @@ export function renderLineChart(config: ChartConfig): string {
     return `<g>
       <circle cx="${p.x}" cy="${p.y}" r="4" fill="white" stroke="${lineColor}" stroke-width="2.5" />
       ${valueLabel}
-      <text x="${p.x}" y="${height - margin.bottom + 18}" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(truncateLabel(p.d.label))}</text>
+      ${renderMultiLineLabel(p.x, height - margin.bottom + 16, p.d.label, {
+        maxCharsPerLine: needsExtraSpace ? 14 : 18,
+        maxLines: needsExtraSpace ? 2 : 1,
+        fontSize: 10,
+        textAnchor: "middle",
+      })}
     </g>`;
   });
 
@@ -336,14 +447,20 @@ export function renderPieChart(config: ChartConfig): string {
   let legend = "";
   if (showLegend) {
     const legendX = width * 0.72;
-    const legendStartY = Math.max(30, cy - (data.length * 24) / 2);
+    const maxLegendWidth = width - legendX - 10;
+    const maxChars = Math.max(12, Math.floor(maxLegendWidth / 6));
+    const legendItemHeight = 28;
+    const legendStartY = Math.max(20, cy - (data.length * legendItemHeight) / 2);
     legend = data.map((d, i) => {
-      const y = legendStartY + i * 24;
+      const y = legendStartY + i * legendItemHeight;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
+      const suffix = ` (${pct}%)`;
+      const availChars = Math.max(8, maxChars - suffix.length);
+      const displayLabel = truncateLabel(d.label, availChars);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 14))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
       </g>`;
     }).join("\n    ");
   }
@@ -411,14 +528,20 @@ export function renderDonutChart(config: ChartConfig): string {
   let legend = "";
   if (showLegend) {
     const legendX = width * 0.72;
-    const legendStartY = Math.max(30, cy - (data.length * 24) / 2);
+    const maxLegendWidth = width - legendX - 10;
+    const maxChars = Math.max(12, Math.floor(maxLegendWidth / 6));
+    const legendItemHeight = 28;
+    const legendStartY = Math.max(20, cy - (data.length * legendItemHeight) / 2);
     legend = data.map((d, i) => {
-      const y = legendStartY + i * 24;
+      const y = legendStartY + i * legendItemHeight;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
+      const suffix = ` (${pct}%)`;
+      const availChars = Math.max(8, maxChars - suffix.length);
+      const displayLabel = truncateLabel(d.label, availChars);
       return `<g>
         <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="11" font-family="Inter, sans-serif">${escapeXml(truncateLabel(d.label, 14))} (${pct}%)</text>
+        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
       </g>`;
     }).join("\n    ");
   }

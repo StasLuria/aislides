@@ -579,3 +579,165 @@ describe("Chart-slide SVG template integration", () => {
     expect(html).not.toContain("chartSvg");
   });
 });
+
+
+// ═══════════════════════════════════════════════════════
+// detectUnit — sanitization
+// ═══════════════════════════════════════════════════════
+
+describe("detectUnit — unit sanitization", () => {
+  const makeSlide = (unit: string): SlideContent => ({
+    slide_number: 1,
+    title: "Test",
+    text: "",
+    notes: "",
+    data_points: [{ label: "A", value: "100", unit }],
+    key_message: "",
+  });
+
+  it("should pass through valid short units", () => {
+    expect(detectUnit(makeSlide("%"))).toBe("%");
+    expect(detectUnit(makeSlide("$"))).toBe("$");
+    expect(detectUnit(makeSlide("₽"))).toBe("₽");
+    expect(detectUnit(makeSlide("€"))).toBe("€");
+    expect(detectUnit(makeSlide("млн"))).toBe("млн");
+    expect(detectUnit(makeSlide("млрд"))).toBe("млрд");
+    expect(detectUnit(makeSlide("тыс"))).toBe("тыс");
+    expect(detectUnit(makeSlide("ГВт"))).toBe("ГВт");
+  });
+
+  it("should normalize compound currency units", () => {
+    expect(detectUnit(makeSlide("млн долларов"))).toBe("$");
+    expect(detectUnit(makeSlide("млн рублей"))).toBe("₽");
+    expect(detectUnit(makeSlide("млн евро"))).toBe("€");
+  });
+
+  it("should normalize word-based currency units", () => {
+    expect(detectUnit(makeSlide("долларов"))).toBe("$");
+    expect(detectUnit(makeSlide("рублей"))).toBe("₽");
+    expect(detectUnit(makeSlide("евро"))).toBe("€");
+    expect(detectUnit(makeSlide("процентов"))).toBe("%");
+  });
+
+  it("should drop nonsensical long units", () => {
+    // Long nonsensical units should be dropped, falling back to text detection
+    const slide: SlideContent = {
+      slide_number: 1,
+      title: "Test",
+      text: "Revenue is growing",
+      notes: "",
+      data_points: [{ label: "A", value: "100", unit: "единиц измерения" }],
+      key_message: "",
+    };
+    expect(detectUnit(slide)).toBeUndefined();
+  });
+
+  it("should handle empty unit strings", () => {
+    expect(detectUnit(makeSlide(""))).toBeUndefined();
+    expect(detectUnit(makeSlide("  "))).toBeUndefined();
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// SVG Chart Engine — long label handling
+// ═══════════════════════════════════════════════════════
+
+describe("SVG Chart Engine — long Russian labels", () => {
+  it("should render bar chart with long Russian labels without truncation to 12 chars", () => {
+    const data: ChartDataPoint[] = [
+      { label: "Электромобили Tesla", value: 500 },
+      { label: "Гибридные автомобили", value: 300 },
+      { label: "Водородные технологии", value: 200 },
+    ];
+    const config: ChartConfig = { type: "bar", data };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<svg");
+    // Labels should NOT be truncated to just 12 chars — at least 14 chars should be visible
+    // "Электромобили" is 13 chars, should be fully visible
+    expect(result.svg).toContain("Электромобили");
+  });
+
+  it("should render horizontal-bar chart with long labels", () => {
+    const data: ChartDataPoint[] = [
+      { label: "Солнечная энергетика", value: 400 },
+      { label: "Ветровая энергетика", value: 350 },
+      { label: "Гидроэлектростанции", value: 300 },
+    ];
+    const config: ChartConfig = { type: "horizontal-bar", data };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<svg");
+    // Should show at least 18 chars before truncation
+    expect(result.svg).toContain("Солнечная энергетик");
+  });
+
+  it("should render line chart with long labels using multi-line", () => {
+    const data: ChartDataPoint[] = [
+      { label: "Первый квартал 2024", value: 100 },
+      { label: "Второй квартал 2024", value: 150 },
+      { label: "Третий квартал 2024", value: 200 },
+    ];
+    const config: ChartConfig = { type: "line", data };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<svg");
+    // Should use tspan for multi-line labels
+    expect(result.svg).toContain("tspan");
+  });
+
+  it("should render pie chart legend with longer labels", () => {
+    const data: ChartDataPoint[] = [
+      { label: "Российская Федерация", value: 40 },
+      { label: "Соединённые Штаты", value: 35 },
+      { label: "Европейский Союз", value: 25 },
+    ];
+    const config: ChartConfig = { type: "pie", data, showLegend: true };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<svg");
+    // Legend should show labels with percentage suffix
+    expect(result.svg).toContain("(40%)");
+    expect(result.svg).toContain("(35%)");
+    expect(result.svg).toContain("(25%)");
+    // Labels should be present (possibly truncated dynamically based on available width)
+    expect(result.svg).toContain("Российск");
+    expect(result.svg).toContain("Европейски");
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// SVG Chart Engine — formatValue with currency
+// ═══════════════════════════════════════════════════════
+
+describe("SVG Chart Engine — formatValue currency handling", () => {
+  it("should place currency symbols before the number", () => {
+    const data: ChartDataPoint[] = [
+      { label: "Q1", value: 100 },
+      { label: "Q2", value: 200 },
+    ];
+    const config: ChartConfig = { type: "bar", data, unit: "$", showValues: true };
+    const result = renderChart(config);
+    // Should show $100, $200 (prefix)
+    expect(result.svg).toContain("$100");
+    expect(result.svg).toContain("$200");
+  });
+
+  it("should place % after the number without space", () => {
+    const data: ChartDataPoint[] = [
+      { label: "A", value: 45 },
+      { label: "B", value: 55 },
+    ];
+    const config: ChartConfig = { type: "bar", data, unit: "%", showValues: true };
+    const result = renderChart(config);
+    expect(result.svg).toContain("45%");
+    expect(result.svg).toContain("55%");
+  });
+
+  it("should place word-like units after the number with space", () => {
+    const data: ChartDataPoint[] = [
+      { label: "A", value: 10 },
+      { label: "B", value: 20 },
+    ];
+    const config: ChartConfig = { type: "bar", data, unit: "млн", showValues: true };
+    const result = renderChart(config);
+    expect(result.svg).toContain("10 млн");
+    expect(result.svg).toContain("20 млн");
+  });
+});

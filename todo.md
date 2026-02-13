@@ -795,3 +795,11 @@
 - [x] Fix: added overrideSessionId parameter to sendMessage in useSSEChat, pass explicit session ID from handleSend and pendingMessageRef effect
 - [x] Verified: file attach + send creates session, uploads file, sends message, AI responds correctly
 - [x] 953 tests passing
+
+## Fix: Chart axis labels and units
+- [x] Fix truncated X-axis labels on charts: increased truncateLabel limits (18→24 chars), added wrapLabel for multi-line SVG labels, adaptive font-size for long single words, increased bottom/left margins
+- [x] Fix LLM generating illogical units: improved dataVizAgent prompt with strict unit rules, added sanitizeUnit() validation, improved content agent prompt for data_points
+- [x] Increased pie/donut legend label limits with dynamic calculation based on data count
+- [x] Added 12 new tests for sanitizeUnit, wrapLabel, renderMultiLineLabel, formatValue
+- [x] Test chart rendering with new generation: "производительность" (20 chars) fully visible, all labels readable
+- [x] All 965 tests passing

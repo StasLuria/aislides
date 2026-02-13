@@ -144,19 +144,52 @@ export function parseNumericValue(str: string): number | null {
 /**
  * Detect the unit from data_points or text.
  */
+/** Sanitize a unit string: normalize common patterns and reject nonsensical values */
+function sanitizeUnit(raw: string): string {
+  if (!raw || raw.trim().length === 0) return "";
+  const u = raw.trim();
+  
+  // Known good short units — pass through
+  const VALID_UNITS = new Set([
+    "%", "$", "€", "₽", "£", "¥",
+    "млн", "млрд", "тыс",
+    "шт", "ГВт", "МВт", "км", "т", "кг", "л",
+    "K", "M", "B", "km", "kg", "t", "GW", "MW", "kW",
+    "pcs", "units", "hrs", "min",
+  ]);
+  if (VALID_UNITS.has(u)) return u;
+  
+  // Normalize compound units to simple ones
+  if (/\$.*\u043c\u043b\u043d|\u043c\u043b\u043d.*\$|\u043c\u043b\u043d.*\u0434\u043e\u043b\u043b/i.test(u)) return "$";
+  if (/\u20bd.*\u043c\u043b\u043d|\u043c\u043b\u043d.*\u20bd|\u043c\u043b\u043d.*\u0440\u0443\u0431/i.test(u)) return "₽";
+  if (/\u20ac.*\u043c\u043b\u043d|\u043c\u043b\u043d.*\u20ac|\u043c\u043b\u043d.*\u0435\u0432\u0440\u043e/i.test(u)) return "€";
+  if (/\u0434\u043e\u043b\u043b\u0430\u0440/i.test(u)) return "$";
+  if (/\u0440\u0443\u0431\u043b/i.test(u)) return "₽";
+  if (/\u0435\u0432\u0440\u043e/i.test(u)) return "€";
+  if (/\u043f\u0440\u043e\u0446\u0435\u043d\u0442/i.test(u)) return "%";
+  
+  // If unit is too long (>5 chars), it's likely a description, not a unit — drop it
+  if (u.length > 5) return "";
+  
+  return u;
+}
+
 export function detectUnit(slide: SlideContent): string | undefined {
   // Check data_points units
   if (slide.data_points && slide.data_points.length > 0) {
     const units = slide.data_points.map(dp => dp.unit).filter(Boolean);
-    if (units.length > 0) return units[0];
+    if (units.length > 0) {
+      const sanitized = sanitizeUnit(units[0]);
+      if (sanitized) return sanitized;
+    }
   }
 
   // Check text for common unit patterns
   const text = slide.text + " " + (slide.key_message || "");
-  if (text.match(/%|процент|percent/i)) return "%";
-  if (text.match(/\$|доллар|dollar|USD/i)) return "$";
-  if (text.match(/₽|руб|rub|RUB/i)) return "₽";
-  if (text.match(/€|евро|euro|EUR/i)) return "€";
+  if (text.match(/%|\u043f\u0440\u043e\u0446\u0435\u043d\u0442|percent/i)) return "%";
+  if (text.match(/\$|\u0434\u043e\u043b\u043b\u0430\u0440|dollar|USD/i)) return "$";
+  if (text.match(/\u20bd|\u0440\u0443\u0431|rub|RUB/i)) return "₽";
+  if (text.match(/\u20ac|\u0435\u0432\u0440\u043e|euro|EUR/i)) return "€";
 
   return undefined;
 }
@@ -250,7 +283,24 @@ Rules:
 - Use "bar" for comparisons of 2-6 items
 - Use "horizontal-bar" for rankings or comparisons of 4+ items
 - If the data represents parts of a whole, use "donut" with center_label and center_value
-- Return has_chartable_data: false if no clear numeric data exists`;
+- Return has_chartable_data: false if no clear numeric data exists
+
+Label rules:
+- Keep labels SHORT (max 2-3 words). Use abbreviations where possible.
+- For years: use "2024", "2025" etc. (not "Год 2024")
+- For quarters: use "Q1", "Q2" etc.
+- For countries: use short names ("США", "Китай", not "Соединённые Штаты Америки")
+- For categories: use the shortest meaningful name
+
+Unit rules:
+- "unit" is the Y-axis unit label. It must be consistent across ALL data points.
+- Use ONLY standard units: "%", "$", "€", "₽", "млн", "млрд", "тыс", "шт", "ГВт", "км", "т" etc.
+- For percentages, use "%" and ensure values are 0-100 range numbers (not fractions).
+- For currency, use the symbol ("$", "₽", "€") — NOT words like "долларов".
+- For large numbers, normalize values: use millions with unit "млн" or billions with unit "млрд" rather than raw large numbers.
+- If no clear unit applies, set unit to empty string "".
+- NEVER use compound units like "млн долларов" — pick ONE: either normalize to millions OR use currency symbol.
+- NEVER invent nonsensical units. The unit must match the actual data being measured.`;
 
   const user = `Slide ${slide.slide_number}: "${slide.title}"
 
@@ -315,7 +365,7 @@ Extract chartable data as JSON.`;
       chartType: result.chart_type,
       data: result.data_points.map(dp => ({ label: dp.label, value: dp.value })),
       title: slide.title,
-      unit: result.unit || undefined,
+      unit: sanitizeUnit(result.unit || "") || undefined,
       centerLabel: result.center_label || undefined,
       centerValue: result.center_value || undefined,
       confidence: "medium",
