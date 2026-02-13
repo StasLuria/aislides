@@ -38,6 +38,8 @@ import {
   Share2,
   Copy,
   Link,
+  History,
+  RotateCcw,
 } from "lucide-react";
 import {
   Dialog,
@@ -852,6 +854,27 @@ export default function Viewer() {
     }
   };
 
+  // Download PDF
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const handleDownloadPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      const blob = await api.exportPdf(presentationId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `presentation-${presentationId.slice(0, 8)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF файл скачан");
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      toast.error("Не удалось экспортировать в PDF");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   // Download PPTX
   const [isExportingPptx, setIsExportingPptx] = useState(false);
   const handleDownloadPptx = async () => {
@@ -870,6 +893,84 @@ export default function Viewer() {
       toast.error("Не удалось экспортировать в PPTX");
     } finally {
       setIsExportingPptx(false);
+    }
+  };
+
+  // Version History
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [versionList, setVersionList] = useState<Array<{
+    id: number;
+    version_number: number;
+    change_type: string;
+    change_description: string | null;
+    created_at: string;
+  }>>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [isRestoringVersion, setIsRestoringVersion] = useState(false);
+  const [previewVersionId, setPreviewVersionId] = useState<number | null>(null);
+  const [versionPreviewHtml, setVersionPreviewHtml] = useState<string | null>(null);
+
+  const loadVersions = useCallback(async (slideIdx: number) => {
+    if (!presentationId) return;
+    setIsLoadingVersions(true);
+    try {
+      const result = await api.getSlideVersions(presentationId, slideIdx);
+      setVersionList(result.versions);
+    } catch {
+      setVersionList([]);
+    } finally {
+      setIsLoadingVersions(false);
+    }
+  }, [presentationId]);
+
+  // Reload versions when slide changes and panel is open
+  useEffect(() => {
+    if (showVersionHistory) {
+      loadVersions(currentSlide);
+      setPreviewVersionId(null);
+      setVersionPreviewHtml(null);
+    }
+  }, [showVersionHistory, currentSlide, loadVersions]);
+
+  const handlePreviewVersion = async (versionId: number) => {
+    if (!presentationId) return;
+    setPreviewVersionId(versionId);
+    try {
+      const result = await api.getSlideVersionPreview(presentationId, currentSlide, versionId);
+      setVersionPreviewHtml(result.html);
+    } catch {
+      toast.error("Не удалось загрузить превью версии");
+      setPreviewVersionId(null);
+    }
+  };
+
+  const handleRestoreVersion = async (versionId: number) => {
+    if (!presentationId) return;
+    setIsRestoringVersion(true);
+    try {
+      const result = await api.restoreSlideVersion(presentationId, currentSlide, versionId);
+      // Update the slide in our local state
+      const newHtmls = [...slideHtmls];
+      newHtmls[currentSlide] = result.html;
+      setSlideHtmls(newHtmls);
+
+      const newDataList = [...slideDataList];
+      newDataList[currentSlide] = {
+        ...newDataList[currentSlide],
+        data: result.data,
+        layoutId: result.layoutId,
+      };
+      setSlideDataList(newDataList);
+
+      setPreviewVersionId(null);
+      setVersionPreviewHtml(null);
+      toast.success(`Слайд восстановлен до версии ${result.restored_from_version}`);
+      // Reload versions to show updated list
+      loadVersions(currentSlide);
+    } catch {
+      toast.error("Не удалось восстановить версию");
+    } finally {
+      setIsRestoringVersion(false);
     }
   };
 
@@ -1077,6 +1178,20 @@ export default function Viewer() {
               {isExportingPptx ? "Экспорт..." : "Скачать PPTX"}
             </Button>
             <Button
+              onClick={handleDownloadPdf}
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-xs"
+              disabled={isExportingPdf || presentation?.status !== "completed"}
+            >
+              {isExportingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              {isExportingPdf ? "Экспорт..." : "Скачать PDF"}
+            </Button>
+            <Button
               onClick={handleDownload}
               variant="ghost"
               size="sm"
@@ -1161,6 +1276,17 @@ export default function Viewer() {
                 title="Панель редактирования (все поля)"
               >
                 <PanelRightOpen className="w-4 h-4" />
+              </Button>
+
+              {/* Version history toggle */}
+              <Button
+                variant={showVersionHistory ? "default" : "ghost"}
+                size="icon-sm"
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                title="История версий"
+                disabled={slideDataList.length === 0}
+              >
+                <History className="w-4 h-4" />
               </Button>
 
               {/* Share button */}
@@ -1284,6 +1410,120 @@ export default function Viewer() {
             onClose={() => setEditMode("off")}
             onSlideUpdated={handleSlideUpdated}
           />
+        )}
+
+        {/* Right panel — Version History (conditional) */}
+        {showVersionHistory && (
+          <div className="w-[320px] shrink-0 border-l border-border/50 bg-card flex flex-col h-full">
+            <div className="p-4 border-b border-border/50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">История версий</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Слайд {currentSlide + 1}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowVersionHistory(false)}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="p-3 space-y-2">
+                {isLoadingVersions ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : versionList.length === 0 ? (
+                  <div className="text-center py-8">
+                    <History className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">
+                      История появится после первого редактирования
+                    </p>
+                  </div>
+                ) : (
+                  versionList.map((version) => {
+                    const isSelected = previewVersionId === version.id;
+                    const date = new Date(version.created_at);
+                    const timeStr = date.toLocaleTimeString("ru-RU", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    const dateStr = date.toLocaleDateString("ru-RU", {
+                      day: "numeric",
+                      month: "short",
+                    });
+
+                    return (
+                      <div
+                        key={version.id}
+                        className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                            : "border-border/50 hover:border-border hover:bg-secondary/30"
+                        }`}
+                        onClick={() => handlePreviewVersion(version.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-mono text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded">
+                                v{version.version_number}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {dateStr}, {timeStr}
+                              </span>
+                            </div>
+                            {version.change_description && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {version.change_description}
+                              </p>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0 gap-1 text-[11px] h-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestoreVersion(version.id);
+                              }}
+                              disabled={isRestoringVersion}
+                            >
+                              {isRestoringVersion ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <RotateCcw className="w-3 h-3" />
+                              )}
+                              Восстановить
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Version preview thumbnail */}
+                        {isSelected && versionPreviewHtml && (
+                          <div className="mt-2 rounded border border-border/30 overflow-hidden bg-white">
+                            <div className="relative" style={{ paddingBottom: "56.25%" }}>
+                              <iframe
+                                srcDoc={versionPreviewHtml}
+                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                sandbox="allow-same-origin"
+                                title={`Version ${version.version_number} preview`}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         )}
       </div>
     </div>

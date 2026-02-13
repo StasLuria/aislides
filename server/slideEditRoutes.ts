@@ -22,6 +22,7 @@ import { getThemePreset } from "./pipeline/themes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { buildEditableSlideHtml, getEditableFields, setFieldValue } from "./pipeline/inlineFieldInjector";
+import { saveSlideVersion, listSlideVersions, getSlideVersion } from "./versionDb";
 
 const router = Router();
 
@@ -174,6 +175,17 @@ router.put("/api/v1/presentations/:id/slides/:index", async (req: Request, res: 
       res.status(422).json({ detail: "data object is required" });
       return;
     }
+
+    // Save version snapshot BEFORE modifying
+    const oldSlideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+    await saveSlideVersion({
+      presentationId: req.params.id,
+      slideIndex: index,
+      slideHtml: oldSlideHtml,
+      slideData: slides[index].data,
+      changeType: "edit",
+      changeDescription: "Full data update via PUT",
+    });
 
     // Merge new data into existing slide data (shallow merge)
     const updatedData = { ...slides[index].data, ...newData };
@@ -469,6 +481,17 @@ router.patch("/api/v1/presentations/:id/slides/:index", async (req: Request, res
       return;
     }
 
+    // Save version snapshot BEFORE modifying
+    const oldSlideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+    await saveSlideVersion({
+      presentationId: req.params.id,
+      slideIndex: index,
+      slideHtml: oldSlideHtml,
+      slideData: slides[index].data,
+      changeType: "edit",
+      changeDescription: `Field '${field}' updated`,
+    });
+
     // Update the specific field using dot-notation path support
     setFieldValue(slides[index].data, field, value);
 
@@ -539,6 +562,17 @@ router.post("/api/v1/presentations/:id/slides/:index/layout", async (req: Reques
       res.status(422).json({ detail: "layoutId is required" });
       return;
     }
+
+    // Save version snapshot BEFORE modifying
+    const oldSlideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+    await saveSlideVersion({
+      presentationId: req.params.id,
+      slideIndex: index,
+      slideHtml: oldSlideHtml,
+      slideData: slides[index].data,
+      changeType: "edit",
+      changeDescription: `Layout changed to '${layoutId}'`,
+    });
 
     // Update layout
     slides[index] = { ...slides[index], layoutId };
@@ -729,6 +763,182 @@ router.post("/api/v1/presentations/:id/reorder", async (req: Request, res: Respo
     });
   } catch (error: any) {
     console.error("[SlideEdit] Reorder error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// GET slide versions — list version history for a slide
+// ═══════════════════════════════════════════════════════
+
+router.get("/api/v1/presentations/:id/slides/:index/versions", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    const index = parseInt(req.params.index);
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
+
+    if (isNaN(index) || index < 0 || index >= slides.length) {
+      res.status(404).json({ detail: `Slide index ${req.params.index} out of range` });
+      return;
+    }
+
+    const versions = await listSlideVersions(req.params.id, index);
+
+    res.json({
+      presentation_id: req.params.id,
+      slide_index: index,
+      versions: versions.map((v) => ({
+        id: v.id,
+        version_number: v.versionNumber,
+        change_type: v.changeType,
+        change_description: v.changeDescription,
+        created_at: v.createdAt,
+      })),
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] List versions error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// GET slide version preview — get HTML preview of a specific version
+// ═══════════════════════════════════════════════════════
+
+router.get("/api/v1/presentations/:id/slides/:index/versions/:versionId", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    const versionId = parseInt(req.params.versionId);
+    if (isNaN(versionId)) {
+      res.status(400).json({ detail: "Invalid version ID" });
+      return;
+    }
+
+    const version = await getSlideVersion(versionId);
+    if (!version || version.presentationId !== req.params.id) {
+      res.status(404).json({ detail: "Version not found" });
+      return;
+    }
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    const html = buildSlidePreviewHtml(
+      version.slideHtml,
+      p.themeCss || themePreset.cssVariables,
+      themePreset.fontsUrl,
+      p.language || "ru",
+    );
+
+    res.json({
+      id: version.id,
+      version_number: version.versionNumber,
+      slide_index: version.slideIndex,
+      change_type: version.changeType,
+      change_description: version.changeDescription,
+      slide_data: version.slideData,
+      html,
+      created_at: version.createdAt,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Get version error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// POST restore slide version — restore a slide to a previous version
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/presentations/:id/slides/:index/versions/:versionId/restore", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
+    const index = parseInt(req.params.index);
+
+    if (isNaN(index) || index < 0 || index >= slides.length) {
+      res.status(404).json({ detail: `Slide index ${req.params.index} out of range` });
+      return;
+    }
+
+    const versionId = parseInt(req.params.versionId);
+    if (isNaN(versionId)) {
+      res.status(400).json({ detail: "Invalid version ID" });
+      return;
+    }
+
+    const version = await getSlideVersion(versionId);
+    if (!version || version.presentationId !== req.params.id || version.slideIndex !== index) {
+      res.status(404).json({ detail: "Version not found for this slide" });
+      return;
+    }
+
+    // Save current state as a version before restoring
+    const currentSlideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+    await saveSlideVersion({
+      presentationId: req.params.id,
+      slideIndex: index,
+      slideHtml: currentSlideHtml,
+      slideData: slides[index].data,
+      changeType: "edit",
+      changeDescription: `Before restore to version ${version.versionNumber}`,
+    });
+
+    // Restore the slide data from the version
+    const restoredData = version.slideData as any;
+    slides[index] = {
+      ...slides[index],
+      data: restoredData,
+    };
+
+    // Re-render the slide HTML
+    const slideHtml = renderSlide(slides[index].layoutId, restoredData);
+
+    // Save updated slides to DB
+    await updatePresentationProgress(req.params.id, {
+      finalHtmlSlides: slides,
+    });
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    const html = buildSlidePreviewHtml(
+      slideHtml,
+      p.themeCss || themePreset.cssVariables,
+      themePreset.fontsUrl,
+      p.language || "ru",
+    );
+
+    res.json({
+      presentation_id: p.presentationId,
+      index,
+      layoutId: slides[index].layoutId,
+      data: restoredData,
+      restored_from_version: version.versionNumber,
+      html,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Restore version error:", error);
     res.status(500).json({ detail: error.message || "Internal server error" });
   }
 });

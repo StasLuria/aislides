@@ -27,6 +27,7 @@ export default function SharedViewer() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullHtml, setFullHtml] = useState<string | null>(null);
   const [isExportingPptx, setIsExportingPptx] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [slideTransition, setSlideTransition] = useState<string>("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const mainAreaRef = useRef<HTMLDivElement>(null);
@@ -135,6 +136,26 @@ export default function SharedViewer() {
       toast.error("Не удалось экспортировать в PPTX");
     } finally {
       setIsExportingPptx(false);
+    }
+  };
+
+  // Download PDF
+  const handleDownloadPdf = async () => {
+    if (!token) return;
+    setIsExportingPdf(true);
+    try {
+      const blob = await api.exportSharedPdf(token);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${presentation?.title || "presentation"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF файл скачан");
+    } catch {
+      toast.error("Не удалось экспортировать в PDF");
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -255,6 +276,20 @@ export default function SharedViewer() {
               <FileDown className="w-3.5 h-3.5" />
             )}
             {isExportingPptx ? "Экспорт..." : "PPTX"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={isExportingPdf}
+            className="gap-1.5 text-xs"
+          >
+            {isExportingPdf ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileDown className="w-3.5 h-3.5" />
+            )}
+            {isExportingPdf ? "Экспорт..." : "PDF"}
           </Button>
           <Button
             variant="ghost"

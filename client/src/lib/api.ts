@@ -798,8 +798,76 @@ class ApiClient {
     return response.data;
   }
 
-  // — Health —
+  // — Version History —
+  async getSlideVersions(
+    presentationId: string,
+    slideIndex: number,
+  ): Promise<{
+    presentation_id: string;
+    slide_index: number;
+    versions: Array<{
+      id: number;
+      version_number: number;
+      change_type: string;
+      change_description: string | null;
+      created_at: string;
+    }>;
+  }> {
+    const { data } = await axios.get(
+      `/api/v1/presentations/${presentationId}/slides/${slideIndex}/versions`,
+    );
+    return data;
+  }
 
+  async getSlideVersionPreview(
+    presentationId: string,
+    slideIndex: number,
+    versionId: number,
+  ): Promise<{
+    id: number;
+    version_number: number;
+    slide_index: number;
+    change_type: string;
+    change_description: string | null;
+    slide_data: any;
+    html: string;
+    created_at: string;
+  }> {
+    const { data } = await axios.get(
+      `/api/v1/presentations/${presentationId}/slides/${slideIndex}/versions/${versionId}`,
+    );
+    return data;
+  }
+
+  async restoreSlideVersion(
+    presentationId: string,
+    slideIndex: number,
+    versionId: number,
+  ): Promise<any> {
+    const { data } = await axios.post(
+      `/api/v1/presentations/${presentationId}/slides/${slideIndex}/versions/${versionId}/restore`,
+    );
+    return data;
+  }
+
+  // — PDF Export —
+  async exportPdf(presentationId: string): Promise<Blob> {
+    const response = await axios.get(
+      `/api/v1/presentations/${presentationId}/export/pdf`,
+      { responseType: "blob" },
+    );
+    return response.data;
+  }
+
+  async exportSharedPdf(shareToken: string): Promise<Blob> {
+    const response = await axios.get(
+      `/api/v1/shared/${shareToken}/export/pdf`,
+      { responseType: "blob" },
+    );
+    return response.data;
+  }
+
+  // — Health —
   async checkHealth(): Promise<{ status: string; version?: string }> {
     try {
       const { data } = await axios.get("/health");

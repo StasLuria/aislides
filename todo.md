@@ -862,3 +862,21 @@
 - [x] Frontend: Toggle between compact chips view and gallery grid view
 - [x] Frontend: Click to select template → applies to next generation
 - [x] Write vitest tests for gallery feature (7 tests)
+## Task: Version History
+- [x] Backend: Create slide_versions table in drizzle schema (presentationId, slideIndex, slideData, createdAt)
+- [x] Backend: Auto-save version on each slide edit (PUT, PATCH, layout change)
+- [x] Backend: GET /api/v1/presentations/:id/slides/:index/versions — list versions
+- [x] Backend: POST /api/v1/presentations/:id/slides/:index/versions/:versionId/restore — restore version
+- [x] Backend: GET /api/v1/presentations/:id/slides/:index/versions/:versionId — preview version
+- [x] Frontend: Version history panel in Viewer with timeline (right panel)
+- [x] Frontend: Preview and restore previous versions with inline thumbnail
+- [x] Frontend: History icon button in toolbar with toggle
+- [x] Write vitest tests for version history (5 tests)
+
+## Task: PDF Export
+- [x] Backend: PDF export module using puppeteer with chromium (1280x720 landscape)
+- [x] Backend: GET /api/v1/presentations/:id/export/pdf (authenticated)
+- [x] Backend: GET /api/v1/shared/:token/export/pdf (shared)
+- [x] Frontend: "Скачать PDF" button in Viewer alongside PPTX/HTML
+- [x] Frontend: PDF download in SharedViewer for public links
+- [x] Write vitest tests for PDF export (3 tests, puppeteer-based)

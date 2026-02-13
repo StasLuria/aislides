@@ -202,3 +202,29 @@ export const customTemplates = mysqlTable("custom_templates", {
 
 export type CustomTemplate = typeof customTemplates.$inferSelect;
 export type InsertCustomTemplate = typeof customTemplates.$inferInsert;
+
+/**
+ * Slide versions table — stores version history for each slide edit.
+ * Each time a slide is edited, the previous state is saved as a version.
+ */
+export const slideVersions = mysqlTable("slide_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Linked presentation ID (public UUID) */
+  presentationId: varchar("presentationId", { length: 64 }).notNull(),
+  /** Slide index (0-based) */
+  slideIndex: int("slideIndex").notNull(),
+  /** Version number (auto-incremented per slide) */
+  versionNumber: int("versionNumber").notNull(),
+  /** Snapshot of the slide HTML at this version */
+  slideHtml: text("slideHtml").notNull(),
+  /** Snapshot of the slide data JSON at this version */
+  slideData: json("slideData"),
+  /** What triggered this version: 'edit', 'regenerate', 'initial' */
+  changeType: varchar("changeType", { length: 32 }).default("edit").notNull(),
+  /** Optional description of what changed */
+  changeDescription: varchar("changeDescription", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SlideVersion = typeof slideVersions.$inferSelect;
+export type InsertSlideVersion = typeof slideVersions.$inferInsert;

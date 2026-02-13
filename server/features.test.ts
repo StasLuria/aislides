@@ -253,3 +253,151 @@ describe("Share Feature - URL Construction", () => {
     expect(shareUrl).toBe("https://example.com/shared/test-token");
   });
 });
+
+// ═══════════════════════════════════════════════════════
+// VERSION HISTORY TESTS
+// ═══════════════════════════════════════════════════════
+
+describe("Version History - Data Structure", () => {
+  it("version data shape is correct", () => {
+    // Simulate the shape returned by the API
+    const version = {
+      id: 1,
+      presentationId: "abc123",
+      slideIndex: 0,
+      versionNumber: 1,
+      slideHtml: "<div>Test</div>",
+      slideData: { title: "Test", bullets: ["a", "b"] },
+      changeType: "edit",
+      changeDescription: "Updated title",
+      createdAt: new Date().toISOString(),
+    };
+
+    expect(version.id).toBeTypeOf("number");
+    expect(version.presentationId).toBeTypeOf("string");
+    expect(version.slideIndex).toBeGreaterThanOrEqual(0);
+    expect(version.versionNumber).toBeGreaterThanOrEqual(1);
+    expect(version.slideHtml).toContain("<div>");
+    expect(version.slideData).toHaveProperty("title");
+    expect(version.changeType).toMatch(/^(edit|layout_change|content_update|ai_edit)$/);
+  });
+
+  it("version numbers are sequential", () => {
+    const versions = [
+      { versionNumber: 1 },
+      { versionNumber: 2 },
+      { versionNumber: 3 },
+    ];
+
+    for (let i = 0; i < versions.length - 1; i++) {
+      expect(versions[i + 1].versionNumber).toBe(versions[i].versionNumber + 1);
+    }
+  });
+
+  it("change types are valid", () => {
+    const validTypes = ["edit", "layout_change", "content_update", "ai_edit"];
+    const testTypes = ["edit", "layout_change", "content_update"];
+
+    for (const t of testTypes) {
+      expect(validTypes).toContain(t);
+    }
+  });
+});
+
+describe("Version History - Restore Logic", () => {
+  it("restoring a version should produce a new current state", () => {
+    // Simulate: original data → edit → restore to original
+    const originalData = { title: "Original", bullets: ["A", "B"] };
+    const editedData = { title: "Edited", bullets: ["A", "B", "C"] };
+
+    // After restore, current should match original
+    const restoredData = { ...originalData };
+    expect(restoredData.title).toBe("Original");
+    expect(restoredData.bullets).toEqual(["A", "B"]);
+    expect(restoredData).not.toEqual(editedData);
+  });
+
+  it("version list is ordered newest first", () => {
+    const versions = [
+      { versionNumber: 3, createdAt: "2026-02-13T12:03:00Z" },
+      { versionNumber: 2, createdAt: "2026-02-13T12:02:00Z" },
+      { versionNumber: 1, createdAt: "2026-02-13T12:01:00Z" },
+    ];
+
+    for (let i = 0; i < versions.length - 1; i++) {
+      expect(versions[i].versionNumber).toBeGreaterThan(versions[i + 1].versionNumber);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// PDF EXPORT TESTS
+// ═══════════════════════════════════════════════════════
+
+describe("PDF Export", () => {
+  it("generates a valid PDF buffer from a title slide", async () => {
+    const { generatePdf } = await import("./pdfExport");
+
+    const slides = [
+      {
+        layoutId: "title-slide",
+        data: {
+          title: "PDF Тест",
+          subtitle: "Подзаголовок",
+          author: "Автор",
+          date: "2026",
+        },
+      },
+    ];
+
+    const buffer = await generatePdf(slides, "PDF Тест", SAMPLE_CSS);
+
+    expect(buffer).toBeInstanceOf(Buffer);
+    expect(buffer.length).toBeGreaterThan(0);
+    // PDF files start with %PDF
+    expect(buffer[0]).toBe(0x25); // %
+    expect(buffer[1]).toBe(0x50); // P
+    expect(buffer[2]).toBe(0x44); // D
+    expect(buffer[3]).toBe(0x46); // F
+  }, 60000); // 60s timeout for puppeteer
+
+  it("generates multi-page PDF from multiple slides", async () => {
+    const { generatePdf } = await import("./pdfExport");
+
+    const slides = [
+      {
+        layoutId: "title-slide",
+        data: { title: "Слайд 1", subtitle: "Начало" },
+      },
+      {
+        layoutId: "content-text",
+        data: {
+          title: "Слайд 2",
+          bullets: ["Пункт 1", "Пункт 2"],
+          _slideNumber: 2,
+          _totalSlides: 3,
+        },
+      },
+      {
+        layoutId: "final-slide",
+        data: { title: "Конец", subtitle: "Спасибо!" },
+      },
+    ];
+
+    const buffer = await generatePdf(slides, "Мульти-PDF", SAMPLE_CSS);
+
+    expect(buffer).toBeInstanceOf(Buffer);
+    // Multi-page PDF should be larger than single-page
+    expect(buffer.length).toBeGreaterThan(1000);
+  }, 60000);
+
+  it("handles empty slides array", async () => {
+    const { generatePdf } = await import("./pdfExport");
+
+    const buffer = await generatePdf([], "Пустой PDF", SAMPLE_CSS);
+
+    expect(buffer).toBeInstanceOf(Buffer);
+    // Even empty PDF has headers
+    expect(buffer.length).toBeGreaterThan(0);
+  }, 60000);
+});

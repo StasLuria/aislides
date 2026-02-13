@@ -24,6 +24,7 @@ import { wsManager } from "./wsManager";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { generatePptx } from "./pptxExport";
+import { generatePdf } from "./pdfExport";
 import { getThemePreset } from "./pipeline/themes";
 
 const router = Router();
@@ -503,6 +504,98 @@ router.get("/api/v1/presentations/:id/export/pptx", async (req: Request, res: Re
   } catch (error: any) {
     console.error("[API] PPTX export error:", error);
     res.status(500).json({ detail: error.message || "PPTX export failed" });
+  }
+});
+
+// ── PDF Export (authenticated) ─────────────────────────────────
+router.get("/api/v1/presentations/:id/export/pdf", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides available" });
+      return;
+    }
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+    const cssVariables = p.themeCss || themePreset.cssVariables;
+    const title = p.title || p.prompt.substring(0, 100);
+
+    const pdfBuffer = await generatePdf(
+      slides.map((s: any) => ({
+        layoutId: s.layoutId || s.layout_id || "text-slide",
+        data: s.data || {},
+      })),
+      title,
+      cssVariables,
+    );
+
+    const safeTitle = title.replace(/[^a-zA-Z0-9\u0430-\u044f\u0410-\u042f\u0451\u0401\s-]/g, "").substring(0, 60).trim() || "presentation";
+    const filename = `${safeTitle}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error("[API] PDF export error:", error);
+    res.status(500).json({ detail: error.message || "PDF export failed" });
+  }
+});
+
+// ── PDF Export (shared) ─────────────────────────────────
+router.get("/api/v1/shared/:token/export/pdf", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentationByShareToken(req.params.token);
+    if (!p) {
+      res.status(404).json({ detail: "Shared presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides available" });
+      return;
+    }
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+    const cssVariables = p.themeCss || themePreset.cssVariables;
+    const title = p.title || p.prompt.substring(0, 100);
+
+    const pdfBuffer = await generatePdf(
+      slides.map((s: any) => ({
+        layoutId: s.layoutId || s.layout_id || "text-slide",
+        data: s.data || {},
+      })),
+      title,
+      cssVariables,
+    );
+
+    const safeTitle = title.replace(/[^a-zA-Z0-9\u0430-\u044f\u0410-\u042f\u0451\u0401\s-]/g, "").substring(0, 60).trim() || "presentation";
+    const filename = `${safeTitle}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error("[API] Shared PDF export error:", error);
+    res.status(500).json({ detail: error.message || "PDF export failed" });
   }
 });
 

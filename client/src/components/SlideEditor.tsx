@@ -208,7 +208,7 @@ export default function SlideEditor({
   }, [presentationId, slide.index]);
 
   return (
-    <div className="w-[360px] border-l border-border/50 flex flex-col bg-background/95 backdrop-blur-sm">
+    <div className="w-[360px] border-l border-border/50 flex flex-col bg-background/95 backdrop-blur-sm h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function SlideEditor({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-5">
           {/* Text Fields */}
           <div className="space-y-3">
@@ -351,7 +351,7 @@ export default function SlideEditor({
       </ScrollArea>
 
       {/* Footer — Save button */}
-      <div className="p-4 border-t border-border/50 space-y-2">
+      <div className="p-4 border-t border-border/50 space-y-2 shrink-0">
         <Button
           onClick={handleSave}
           disabled={!isDirty || isSaving}
