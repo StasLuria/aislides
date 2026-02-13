@@ -739,3 +739,12 @@
 - [x] Frontend: "Мои шаблоны" section in settings panel with upload + select + delete
 - [x] Write vitest tests for template parsing and CSS generation (16 new tests — 953 total passing)
 - [x] End-to-end test: verified UI renders correctly, API endpoints respond, template selection works
+
+## Bug Fix: Chat UI doesn't update after sending message
+- [x] After sending first message, screen stays on empty "Создайте презентацию" instead of showing chat
+- [x] SSE progress events not displayed in real-time — user must switch chats and back to see results
+- [x] When presentation is ready, the "Посмотреть презентацию" button doesn't appear until chat is re-opened
+- [x] Root cause: race condition between loadSession (useEffect on params.id) and sendMessage (pendingMessageRef)
+- [x] loadSession called by useEffect after navigate("/chat/${newId}") wiped messages added by sendMessage
+- [x] Fix: added justCreatedSessionRef flag — set before navigate, checked in useEffect to skip loadSession
+- [x] 953 tests passing

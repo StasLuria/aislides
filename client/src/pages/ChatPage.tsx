@@ -560,6 +560,8 @@ export default function ChatPage() {
   const [settingsApplied, setSettingsApplied] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  // Flag to prevent loadSession from racing with sendMessage after createSession
+  const justCreatedSessionRef = useRef(false);
 
   const {
     messages,
@@ -580,8 +582,16 @@ export default function ChatPage() {
   } = useSSEChat();
 
   // Initialize session — only load if URL has an ID, otherwise reset to empty state
+  // IMPORTANT: Skip loadSession when we just created the session (to avoid race condition
+  // where loadSession wipes messages that sendMessage is about to add)
   useEffect(() => {
     if (params.id) {
+      if (justCreatedSessionRef.current) {
+        // Session was just created by handleSend — skip loadSession,
+        // let the pendingMessage effect handle sending the first message
+        justCreatedSessionRef.current = false;
+        return;
+      }
       loadSession(params.id).catch((err) => {
         if (err?.message === "SESSION_NOT_FOUND") {
           // Session was deleted or doesn't exist — redirect to fresh chat
@@ -634,6 +644,8 @@ export default function ChatPage() {
     // If no session yet (fresh /chat page), create one first
     if (!sessionId) {
       const newId = await createSession();
+      // Set flag BEFORE navigate to prevent the useEffect from calling loadSession
+      justCreatedSessionRef.current = true;
       navigate(`/chat/${newId}`, { replace: true });
 
       // Apply custom template metadata to the session before first message
