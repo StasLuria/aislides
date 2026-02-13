@@ -72,8 +72,15 @@ router.get("/api/v1/chat/sessions", async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 50;
     const sessions = await listChatSessions(undefined, limit);
 
+    // Filter out empty sessions (0 messages, idle phase) — they are orphans
+    const filtered = sessions.filter((s) => {
+      const msgCount = (s.messages || []).length;
+      if (msgCount === 0 && s.phase === "idle") return false;
+      return true;
+    });
+
     res.json(
-      sessions.map((s) => ({
+      filtered.map((s) => ({
         session_id: s.sessionId,
         topic: s.topic || "Новый чат",
         phase: s.phase,

@@ -247,7 +247,8 @@ export function useSSEChat() {
     stopPolling();
     try {
       const res = await fetch(`${API_BASE}/sessions/${id}`);
-      if (!res.ok) throw new Error("Session not found");
+      if (res.status === 404) throw new Error("SESSION_NOT_FOUND");
+      if (!res.ok) throw new Error("Failed to load session");
       const data = await res.json();
       setSessionId(data.session_id);
       setMessages(
@@ -284,6 +285,8 @@ export function useSSEChat() {
       }
     } catch (err: any) {
       setError(err.message);
+      // Re-throw SESSION_NOT_FOUND so caller (ChatPage) can redirect
+      if (err.message === "SESSION_NOT_FOUND") throw err;
     }
   }, [stopPolling, startPolling]);
 

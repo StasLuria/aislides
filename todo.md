@@ -709,3 +709,12 @@
 - [x] Frontend: api.ts uploadChatFiles + getChatFiles methods
 - [x] Write vitest tests for file extraction and constants (23 new tests — 937 total passing)
 - [x] Verified: TXT upload → S3 → text extraction → ready status
+
+## Bug Fix: Empty 'Новый чат' sessions STILL being created (persistent)
+- [x] Previous fix was insufficient — sessions still appear on page load/navigation
+- [x] Deep audit: find ALL code paths that call createSession or POST /sessions
+- [x] Root cause: old orphan sessions (0 messages, idle phase) from before lazy-creation fix
+- [x] Fix: Server-side filtering in GET /sessions — exclude sessions with 0 messages + idle phase
+- [x] Fix: loadSession handles 404 by redirecting to /chat (deleted/missing sessions)
+- [x] Deleted 3 remaining orphan sessions from DB
+- [x] 937 tests passing

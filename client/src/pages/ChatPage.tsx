@@ -417,7 +417,15 @@ export default function ChatPage() {
   // Initialize session — only load if URL has an ID, otherwise reset to empty state
   useEffect(() => {
     if (params.id) {
-      loadSession(params.id).catch(console.error);
+      loadSession(params.id).catch((err) => {
+        if (err?.message === "SESSION_NOT_FOUND") {
+          // Session was deleted or doesn't exist — redirect to fresh chat
+          console.warn(`[ChatPage] Session ${params.id} not found, redirecting to /chat`);
+          navigate("/chat", { replace: true });
+        } else {
+          console.error(err);
+        }
+      });
     } else {
       // No ID in URL = fresh chat view, reset state
       // Session will be created lazily on first message (see handleSend)
