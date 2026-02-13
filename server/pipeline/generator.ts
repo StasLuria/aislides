@@ -29,8 +29,6 @@ import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
-import { analyzeAllSlides, buildEnrichedSlidesSummary, applyContentAwareOverrides, type ContentAnalysis } from "./contentAnalyzer";
-import { generateImagePrompts, type EnrichedSlideInfo, type ImagePromptContext } from "./imagePromptEngine";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -39,8 +37,6 @@ import { generateImagePrompts, type EnrichedSlideInfo, type ImagePromptContext }
 export interface GenerationConfig {
   themePreset?: string;
   enableImages?: boolean;
-  /** Extracted text content from uploaded source file */
-  sourceContent?: string;
 }
 
 export interface PipelineProgress {
@@ -157,10 +153,10 @@ async function llmText(systemPrompt: string, userPrompt: string): Promise<string
 // AGENT FUNCTIONS
 // ═══════════════════════════════════════════════════════
 
-export async function runPlanner(prompt: string, sourceContent?: string): Promise<PlannerResult> {
+export async function runPlanner(prompt: string): Promise<PlannerResult> {
   return llmStructured<PlannerResult>(
     MASTER_PLANNER_SYSTEM,
-    masterPlannerUser(prompt, sourceContent),
+    masterPlannerUser(prompt),
     "MasterPlannerOutput",
     {
       type: "object",
@@ -190,11 +186,10 @@ export async function runOutline(
   prompt: string,
   branding: PlannerResult["branding"],
   language: string,
-  sourceContent?: string,
 ): Promise<OutlineResult> {
   const system = outlineSystem(language);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr, sourceContent);
+  const user = outlineUser(prompt, brandingStr);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -411,16 +406,13 @@ export async function runTheme(
   });
 }
 
-export async function runLayout(content: SlideContent[], contentAnalyses?: ContentAnalysis[]): Promise<LayoutDecision[]> {
-  // Use enriched summary if content analyses are available
-  const slidesSummary = contentAnalyses
-    ? buildEnrichedSlidesSummary(content, contentAnalyses)
-    : content
-        .map(
-          (s) =>
-            `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${s.data_points.length > 0 ? " [HAS DATA]" : ""}`,
-        )
-        .join("\n");
+export async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
+  const slidesSummary = content
+    .map(
+      (s) =>
+        `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${s.data_points.length > 0 ? " [HAS DATA]" : ""}`,
+    )
+    .join("\n");
 
   const result = await llmStructured<{ decisions: LayoutDecision[] }>(
     LAYOUT_SYSTEM,
@@ -455,10 +447,9 @@ export async function runHtmlComposer(
   slideContent: SlideContent,
   layoutName: string,
   themeCss: string,
-  language?: string,
 ): Promise<Record<string, any>> {
   const layoutTemplate = getLayoutTemplate(layoutName);
-  const system = htmlComposerSystem(undefined, language);
+  const system = htmlComposerSystem();
   const user = htmlComposerUser(
     layoutName,
     layoutTemplate || `Layout: ${layoutName}`,
@@ -467,7 +458,6 @@ export async function runHtmlComposer(
     slideContent.notes,
     slideContent.key_message,
     themeCss,
-    language,
   );
 
   // The composer returns the data object for the template
@@ -508,7 +498,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       data.description = content.text.substring(0, 200);
       data.presenterName = "";
       data.initials = "";
-      data.presentationDate = "";
+      data.presentationDate = new Date().toLocaleDateString("ru-RU");
       break;
     case "section-header":
       data.subtitle = content.key_message || content.text.substring(0, 150);
@@ -672,7 +662,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       };
       data.chartData = {
         left: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [10, 20, 30, 40] }] },
-        right: { type: "line", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Тренд", data: [15, 25, 35, 45] }] },
+        right: { type: "bar", labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Данные", data: [15, 25, 35, 45] }] },
       };
       break;
     case "risk-matrix":
@@ -727,9 +717,8 @@ export async function runHtmlComposerWithQA(
   layoutName: string,
   themeCss: string,
   maxRetries: number = 1,
-  language?: string,
 ): Promise<Record<string, any>> {
-  let data = await runHtmlComposer(slideContent, layoutName, themeCss, language);
+  let data = await runHtmlComposer(slideContent, layoutName, themeCss);
 
   // Step 1: Validate
   let qa = validateSlideData(data, layoutName);
@@ -753,7 +742,7 @@ export async function runHtmlComposerWithQA(
 
     // Re-run HTML Composer with the QA feedback
     const layoutTemplate = getLayoutTemplate(layoutName);
-    const system = htmlComposerSystem(qa.feedbackForRetry, language);
+    const system = htmlComposerSystem(qa.feedbackForRetry);
     const user = htmlComposerUser(
       layoutName,
       layoutTemplate || `Layout: ${layoutName}`,
@@ -762,7 +751,6 @@ export async function runHtmlComposerWithQA(
       slideContent.notes,
       slideContent.key_message,
       themeCss,
-      language,
     );
 
     const rawResponse = await llmText(system, user).catch(() => "");
@@ -927,16 +915,15 @@ export async function generatePresentation(
   fullHtml: string;
 }> {
   const enableImages = config.enableImages !== false; // enabled by default
-  const sourceContent = config.sourceContent;
 
   // 1. PLANNER
-  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: sourceContent ? "Анализ документа и планирование..." : "Анализ темы и планирование..." });
-  const plannerResult = await runPlanner(prompt, sourceContent);
+  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: "Анализ темы и планирование..." });
+  const plannerResult = await runPlanner(prompt);
   const language = plannerResult.language || "ru";
 
   // 2. OUTLINE
-  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: sourceContent ? "Создание структуры на основе документа..." : "Создание структуры презентации..." });
-  const rawOutline = await runOutline(prompt, plannerResult.branding, language, sourceContent);
+  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
+  const rawOutline = await runOutline(prompt, plannerResult.branding, language);
 
   // 2.5. OUTLINE CRITIC — validate and improve outline structure
   onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
@@ -983,7 +970,7 @@ export async function generatePresentation(
   onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 40, message: "Улучшение нарратива и заголовков..." });
   let content = rawContent;
   try {
-    const storytellingResult = await runStorytellingAgent(rawContent, outline, language);
+    const storytellingResult = await runStorytellingAgent(rawContent, outline);
     content = storytellingResult.enhancedContent;
     if (storytellingResult.narrativeThread) {
       console.log(`[Pipeline] Narrative thread: ${storytellingResult.narrativeThread}`);
@@ -1015,81 +1002,12 @@ export async function generatePresentation(
     themePreset,
   );
 
-  // 4.9. CONTENT ANALYSIS — deterministic content-type detection
-  onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 53, message: "Анализ типов контента..." });
-  const contentAnalyses = analyzeAllSlides(content);
-  const analysisLog = contentAnalyses
-    .filter(a => a.contentType !== "title" && a.contentType !== "closing")
-    .map(a => `  slide ${a.slideNumber}: ${a.contentType} (${(a.confidence * 100).toFixed(0)}%) → [${a.recommendedLayouts.slice(0, 2).join(", ")}] signals=[${a.signals.join(", ")}]`)
-    .join("\n");
-  console.log(`[Pipeline] Content analysis:\n${analysisLog}`);
-
-  // 5. LAYOUT — with enriched content analysis hints
+  // 5. LAYOUT
   onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 55, message: "Выбор макетов для слайдов..." });
-  const layoutDecisions = await runLayout(content, contentAnalyses);
+  const layoutDecisions = await runLayout(content);
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
-
-  // 5.0.5. CONTENT-AWARE OVERRIDE: fix layouts that contradict content type
-  applyContentAwareOverrides(layoutMap, contentAnalyses);
-
-  // 5.1. POST-LAYOUT ADJACENCY FIX: prevent consecutive same layouts
-  {
-    const sortedSlideNums = Array.from(layoutMap.keys()).sort((a, b) => a - b);
-    const EXEMPT_LAYOUTS = new Set(["title-slide", "final-slide", "section-header"]);
-    const ALTERNATIVE_LAYOUTS = [
-      "text-with-callout", "numbered-steps-v2", "process-steps", "timeline-horizontal",
-      "icons-numbers", "comparison", "two-column", "checklist", "scenario-cards",
-    ];
-    for (let i = 1; i < sortedSlideNums.length; i++) {
-      const prevNum = sortedSlideNums[i - 1];
-      const currNum = sortedSlideNums[i];
-      const prevLayout = layoutMap.get(prevNum)!;
-      const currLayout = layoutMap.get(currNum)!;
-      if (prevLayout === currLayout && !EXEMPT_LAYOUTS.has(currLayout)) {
-        // Find a replacement that differs from both prev and next
-        const nextLayout = i + 1 < sortedSlideNums.length ? layoutMap.get(sortedSlideNums[i + 1]) : undefined;
-        const replacement = ALTERNATIVE_LAYOUTS.find(l => l !== prevLayout && l !== nextLayout);
-        if (replacement) {
-          console.log(`[Pipeline] Adjacency fix: slide ${currNum} "${currLayout}" → "${replacement}" (was same as slide ${prevNum})`);
-          layoutMap.set(currNum, replacement);
-        }
-      }
-    }
-
-    // 5.1b. MAX-PER-TYPE LIMIT: prevent any non-exempt layout from appearing more than maxPerType times
-    const totalSlides = sortedSlideNums.length;
-    const maxPerType = Math.max(2, Math.ceil(totalSlides / 5)); // e.g. 13 slides → max 3 per type
-    const layoutCounts = new Map<string, number>();
-    for (const num of sortedSlideNums) {
-      const layout = layoutMap.get(num)!;
-      layoutCounts.set(layout, (layoutCounts.get(layout) || 0) + 1);
-    }
-    // Iterate and replace over-represented layouts
-    for (const num of sortedSlideNums) {
-      const layout = layoutMap.get(num)!;
-      if (EXEMPT_LAYOUTS.has(layout)) continue;
-      if ((layoutCounts.get(layout) || 0) > maxPerType) {
-        const prevNum = sortedSlideNums[sortedSlideNums.indexOf(num) - 1];
-        const nextIdx = sortedSlideNums.indexOf(num) + 1;
-        const nextNum = nextIdx < sortedSlideNums.length ? sortedSlideNums[nextIdx] : undefined;
-        const prevLayout = prevNum !== undefined ? layoutMap.get(prevNum) : undefined;
-        const nextLayout = nextNum !== undefined ? layoutMap.get(nextNum) : undefined;
-        // Find a replacement that isn't overused and differs from neighbors
-        const replacement = ALTERNATIVE_LAYOUTS.find(l => {
-          const lCount = layoutCounts.get(l) || 0;
-          return lCount < maxPerType && l !== prevLayout && l !== nextLayout && l !== layout;
-        });
-        if (replacement) {
-          console.log(`[Pipeline] Max-per-type fix: slide ${num} "${layout}" → "${replacement}" (${layoutCounts.get(layout)} > ${maxPerType})`);
-          layoutMap.set(num, replacement);
-          layoutCounts.set(layout, (layoutCounts.get(layout) || 1) - 1);
-          layoutCounts.set(replacement, (layoutCounts.get(replacement) || 0) + 1);
-        }
-      }
-    }
-  }
 
   // 5.5. IMAGE GENERATION (between layout and HTML composer)
   let imageMap = new Map<number, string>();
@@ -1097,36 +1015,7 @@ export async function generatePresentation(
     onProgress({ nodeName: "image", currentStep: "images", progressPercent: 60, message: "Подбор слайдов для иллюстраций..." });
 
     try {
-      // Build enriched slide info with full content context for image prompt engine
-      const enrichedSlides: EnrichedSlideInfo[] = content
-        .filter(s => {
-          const layout = layoutMap.get(s.slide_number) || "text-slide";
-          return !SKIP_IMAGE_LAYOUTS.has(layout);
-        })
-        .map(s => {
-          const analysis = contentAnalyses.find(a => a.slideNumber === s.slide_number);
-          return {
-            slideNumber: s.slide_number,
-            title: s.title,
-            fullText: s.text,
-            keyMessage: s.key_message,
-            dataPoints: s.data_points,
-            layout: layoutMap.get(s.slide_number) || "text-slide",
-            contentType: analysis?.contentType,
-            confidence: analysis?.confidence,
-          };
-        });
-
-      const imagePromptContext: ImagePromptContext = {
-        presentationTitle: plannerResult.presentation_title,
-        language: plannerResult.language,
-        themeMood: themePreset.mood,
-        primaryColor: theme.colors.primary,
-        secondaryColor: theme.colors.secondary,
-        };
-
-      const selections = await generateImagePrompts(enrichedSlides, imagePromptContext, 5);
-      console.log(`[Pipeline] Image prompt engine selected ${selections.length} slides: ${selections.map(s => `slide ${s.slide_number}`).join(", ")}`);
+      const selections = await selectSlidesForImages(content, layoutMap, 5);
 
       if (selections.length > 0) {
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 63, message: `Генерация ${selections.length} иллюстраций...` });
@@ -1142,20 +1031,8 @@ export async function generatePresentation(
         });
 
         // Override layouts for slides that got images
-        // Only switch to image-text if the current layout doesn't support images natively
-        const IMAGE_NATIVE_LAYOUTS = new Set([
-          "image-text", "image-fullscreen", "title-slide", "quote-slide",
-          "text-slide", "text-with-callout", "two-column", "comparison",
-          "process-steps", "timeline", "numbered-steps-v2", "checklist",
-          "pros-cons", "hero-stat", "highlight-stats",
-        ]);
         Array.from(imageMap.keys()).forEach((slideNum) => {
-          const currentLayout = layoutMap.get(slideNum) || "text-slide";
-          if (!IMAGE_NATIVE_LAYOUTS.has(currentLayout)) {
-            layoutMap.set(slideNum, "image-text");
-          }
-          // Otherwise keep the original layout — the image will be injected into data.image
-          // and templates that don't use it will simply ignore it
+          layoutMap.set(slideNum, "image-text");
         });
 
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: `Готово: ${imageMap.size} иллюстраций` });
@@ -1216,7 +1093,6 @@ export async function generatePresentation(
       layoutMap,
       6,
       (msg) => onProgress({ nodeName: "data_viz", currentStep: "generating", progressPercent: 73, message: msg }),
-      language,
     );
     chartMap = dataVizResult.svgCharts;
     console.log(`[Pipeline] Data Viz: ${dataVizResult.totalChartsGenerated} SVG charts generated`);
@@ -1258,7 +1134,7 @@ export async function generatePresentation(
     const batchResults = await Promise.all(
       batch.map(async (slideContent) => {
         const layoutName = layoutMap.get(slideContent.slide_number) || "text-slide";
-        const data = await runHtmlComposerWithQA(slideContent, layoutName, theme.css_variables, 1, language).catch(() =>
+        const data = await runHtmlComposerWithQA(slideContent, layoutName, theme.css_variables).catch(() =>
           buildFallbackData(slideContent, layoutName),
         );
 
@@ -1318,7 +1194,7 @@ export async function generatePresentation(
       data: s.data,
       html: s.html,
     }));
-    const critique = runDesignCritic(designSlides, theme.css_variables, language);
+    const critique = runDesignCritic(designSlides, theme.css_variables);
 
     // Apply CSS fixes to slides that have issues
     for (const [slideIdx, cssFix] of Array.from(critique.cssFixesPerSlide.entries())) {

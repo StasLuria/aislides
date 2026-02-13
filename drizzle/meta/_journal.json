@@ -26,15 +26,8 @@
     {
       "idx": 3,
       "version": "5",
-      "when": 1770922178761,
-      "tag": "0003_narrow_rhino",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1770938177111,
-      "tag": "0004_lonely_jetstream",
+      "when": 1770960184239,
+      "tag": "0003_early_quasar",
       "breakpoints": true
     }
   ]

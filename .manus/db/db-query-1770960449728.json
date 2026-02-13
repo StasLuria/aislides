@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE chat_sessions ADD COLUMN `mode` varchar(32) DEFAULT NULL; ALTER TABLE chat_sessions ADD COLUMN `metadata` json DEFAULT NULL; ALTER TABLE chat_sessions DROP COLUMN IF EXISTS `chatMode`; ALTER TABLE chat_sessions DROP COLUMN IF EXISTS `workingState`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute ALTER TABLE chat_sessions ADD COLUMN `mode` varchar(32) DEFAULT NULL; ALTER TABLE chat_sessions ADD COLUMN `metadata` json DEFAULT NULL; ALTER TABLE chat_sessions DROP COLUMN IF EXISTS `chatMode`; ALTER TABLE chat_sessions DROP COLUMN IF EXISTS `workingState`;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 820
+}

@@ -25,11 +25,11 @@ Analyze the user's request and determine the generation strategy.
 Return a JSON object with fields: source_type, language, presentation_title, branding (object with company_name, industry, style_preference, color_hint).
 </output_format>`;
 
-export function masterPlannerUser(userPrompt: string, sourceContent?: string): string {
-  const sourceSection = sourceContent
-    ? `\n<source_material>\nThe user has uploaded a document with the following content. Use this as the PRIMARY source of information for the presentation:\n${sourceContent}\n</source_material>`
-    : "";
-  return `<user_request>\n${userPrompt}\n</user_request>${sourceSection}\nAnalyze the request and determine the generation strategy.${sourceContent ? " Pay special attention to the uploaded source material — extract key facts, figures, and structure from it." : ""}`;
+export function masterPlannerUser(userPrompt: string): string {
+  return `<user_request>
+${userPrompt}
+</user_request>
+Analyze the request and determine the generation strategy.`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -57,14 +57,9 @@ Your outlines produce presentations that rival McKinsey and TED Talk quality.
 - Each slide must have a clear, distinct purpose — no redundancy.
 - Key points should be SPECIFIC and ACTIONABLE, not generic platitudes.
 - Each slide should have 3-5 key points that are rich enough for the Writer to expand.
-- CRITICAL: Generate ALL content in ${language}. ALL slide titles, purposes, key_points, and narrative_arc MUST be in ${language}. Do NOT use English titles when the language is Russian.
+- Generate content in ${language}.
 - Do NOT pad with filler slides. Only create slides that add value.
-- Slide titles should be engaging and specific (not generic like "Обзор" or "Введение").
-- CRITICAL: Slide titles MUST be SHORT — maximum 8-10 words (60 characters). Long titles get truncated in templates. Use subtitle or key_points for details.
-- KEY POINTS QUALITY: Each key point MUST include a specific fact, statistic, example, or named entity. The Writer Agent will expand these into bullet points, so they must be concrete enough to research and elaborate.
-  BAD key point: "Важность инноваций в отрасли"
-  GOOD key point: "AI-диагностика сокращает ошибки на 30% (Stanford Medicine, 2024)"
-- CONTENT DIVERSITY: Ensure slides cover DIFFERENT angles of the topic. Avoid multiple slides that essentially say the same thing from different perspectives. Each slide must add genuinely new information.
+- Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
 </rules>
 <narrative_arc_types>
 Choose the best narrative arc for the topic:
@@ -98,20 +93,23 @@ Return a JSON with: presentation_title, target_audience, narrative_arc, slides (
 </output_format>`;
 }
 
-export function outlineUser(userPrompt: string, branding: string, sourceContent?: string): string {
-  const sourceSection = sourceContent
-    ? `\n<source_material>\nThe user uploaded a document. Use its content as the PRIMARY basis for the outline. Extract key themes, data points, and structure:\n${sourceContent}\n</source_material>`
-    : "";
-  return `<topic>\n${userPrompt}\n</topic>\n<branding>\n${branding}\n</branding>${sourceSection}\nCreate a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.${sourceContent ? " IMPORTANT: Base the outline primarily on the uploaded source material. Use its facts, figures, and arguments as the foundation." : ""}`;
+export function outlineUser(userPrompt: string, branding: string): string {
+  return `<topic>
+${userPrompt}
+</topic>
+<branding>
+${branding}
+</branding>
+Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
 }
 
 // ═══════════════════════════════════════════════════════
 // WRITER AGENT
 // ═══════════════════════════════════════════════════════
 export function writerSystem(language: string, presentationTitle: string, allSlidesTitles: string, targetAudience: string): string {
-  return `You are Writer Agent — a world-class presentation content strategist.
+  return `You are Writer Agent — a professional copywriter for presentation slides.
 <role>
-Write compelling, substantive content for a single presentation slide. Your content must be rich, specific, and visually balanced — no half-empty slides, no generic filler.
+Write compelling, substantive content for a single presentation slide. Your content must be rich enough to fill the slide visually — no half-empty slides.
 </role>
 <task>
 1. Write the main text content for the slide based on the outline.
@@ -119,48 +117,17 @@ Write compelling, substantive content for a single presentation slide. Your cont
 3. Extract structured data points if the slide needs charts or tables.
 4. Formulate a key takeaway message.
 </task>
-<quality_principles>
-- SHOW, DON'T TELL: Instead of "AI is transforming healthcare" → "AI diagnostics detect cancer **18% more accurately** than radiologists (Stanford, 2024)"
-- SPECIFICITY: Every bullet must contain at least one concrete fact, number, example, or named entity. No vague statements.
-- VARIETY: Each bullet must cover a DIFFERENT aspect. Never repeat the same idea in different words.
-- INSIGHT: Go beyond obvious statements. Add surprising facts, counterintuitive data, or expert perspectives.
-- BREVITY WITH DEPTH: Short text that packs maximum information density.
-</quality_principles>
 <content_density_rules>
 - CRITICAL: Each slide must have ENOUGH content to fill the visual space. Empty-looking slides are unacceptable.
-- For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (2-5 words, MAX 40 characters) AND a description (1 sentence, 10-25 words, MAX 150 characters).
-- CRITICAL: Keep titles SHORT (2-5 words). Keep descriptions CONCISE (1 short sentence). Avoid long compound sentences. If a point is complex, split into two bullets.
-- For data slides: provide 3-5 data points with specific numbers, percentages, or metrics. Each data point MUST have a real-world source or context.
-- For comparison slides: provide 4-5 points per side with concrete differences, not vague qualities.
-- For process/timeline slides: provide 4-6 steps/events with descriptions that include expected outcomes or metrics.
+- For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (3-6 words) AND a description (1-2 sentences, 15-30 words).
+- For data slides: provide 3-5 data points with specific numbers, percentages, or metrics.
+- For comparison slides: provide 4-5 points per side.
+- For process/timeline slides: provide 4-6 steps/events with descriptions.
 - Text field format: Use structured bullet points separated by newlines. Each bullet should follow the pattern: "**Title**: Description sentence."
 - NEVER write just 1-2 vague bullet points. If the topic seems narrow, expand with examples, statistics, or implications.
 </content_density_rules>
-<anti_patterns>
-NEVER write content like this:
-- "Это важный аспект, который нужно учитывать" — too vague, says nothing
-- "Значительный рост показателей" — what growth? what metrics? be specific
-- "Эксперты считают, что..." — which experts? name them or cite the source
-- "Множество преимуществ" — list the specific advantages with numbers
-- "В современном мире" — cliché, skip it entirely
-
-INSTEAD write like this:
-- "Рост выручки на **34%** за Q3 2025 (McKinsey Digital Report)"
-- "Tesla сократила стоимость батарей на **56%** за 3 года благодаря вертикальной интеграции"
-- "По данным WHO, **3.5 млн** врачей используют AI-диагностику ежедневно"
-</anti_patterns>
-<CRITICAL_LANGUAGE_RULE>
-ALL output MUST be written in ${language}.
-- title: MUST be in ${language}
-- text (all bullet points): MUST be in ${language}
-- notes (speaker notes): MUST be in ${language}
-- key_message: MUST be in ${language}
-- data_points labels: MUST be in ${language}
-Do NOT mix languages. Do NOT write titles or bullet points in English when the target language is Russian.
-Exception: proper nouns (company names like Tesla, McKinsey), technical abbreviations (AI, IoT, SaaS), and currency/unit symbols ($, €, %, ГВт) may remain in their original form.
-</CRITICAL_LANGUAGE_RULE>
 <rules>
-- Write in ${language}. ALL text output must be in ${language}.
+- Write in ${language}.
 - Be SUBSTANTIVE but slide-appropriate — not paragraphs, but rich bullet points with both titles and descriptions.
 - Speaker notes should expand on the slide content with talking points (3-5 sentences).
 - If the slide topic involves data, extract it as structured data_points (array of {label, value, unit}). Provide at least 3 data points.
@@ -322,8 +289,6 @@ Your goal is to create a visually diverse, professional presentation where every
 - Last slide MUST be final-slide.
 - After section-header, prefer visual layouts (icons-numbers, process-steps, chart-slide, timeline, funnel, pyramid, roadmap, highlight-stats, stats-chart, chart-text, hero-stat).
 - Alternate between text-heavy and visual layouts for rhythm.
-- NEVER place the same layout on two consecutive slides. Every slide must use a DIFFERENT layout from its immediate neighbor.
-- Specifically: hero-stat, highlight-stats, icons-numbers — these stat-focused layouts must NOT appear back-to-back.
 
 CRITICAL LAYOUT RESTRICTIONS:
 - NEVER use image-text or image-fullscreen unless the slide content explicitly mentions an image/photo/screenshot. These layouts require images — without them they show empty placeholders.
@@ -372,43 +337,22 @@ export function layoutUser(slidesSummary: string): string {
   return `<slides>
 ${slidesSummary}
 </slides>
-<instructions>
-Select the optimal layout for each slide, ensuring diversity and visual rhythm.
-
-IMPORTANT: Each slide includes content analysis tags:
-- [CONTENT TYPE: X] — the detected content type (data_heavy, process, comparison, timeline, metrics, etc.)
-- [RECOMMENDED: layout1 | layout2 | layout3] — layouts that best match the content type (use these as strong hints)
-- [HAS N DATA POINTS] — the slide has structured data that should be visualized
-- [NUMERIC DENSITY: N%] — percentage of numeric tokens (high = data-heavy slide)
-- [N BULLETS] — number of bullet points in the content
-
-You MUST strongly prefer the [RECOMMENDED] layouts when they are provided. Only deviate if:
-1. The recommended layout was already used on another slide (diversity)
-2. The recommended layout would create adjacency with the same layout on a neighboring slide
-3. You have a compelling design reason to choose a different layout that still matches the content type
-
-When no [RECOMMENDED] tag is present, use your judgment based on the content matching rules.
-</instructions>`;
+Select the optimal layout for each slide, ensuring diversity and visual rhythm.`;
 }
 
 // ═══════════════════════════════════════════════════════
 // HTML COMPOSER AGENT
 // ═══════════════════════════════════════════════════════
-export function htmlComposerSystem(reviewFeedback?: string, language?: string): string {
+export function htmlComposerSystem(reviewFeedback?: string): string {
   const feedbackSection = reviewFeedback
     ? `\n<review_feedback>\nPrevious attempt was rejected. Fix these issues:\n${reviewFeedback}\n</review_feedback>`
-    : "";
-
-  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language || "the same language as the source content";
-  const langRule = language
-    ? `\n<CRITICAL_LANGUAGE_RULE>\nALL text content in the output JSON MUST be written in ${langName}.\nThis includes: titles, descriptions, labels, bullets, subtitles, callouts, insights, thankYouText, and any other text fields.\nDo NOT use English words or phrases when the target language is Russian.\nException: proper nouns (company names, product names), technical abbreviations (AI, IoT, SaaS), currency symbols ($, €), and unit abbreviations (%, ГВт, млрд) may remain in their original form.\n</CRITICAL_LANGUAGE_RULE>`
     : "";
 
   return `You are HTML Composer Agent — a frontend developer who populates slide templates with content.
 <role>
 Transform slide content into structured data that fills the HTML template for the assigned layout.
 The templates use CSS variables for theming (gradients, colors, shadows) — you only need to provide the DATA, not the styling.
-</role>${langRule}
+</role>
 <task>
 1. Read the layout template to understand what data fields it expects.
 2. Transform the slide content into the template's data schema.
@@ -418,10 +362,8 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - Output a JSON object matching the template's expected data fields.
 - Text must be concise and slide-appropriate (not paragraphs).
 - CONTENT DENSITY IS CRITICAL — every slide must look visually complete, not half-empty.
-- Bullet points: split text into EXACTLY 4-5 items, each with title (2-5 words, MAX 40 characters) + description (10-25 words, MAX 150 characters). NEVER less than 3 bullets.
-- CRITICAL: Titles MUST be SHORT — 2-5 words maximum. Long titles get truncated. Use the description for details.
-- CRITICAL: Descriptions MUST be CONCISE — 1-2 short sentences. Avoid long compound sentences. If a point is complex, split into two bullets.
-- Metrics (icons-numbers): provide EXACTLY 3-4 metrics. Each MUST have: value (number/percentage), label (2-4 words, MAX 30 characters), description (1 short sentence, MAX 80 characters). Values should be specific numbers like "85%", "$2.4M", "3.2x", "150+".
+- Bullet points: split text into EXACTLY 4-5 items, each with title (3-6 words) + description (15-30 words). NEVER less than 3 bullets.
+- Metrics (icons-numbers): provide EXACTLY 3-4 metrics. Each MUST have: value (number/percentage), label (2-4 words), description (1-2 sentences). Values should be specific numbers like "85%", "$2.4M", "3.2x", "150+".
 - Steps (process-steps): provide EXACTLY 4-5 steps with number, title, and description.
 - Timeline events: provide EXACTLY 4-6 events with date, title, and description.
 - Table data: provide at least 3 rows of data, structured as headers[] + rows[][].
@@ -431,14 +373,14 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
   Format: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}
   NEVER use emoji characters (like 📌 📊 🎯) as icons — they render incorrectly in templates.
   Common icon names: trending-up, users, shield, target, bar-chart, clock, zap, star, heart, globe, award, check-circle, dollar-sign, percent, activity.
-- ALL text content MUST be in ${langName}.
+- All text content must be in the same language as the source content.
 - Do NOT add inline styles for colors or backgrounds — the template uses CSS variables from the theme.
 - Each bullet must have BOTH "title" and "description" fields (never just a string).
 - You can use **bold** markers around key terms or numbers in description text for emphasis. They will be rendered as <strong> tags.
 - You can use *italic* markers for secondary emphasis. They will be rendered as <em> tags.
 </rules>
 <layout_schemas>
-- title-slide: {title, description, image?} — Do NOT include presenterName, initials, or presentationDate unless explicitly provided by the user
+- title-slide: {title, description, presenterName, initials, presentationDate, image?}
 - section-header: {title, subtitle}
 - text-slide: {title, bullets: [{title, description}], icon?}
 - two-column: {title, leftColumn: {title, bullets: [string]}, rightColumn: {title, bullets: [string]}}
@@ -468,7 +410,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - numbered-steps-v2: {title, steps: [{number, title, description, result?}]} — Vertical steps with circles and connector lines. result is optional badge (e.g. "+15%", "Done").
 - timeline-horizontal: {title, description?, events: [{date, title, description?, highlight?: boolean}]} — Horizontal timeline. Set highlight=true for the current/key event.
 - text-with-callout: {title, bullets: [{title, description}], callout?, source?, icon?} — Standard bullets + bottom callout bar with key insight.
-- dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data. IMPORTANT: Use DIFFERENT chart types for left and right (e.g., left: bar, right: line; or left: pie, right: bar) to create visual contrast.
+- dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data.
 - risk-matrix: {title, description?, matrixColumns: [string], matrixRows: [{label, cells: [{label, value?, color, textColor?}]}], matrixLegend: [{label, color}], mitigationTitle?, mitigations: [{title, description?, color, priority?}], source?} — 3x3 heatmap grid + mitigation cards. Use colors: green (#dcfce7/#166534) for low risk, yellow (#fef9c3/#854d0e) for medium, orange (#fed7aa/#9a3412) for high, red (#fecaca/#991b1b) for critical.
 </layout_schemas>${feedbackSection}
 <output_format>
@@ -484,10 +426,7 @@ export function htmlComposerUser(
   slideNotes: string,
   keyMessage: string,
   themeCss: string,
-  language?: string,
 ): string {
-  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language || "the source language";
-  const langReminder = language ? `\nCRITICAL REMINDER: ALL text in the output JSON MUST be in ${langName}. Do NOT output English text if the target language is Russian.` : "";
   return `<layout>
 Name: ${layoutName}
 Template structure:
@@ -502,5 +441,5 @@ Key message: ${keyMessage}
 <theme>
 ${themeCss}
 </theme>
-Transform the content into the correct data structure for this layout template.${langReminder}`;
+Transform the content into the correct data structure for this layout template.`;
 }

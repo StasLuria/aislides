@@ -10,7 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerPresentationRoutes } from "../presentationRoutes";
 import { registerInteractiveRoutes } from "../interactiveRoutes";
 import { registerSlideEditRoutes } from "../slideEditRoutes";
-import chatRoutes from "../chatRoutes";
+import { registerChatRoutes } from "../chatRoutes";
 import { wsManager } from "../wsManager";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -53,7 +53,7 @@ async function startServer() {
   registerSlideEditRoutes(app);
 
   // Chat API — /api/v1/chat/*
-  app.use("/api/v1/chat", chatRoutes);
+  registerChatRoutes(app);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

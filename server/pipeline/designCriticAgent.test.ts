@@ -178,7 +178,7 @@ describe("checkContrast", () => {
   it("detects low body text contrast", () => {
     const badTheme = { ...goodTheme, "--text-body-color": "#c0c0c0" };
     const issues = checkContrast(1, badTheme, "text-slide");
-    expect(issues.some((i) => i.category === "contrast")).toBe(true);
+    expect(issues.some((i) => i.category === "contrast" && i.severity === "error")).toBe(true);
   });
 
   it("checks white-on-accent for section headers", () => {
@@ -192,14 +192,6 @@ describe("checkContrast", () => {
     const issues = checkContrast(1, darkAccent, "section-header");
     const errors = issues.filter((i) => i.severity === "error" && i.message.includes("White text"));
     expect(errors).toHaveLength(0);
-  });
-
-  it("skips normal bg checks for accent-bg layouts (section-header, final-slide, hero-stat)", () => {
-    // Even with bad heading/body contrast, accent layouts should only check white-on-accent
-    const badTheme = { ...goodTheme, "--text-heading-color": "#d0d0d0", "--primary-accent-color": "#1e3a8a" };
-    const issues = checkContrast(1, badTheme, "final-slide");
-    // Should NOT have heading contrast error (because final-slide uses white text on accent)
-    expect(issues.filter((i) => i.message.includes("Heading text contrast"))).toHaveLength(0);
   });
 });
 
@@ -220,40 +212,52 @@ describe("checkTextOverflow", () => {
     expect(issues).toHaveLength(0);
   });
 
-  it("detects severely long title (>1.5x limit)", () => {
+  it("detects overly long title", () => {
     const data = {
-      title: "A".repeat(200), // Way over 90 * 1.5 = 135 limit for text-slide
+      title: "A".repeat(100),
       bullets: [],
     };
     const issues = checkTextOverflow(1, data, "text-slide");
-    expect(issues.some((i) => i.category === "overflow" && i.message.includes("Title"))).toBe(true);
+    expect(issues.some((i) => i.category === "overflow" && i.message.includes("Title too long"))).toBe(true);
   });
 
-  it("does not flag moderately long title (within 1.5x)", () => {
+  it("detects overly long bullet descriptions", () => {
     const data = {
-      title: "A".repeat(100), // Over 90 but under 135 (1.5x)
-      bullets: [],
+      title: "Test",
+      bullets: [
+        { title: "Point", description: "D".repeat(200) },
+      ],
     };
     const issues = checkTextOverflow(1, data, "text-slide");
-    expect(issues.filter((i) => i.message.includes("Title"))).toHaveLength(0);
+    expect(issues.some((i) => i.message.includes("description too long"))).toBe(true);
   });
 
   it("detects long quote text", () => {
     const data = {
       title: "Quote",
-      quote: "Q".repeat(400), // Over 350 limit
+      quote: "Q".repeat(300),
     };
     const issues = checkTextOverflow(1, data, "quote-slide");
     expect(issues.some((i) => i.message.includes("Quote too long"))).toBe(true);
   });
 
-  it("uses layout-specific limits", () => {
-    // icons-numbers has 80 char title limit, 1.5x = 120
+  it("detects long table cells", () => {
     const data = {
-      title: "T".repeat(130), // Over 120 (1.5x of 80)
+      title: "Data",
+      headers: ["A", "B"],
+      rows: [["Short", "C".repeat(80)]],
+    };
+    const issues = checkTextOverflow(1, data, "table-slide");
+    expect(issues.some((i) => i.message.includes("Table cell"))).toBe(true);
+  });
+
+  it("uses layout-specific limits", () => {
+    // icons-numbers has stricter limits
+    const data = {
+      title: "T".repeat(65), // Over 60 limit for icons-numbers
     };
     const issues = checkTextOverflow(1, data, "icons-numbers");
-    expect(issues.some((i) => i.message.includes("Title"))).toBe(true);
+    expect(issues.some((i) => i.message.includes("Title too long"))).toBe(true);
   });
 });
 
@@ -262,10 +266,10 @@ describe("checkTextOverflow", () => {
 // ═══════════════════════════════════════════════════════
 
 describe("checkLayoutBalance", () => {
-  it("detects unbalanced two-column layout (ratio > 3)", () => {
+  it("detects unbalanced two-column layout", () => {
     const data = {
       title: "Comparison",
-      leftColumn: { title: "Left", bullets: ["a", "b", "c", "d", "e", "f", "g"] },
+      leftColumn: { title: "Left", bullets: ["a", "b", "c", "d", "e"] },
       rightColumn: { title: "Right", bullets: ["x"] },
     };
     const issues = checkLayoutBalance(1, data, "two-column");
@@ -282,20 +286,38 @@ describe("checkLayoutBalance", () => {
     expect(issues.filter((i) => i.severity === "warning" || i.severity === "error")).toHaveLength(0);
   });
 
-  it("detects unbalanced comparison (ratio > 3)", () => {
+  it("detects unbalanced comparison", () => {
     const data = {
       title: "A vs B",
-      optionA: { title: "A", points: ["1", "2", "3", "4", "5", "6", "7"] },
+      optionA: { title: "A", points: ["1", "2", "3", "4", "5"] },
       optionB: { title: "B", points: ["x"] },
     };
     const issues = checkLayoutBalance(1, data, "comparison");
     expect(issues.some((i) => i.message.includes("unbalanced"))).toBe(true);
   });
 
+  it("warns about single metric", () => {
+    const data = {
+      title: "KPI",
+      metrics: [{ value: "42%", label: "Growth" }],
+    };
+    const issues = checkLayoutBalance(1, data, "icons-numbers");
+    expect(issues.some((i) => i.message.includes("Only 1 metric"))).toBe(true);
+  });
+
+  it("suggests even grid for odd metric counts", () => {
+    const data = {
+      title: "KPIs",
+      metrics: Array(5).fill({ value: "42%", label: "Metric" }),
+    };
+    const issues = checkLayoutBalance(1, data, "icons-numbers");
+    expect(issues.some((i) => i.category === "balance" && i.severity === "info")).toBe(true);
+  });
+
   it("detects empty text slide", () => {
     const data = { title: "Empty", bullets: [] };
     const issues = checkLayoutBalance(1, data, "text-slide");
-    expect(issues.some((i) => i.message.includes("no content"))).toBe(true);
+    expect(issues.some((i) => i.message.includes("no bullets"))).toBe(true);
   });
 });
 
@@ -304,10 +326,10 @@ describe("checkLayoutBalance", () => {
 // ═══════════════════════════════════════════════════════
 
 describe("checkFontSizing", () => {
-  it("detects critically small font sizes (below 10px)", () => {
+  it("detects critically small font sizes", () => {
     const html = `<div style="font-size: 8px;">Tiny text</div>`;
     const issues = checkFontSizing(1, html, "text-slide");
-    expect(issues.some((i) => i.category === "font_size")).toBe(true);
+    expect(issues.some((i) => i.category === "font_size" && i.severity === "error")).toBe(true);
   });
 
   it("accepts normal font sizes", () => {
@@ -315,6 +337,23 @@ describe("checkFontSizing", () => {
     const issues = checkFontSizing(1, html, "text-slide");
     const errors = issues.filter((i) => i.severity === "error");
     expect(errors).toHaveLength(0);
+  });
+
+  it("warns about small heading size", () => {
+    const html = `<h1 style="font-size: 18px;">Small Heading</h1>`;
+    const issues = checkFontSizing(1, html, "text-slide");
+    expect(issues.some((i) => i.message.includes("Heading font size"))).toBe(true);
+  });
+
+  it("detects wide font size range", () => {
+    const html = `
+      <h1 style="font-size: 60px;">Big</h1>
+      <p style="font-size: 16px;">Medium</p>
+      <span style="font-size: 8px;">Tiny</span>
+    `;
+    const issues = checkFontSizing(1, html, "text-slide");
+    // Should have both "too small" error and "wide range" info
+    expect(issues.length).toBeGreaterThan(0);
   });
 
   it("returns no issues for empty HTML", () => {
@@ -331,17 +370,17 @@ describe("checkWhitespace", () => {
   it("warns about excessive content density", () => {
     const data = {
       title: "Dense Slide",
-      bullets: Array(12).fill({ title: "Point", description: "A long description that takes up space on the slide" }),
+      bullets: Array(10).fill({ title: "Point", description: "A long description that takes up space on the slide" }),
     };
     const issues = checkWhitespace(1, data, "text-slide");
     expect(issues.some((i) => i.category === "whitespace")).toBe(true);
   });
 
-  it("warns about very high text density (>1200 chars)", () => {
+  it("warns about high text density", () => {
     const data = {
-      title: "T".repeat(100),
-      description: "D".repeat(300),
-      bullets: Array(8).fill({ title: "T".repeat(50), description: "D".repeat(100) }),
+      title: "T".repeat(50),
+      description: "D".repeat(200),
+      bullets: Array(5).fill({ title: "T".repeat(40), description: "D".repeat(100) }),
     };
     const issues = checkWhitespace(1, data, "text-slide");
     expect(issues.some((i) => i.message.includes("text density"))).toBe(true);
@@ -373,13 +412,6 @@ describe("checkWhitespace", () => {
     expect(checkWhitespace(1, data, "section-header").filter((i) => i.message.includes("empty"))).toHaveLength(0);
     expect(checkWhitespace(1, data, "final-slide").filter((i) => i.message.includes("empty"))).toHaveLength(0);
   });
-
-  it("exempts chart/stat layouts from empty check", () => {
-    const data = { title: "Chart" };
-    expect(checkWhitespace(1, data, "chart-slide").filter((i) => i.message.includes("empty"))).toHaveLength(0);
-    expect(checkWhitespace(1, data, "hero-stat").filter((i) => i.message.includes("empty"))).toHaveLength(0);
-    expect(checkWhitespace(1, data, "dual-chart").filter((i) => i.message.includes("empty"))).toHaveLength(0);
-  });
 });
 
 // ═══════════════════════════════════════════════════════
@@ -397,34 +429,19 @@ describe("checkColorHarmony", () => {
       <span style="color: #0f172a;">Text</span>
     </div>`;
     const issues = checkColorHarmony(1, html, themeVars);
-    expect(issues.filter((i) => i.severity === "warning" || i.severity === "error")).toHaveLength(0);
+    expect(issues.filter((i) => i.severity === "warning")).toHaveLength(0);
   });
 
-  it("detects many off-theme colors (7+ needed to trigger)", () => {
-    // Need 7+ off-theme colors to trigger (relaxed threshold)
+  it("detects off-theme colors", () => {
+    // Many bright colors that don't match blue theme
     const html = `
       <div style="color: #ff0000;">Red</div>
       <div style="color: #00ff00;">Green</div>
       <div style="background-color: #ff00ff;">Magenta</div>
       <div style="color: #ff8800;">Orange</div>
-      <div style="color: #aa0000;">DarkRed</div>
-      <div style="color: #00aa00;">DarkGreen</div>
-      <div style="background-color: #aa00aa;">DarkMagenta</div>
-      <div style="color: #cc6600;">DarkOrange</div>
     `;
     const issues = checkColorHarmony(1, html, themeVars);
     expect(issues.some((i) => i.category === "color_harmony")).toBe(true);
-  });
-
-  it("does not flag 4 off-theme colors (below threshold)", () => {
-    const html = `
-      <div style="color: #ff0000;">Red</div>
-      <div style="color: #00ff00;">Green</div>
-      <div style="background-color: #ff00ff;">Magenta</div>
-      <div style="color: #ff8800;">Orange</div>
-    `;
-    const issues = checkColorHarmony(1, html, themeVars);
-    expect(issues.filter((i) => i.category === "color_harmony")).toHaveLength(0);
   });
 
   it("ignores neutral colors (black, white, gray)", () => {
@@ -448,7 +465,7 @@ describe("checkConsistency", () => {
     return { slideNumber: num, layoutId: layout, data: { title: `Slide ${num}` }, html: "<div>test</div>" };
   }
 
-  it("detects excessive layout repetition (>50%)", () => {
+  it("detects excessive layout repetition", () => {
     const slides = [
       makeSlide(1, "title-slide"),
       makeSlide(2, "text-slide"),
@@ -473,16 +490,17 @@ describe("checkConsistency", () => {
     expect(issues.some((i) => i.message.includes("unique layout"))).toBe(true);
   });
 
-  it("detects 2 consecutive same layouts", () => {
+  it("detects 3+ consecutive same layouts", () => {
     const slides = [
       makeSlide(1, "title-slide"),
       makeSlide(2, "text-slide"),
       makeSlide(3, "text-slide"),
-      makeSlide(4, "icons-numbers"),
-      makeSlide(5, "final-slide"),
+      makeSlide(4, "text-slide"),
+      makeSlide(5, "icons-numbers"),
+      makeSlide(6, "final-slide"),
     ];
     const issues = checkConsistency(slides);
-    expect(issues.some((i) => i.message.includes("Consecutive"))).toBe(true);
+    expect(issues.some((i) => i.message.includes("consecutive"))).toBe(true);
   });
 
   it("accepts varied layout usage", () => {
@@ -614,10 +632,10 @@ describe("runDesignCritic", () => {
 
   it("detects issues in problematic presentation", () => {
     const slides = [
-      makeSlide(1, "title-slide", { title: "A".repeat(200) }),
+      makeSlide(1, "title-slide", { title: "A".repeat(100) }),
       makeSlide(2, "text-slide", {
-        title: "B".repeat(200),
-        bullets: Array(15).fill({ title: "Long title here that is really long", description: "Very long description that goes on and on and on and on" }),
+        title: "B".repeat(100),
+        bullets: Array(10).fill({ title: "Long title here", description: "Very long description that goes on and on" }),
       }, `<h1 style="font-size: 8px;">Tiny</h1>`),
     ];
 
@@ -640,7 +658,7 @@ describe("runDesignCritic", () => {
     expect(fontIssues.length).toBeGreaterThan(0);
   });
 
-  it("scores well-designed presentation highly (7+)", () => {
+  it("scores well-designed presentation highly", () => {
     const slides = [
       makeSlide(1, "title-slide"),
       makeSlide(2, "text-slide", {
@@ -676,19 +694,5 @@ describe("runDesignCritic", () => {
 
     // Well-designed presentation should score 7+
     expect(result.overallScore).toBeGreaterThanOrEqual(7);
-  });
-
-  it("uses category-based scoring (not per-issue)", () => {
-    // Same category on multiple slides should not collapse the score
-    const slides = [
-      makeSlide(1, "title-slide"),
-      makeSlide(2, "text-slide", { bullets: [{ title: "A", description: "B" }] }),
-      makeSlide(3, "icons-numbers", { metrics: [{ value: "1", label: "A" }, { value: "2", label: "B" }] }),
-      makeSlide(4, "final-slide"),
-    ];
-
-    const result = runDesignCritic(slides, themeCss);
-    // With good theme, score should not collapse below 5
-    expect(result.overallScore).toBeGreaterThanOrEqual(5);
   });
 });

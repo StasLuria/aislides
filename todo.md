@@ -593,174 +593,22 @@
 - [x] Strengthen Layout Agent prompt: limit text-slide to 1, image-text to 2, mandatory layout selection rules, diversity requirements for 10+ slide presentations
 - [x] All 872 tests pass after prompt improvements
 
-## File Upload as Source Material for Presentations
-- [x] Backend: POST /api/v1/upload-source-file endpoint (multipart/form-data via multer)
-- [x] Backend: Text extraction from PDF (pdf-parse v2 PDFParse class)
-- [x] Backend: Text extraction from DOCX (mammoth extractRawText)
-- [x] Backend: Text extraction from TXT/MD/CSV (direct Buffer.toString)
-- [x] Backend: Text extraction from PPTX (jszip + XML regex parsing)
-- [x] Backend: Upload original file to S3 via storagePut, return s3_url
-- [x] Backend: Content summarization for large files (LLM-based summarizeExtractedContent)
-- [x] Backend: Pass extracted text as sourceContent to Planner, Outline, and Writer agents
-- [x] Backend: Update presentation creation API to accept source_file object
-- [x] Backend: DB schema updated with sourceFileUrl, sourceFileName, sourceFileType, sourceContent columns
-- [x] Frontend: File upload zone on Home.tsx with drag-and-drop + click (Paperclip icon)
-- [x] Frontend: File type validation (PDF, DOCX, TXT, PPTX, MD, CSV) and size limit (10MB)
-- [x] Frontend: Upload progress indicator with spinner
-- [x] Frontend: Show uploaded file info (name, type, word count) with remove option
-- [x] Frontend: Pass source_file object to API on presentation creation
-- [x] Write vitest tests for file extraction — 32 new tests (904 total pass)
-
-## Bug Fixes
-- [x] Fix slide thumbnail sidebar not scrolling past slide 7 in Viewer page (added overflow-hidden to parent + flex-1 min-h-0 to ScrollArea)
-
-## Bug Fix: Text Truncation with Ellipsis
-- [x] Fix text-slide/image-text templates: descriptions truncated with "..." instead of showing full text
-- [x] Fix title truncation: long titles cut off with "..." instead of wrapping
-- [x] Fix stats-chart/chart-text: stat descriptions truncated
-- [x] Review all templates for text-overflow: ellipsis and line-clamp that cause content loss
-- [x] Ensure autoDensity properly escalates when content overflows (increased line-clamp defaults)
-- [x] Writer Agent: generate shorter, more concise bullet descriptions (2 lines max)
-
-## Bug Fix: Layout Diversity (Too Many Identical Slide Types)
-- [x] Layout Agent uses too many image-text layouts — fixed: images no longer force layout override to image-text
-- [x] Strengthen layout selection: max 1 of each layout type per presentation
-- [x] Add layout usage tracking to prevent repetition (IMAGE_NATIVE_LAYOUTS set preserves original layouts)
-- [x] Ensure diverse mix: text-slide, two-column, stats-chart, timeline, process-steps, etc.
-
-## Testing: Post-Fix Verification
-- [x] Generate a test presentation and verify text is not truncated with "..." (11 slides, most text visible)
-- [x] Verify layout diversity — 6 unique layout types: title, highlight-stats, image-text, chart-text, stats-chart, two-column
-- [x] Verify thumbnail sidebar scrolling works for all slides (all 11 thumbnails accessible)
-- [x] Verify keyboard arrow navigation (left/right) switches slides (handler works, needs page focus not iframe focus)
-
-## Bug Fix: Chart Issues (Labels, Frequency, Diversity)
-- [x] Fix chart axis labels truncated for long Russian words (increased truncateLabel to 18, added wrapLabel with multi-line SVG tspan rendering)
-- [x] Reduce chart frequency — maxCharts reduced from 6 to 3, added 8 more layouts to SKIP_CHART_LAYOUTS
-- [x] Improve chart type diversity — added diversity enforcement: no duplicate chart types per presentation
-- [x] Update dataVizAgent to limit chart assignments (max 3 per presentation)
-- [x] Update SVG chart rendering to handle long labels (word wrap via renderWrappedLabel, increased bottom margins)
-
-## Quality Improvement: Step 1 — Smart DataViz Agent
-- [x] Remove hardcoded SKIP_CHART_LAYOUTS restrictions (replaced with minimal STRUCTURAL_SKIP)
-- [x] Remove hardcoded maxCharts=3 limit (LLM decides count)
-- [x] Remove forced chart type rotation (LLM picks types based on data semantics)
-- [x] Add LLM-based holistic analysis via getSmartChartPlan()
-- [x] LLM picks chart type based on data semantics
-- [x] Keep local data extraction as Phase 1, LLM holistic review as Phase 2
-- [x] Update tests to match new behavior (all 904 pass)
-- [x] Test with real generation and verify quality (9 unique layouts / 11 slides, content-aware matching working)
-
-## Quality Improvement: Step 2 — Better Content Quality
-- [x] Improve Writer Agent prompt: added quality_principles (Show don't tell, Specificity, Variety, Insight, Brevity), anti-patterns with examples
-- [x] Improve Outline Agent: added KEY POINTS QUALITY rule requiring specific facts/stats, CONTENT DIVERSITY rule
-- [x] Improve bullet descriptions: anti-patterns section shows bad vs good examples in Russian
-
-## Quality Improvement: Step 3 — Better Design Quality
-- [x] Improve Layout Agent: smarter layout selection based on content type
-- [x] Improve Design Critique: stronger visual harmony checks
-- [x] Better layout diversity through content-aware assignment
-
-## Quality Improvement: Step 4 — Better Image Selection
-- [x] Improve image prompt generation for more relevant results
-- [x] Better image-to-slide matching
-
-## Bug Fix: Final Slide Title Truncation
-- [x] Fix final-slide template: title truncated with "..." for long titles
-- [x] Ensure final-slide allows multi-line titles (increase line-clamp or remove it)
-
-## Bug Fix: Consecutive Same Layout Types
-- [x] Add layout adjacency check: prevent same layout type appearing on consecutive slides
-- [x] Layout Agent prompt: add rule against consecutive identical layouts
-- [x] Specifically prevent two hero-stat slides in a row
-
-## Bug Fix: Dual-Chart Visual Differentiation
-- [x] Ensure dual-chart layout generates visually distinct charts (different types or styles)
-- [x] Fix dual-chart SVG injection: generate alternative chart type for right panel instead of duplicating
-- [x] Add max-per-type layout limit (max ceil(totalSlides/5) per non-exempt layout type)
-- [x] Design Critique Agent scoring improved: 1/10 → 10/10 on latest generation
-
-## Language Consistency Enforcement
-- [x] Audit all agent prompts for language enforcement gaps
-- [x] Master Planner: ensure detected language is passed downstream to all agents
-- [x] Outline Agent: enforce output language matches detected language
-- [x] Writer Agent: enforce all content (title, text, bullets, key_message) in target language
-- [x] Storytelling Agent: enforce action titles and transitions in target language
-- [x] HTML Composer Agent: enforce all slide data (title, description, bullets, metrics, labels) in target language
-- [x] DataViz Agent: enforce chart labels, units, and insights in target language
-- [x] Design Critic Agent: check for language mixing as a validation rule
-- [x] Layout Agent: no text generation, skip
-- [x] Fallback data builder: ensure fallback strings use target language
-- [x] Test with Russian prompt and verify all content is in Russian (12/12 slides fully Russian)
-
-## Smarter Layout Agent — Content-Aware Layout Selection
-- [x] Audit current Layout Agent prompt and post-processing logic
-- [x] Add content-type detection: identify data-heavy, process, comparison, timeline, quote slides from Writer output
-- [x] Create content-to-layout mapping rules (data → chart-text/stats-chart, process → process-steps, comparison → comparison/pros-cons, timeline → timeline/timeline-horizontal, quote → quote-slide)
-- [x] Add post-LLM layout override: if content type strongly matches a layout, enforce it
-- [x] Improve Layout Agent prompt with content-aware examples and rules
-- [x] Ensure layout diversity is maintained alongside content-aware selection
-- [x] Test with real generation and verify layout quality (9 unique layouts / 11 slides, comparison→comparison, stats→hero-stat, KPI→chart-text)
-
-## Quality Improvement: Step 4 — Better Image Generation
-- [x] Audit current image prompt generation logic (suggest-image-prompt, selectSlidesForImages, generateSlideImages)
-- [x] Analyze how slide content (title, text, data_points, key_message) is used in image prompts
-- [x] Improve image prompt generation: add slide content context (topic, key facts, data points)
-- [x] Add style guidance to prompts (professional, business, clean, no text overlay)
-- [x] Improve slide selection for images: prefer slides with visual topics (technology, people, places)
-- [x] Add negative prompt patterns to avoid generic stock-photo results
-- [x] Ensure image prompts match presentation theme/mood
-- [x] Write/update vitest tests for improved image prompt generation
-- [x] Test with real generation and verify image relevance (2/3 images cybersecurity-themed, slide 9 excellent)
-
-## Bug Fix: Title Slide Fake Author/Date
-- [x] Remove "Аналитик 23 мая 2024 г." from title slide — fake author/date data appearing
-- [x] Check title-slide template for author/date fields and remove or make them optional
-- [x] Ensure HTML Composer doesn't generate fake author metadata
-
-## Bug Fix: Chart Label Readability
-- [x] Fix chart axis labels truncated/overlapping for Russian text (e.g., "емя реагирования ...")
-- [x] Fix horizontal bar chart: labels cut off, values overlap with bars
-- [x] Increase SVG chart margins and font sizes for better readability
-- [x] Fix dual-chart right panel: horizontal bar labels not readable
-
-## Bug Fix: Non-Editable Fields in Editor
-- [x] Identify which slide layout has non-editable fields (checklist layout with grid cards)
-- [x] Fix checklist layout: added CHECKLIST_TITLE, CHECKLIST_DESC, CHECKLIST_STATUS selectors
-- [x] Fix inlineFieldInjector selectors to match actual rendered HTML structure for all 30+ layouts
-- [x] Ensure title, description, and severity/badge fields inside cards are all editable
-- [x] Added comprehensive editable field support for: comparison, pros-cons, swot-analysis, pyramid, matrix-2x2, roadmap, stats-chart, chart-text, hero-stat, scenario-cards, numbered-steps-v2, timeline-horizontal, text-with-callout, dual-chart, risk-matrix, team-profiles
-
-## Bug Fix: Image Style Diversity
-- [x] Images are all futuristic/sci-fi style regardless of topic
-- [x] Add variety of image styles: business photography, flat illustration, isometric, abstract, realistic
-- [x] Rotate image styles across slides to avoid monotony (deterministic rotation based on slide index)
-- [x] Make image style match content type (data → abstract, people → photography, tech → modern)
-- [x] Added 8-12 diverse styles per topic category with content-aware selection
-
-## Chat-Based Presentation Creation Mode
-- [ ] Design chat state machine (init → structure_proposal → structure_approved → per_slide_content → per_slide_design → complete)
-- [ ] Create DB schema for chat sessions and messages (chatSessions, chatMessages tables)
-- [ ] Implement server-side chat orchestrator with LLM (structure proposal, per-slide content, per-slide design)
-- [ ] Build chat UI component (message list, input box, slide previews inline)
-- [ ] Integrate slide HTML rendering as preview cards in chat messages
-- [ ] Support "готово" to advance phases, corrections via free text
-- [ ] Support "готово + ещё слайд + описание" for mid-process slide addition
-- [ ] Auto-select theme/style via LLM based on context
-- [ ] Add /chat route and update navigation
-- [ ] Wire up streaming responses for LLM messages
-
-## Chat-Based Unified Presentation Creator
-- [x] DB schema: chat_sessions table (id, messages JSON, state, presentationId, mode, createdAt)
-- [x] Server: chat routes (/api/v1/chat/start, /api/v1/chat/:id/message, /api/v1/chat/:id/status)
-- [x] Server: chat orchestrator — LLM agent that manages conversation flow and state machine
-- [x] Server: state machine (idle → topic_received → mode_selection → structure → slide_by_slide → done)
-- [x] Server: integrate batch pipeline into chat (quick mode)
-- [x] Server: integrate step-by-step pipeline into chat (poshagovo mode)
-- [x] Frontend: ChatPage component with message list, input, and slide previews
-- [x] Frontend: message types (text, slide_preview, structure_preview, progress, mode_selection)
-- [x] Frontend: quick action buttons in chat (Быстро / Пошагово, Утвердить / Изменить)
-- [x] Frontend: slide preview rendering inside chat messages
-- [x] Frontend: progress indicator for batch mode inside chat
-- [x] Update App.tsx routing — chat as main entry point
-- [x] Update AppLayout navigation for chat
+## SSE Streaming Responses
+- [x] Server: Create SSE endpoint for chat message streaming (/api/v1/chat/:id/message + /api/v1/chat/:id/action)
+- [x] Server: Update chatOrchestrator to yield tokens incrementally via direct fetch streaming
+- [x] Server: Stream structured events (token, actions, progress, presentation_link, done, error)
+- [x] Frontend: useSSEChat hook with fetch + ReadableStream for SSE parsing
+- [x] Frontend: Render tokens incrementally in AI message bubble with blinking cursor
+- [x] Frontend: Handle action buttons and presentation links arriving at end of stream
+- [x] Frontend: Graceful error handling with retry and error messages
+- [x] Server: chatDb.ts — CRUD operations for chat_sessions table (create, get, list, update, append, delete)
+- [x] Server: chatOrchestrator.ts — LLM-driven state machine (idle → mode_selection → generating → completed)
+- [x] Server: chatRoutes.ts — Express REST + SSE endpoints registered in _core/index.ts
+- [x] Server: Quick mode — full pipeline with real-time progress streaming (12% → 24% → 30% → ... → 100%)
+- [x] Server: Step-by-step mode — structure generation with approve/regenerate actions
+- [x] Frontend: ChatPage.tsx — full chat interface with message bubbles, action buttons, progress bar
+- [x] Frontend: useSSEChat.ts — SSE client hook with ReadableStream parsing
+- [x] Frontend: Chat navigation added to AppLayout (02 Чат)
+- [x] Frontend: Auto-create session and redirect to /chat/:id
+- [x] DB: chat_sessions table with messages JSON, phase, mode, presentationId, metadata columns
+- [x] Tests: 22 vitest tests for chat SSE (CRUD, streaming, actions, state machine, SSE format)

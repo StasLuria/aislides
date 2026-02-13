@@ -64,14 +64,6 @@ export const presentations = mysqlTable("presentations", {
   language: varchar("language", { length: 10 }).default("ru"),
   /** Theme CSS variables */
   themeCss: text("themeCss"),
-  /** Source file URL (S3) */
-  sourceFileUrl: text("sourceFileUrl"),
-  /** Source file name */
-  sourceFileName: varchar("sourceFileName", { length: 512 }),
-  /** Source file type */
-  sourceFileType: varchar("sourceFileType", { length: 16 }),
-  /** Extracted text content from source file (for pipeline context) */
-  sourceContent: text("sourceContent"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -80,8 +72,7 @@ export type Presentation = typeof presentations.$inferSelect;
 export type InsertPresentation = typeof presentations.$inferInsert;
 
 /**
- * Chat sessions — stores conversation history and state for the unified chat-based creator.
- * Each chat session can optionally link to a presentation once generation starts.
+ * Chat sessions table — stores chat conversations for presentation creation.
  */
 export const chatSessions = mysqlTable("chat_sessions", {
   id: int("id").autoincrement().primaryKey(),
@@ -89,31 +80,41 @@ export const chatSessions = mysqlTable("chat_sessions", {
   sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
   /** Owner user ID (nullable for anonymous) */
   userId: int("userId"),
-  /** Linked presentation ID (set when generation starts) */
+  /** Chat topic / presentation title */
+  topic: varchar("topic", { length: 512 }).default(""),
+  /** Messages array as JSON */
+  messages: json("messages").$type<ChatMessage[]>(),
+  /** Current phase: idle, topic_received, mode_selection, generating, step_structure, step_content, step_design, completed */
+  phase: varchar("phase", { length: 64 }).default("idle"),
+  /** Generation mode: quick or step_by_step */
+  mode: varchar("mode", { length: 32 }),
+  /** Linked presentation ID (once generation starts) */
   presentationId: varchar("presentationId", { length: 64 }),
-  /** Chat state machine phase */
-  phase: mysqlEnum("phase", [
-    "greeting",
-    "topic_received",
-    "mode_selection",
-    "generating_quick",
-    "structure_review",
-    "slide_content",
-    "slide_design",
-    "completed",
-    "error",
-  ]).default("greeting").notNull(),
-  /** Selected generation mode */
-  mode: mysqlEnum("chatMode", ["quick", "stepbystep"]),
-  /** Full message history as JSON array */
-  messages: json("messages"),
-  /** Working state: outline, current slide index, accumulated slides, theme, etc. */
-  workingState: json("workingState"),
-  /** User's original prompt/topic */
-  topic: text("topic"),
+  /** Metadata: theme, slide count, etc. */
+  metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: number;
+  /** Optional: action buttons to show */
+  actions?: ChatAction[];
+  /** Optional: slide preview HTML */
+  slidePreview?: string;
+  /** Optional: progress info */
+  progress?: { percent: number; message: string };
+  /** Optional: presentation link */
+  presentationLink?: string;
+}
+
+export interface ChatAction {
+  id: string;
+  label: string;
+  variant?: "default" | "outline" | "destructive";
+}
 
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertChatSession = typeof chatSessions.$inferInsert;

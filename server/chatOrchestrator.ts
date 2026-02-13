@@ -1,895 +1,604 @@
 /**
- * Chat Orchestrator — LLM-powered agent that manages the conversation flow
- * for the unified chat-based presentation creator.
+ * Chat Orchestrator — LLM-driven state machine for chat-based presentation creation.
+ * Supports SSE streaming for real-time token delivery.
  *
- * State machine:
- *   greeting → topic_received → mode_selection → (quick | stepbystep)
- *   quick: generating_quick → completed
- *   stepbystep: structure_review → slide_content → slide_design → (loop) → completed
+ * Phases:
+ *   idle → topic_received → mode_selection → generating/step_structure → ... → completed
+ *
+ * Two modes:
+ *   1. Quick (batch): runs full pipeline, streams progress updates
+ *   2. Step-by-step: structure → content per slide → design → final assembly
  */
+import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
-import { nanoid } from "nanoid";
-import {
-  getChatSession,
-  updateChatSession,
-  type ChatMessage,
-  type ChatWorkingState,
-} from "./chatDb";
+import type { ChatMessage, ChatAction } from "../drizzle/schema";
+import { getChatSession, updateChatSession, appendMessage } from "./chatDb";
 import { generatePresentation, type PipelineProgress } from "./pipeline/generator";
 import {
   createPresentation,
   updatePresentationProgress,
 } from "./presentationDb";
-import { renderSlide, renderPresentation } from "./pipeline/templateEngine";
-import { wsManager } from "./wsManager";
+import { renderPresentation } from "./pipeline/templateEngine";
 
 // ═══════════════════════════════════════════════════════
-// TYPES
+// SSE EVENT TYPES
 // ═══════════════════════════════════════════════════════
 
-export interface ChatResponse {
-  messages: ChatMessage[];
-  phase: string;
-  presentationId?: string;
+export interface SSEEvent {
+  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link";
+  data: any;
+}
+
+export type SSEWriter = (event: SSEEvent) => void;
+
+// ═══════════════════════════════════════════════════════
+// STREAMING LLM CALL
+// ═══════════════════════════════════════════════════════
+
+const resolveForgeApiUrl = () =>
+  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
+    : "https://forge.manus.im/v1/chat/completions";
+
+/**
+ * Stream an LLM response token-by-token via SSE.
+ * Returns the full accumulated text.
+ */
+async function streamLLMResponse(
+  systemPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+  writer: SSEWriter,
+): Promise<string> {
+  const apiUrl = resolveForgeApiUrl();
+  const apiKey = ENV.forgeApiKey || ENV.openaiApiKey;
+  if (!apiKey) throw new Error("No LLM API key configured");
+
+  const model = ENV.forgeApiKey ? "gemini-2.5-flash" : "gpt-4o";
+
+  const payload = {
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...messages,
+    ],
+    stream: true,
+    max_tokens: 2048,
+    ...(model !== "gpt-4o" ? { thinking: { budget_tokens: 128 } } : {}),
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`LLM streaming failed: ${response.status} — ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body reader");
+
+    const decoder = new TextDecoder();
+    let accumulated = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+        const data = trimmed.slice(6);
+        if (data === "[DONE]") continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta?.content;
+          if (delta) {
+            accumulated += delta;
+            writer({ type: "token", data: delta });
+          }
+        } catch {
+          // Skip malformed chunks
+        }
+      }
+    }
+
+    return accumulated;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Non-streaming LLM call for structured responses.
+ */
+async function llmStructuredChat(
+  systemPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+): Promise<string> {
+  const result = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...messages.map(m => ({ role: m.role as any, content: m.content })),
+    ],
+  });
+  const content = result.choices?.[0]?.message?.content;
+  if (!content) return "";
+  return typeof content === "string" ? content : JSON.stringify(content);
 }
 
 // ═══════════════════════════════════════════════════════
-// HELPERS
+// SYSTEM PROMPTS
 // ═══════════════════════════════════════════════════════
 
-function makeMsg(
-  role: "assistant" | "system",
-  content: string,
-  data?: ChatMessage["data"],
-): ChatMessage {
-  return { id: nanoid(8), role, content, data, timestamp: Date.now() };
-}
+const CHAT_SYSTEM_PROMPT = `Ты — AI-ассистент для создания презентаций. Твоя задача — помочь пользователю создать профессиональную презентацию.
 
-function makeUserMsg(content: string): ChatMessage {
-  return { id: nanoid(8), role: "user", content, timestamp: Date.now() };
-}
+ПРАВИЛА:
+1. Всегда отвечай на русском языке
+2. Будь дружелюбным и профессиональным
+3. Давай краткие, но информативные ответы (2-4 предложения)
+4. Не используй markdown-заголовки (# ## ###) — пиши обычным текстом
+5. Используй эмодзи умеренно для дружелюбности
+
+КОНТЕКСТ ДИАЛОГА:
+- Когда пользователь впервые пишет тему, подтверди её и предложи выбрать режим
+- Быстрый режим: полная генерация за ~60 секунд без остановок
+- Пошаговый режим: утверждение структуры, контента каждого слайда и дизайна
+
+Если пользователь пишет что-то не связанное с презентациями, вежливо направь его обратно к теме.`;
+
+const MODE_SELECTION_PROMPT = `Пользователь указал тему для презентации. Предложи выбрать режим создания:
+
+1. ⚡ Быстрый режим — полная генерация за ~60 секунд. AI создаст всё автоматически.
+2. 🎯 Пошаговый режим — ты утверждаешь структуру, контент и дизайн каждого слайда.
+
+Спроси, какой режим предпочитает пользователь. Будь кратким (2-3 предложения).`;
 
 // ═══════════════════════════════════════════════════════
-// MAIN ORCHESTRATOR
+// ORCHESTRATOR
 // ═══════════════════════════════════════════════════════
 
-export async function processUserMessage(
+/**
+ * Process a user message and stream the AI response via SSE.
+ */
+export async function processMessage(
   sessionId: string,
-  userText: string,
-): Promise<ChatResponse> {
+  userMessage: string,
+  writer: SSEWriter,
+): Promise<void> {
   const session = await getChatSession(sessionId);
-  if (!session) throw new Error("Chat session not found");
+  if (!session) {
+    writer({ type: "error", data: "Сессия не найдена" });
+    writer({ type: "done", data: null });
+    return;
+  }
 
-  const messages: ChatMessage[] = (session.messages as ChatMessage[]) || [];
-  const workingState: ChatWorkingState = (session.workingState as ChatWorkingState) || {};
+  // Save user message
+  const userMsg: ChatMessage = {
+    role: "user",
+    content: userMessage,
+    timestamp: Date.now(),
+  };
+  await appendMessage(sessionId, userMsg);
 
-  // Add user message
-  messages.push(makeUserMsg(userText));
-
-  const phase = session.phase;
-  let newMessages: ChatMessage[] = [];
-  let newPhase = phase;
-  let presentationId = session.presentationId || undefined;
+  const phase = session.phase || "idle";
+  const messages = [...(session.messages || []), userMsg];
 
   try {
     switch (phase) {
-      case "greeting":
-      case "topic_received": {
-        // User sent a topic — ask for mode selection
-        const topic = userText.trim();
-        workingState.config = workingState.config || {};
-
-        // Use LLM to understand intent and extract topic
-        const intentResult = await classifyIntent(topic, messages);
-
-        if (intentResult.type === "topic") {
-          newMessages.push(
-            makeMsg("assistant", `Отлично! Тема: **${intentResult.topic}**\n\nКак будем работать?`, {
-              type: "mode_selection",
-              buttons: [
-                { label: "⚡ Быстро (~60 сек)", action: "quick", variant: "default" },
-                { label: "🔄 Пошагово", action: "stepbystep", variant: "outline" },
-              ],
-            }),
-          );
-          workingState.title = intentResult.topic;
-          newPhase = "mode_selection";
-        } else if (intentResult.type === "clarification") {
-          newMessages.push(makeMsg("assistant", intentResult.response));
-          newPhase = "greeting";
-        } else {
-          newMessages.push(
-            makeMsg("assistant", "Опишите тему презентации, и я помогу её создать. Например: \"Стратегия развития компании на 2026 год\" или \"Кибербезопасность в финансовом секторе\"."),
-          );
-          newPhase = "greeting";
-        }
+      case "idle":
+        await handleTopicInput(sessionId, userMessage, messages, writer);
         break;
-      }
-
-      case "mode_selection": {
-        const lower = userText.toLowerCase().trim();
-        const isQuick = lower === "quick" || lower.includes("быстр") || lower.includes("сразу") || lower.includes("автомат");
-        const isStep = lower === "stepbystep" || lower.includes("пошаг") || lower.includes("по шаг") || lower.includes("вместе");
-
-        if (isQuick) {
-          newPhase = "generating_quick";
-          newMessages.push(
-            makeMsg("assistant", "Запускаю быструю генерацию! Это займёт около 60 секунд. Вы увидите прогресс прямо здесь.", {
-              type: "progress",
-              progress: 0,
-            }),
-          );
-
-          // Create presentation record and start generation in background
-          const topic = workingState.title || "Презентация";
-          const pres = await createPresentation({
-            prompt: topic,
-            mode: "batch",
-            config: workingState.config || {},
-          });
-          presentationId = pres.presentationId;
-
-          // Start async generation
-          startQuickGeneration(sessionId, presentationId, topic, workingState.config || {});
-        } else if (isStep) {
-          newPhase = "structure_review";
-          newMessages.push(
-            makeMsg("assistant", "Отлично, работаем пошагово! Сейчас создам структуру презентации..."),
-          );
-
-          // Generate structure via LLM
-          const topic = workingState.title || "Презентация";
-          const structure = await generateStructure(topic);
-          workingState.outline = structure;
-
-          const structureText = structure
-            .map((s, i) => `**${i + 1}. ${s.title}**\n_${s.description}_`)
-            .join("\n\n");
-
-          newMessages.push(
-            makeMsg(
-              "assistant",
-              `Вот предложенная структура (${structure.length} слайдов):\n\n${structureText}\n\nМожете изменить, добавить или удалить слайды. Когда всё устроит — напишите **"готово"**.`,
-              {
-                type: "structure",
-                structure: structure.map((s, i) => ({
-                  slideNumber: i + 1,
-                  title: s.title,
-                  layoutHint: s.layoutHint,
-                })),
-                buttons: [
-                  { label: "✅ Готово, начинаем", action: "approve_structure", variant: "default" },
-                ],
-              },
-            ),
-          );
-        } else {
-          // Try to understand what user wants
-          newMessages.push(
-            makeMsg("assistant", "Выберите режим работы:", {
-              type: "mode_selection",
-              buttons: [
-                { label: "⚡ Быстро (~60 сек)", action: "quick", variant: "default" },
-                { label: "🔄 Пошагово", action: "stepbystep", variant: "outline" },
-              ],
-            }),
-          );
-        }
+      case "mode_selection":
+        await handleModeSelection(sessionId, userMessage, messages, writer);
         break;
-      }
-
-      case "structure_review": {
-        const lower = userText.toLowerCase().trim();
-        const isApprove = lower === "approve_structure" || lower === "готово" || lower.includes("начинаем") || lower.includes("утвержда") || lower.includes("ок") || lower.includes("давай");
-
-        if (isApprove && workingState.outline && workingState.outline.length > 0) {
-          // Move to first slide content
-          workingState.currentSlideIndex = 0;
-          workingState.slides = [];
-          newPhase = "slide_content";
-
-          const slide = workingState.outline[0];
-          newMessages.push(
-            makeMsg(
-              "assistant",
-              `Структура утверждена! Переходим к слайду **1/${workingState.outline.length}**: **${slide.title}**\n\nСейчас сгенерирую контент для этого слайда...`,
-            ),
-          );
-
-          // Generate content for slide 1
-          const slideContent = await generateSlideContent(
-            workingState.title || "",
-            slide,
-            workingState.outline,
-            0,
-          );
-
-          const contentPreview = formatSlideContentPreview(slideContent);
-          newMessages.push(
-            makeMsg(
-              "assistant",
-              `Контент для слайда 1:\n\n${contentPreview}\n\nМожете отредактировать или написать **"готово"** для перехода к дизайну.`,
-              {
-                type: "slide_preview",
-                slideIndex: 0,
-                buttons: [
-                  { label: "✅ Готово", action: "approve_content", variant: "default" },
-                  { label: "🔄 Перегенерировать", action: "regenerate_content", variant: "outline" },
-                ],
-              },
-            ),
-          );
-
-          // Store slide content in working state
-          if (!workingState.slides) workingState.slides = [];
-          workingState.slides[0] = { layoutId: slideContent.layoutId, data: slideContent.data, html: "" };
-        } else {
-          // User wants to modify structure — use LLM to understand the change
-          const modifiedStructure = await modifyStructure(
-            workingState.outline || [],
-            userText,
-            workingState.title || "",
-          );
-          workingState.outline = modifiedStructure;
-
-          const structureText = modifiedStructure
-            .map((s, i) => `**${i + 1}. ${s.title}**\n_${s.description}_`)
-            .join("\n\n");
-
-          newMessages.push(
-            makeMsg(
-              "assistant",
-              `Обновлённая структура (${modifiedStructure.length} слайдов):\n\n${structureText}\n\nВсё устроит? Напишите **"готово"** или продолжайте вносить изменения.`,
-              {
-                type: "structure",
-                structure: modifiedStructure.map((s, i) => ({
-                  slideNumber: i + 1,
-                  title: s.title,
-                  layoutHint: s.layoutHint,
-                })),
-                buttons: [
-                  { label: "✅ Готово, начинаем", action: "approve_structure", variant: "default" },
-                ],
-              },
-            ),
-          );
-        }
+      case "generating":
+        // Pipeline is running, inform user
+        writer({ type: "token", data: "Генерация уже идёт, пожалуйста подождите... ⏳" });
+        writer({ type: "done", data: null });
         break;
-      }
-
-      case "slide_content": {
-        const lower = userText.toLowerCase().trim();
-        const idx = workingState.currentSlideIndex || 0;
-        const isApprove = lower === "approve_content" || lower === "готово" || lower.includes("дальше") || lower.includes("ок");
-        const isRegenerate = lower === "regenerate_content" || lower.includes("перегенер") || lower.includes("заново");
-
-        if (isRegenerate) {
-          const slide = workingState.outline?.[idx];
-          if (slide) {
-            newMessages.push(makeMsg("assistant", "Перегенерирую контент..."));
-            const slideContent = await generateSlideContent(
-              workingState.title || "",
-              slide,
-              workingState.outline || [],
-              idx,
-            );
-            const contentPreview = formatSlideContentPreview(slideContent);
-            if (workingState.slides) {
-              workingState.slides[idx] = { layoutId: slideContent.layoutId, data: slideContent.data, html: "" };
-            }
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Новый контент для слайда ${idx + 1}:\n\n${contentPreview}\n\nНапишите **"готово"** или внесите правки.`,
-                {
-                  type: "slide_preview",
-                  slideIndex: idx,
-                  buttons: [
-                    { label: "✅ Готово", action: "approve_content", variant: "default" },
-                    { label: "🔄 Перегенерировать", action: "regenerate_content", variant: "outline" },
-                  ],
-                },
-              ),
-            );
-          }
-        } else if (isApprove) {
-          // Move to slide design phase
-          newPhase = "slide_design";
-          newMessages.push(makeMsg("assistant", `Контент утверждён! Генерирую дизайн слайда ${idx + 1}...`));
-
-          // Render the slide HTML
-          const slideData = workingState.slides?.[idx];
-          if (slideData) {
-            const html = renderSlide(slideData.layoutId, {
-              ...slideData.data,
-              _slideNumber: idx + 1,
-              _totalSlides: workingState.outline?.length || 0,
-              _presentationTitle: workingState.title || "",
-            });
-            slideData.html = html;
-
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Вот превью слайда ${idx + 1}. Напишите **"готово"** для перехода к следующему слайду, или опишите изменения.`,
-                {
-                  type: "slide_preview",
-                  slideHtml: html,
-                  slideIndex: idx,
-                  buttons: [
-                    { label: "✅ Готово", action: "approve_design", variant: "default" },
-                    { label: "🔄 Другой макет", action: "change_layout", variant: "outline" },
-                  ],
-                },
-              ),
-            );
-          }
-        } else {
-          // User wants to edit content — apply changes via LLM
-          const slide = workingState.outline?.[idx];
-          const currentData = workingState.slides?.[idx];
-          if (slide && currentData) {
-            const updatedContent = await applyContentEdit(
-              currentData.data,
-              currentData.layoutId,
-              userText,
-              slide,
-            );
-            workingState.slides![idx] = { layoutId: updatedContent.layoutId, data: updatedContent.data, html: "" };
-            const contentPreview = formatSlideContentPreview(updatedContent);
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Обновлённый контент:\n\n${contentPreview}\n\nНапишите **"готово"** или продолжайте вносить правки.`,
-                {
-                  type: "slide_preview",
-                  slideIndex: idx,
-                  buttons: [
-                    { label: "✅ Готово", action: "approve_content", variant: "default" },
-                  ],
-                },
-              ),
-            );
-          }
-        }
+      case "completed":
+        await handlePostCompletion(sessionId, userMessage, messages, writer);
         break;
-      }
-
-      case "slide_design": {
-        const lower = userText.toLowerCase().trim();
-        const idx = workingState.currentSlideIndex || 0;
-        const totalSlides = workingState.outline?.length || 0;
-        const isApprove = lower === "approve_design" || lower === "готово" || lower.includes("дальше") || lower.includes("ок");
-
-        if (isApprove) {
-          // Move to next slide or finish
-          const nextIdx = idx + 1;
-          if (nextIdx < totalSlides) {
-            workingState.currentSlideIndex = nextIdx;
-            newPhase = "slide_content";
-
-            const nextSlide = workingState.outline![nextIdx];
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Слайд ${idx + 1} готов! ✓\n\nПереходим к слайду **${nextIdx + 1}/${totalSlides}**: **${nextSlide.title}**\n\nГенерирую контент...`,
-              ),
-            );
-
-            // Generate content for next slide
-            const slideContent = await generateSlideContent(
-              workingState.title || "",
-              nextSlide,
-              workingState.outline || [],
-              nextIdx,
-            );
-            const contentPreview = formatSlideContentPreview(slideContent);
-            if (!workingState.slides) workingState.slides = [];
-            workingState.slides[nextIdx] = { layoutId: slideContent.layoutId, data: slideContent.data, html: "" };
-
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Контент для слайда ${nextIdx + 1}:\n\n${contentPreview}\n\nНапишите **"готово"** или внесите правки.`,
-                {
-                  type: "slide_preview",
-                  slideIndex: nextIdx,
-                  buttons: [
-                    { label: "✅ Готово", action: "approve_content", variant: "default" },
-                    { label: "🔄 Перегенерировать", action: "regenerate_content", variant: "outline" },
-                  ],
-                },
-              ),
-            );
-          } else {
-            // All slides done — assemble presentation
-            newPhase = "completed";
-            newMessages.push(makeMsg("assistant", "Все слайды готовы! Собираю финальную презентацию..."));
-
-            // Create presentation record
-            const pres = await createPresentation({
-              prompt: workingState.title || "Презентация",
-              mode: "interactive",
-              config: workingState.config || {},
-            });
-            presentationId = pres.presentationId;
-
-            // Assemble
-            const slides = workingState.slides || [];
-            const themeCss = workingState.themeCss || getDefaultThemeCss();
-            const fullHtml = renderPresentation(
-              slides,
-              themeCss,
-              workingState.title || "Презентация",
-              workingState.language || "ru",
-              workingState.fontsUrl,
-            );
-
-            await updatePresentationProgress(presentationId, {
-              status: "completed",
-              currentStep: "completed",
-              progressPercent: 100,
-              title: workingState.title || "Презентация",
-              themeCss,
-              finalHtmlSlides: slides as any,
-              pipelineState: { outline: workingState.outline } as any,
-              slideCount: slides.length,
-            });
-
-            newMessages.push(
-              makeMsg(
-                "assistant",
-                `Презентация **"${workingState.title}"** готова! ${slides.length} слайдов.\n\nМожете открыть её для просмотра и редактирования.`,
-                {
-                  type: "final_result",
-                  presentationId,
-                  buttons: [
-                    { label: "📊 Открыть презентацию", action: `open_presentation:${presentationId}`, variant: "default" },
-                  ],
-                },
-              ),
-            );
-          }
-        } else {
-          // User wants to change design
-          newMessages.push(
-            makeMsg("assistant", "Изменение дизайна пока в разработке. Напишите **\"готово\"** для перехода к следующему слайду.", {
-              buttons: [
-                { label: "✅ Готово", action: "approve_design", variant: "default" },
-              ],
-            }),
-          );
-        }
+      default:
+        await handleGenericMessage(sessionId, messages, writer);
         break;
-      }
-
-      case "generating_quick": {
-        // User sent a message while quick generation is in progress
-        newMessages.push(
-          makeMsg("assistant", "Генерация идёт! Пожалуйста, подождите завершения. Вы увидите результат прямо здесь."),
-        );
-        break;
-      }
-
-      case "completed": {
-        // User wants to do something after completion
-        const lower = userText.toLowerCase().trim();
-        if (lower.includes("нов") || lower.includes("ещё") || lower.includes("друг")) {
-          // Start new presentation
-          newPhase = "greeting";
-          workingState.outline = undefined;
-          workingState.slides = undefined;
-          workingState.currentSlideIndex = undefined;
-          workingState.title = undefined;
-          presentationId = undefined;
-          newMessages.push(
-            makeMsg("assistant", "Начинаем новую презентацию! Опишите тему."),
-          );
-        } else {
-          newMessages.push(
-            makeMsg("assistant", "Презентация готова! Вы можете открыть её для просмотра, или напишите новую тему для создания ещё одной презентации.", {
-              buttons: presentationId ? [
-                { label: "📊 Открыть презентацию", action: `open_presentation:${presentationId}`, variant: "default" },
-                { label: "➕ Новая презентация", action: "new_presentation", variant: "outline" },
-              ] : [
-                { label: "➕ Новая презентация", action: "new_presentation", variant: "outline" },
-              ],
-            }),
-          );
-        }
-        break;
-      }
-
-      default: {
-        newMessages.push(
-          makeMsg("assistant", "Произошла ошибка. Начнём сначала — опишите тему презентации."),
-        );
-        newPhase = "greeting";
-      }
     }
-  } catch (err) {
-    console.error("[ChatOrchestrator] Error:", err);
-    newMessages.push(
-      makeMsg("assistant", "Произошла ошибка при обработке. Попробуйте ещё раз.", {
-        type: "error",
-      }),
-    );
-  }
-
-  // Persist
-  messages.push(...newMessages);
-  await updateChatSession(sessionId, {
-    phase: newPhase as any,
-    messages,
-    workingState,
-    presentationId,
-    topic: workingState.title,
-    mode: newPhase === "generating_quick" ? "quick" : (newPhase === "structure_review" || newPhase === "slide_content" || newPhase === "slide_design") ? "stepbystep" : session.mode as any,
-  });
-
-  return {
-    messages: newMessages,
-    phase: newPhase,
-    presentationId,
-  };
-}
-
-// ═══════════════════════════════════════════════════════
-// LLM HELPERS
-// ═══════════════════════════════════════════════════════
-
-async function classifyIntent(
-  text: string,
-  history: ChatMessage[],
-): Promise<{ type: "topic" | "clarification" | "other"; topic: string; response: string }> {
-  const result = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are a presentation creation assistant. Classify the user's message:
-- If it's a presentation topic/request, extract the topic and return type "topic"
-- If it's a question or needs clarification, return type "clarification" with a helpful response
-- Otherwise return type "other"
-
-Respond in JSON: { "type": "topic"|"clarification"|"other", "topic": "extracted topic", "response": "response text in Russian" }`,
-      },
-      { role: "user", content: text },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "intent_classification",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            type: { type: "string", enum: ["topic", "clarification", "other"] },
-            topic: { type: "string" },
-            response: { type: "string" },
-          },
-          required: ["type", "topic", "response"],
-          additionalProperties: false,
-        },
-      },
-    },
-  });
-
-  try {
-    return JSON.parse(result.choices[0].message.content as string);
-  } catch {
-    return { type: "topic", topic: text, response: "" };
-  }
-}
-
-async function generateStructure(
-  topic: string,
-): Promise<Array<{ slideNumber: number; title: string; description: string; layoutHint: string; speakerNotes?: string }>> {
-  const result = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are a presentation structure expert. Create a presentation outline for the given topic.
-Return 8-12 slides with clear titles and descriptions. Include a title slide first and a conclusion/CTA slide last.
-For layoutHint, suggest one of: title-slide, text-slide, two-column, checklist, comparison, stats-chart, chart-text, image-text, process-steps, timeline-horizontal, quote-slide, final-slide.
-
-Respond in JSON: { "slides": [{ "slideNumber": 1, "title": "...", "description": "...", "layoutHint": "..." }] }
-Write all content in Russian.`,
-      },
-      { role: "user", content: `Тема: ${topic}` },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "presentation_structure",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            slides: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  slideNumber: { type: "integer" },
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  layoutHint: { type: "string" },
-                },
-                required: ["slideNumber", "title", "description", "layoutHint"],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ["slides"],
-          additionalProperties: false,
-        },
-      },
-    },
-  });
-
-  try {
-    const parsed = JSON.parse(result.choices[0].message.content as string);
-    return parsed.slides;
-  } catch {
-    return [
-      { slideNumber: 1, title: topic, description: "Титульный слайд", layoutHint: "title-slide" },
-      { slideNumber: 2, title: "Введение", description: "Обзор темы", layoutHint: "text-slide" },
-      { slideNumber: 3, title: "Заключение", description: "Итоги и выводы", layoutHint: "final-slide" },
-    ];
-  }
-}
-
-async function modifyStructure(
-  currentOutline: Array<{ slideNumber: number; title: string; description: string; layoutHint: string }>,
-  userRequest: string,
-  topic: string,
-): Promise<Array<{ slideNumber: number; title: string; description: string; layoutHint: string }>> {
-  const currentStructure = currentOutline.map(s => `${s.slideNumber}. ${s.title}: ${s.description}`).join("\n");
-
-  const result = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are a presentation structure expert. The user wants to modify the current presentation structure.
-Apply their requested changes and return the updated structure.
-Keep the same JSON format. Write all content in Russian.
-
-Current structure:
-${currentStructure}
-
-Respond in JSON: { "slides": [{ "slideNumber": 1, "title": "...", "description": "...", "layoutHint": "..." }] }`,
-      },
-      { role: "user", content: userRequest },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "modified_structure",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            slides: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  slideNumber: { type: "integer" },
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  layoutHint: { type: "string" },
-                },
-                required: ["slideNumber", "title", "description", "layoutHint"],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ["slides"],
-          additionalProperties: false,
-        },
-      },
-    },
-  });
-
-  try {
-    const parsed = JSON.parse(result.choices[0].message.content as string);
-    return parsed.slides;
-  } catch {
-    return currentOutline;
-  }
-}
-
-async function generateSlideContent(
-  presentationTitle: string,
-  slide: { slideNumber: number; title: string; description: string; layoutHint: string },
-  outline: Array<{ slideNumber: number; title: string; description: string; layoutHint: string }>,
-  slideIndex: number,
-): Promise<{ layoutId: string; data: Record<string, any> }> {
-  const outlineContext = outline.map(s => `${s.slideNumber}. ${s.title}`).join(", ");
-  const layoutId = slide.layoutHint || "text-slide";
-
-  const result = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are a presentation content writer. Generate content for a single slide.
-Presentation: "${presentationTitle}"
-Full outline: ${outlineContext}
-Current slide: #${slide.slideNumber} "${slide.title}" — ${slide.description}
-Target layout: ${layoutId}
-
-Generate appropriate data for the layout. Common fields:
-- title: slide title (string)
-- description: subtitle or intro text (string)
-- bullets: array of { title, text } for list items
-- items: array of objects for checklist/comparison layouts
-- stats: array of { value, label } for statistics
-
-Return JSON with "layoutId" and "data" fields. Write all text in Russian.`,
-      },
-      { role: "user", content: `Создай контент для слайда "${slide.title}": ${slide.description}` },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "slide_content",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            layoutId: { type: "string" },
-            data: { type: "object", additionalProperties: true },
-          },
-          required: ["layoutId", "data"],
-          additionalProperties: false,
-        },
-      },
-    },
-  });
-
-  try {
-    const parsed = JSON.parse(result.choices[0].message.content as string);
-    return { layoutId: parsed.layoutId || layoutId, data: parsed.data || { title: slide.title } };
-  } catch {
-    return {
-      layoutId,
-      data: {
-        title: slide.title,
-        description: slide.description,
-        bullets: [{ title: "Пункт 1", text: "Описание пункта" }],
-      },
+  } catch (err: any) {
+    console.error(`[ChatOrchestrator] Error in session ${sessionId}:`, err);
+    const errorMsg: ChatMessage = {
+      role: "assistant",
+      content: `Произошла ошибка: ${err.message}. Попробуйте ещё раз.`,
+      timestamp: Date.now(),
     };
+    await appendMessage(sessionId, errorMsg);
+    writer({ type: "token", data: errorMsg.content });
+    writer({ type: "done", data: null });
   }
 }
 
-async function applyContentEdit(
-  currentData: Record<string, any>,
-  layoutId: string,
-  userRequest: string,
-  slide: { title: string; description: string },
-): Promise<{ layoutId: string; data: Record<string, any> }> {
-  const result = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are a presentation content editor. The user wants to modify the current slide content.
-Current layout: ${layoutId}
-Current data: ${JSON.stringify(currentData)}
+/**
+ * Handle initial topic input — recognize topic and offer mode selection.
+ */
+async function handleTopicInput(
+  sessionId: string,
+  userMessage: string,
+  messages: ChatMessage[],
+  writer: SSEWriter,
+): Promise<void> {
+  // Stream AI response acknowledging the topic
+  const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
-Apply the user's requested changes and return the updated content.
-Return JSON with "layoutId" and "data" fields. Write all text in Russian.`,
-      },
-      { role: "user", content: userRequest },
+  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\n${MODE_SELECTION_PROMPT}\n\nТема пользователя: "${userMessage}"`;
+
+  const fullResponse = await streamLLMResponse(
+    systemPrompt,
+    chatMessages.slice(-6), // Keep context manageable
+    writer,
+  );
+
+  // Save assistant message with action buttons
+  const assistantMsg: ChatMessage = {
+    role: "assistant",
+    content: fullResponse,
+    timestamp: Date.now(),
+    actions: [
+      { id: "mode_quick", label: "⚡ Быстрый режим", variant: "default" },
+      { id: "mode_step", label: "🎯 Пошаговый режим", variant: "outline" },
     ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "edited_content",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            layoutId: { type: "string" },
-            data: { type: "object", additionalProperties: true },
-          },
-          required: ["layoutId", "data"],
-          additionalProperties: false,
-        },
-      },
-    },
+  };
+  await appendMessage(sessionId, assistantMsg);
+
+  // Send action buttons
+  writer({
+    type: "actions",
+    data: assistantMsg.actions,
   });
 
-  try {
-    const parsed = JSON.parse(result.choices[0].message.content as string);
-    return { layoutId: parsed.layoutId || layoutId, data: parsed.data || currentData };
-  } catch {
-    return { layoutId, data: currentData };
+  // Update phase
+  await updateChatSession(sessionId, {
+    topic: userMessage,
+    phase: "mode_selection",
+  });
+
+  writer({ type: "done", data: null });
+}
+
+/**
+ * Handle mode selection — start generation in chosen mode.
+ */
+async function handleModeSelection(
+  sessionId: string,
+  userMessage: string,
+  messages: ChatMessage[],
+  writer: SSEWriter,
+): Promise<void> {
+  const lowerMsg = userMessage.toLowerCase();
+  const isQuick =
+    lowerMsg.includes("быстр") ||
+    lowerMsg.includes("mode_quick") ||
+    lowerMsg.includes("авто") ||
+    lowerMsg.includes("1") ||
+    lowerMsg.includes("⚡");
+  const isStep =
+    lowerMsg.includes("пошаг") ||
+    lowerMsg.includes("mode_step") ||
+    lowerMsg.includes("шаг") ||
+    lowerMsg.includes("2") ||
+    lowerMsg.includes("🎯");
+
+  if (!isQuick && !isStep) {
+    // Unclear selection — ask again
+    const response = await streamLLMResponse(
+      CHAT_SYSTEM_PROMPT,
+      [
+        ...messages.map(m => ({ role: m.role, content: m.content })).slice(-6),
+        { role: "user", content: "Пожалуйста, выберите режим: быстрый или пошаговый" },
+      ],
+      writer,
+    );
+
+    const msg: ChatMessage = {
+      role: "assistant",
+      content: response,
+      timestamp: Date.now(),
+      actions: [
+        { id: "mode_quick", label: "⚡ Быстрый режим", variant: "default" },
+        { id: "mode_step", label: "🎯 Пошаговый режим", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, msg);
+    writer({ type: "actions", data: msg.actions });
+    writer({ type: "done", data: null });
+    return;
+  }
+
+  const mode = isQuick ? "quick" : "step_by_step";
+  await updateChatSession(sessionId, { mode });
+
+  if (mode === "quick") {
+    await startQuickGeneration(sessionId, writer);
+  } else {
+    await startStepByStepGeneration(sessionId, writer);
   }
 }
 
-function formatSlideContentPreview(slide: { layoutId: string; data: Record<string, any> }): string {
-  const d = slide.data;
-  let preview = `**Макет:** ${slide.layoutId}\n`;
-  if (d.title) preview += `**Заголовок:** ${d.title}\n`;
-  if (d.description) preview += `**Описание:** ${d.description}\n`;
-  if (d.bullets && Array.isArray(d.bullets)) {
-    preview += `**Пункты:**\n`;
-    d.bullets.forEach((b: any, i: number) => {
-      const title = typeof b === "string" ? b : b.title || b.text || "";
-      const text = typeof b === "string" ? "" : b.text || "";
-      preview += `  ${i + 1}. ${title}${text ? ` — ${text}` : ""}\n`;
-    });
-  }
-  if (d.items && Array.isArray(d.items)) {
-    preview += `**Элементы:**\n`;
-    d.items.forEach((item: any, i: number) => {
-      preview += `  ${i + 1}. ${item.title || item.label || item.name || JSON.stringify(item)}\n`;
-    });
-  }
-  if (d.stats && Array.isArray(d.stats)) {
-    preview += `**Статистика:**\n`;
-    d.stats.forEach((s: any) => {
-      preview += `  • ${s.value} — ${s.label}\n`;
-    });
-  }
-  return preview;
-}
-
-function getDefaultThemeCss(): string {
-  return `:root {
-  --primary-accent-color: #6366f1;
-  --secondary-accent-color: #8b5cf6;
-  --text-heading-color: #111827;
-  --text-body-color: #4b5563;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-card: #ffffff;
-  --border-color: #e5e7eb;
-}`;
-}
-
-// ═══════════════════════════════════════════════════════
-// QUICK GENERATION (async background)
-// ═══════════════════════════════════════════════════════
-
+/**
+ * Quick mode — run the full pipeline with progress streaming.
+ */
 async function startQuickGeneration(
   sessionId: string,
-  presentationId: string,
-  topic: string,
-  config: Record<string, any>,
+  writer: SSEWriter,
 ): Promise<void> {
-  // Run in background — don't await
-  (async () => {
-    try {
-      await updatePresentationProgress(presentationId, {
-        status: "processing",
-        currentStep: "planning",
-        progressPercent: 5,
-      });
+  const session = await getChatSession(sessionId);
+  if (!session) return;
 
+  const topic = session.topic || "";
+
+  // Send starting message
+  writer({ type: "token", data: "🚀 Запускаю быструю генерацию! Это займёт около 60 секунд.\n\n" });
+
+  // Create presentation record
+  const presentation = await createPresentation({
+    prompt: topic,
+    mode: "batch",
+    config: { theme_preset: "auto" },
+  });
+
+  await updateChatSession(sessionId, {
+    phase: "generating",
+    presentationId: presentation.presentationId,
+  });
+
+  // Save the "starting" assistant message
+  const startMsg: ChatMessage = {
+    role: "assistant",
+    content: "🚀 Запускаю быструю генерацию! Это займёт около 60 секунд.",
+    timestamp: Date.now(),
+    progress: { percent: 0, message: "Запуск..." },
+  };
+  await appendMessage(sessionId, startMsg);
+
+  try {
+    // Run the pipeline with progress streaming
+    const result = await generatePresentation(
+      topic,
+      { themePreset: "auto", enableImages: true },
+      (progress: PipelineProgress) => {
+        writer({
+          type: "progress",
+          data: {
+            percent: progress.progressPercent,
+            message: progress.message || progress.currentStep,
+          },
+        });
+      },
+    );
+
+    // Save to DB
+    await updatePresentationProgress(presentation.presentationId, {
+      status: "completed",
+      currentStep: "completed",
+      progressPercent: 100,
+      title: result.title,
+      language: result.language,
+      themeCss: result.themeCss,
+      finalHtmlSlides: result.slides.map(s => ({
+        layout_id: s.layoutId,
+        data: s.data,
+        html: s.html,
+      })),
+      slideCount: result.slides.length,
+    });
+
+    // Send completion message
+    writer({ type: "token", data: `\n\n✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов создано.` });
+
+    // Send presentation link
+    writer({
+      type: "presentation_link",
+      data: {
+        presentationId: presentation.presentationId,
+        title: result.title,
+        slideCount: result.slides.length,
+      },
+    });
+
+    // Save completion message
+    const doneMsg: ChatMessage = {
+      role: "assistant",
+      content: `✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов создано.`,
+      timestamp: Date.now(),
+      presentationLink: `/view/${presentation.presentationId}`,
+      actions: [
+        { id: "view_presentation", label: "👁 Открыть презентацию", variant: "default" },
+        { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, doneMsg);
+
+    writer({ type: "actions", data: doneMsg.actions });
+
+    await updateChatSession(sessionId, { phase: "completed" });
+  } catch (err: any) {
+    console.error(`[ChatOrchestrator] Quick generation failed:`, err);
+
+    await updatePresentationProgress(presentation.presentationId, {
+      status: "failed",
+      errorInfo: { message: err.message },
+    });
+
+    writer({ type: "token", data: `\n\n❌ Ошибка при генерации: ${err.message}. Попробуйте ещё раз.` });
+
+    const errorMsg: ChatMessage = {
+      role: "assistant",
+      content: `❌ Ошибка при генерации: ${err.message}`,
+      timestamp: Date.now(),
+      actions: [
+        { id: "retry_quick", label: "🔄 Попробовать снова", variant: "default" },
+        { id: "new_presentation", label: "➕ Новая тема", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, errorMsg);
+    writer({ type: "actions", data: errorMsg.actions });
+
+    await updateChatSession(sessionId, { phase: "mode_selection" });
+  }
+
+  writer({ type: "done", data: null });
+}
+
+/**
+ * Step-by-step mode — start with structure generation.
+ */
+async function startStepByStepGeneration(
+  sessionId: string,
+  writer: SSEWriter,
+): Promise<void> {
+  const session = await getChatSession(sessionId);
+  if (!session) return;
+
+  writer({ type: "token", data: "🎯 Отлично! Начинаем пошаговое создание.\n\nСначала я создам структуру презентации, а вы её утвердите или предложите изменения.\n\nПодождите немного..." });
+
+  await updateChatSession(sessionId, { phase: "generating" });
+
+  // Create presentation record
+  const presentation = await createPresentation({
+    prompt: session.topic || "",
+    mode: "interactive",
+    config: { theme_preset: "auto" },
+  });
+
+  await updateChatSession(sessionId, {
+    presentationId: presentation.presentationId,
+  });
+
+  try {
+    // Import pipeline functions
+    const { runPlanner, runOutline } = await import("./pipeline/generator");
+
+    writer({ type: "progress", data: { percent: 10, message: "Анализ темы..." } });
+    const plannerResult = await runPlanner(session.topic || "");
+
+    writer({ type: "progress", data: { percent: 30, message: "Создание структуры..." } });
+    const outline = await runOutline(session.topic || "", plannerResult.branding, plannerResult.language || "ru");
+
+    // Format outline for display
+    const outlineText = outline.slides
+      .map((s, i) => `**${i + 1}. ${s.title}**\n   ${s.purpose}`)
+      .join("\n\n");
+
+    const structureMsg = `\n\n📋 **Структура презентации: «${outline.presentation_title}»**\n\n${outlineText}\n\nВсего слайдов: ${outline.slides.length}`;
+
+    writer({ type: "token", data: structureMsg });
+
+    // Save outline in metadata
+    await updateChatSession(sessionId, {
+      phase: "step_structure",
+      metadata: {
+        ...(session.metadata as any || {}),
+        plannerResult,
+        outline,
+      },
+    });
+
+    const assistantMsg: ChatMessage = {
+      role: "assistant",
+      content: `🎯 Начинаем пошаговое создание.\n\n${structureMsg}`,
+      timestamp: Date.now(),
+      actions: [
+        { id: "approve_structure", label: "✅ Утвердить структуру", variant: "default" },
+        { id: "regenerate_structure", label: "🔄 Пересоздать", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, assistantMsg);
+
+    writer({ type: "actions", data: assistantMsg.actions });
+  } catch (err: any) {
+    console.error("[ChatOrchestrator] Step-by-step structure failed:", err);
+    writer({ type: "token", data: `\n\n❌ Ошибка: ${err.message}` });
+
+    const errorMsg: ChatMessage = {
+      role: "assistant",
+      content: `❌ Ошибка при создании структуры: ${err.message}`,
+      timestamp: Date.now(),
+      actions: [
+        { id: "retry_step", label: "🔄 Попробовать снова", variant: "default" },
+      ],
+    };
+    await appendMessage(sessionId, errorMsg);
+    writer({ type: "actions", data: errorMsg.actions });
+
+    await updateChatSession(sessionId, { phase: "mode_selection" });
+  }
+
+  writer({ type: "done", data: null });
+}
+
+/**
+ * Handle messages after structure is shown (approve/regenerate).
+ */
+async function handleStructureApproval(
+  sessionId: string,
+  userMessage: string,
+  writer: SSEWriter,
+): Promise<void> {
+  const session = await getChatSession(sessionId);
+  if (!session) return;
+
+  const lowerMsg = userMessage.toLowerCase();
+  const isApprove =
+    lowerMsg.includes("утверд") ||
+    lowerMsg.includes("approve") ||
+    lowerMsg.includes("да") ||
+    lowerMsg.includes("ок") ||
+    lowerMsg.includes("approve_structure") ||
+    lowerMsg.includes("✅") ||
+    lowerMsg.includes("хорошо") ||
+    lowerMsg.includes("отлично");
+
+  if (isApprove) {
+    // Proceed to full generation with approved structure
+    writer({ type: "token", data: "✅ Структура утверждена! Запускаю генерацию контента и дизайна...\n\n" });
+
+    await updateChatSession(sessionId, { phase: "generating" });
+
+    const metadata = session.metadata as any || {};
+    const topic = session.topic || "";
+
+    try {
       const result = await generatePresentation(
         topic,
-        {
-          themePreset: config.theme_preset || "auto",
-          enableImages: config.enable_images !== false,
-          sourceContent: config.source_content,
-        },
+        { themePreset: "auto", enableImages: true },
         (progress: PipelineProgress) => {
-          // Send progress via WebSocket
-          wsManager.sendProgress(presentationId, {
-            node_name: progress.nodeName,
-            current_step: progress.currentStep,
-            progress_percentage: progress.progressPercent,
-            message: progress.message,
-            html_content: progress.slidePreview,
+          writer({
+            type: "progress",
+            data: {
+              percent: progress.progressPercent,
+              message: progress.message || progress.currentStep,
+            },
           });
-
-          // Also update chat session messages with progress
-          updateChatProgressMessage(sessionId, progress).catch(console.error);
         },
       );
 
-      // Save result
+      const presentationId = session.presentationId || "";
+
       await updatePresentationProgress(presentationId, {
         status: "completed",
         currentStep: "completed",
@@ -897,96 +606,179 @@ async function startQuickGeneration(
         title: result.title,
         language: result.language,
         themeCss: result.themeCss,
-        finalHtmlSlides: result.slides as any,
+        finalHtmlSlides: result.slides.map(s => ({
+          layout_id: s.layoutId,
+          data: s.data,
+          html: s.html,
+        })),
         slideCount: result.slides.length,
       });
 
-      // Update chat with completion message
-      const session = await getChatSession(sessionId);
-      if (session) {
-        const messages = (session.messages as ChatMessage[]) || [];
-        messages.push(
-          makeMsg(
-            "assistant",
-            `Презентация **"${result.title}"** готова! ${result.slides.length} слайдов.\n\nМожете открыть для просмотра и редактирования.`,
-            {
-              type: "final_result",
-              presentationId,
-              buttons: [
-                { label: "📊 Открыть презентацию", action: `open_presentation:${presentationId}`, variant: "default" },
-                { label: "➕ Новая презентация", action: "new_presentation", variant: "outline" },
-              ],
-            },
-          ),
-        );
-        await updateChatSession(sessionId, {
-          phase: "completed",
-          messages,
+      writer({ type: "token", data: `\n\n✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов.` });
+
+      writer({
+        type: "presentation_link",
+        data: {
           presentationId,
-        });
-      }
-
-      wsManager.sendCompleted(presentationId, {
-        result_urls: {},
-        slide_count: result.slides.length,
-        title: result.title,
+          title: result.title,
+          slideCount: result.slides.length,
+        },
       });
+
+      const doneMsg: ChatMessage = {
+        role: "assistant",
+        content: `✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов создано.`,
+        timestamp: Date.now(),
+        presentationLink: `/view/${presentationId}`,
+        actions: [
+          { id: "view_presentation", label: "👁 Открыть презентацию", variant: "default" },
+          { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
+        ],
+      };
+      await appendMessage(sessionId, doneMsg);
+      writer({ type: "actions", data: doneMsg.actions });
+
+      await updateChatSession(sessionId, { phase: "completed" });
     } catch (err: any) {
-      console.error("[ChatOrchestrator] Quick generation failed:", err);
-
-      await updatePresentationProgress(presentationId, {
-        status: "failed",
-        errorInfo: { message: err.message } as any,
-      });
-
-      // Update chat with error
-      const session = await getChatSession(sessionId);
-      if (session) {
-        const messages = (session.messages as ChatMessage[]) || [];
-        messages.push(
-          makeMsg("assistant", `Ошибка генерации: ${err.message}\n\nПопробуйте ещё раз или выберите пошаговый режим.`, {
-            type: "error",
-            buttons: [
-              { label: "🔄 Попробовать снова", action: "retry_quick", variant: "default" },
-            ],
-          }),
-        );
-        await updateChatSession(sessionId, { phase: "error", messages });
-      }
-
-      wsManager.sendError(presentationId, {
-        error_message: err.message,
-        error_type: "generation_error",
-      });
+      writer({ type: "token", data: `\n\n❌ Ошибка: ${err.message}` });
+      await updateChatSession(sessionId, { phase: "step_structure" });
     }
-  })();
+  } else {
+    // User wants changes — regenerate or modify
+    writer({ type: "token", data: "🔄 Пересоздаю структуру с учётом ваших пожеланий...\n\n" });
+    await updateChatSession(sessionId, { phase: "generating" });
+    await startStepByStepGeneration(sessionId, writer);
+  }
+
+  writer({ type: "done", data: null });
 }
 
-async function updateChatProgressMessage(sessionId: string, progress: PipelineProgress): Promise<void> {
-  // Throttle updates — only update every 10%
-  if (progress.progressPercent % 10 !== 0 && progress.progressPercent !== 100) return;
+/**
+ * Handle messages after presentation is completed.
+ */
+async function handlePostCompletion(
+  sessionId: string,
+  userMessage: string,
+  messages: ChatMessage[],
+  writer: SSEWriter,
+): Promise<void> {
+  const lowerMsg = userMessage.toLowerCase();
 
+  if (lowerMsg.includes("new_presentation") || lowerMsg.includes("нов") || lowerMsg.includes("другую") || lowerMsg.includes("➕")) {
+    // Reset session for new presentation
+    await updateChatSession(sessionId, {
+      phase: "idle",
+      topic: "",
+      presentationId: undefined,
+      metadata: {},
+    });
+
+    writer({ type: "token", data: "Отлично! Введите тему для новой презентации 📝" });
+
+    const msg: ChatMessage = {
+      role: "assistant",
+      content: "Отлично! Введите тему для новой презентации 📝",
+      timestamp: Date.now(),
+    };
+    await appendMessage(sessionId, msg);
+    writer({ type: "done", data: null });
+    return;
+  }
+
+  if (lowerMsg.includes("view_presentation") || lowerMsg.includes("открыть") || lowerMsg.includes("👁")) {
+    const session = await getChatSession(sessionId);
+    if (session?.presentationId) {
+      writer({
+        type: "presentation_link",
+        data: { presentationId: session.presentationId },
+      });
+    }
+    writer({ type: "done", data: null });
+    return;
+  }
+
+  // Generic post-completion chat
+  const response = await streamLLMResponse(
+    `${CHAT_SYSTEM_PROMPT}\n\nПрезентация уже создана. Пользователь может попросить создать новую или задать вопрос.`,
+    messages.map(m => ({ role: m.role, content: m.content })).slice(-6),
+    writer,
+  );
+
+  const msg: ChatMessage = {
+    role: "assistant",
+    content: response,
+    timestamp: Date.now(),
+    actions: [
+      { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
+    ],
+  };
+  await appendMessage(sessionId, msg);
+  writer({ type: "actions", data: msg.actions });
+  writer({ type: "done", data: null });
+}
+
+/**
+ * Handle generic messages (fallback).
+ */
+async function handleGenericMessage(
+  sessionId: string,
+  messages: ChatMessage[],
+  writer: SSEWriter,
+): Promise<void> {
   const session = await getChatSession(sessionId);
   if (!session) return;
 
-  const messages = (session.messages as ChatMessage[]) || [];
-
-  // Find and update the last progress message, or add new one
-  const lastProgressIdx = messages.findLastIndex(
-    (m) => m.role === "assistant" && m.data?.type === "progress",
-  );
-
-  const progressMsg = makeMsg(
-    "assistant",
-    `${progress.message || "Генерация..."} (${progress.progressPercent}%)`,
-    { type: "progress", progress: progress.progressPercent },
-  );
-
-  if (lastProgressIdx >= 0) {
-    messages[lastProgressIdx] = progressMsg;
-  } else {
-    messages.push(progressMsg);
+  // Check if we're in step_structure phase
+  if (session.phase === "step_structure") {
+    const lastUserMsg = messages[messages.length - 1]?.content || "";
+    await handleStructureApproval(sessionId, lastUserMsg, writer);
+    return;
   }
 
-  await updateChatSession(sessionId, { messages });
+  const response = await streamLLMResponse(
+    CHAT_SYSTEM_PROMPT,
+    messages.map(m => ({ role: m.role, content: m.content })).slice(-6),
+    writer,
+  );
+
+  const msg: ChatMessage = {
+    role: "assistant",
+    content: response,
+    timestamp: Date.now(),
+  };
+  await appendMessage(sessionId, msg);
+  writer({ type: "done", data: null });
+}
+
+/**
+ * Handle action button clicks (special message format).
+ */
+export async function processAction(
+  sessionId: string,
+  actionId: string,
+  writer: SSEWriter,
+): Promise<void> {
+  switch (actionId) {
+    case "mode_quick":
+      return processMessage(sessionId, "⚡ Быстрый режим", writer);
+    case "mode_step":
+      return processMessage(sessionId, "🎯 Пошаговый режим", writer);
+    case "approve_structure":
+      return processMessage(sessionId, "✅ Утвердить структуру", writer);
+    case "regenerate_structure":
+      return processMessage(sessionId, "🔄 Пересоздать структуру", writer);
+    case "retry_quick":
+    case "retry_step":
+      // Reset to mode selection and retry
+      await updateChatSession(sessionId, { phase: "mode_selection" });
+      const session = await getChatSession(sessionId);
+      const mode = actionId === "retry_quick" ? "⚡ Быстрый режим" : "🎯 Пошаговый режим";
+      return processMessage(sessionId, mode, writer);
+    case "view_presentation":
+      return processMessage(sessionId, "👁 Открыть презентацию", writer);
+    case "new_presentation":
+      return processMessage(sessionId, "➕ Создать новую презентацию", writer);
+    default:
+      return processMessage(sessionId, actionId, writer);
+  }
 }

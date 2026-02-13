@@ -37,28 +37,18 @@ export interface StorytellingResult {
 }
 
 // ═══════════════════════════════════════════════════════
-// LANGUAGE-AWARE EXAMPLES
+// SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════
 
-function getActionTitleExamples(language: string): string {
-  if (language === "ru") {
-    return `
-BAD (описательные/топиковые заголовки):
-- "Обзор рынка" → просто называет тему
-- "Наше решение" → расплывчато, ничего не говорит
-- "Финансовые результаты" → нет инсайта
-- "Структура команды" → скучный ярлык
+const STORYTELLING_SYSTEM = `You are Storytelling Agent — a McKinsey-trained presentation narrative architect.
 
-GOOD (action/insight заголовки — НА РУССКОМ):
-- "Рынок вырос до $4.2 млрд к 2027 году" → констатирует факт
-- "AI-платформа снижает затраты на 40%" → передаёт ценность
-- "Выручка удвоилась при сокращении расходов на 15%" → рассказывает историю
-- "Кросс-функциональные команды ускоряют поставку в 3 раза" → раскрывает инсайт
-- "Доля ВИЭ достигла 40% мирового энергобаланса" → конкретный факт
-- "Инвестиции в AI превысили $200 млрд в 2025 году" → числовой инсайт`;
-  }
+<role>
+You transform good slide content into a compelling story. Your job is to ensure every slide title is an ACTION TITLE (communicates the key insight, not just the topic), and that slides flow as a coherent narrative.
+</role>
 
-  return `
+<action_title_rules>
+Action titles are the #1 differentiator between amateur and professional presentations.
+
 BAD (descriptive/topic titles):
 - "Market Overview" → just names the topic
 - "Our Solution" → vague, says nothing
@@ -69,68 +59,22 @@ GOOD (action/insight titles):
 - "Market Growth Accelerates to $4.2B by 2027" → states the finding
 - "AI-Powered Platform Reduces Costs by 40%" → communicates the value
 - "Revenue Doubled While Costs Dropped 15%" → tells the story
-- "Cross-Functional Teams Drive 3x Faster Delivery" → reveals the insight`;
-}
-
-function getTransitionExamples(language: string): string {
-  if (language === "ru") {
-    return `Переходы должны использовать связующие фразы: "Опираясь на это...", "Это приводит к...", "Данные показывают...", "Учитывая эти вызовы...", "Как следствие...", "В результате...", "Однако...", "Более того..."`;
-  }
-  return `Transitions should use bridging phrases: "Building on this...", "This leads to...", "The evidence shows...", "Given these challenges..."`;
-}
-
-function getActiveVerbs(language: string): string {
-  if (language === "ru") {
-    return `Используйте активные глаголы: "ускоряет", "обеспечивает", "снижает", "трансформирует", "увеличивает", "достигает", "создаёт", "улучшает", "удваивает", "превышает", "раскрывает", "формирует", "генерирует", "определяет"`;
-  }
-  return `Use active verbs: "drives", "accelerates", "enables", "reduces", "transforms", "increases", "delivers", "achieves"`;
-}
-
-// ═══════════════════════════════════════════════════════
-// SYSTEM PROMPT (language-aware)
-// ═══════════════════════════════════════════════════════
-
-function buildStorytellingSystem(language: string): string {
-  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language;
-  const examples = getActionTitleExamples(language);
-  const transitions = getTransitionExamples(language);
-  const verbs = getActiveVerbs(language);
-
-  return `You are Storytelling Agent — a McKinsey-trained presentation narrative architect.
-
-<role>
-You transform good slide content into a compelling story. Your job is to ensure every slide title is an ACTION TITLE (communicates the key insight, not just the topic), and that slides flow as a coherent narrative.
-</role>
-
-<CRITICAL_LANGUAGE_RULE>
-ALL output MUST be in ${langName}.
-- action_title: MUST be in ${langName}
-- transition_from_previous: MUST be in ${langName}
-- audience_takeaway: MUST be in ${langName}
-- narrative_thread: MUST be in ${langName}
-Do NOT mix languages. Do NOT use English words/phrases when the target language is Russian.
-Exception: proper nouns (company names, product names), technical abbreviations (AI, IoT, SaaS), and currency symbols ($, €) may remain in their original form.
-</CRITICAL_LANGUAGE_RULE>
-
-<action_title_rules>
-Action titles are the #1 differentiator between amateur and professional presentations.
-${examples}
+- "Cross-Functional Teams Drive 3x Faster Delivery" → reveals the insight
 
 Rules for action titles:
 1. Each title must communicate the CONCLUSION, not the topic
 2. Include specific numbers, percentages, or outcomes when available
-3. ${verbs}
+3. Use active verbs: "drives", "accelerates", "enables", "reduces", "transforms"
 4. The audience should understand the slide's message from the title ALONE
 5. Keep titles concise: 6-12 words maximum
 6. For section headers: use a provocative question or bold statement
 7. Title slide and final slide can keep their original format
-8. CRITICAL: Write titles in ${langName} — not in any other language
 </action_title_rules>
 
 <narrative_coherence_rules>
 1. Each slide must logically follow the previous one
 2. The presentation should tell a STORY, not just list information
-3. ${transitions}
+3. Transitions should use bridging phrases: "Building on this...", "This leads to...", "The evidence shows...", "Given these challenges..."
 4. Every slide must have a clear NARRATIVE ROLE:
    - hook: Grabs attention (slide 1-2)
    - context: Sets the stage with background/problem
@@ -144,11 +88,9 @@ Rules for action titles:
 
 <output_format>
 Return JSON with:
-- narrative_thread: A 1-2 sentence description of the overall story arc (in ${langName})
+- narrative_thread: A 1-2 sentence description of the overall story arc
 - enhancements: Array of objects with slide_number, action_title, transition_from_previous, audience_takeaway, narrative_role
-ALL text fields MUST be in ${langName}.
 </output_format>`;
-}
 
 // ═══════════════════════════════════════════════════════
 // USER PROMPT BUILDER
@@ -157,10 +99,7 @@ ALL text fields MUST be in ${langName}.
 function buildStorytellingUserPrompt(
   content: SlideContent[],
   outline: OutlineResult,
-  language: string,
 ): string {
-  const langName = language === "ru" ? "Russian (русский)" : language === "en" ? "English" : language;
-
   const slideSummaries = content
     .map(
       (s) =>
@@ -176,7 +115,6 @@ Title: ${outline.presentation_title}
 Target audience: ${outline.target_audience}
 Narrative arc: ${outline.narrative_arc}
 Total slides: ${content.length}
-Target language: ${langName}
 </presentation>
 
 <slides>
@@ -187,8 +125,7 @@ Transform each slide title into an action title and ensure narrative coherence a
 Use the content's data points and key messages to craft specific, insight-driven titles.
 Generate transition phrases that connect each slide to the previous one.
 Assign a narrative role to each slide.
-
-CRITICAL: ALL output text (action_title, transition_from_previous, audience_takeaway, narrative_thread) MUST be written in ${langName}. Do NOT write in English if the target language is Russian.`;
+Write in the same language as the slide content.`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -201,20 +138,17 @@ CRITICAL: ALL output text (action_title, transition_from_previous, audience_take
  *
  * @param content - SlideContent array from Writer
  * @param outline - OutlineResult for context
- * @param language - Target language code (e.g. "ru", "en")
  * @returns Enhanced SlideContent[] with improved titles and added transitions
  */
 export async function runStorytellingAgent(
   content: SlideContent[],
   outline: OutlineResult,
-  language: string = "ru",
 ): Promise<{ enhancedContent: SlideContent[]; narrativeThread: string }> {
-  const systemPrompt = buildStorytellingSystem(language);
-  const userPrompt = buildStorytellingUserPrompt(content, outline, language);
+  const userPrompt = buildStorytellingUserPrompt(content, outline);
 
   const response = await invokeLLM({
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: STORYTELLING_SYSTEM },
       { role: "user", content: userPrompt },
     ],
     response_format: {

@@ -27,29 +27,10 @@ export type GenerationMode = "batch" | "interactive";
 export interface CreatePresentationRequest {
   prompt: string;
   mode?: GenerationMode;
-  source_file?: {
-    s3_url: string;
-    filename: string;
-    file_type: string;
-    extracted_context: string;
-  };
   config?: {
     theme_preset?: string;
     enable_images?: boolean;
   } | null;
-}
-
-export interface FileUploadResponse {
-  file_id: string;
-  filename: string;
-  file_type: string;
-  word_count: number;
-  page_count?: number;
-  was_truncated: boolean;
-  s3_url: string;
-  context_preview?: string;
-  _extracted_context: string;
-  _s3_url: string;
 }
 
 export interface PresentationResponse {
@@ -476,32 +457,6 @@ class ApiClient {
     return data;
   }
 
-  // — Source File Upload —
-
-  async uploadSourceFile(
-    file: File,
-    onProgress?: (percent: number) => void,
-  ): Promise<FileUploadResponse> {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const { data } = await this.http.post<FileUploadResponse>(
-      "/upload-source-file",
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 60000,
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(percent);
-          }
-        },
-      },
-    );
-    return data;
-  }
-
   // — Files —
 
   /**
@@ -674,41 +629,6 @@ class ApiClient {
     return data;
   }
 
-  // — Chat —
-
-  async createChatSession(): Promise<ChatSessionResponse> {
-    const { data } = await this.http.post<ChatSessionResponse>("/chat/sessions");
-    return data;
-  }
-
-  async listChatSessions(limit = 20): Promise<{ sessions: ChatSessionSummary[] }> {
-    const { data } = await this.http.get<{ sessions: ChatSessionSummary[] }>(
-      `/chat/sessions?limit=${limit}`,
-    );
-    return data;
-  }
-
-  async getChatSession(id: string): Promise<ChatSessionResponse> {
-    const { data } = await this.http.get<ChatSessionResponse>(`/chat/sessions/${id}`);
-    return data;
-  }
-
-  async sendChatMessage(
-    sessionId: string,
-    message: string,
-  ): Promise<ChatMessageResponse> {
-    const { data } = await this.http.post<ChatMessageResponse>(
-      `/chat/sessions/${sessionId}/messages`,
-      { message },
-      { timeout: 120000 }, // LLM calls can take time
-    );
-    return data;
-  }
-
-  async deleteChatSession(id: string): Promise<void> {
-    await this.http.delete(`/chat/sessions/${id}`);
-  }
-
   // — Health —
 
   async checkHealth(): Promise<{ status: string; version?: string }> {
@@ -719,55 +639,6 @@ class ApiClient {
       return { status: "unreachable" };
     }
   }
-}
-
-// ═══════════════════════════════════════════════════════
-// Chat Types
-// ═══════════════════════════════════════════════════════
-
-export interface ChatMessageData {
-  type?: "slide_preview" | "structure" | "progress" | "mode_selection" | "final_result" | "error";
-  slideHtml?: string;
-  slideIndex?: number;
-  structure?: Array<{ slideNumber: number; title: string; layoutHint: string }>;
-  presentationId?: string;
-  progress?: number;
-  buttons?: Array<{ label: string; action: string; variant?: "default" | "outline" }>;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  data?: ChatMessageData;
-  timestamp: number;
-}
-
-export interface ChatSessionResponse {
-  session_id: string;
-  topic?: string;
-  phase: string;
-  mode?: string;
-  messages: ChatMessage[];
-  presentation_id?: string;
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface ChatSessionSummary {
-  session_id: string;
-  topic?: string;
-  phase: string;
-  mode?: string;
-  presentation_id?: string;
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface ChatMessageResponse {
-  messages: ChatMessage[];
-  phase: string;
-  presentation_id?: string;
 }
 
 export const api = new ApiClient();

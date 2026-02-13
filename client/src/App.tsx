@@ -21,15 +21,13 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={ChatPage} />
-        <Route path="/chat" component={ChatPage} />
-        <Route path="/chat/:sessionId" component={ChatPage} />
-        <Route path="/create" component={Home} />
+        <Route path="/" component={Home} />
         <Route path="/generate/:id" component={Generate} />
         <Route path="/view/:id" component={Viewer} />
-        <Route path="/viewer/:id" component={Viewer} />
         <Route path="/history" component={History} />
         <Route path="/interactive/:id" component={Interactive} />
+        <Route path="/chat" component={ChatPage} />
+        <Route path="/chat/:id" component={ChatPage} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

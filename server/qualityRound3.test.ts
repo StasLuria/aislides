@@ -303,34 +303,22 @@ describe("Enhanced HTML Composer Prompts", () => {
 describe("Image Generation Config", () => {
   // We can't easily test the actual function call, but we can verify
   // the prompt improvements are in the source code
-  it("should use imagePromptEngine for context-aware image prompts", async () => {
-    // Read the generator source to verify the new image prompt engine integration
+  it("should have improved image selection prompt in generator", async () => {
+    // Read the generator source to verify the prompt improvements
     const fs = await import("fs");
     const generatorSource = fs.readFileSync(
       "/home/ubuntu/presentation-frontend/server/pipeline/generator.ts",
       "utf-8"
     );
 
-    // Verify new imagePromptEngine is imported and used
-    expect(generatorSource).toContain("import { generateImagePrompts");
-    expect(generatorSource).toContain("imagePromptEngine");
+    // Verify increased limit
+    expect(generatorSource).toContain("selectSlidesForImages(content, layoutMap, 5)");
 
-    // Verify enriched slide info is built with full context
-    expect(generatorSource).toContain("EnrichedSlideInfo");
-    expect(generatorSource).toContain("ImagePromptContext");
-    expect(generatorSource).toContain("presentationTitle");
-    expect(generatorSource).toContain("themeMood");
-    expect(generatorSource).toContain("primaryColor");
-
-    // Verify the imagePromptEngine module exists with proper exports
-    const engineSource = fs.readFileSync(
-      "/home/ubuntu/presentation-frontend/server/pipeline/imagePromptEngine.ts",
-      "utf-8"
-    );
-    expect(engineSource).toContain("export async function generateImagePrompts");
-    expect(engineSource).toContain("export async function generateSingleSlidePrompt");
-    expect(engineSource).toContain("CONTENT_TYPE_VISUALS");
-    expect(engineSource).toContain("TOPIC_STYLE_MAP");
+    // Verify improved prompt
+    expect(generatorSource).toContain("prompt_guidelines");
+    expect(generatorSource).toContain("3D isometric illustration");
+    expect(generatorSource).toContain("gradient mesh");
+    expect(generatorSource).toContain("Dribbble");
   });
 });
 

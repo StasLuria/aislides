@@ -36,8 +36,6 @@ import { wsManager } from "./wsManager";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { invokeLLM } from "./_core/llm";
-import { generateSingleSlidePrompt, type EnrichedSlideInfo, type ImagePromptContext } from "./pipeline/imagePromptEngine";
-import { analyzeSlideContent } from "./pipeline/contentAnalyzer";
 import { nanoid } from "nanoid";
 
 const router = Router();
@@ -508,36 +506,23 @@ router.post("/api/v1/interactive/:id/suggest-image-prompt", async (req: Request,
       return;
     }
 
-    // Use the improved image prompt engine with full context
-    const pipelineTheme = pipelineState?.theme;
-    const plannerResult = pipelineState?.plannerResult;
-    const layoutMap = pipelineState?.layoutMap || {};
+    // Use LLM to suggest an image prompt
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert at creating image generation prompts for presentation slides. Given slide content, suggest a concise, vivid image description suitable for AI image generation. The image should be professional, relevant to the slide topic, and work well as a presentation illustration. Output ONLY the image prompt text, nothing else. Write in English for best image generation quality. Keep it under 100 words.`,
+        },
+        {
+          role: "user",
+          content: `Slide title: ${slideContent.title}\nSlide text: ${slideContent.text}\nKey message: ${slideContent.key_message || "N/A"}`,
+        },
+      ],
+    });
 
-    // Analyze slide content for content type
-    const analysis = analyzeSlideContent(slideContent);
-
-    // Build enriched slide info
-    const enrichedSlide: EnrichedSlideInfo = {
-      slideNumber: slideContent.slide_number,
-      title: slideContent.title,
-      fullText: slideContent.text,
-      keyMessage: slideContent.key_message || "",
-      dataPoints: slideContent.data_points || [],
-      layout: layoutMap[slideContent.slide_number] || "text-slide",
-      contentType: analysis.contentType,
-      confidence: analysis.confidence,
-    };
-
-    // Build context from available pipeline state
-    const imageContext: ImagePromptContext = {
-      presentationTitle: plannerResult?.presentation_title || p.title || p.prompt || "",
-      language: plannerResult?.language || "ru",
-      themeMood: pipelineTheme?.mood || "Professional and modern",
-      primaryColor: pipelineTheme?.colors?.primary || "#2563eb",
-      secondaryColor: pipelineTheme?.colors?.secondary || "#0ea5e9",
-    };
-
-    const suggestedPrompt = await generateSingleSlidePrompt(enrichedSlide, imageContext);
+    const suggestedPrompt = typeof response.choices?.[0]?.message?.content === "string"
+      ? response.choices[0].message.content.trim()
+      : "Professional business illustration";
 
     res.json({
       presentation_id: presentationId,
@@ -874,11 +859,7 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
       const fileKey = `presentations/${presentationId}/presentation-${nanoid(8)}.html`;
       const { url: htmlUrl } = await storagePut(fileKey, fullHtml, "text/html");
 
-      // Update DB with results (also save theme + layoutMap for future image prompt suggestions)
-      const layoutMapObj: Record<number, string> = {};
-      for (const [k, v] of Array.from(layoutMap.entries())) {
-        layoutMapObj[k] = v;
-      }
+      // Update DB with results
       await updatePresentationProgress(presentationId, {
         status: "completed",
         currentStep: "completed",
@@ -892,11 +873,6 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
         })),
         resultUrls: {
           html_preview: htmlUrl,
-        },
-        pipelineState: {
-          ...pipelineState,
-          theme: { colors: theme.colors, mood: themePreset?.mood },
-          layoutMap: layoutMapObj,
         },
       });
 
