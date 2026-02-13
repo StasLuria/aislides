@@ -64,10 +64,32 @@ const DEFAULT_SETTINGS: ChatSettings = {
 };
 
 // ═══════════════════════════════════════════════════════
+// TYPING INDICATOR
+// ═══════════════════════════════════════════════════════
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <span className="text-sm text-muted-foreground">AI думает</span>
+      <span className="flex items-center gap-[3px]">
+        <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1.2s" }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1.2s" }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1.2s" }} />
+      </span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
 // STREAMING TEXT
 // ═══════════════════════════════════════════════════════
 
 function StreamingText({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+  // Show typing indicator when streaming but no content yet
+  if (isStreaming && !content) {
+    return <TypingIndicator />;
+  }
+
   return (
     <div className="whitespace-pre-wrap leading-relaxed text-sm text-foreground">
       {content}

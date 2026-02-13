@@ -748,3 +748,9 @@
 - [x] loadSession called by useEffect after navigate("/chat/${newId}") wiped messages added by sendMessage
 - [x] Fix: added justCreatedSessionRef flag — set before navigate, checked in useEffect to skip loadSession
 - [x] 953 tests passing
+
+## Typing Indicator Animation
+- [x] Add "AI думает" animation with bouncing dots while waiting for first SSE tokens
+- [x] Show animated dots indicator in assistant message bubble when isStreaming and content is empty
+- [x] Smooth transition from typing indicator to actual content when first token arrives (StreamingText auto-switches)
+- [x] 953 tests passing
