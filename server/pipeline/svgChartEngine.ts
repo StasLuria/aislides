@@ -4,7 +4,7 @@
  * Features:
  * - Pure SVG output (no JavaScript required, works in PDF export)
  * - Theme-aware colors via CSS variables
- * - 5 chart types: vertical bar, horizontal bar, line, pie, donut
+ * - 6 chart types: vertical bar, horizontal bar, line, pie, donut, radar
  * - Responsive viewBox with proper scaling
  * - Animated on load (CSS animations)
  * - Grid lines and axis labels
@@ -14,7 +14,7 @@
 // TYPES
 // ═══════════════════════════════════════════════════════
 
-export type ChartType = "bar" | "horizontal-bar" | "line" | "pie" | "donut";
+export type ChartType = "bar" | "horizontal-bar" | "line" | "pie" | "donut" | "radar";
 
 export interface ChartDataPoint {
   label: string;
@@ -557,6 +557,142 @@ export function renderDonutChart(config: ChartConfig): string {
 }
 
 // ═══════════════════════════════════════════════════════
+// RADAR CHART
+// ═══════════════════════════════════════════════════════
+
+export function renderRadarChart(config: ChartConfig): string {
+  const { data, width = 500, height = 400, showValues = true, showLegend = false, unit } = config;
+  if (data.length < 3) return renderEmptyChart(width, height, "Radar chart needs 3+ data points");
+
+  const cx = showLegend ? width * 0.38 : width / 2;
+  const cy = height / 2;
+  const radius = Math.min(cx - 40, cy - 40);
+  const n = data.length;
+  const angleStep = (2 * Math.PI) / n;
+  const startAngle = -Math.PI / 2; // Start from top
+
+  const maxVal = Math.max(...data.map(d => Math.abs(d.value)), 1);
+
+  // Helper: get point on the radar at given angle and distance
+  function radarPoint(index: number, value: number): { x: number; y: number } {
+    const angle = startAngle + index * angleStep;
+    const r = (value / maxVal) * radius;
+    return {
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle),
+    };
+  }
+
+  // Grid rings (5 levels)
+  const gridRings: string[] = [];
+  for (let level = 1; level <= 5; level++) {
+    const r = (radius * level) / 5;
+    const points = Array.from({ length: n }, (_, i) => {
+      const angle = startAngle + i * angleStep;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    }).join(" ");
+    gridRings.push(
+      `<polygon points="${points}" fill="none" stroke="#e5e7eb" stroke-width="${level === 5 ? 1.5 : 0.8}" stroke-dasharray="${level === 5 ? 'none' : '3,3'}" />`
+    );
+  }
+
+  // Axis lines from center to each vertex
+  const axisLines = Array.from({ length: n }, (_, i) => {
+    const angle = startAngle + i * angleStep;
+    const x2 = cx + radius * Math.cos(angle);
+    const y2 = cy + radius * Math.sin(angle);
+    return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#d1d5db" stroke-width="1" />`;
+  });
+
+  // Axis labels (category names)
+  const axisLabels = data.map((d, i) => {
+    const angle = startAngle + i * angleStep;
+    const labelR = radius + 18;
+    const lx = cx + labelR * Math.cos(angle);
+    const ly = cy + labelR * Math.sin(angle);
+    
+    // Determine text-anchor based on position
+    let textAnchor = "middle";
+    if (Math.cos(angle) > 0.3) textAnchor = "start";
+    else if (Math.cos(angle) < -0.3) textAnchor = "end";
+    
+    // Adjust vertical position for top/bottom labels
+    let dy = 4;
+    if (Math.sin(angle) < -0.5) dy = 0;
+    else if (Math.sin(angle) > 0.5) dy = 10;
+
+    const label = truncateLabel(d.label, 20);
+    return `<text x="${lx}" y="${ly}" dy="${dy}" text-anchor="${textAnchor}" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(label)}</text>`;
+  });
+
+  // Data polygon
+  const dataPoints = data.map((d, i) => radarPoint(i, d.value));
+  const polygonPoints = dataPoints.map(p => `${p.x},${p.y}`).join(" ");
+  const color = getColor(0, true);
+
+  // Value labels on data points
+  const valueLabels = showValues ? data.map((d, i) => {
+    const p = radarPoint(i, d.value);
+    const angle = startAngle + i * angleStep;
+    // Offset the value label slightly outward from the data point
+    const offsetR = 14;
+    const vx = p.x + offsetR * Math.cos(angle);
+    const vy = p.y + offsetR * Math.sin(angle);
+    return `<text x="${vx}" y="${vy}" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="9" font-weight="600" font-family="Inter, sans-serif">${formatValue(d.value, unit)}</text>`;
+  }) : [];
+
+  // Scale labels on the first axis (top)
+  const scaleLabels: string[] = [];
+  for (let level = 1; level <= 5; level++) {
+    const val = (maxVal * level) / 5;
+    const r = (radius * level) / 5;
+    scaleLabels.push(
+      `<text x="${cx + 4}" y="${cy - r - 2}" fill="#9ca3af" font-size="8" font-family="Inter, sans-serif">${formatValue(val, unit)}</text>`
+    );
+  }
+
+  // Legend (optional)
+  let legend = "";
+  if (showLegend) {
+    const legendX = width * 0.78;
+    const legendStartY = cy - (data.length * 22) / 2;
+    legend = data.map((d, i) => {
+      const y = legendStartY + i * 22;
+      const displayLabel = truncateLabel(d.label, 16);
+      return `<g>
+        <circle cx="${legendX + 5}" cy="${y + 5}" r="4" fill="${getColor(i, true)}" />
+        <text x="${legendX + 14}" y="${y + 9}" fill="#6b7280" font-size="9" font-family="Inter, sans-serif">${escapeXml(displayLabel)}: ${formatValue(d.value, unit)}</text>
+      </g>`;
+    }).join("\n    ");
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">
+  <defs>
+    <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.08" />
+    </linearGradient>
+  </defs>
+  <!-- Grid -->
+  ${gridRings.join("\n  ")}
+  <!-- Axes -->
+  ${axisLines.join("\n  ")}
+  <!-- Scale labels -->
+  ${scaleLabels.join("\n  ")}
+  <!-- Data polygon -->
+  <polygon points="${polygonPoints}" fill="url(#radarFill)" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" />
+  <!-- Data points -->
+  ${dataPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="white" stroke="${color}" stroke-width="2.5" />`).join("\n  ")}
+  <!-- Value labels -->
+  ${valueLabels.join("\n  ")}
+  <!-- Axis labels -->
+  ${axisLabels.join("\n  ")}
+  <!-- Legend -->
+  ${legend}
+</svg>`;
+}
+
+// ═══════════════════════════════════════════════════════
 // EMPTY CHART PLACEHOLDER
 // ═══════════════════════════════════════════════════════
 
@@ -589,6 +725,9 @@ export function renderChart(config: ChartConfig): ChartResult {
       break;
     case "donut":
       svg = renderDonutChart(config);
+      break;
+    case "radar":
+      svg = renderRadarChart(config);
       break;
     default:
       svg = renderBarChart(config);
@@ -624,6 +763,11 @@ export function recommendChartType(data: ChartDataPoint[], context?: string): Ch
   // Time series / trend data → line
   if (contextLower.match(/тренд|trend|динамик|dynamic|рост|growth|год|year|месяц|month|квартал|quarter|время|time/)) {
     return "line";
+  }
+
+  // Multi-criteria comparison / radar-suitable data
+  if (contextLower.match(/критери|criteria|параметр|parameter|показател|indicator|оценк|rating|сильные сторон|strengths|компетенц|competenc|профиль|profile|индекс|index/)) {
+    if (count >= 4 && count <= 10) return "radar";
   }
 
   // Comparison / ranking → horizontal bar

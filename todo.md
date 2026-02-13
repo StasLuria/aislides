@@ -803,3 +803,34 @@
 - [x] Added 12 new tests for sanitizeUnit, wrapLabel, renderMultiLineLabel, formatValue
 - [x] Test chart rendering with new generation: "производительность" (20 chars) fully visible, all labels readable
 - [x] All 965 tests passing
+
+## Task: Fix TS errors in chatRoutes.ts
+- [x] Fix 4 nullable db/dbInner TS errors in chatRoutes.ts (added non-null assertions)
+
+## Task: Add radar chart support
+- [x] Add renderRadarChart to svgChartEngine.ts (grid rings, data polygon, axis labels, values, legend)
+- [x] Update recommendChartType for multi-criteria/parameter/indicator data (4-10 points)
+- [x] Update dataVizAgent LLM prompt and JSON schema to include radar option
+- [x] Add 10 radar chart tests (rendering, grid, edge cases, recommendChartType)
+- [x] All 975 tests passing
+
+## Task: Improve Design Critique scoring
+- [x] Scoring formula: normalized by slide count + diminishing returns (sqrt curve), max penalties capped
+- [x] Whitespace validator: text density 800→1200, overflow threshold 1.2x→1.5x
+- [x] Color harmony: skip SVG charts, distance 150→200, min 5 off-theme colors
+- [x] Font sizing: ratio threshold 6x→8x
+- [x] Text overflow: increased limits for Russian text (+10-30 chars per field)
+- [x] Updated 3 tests for new thresholds, all 975 tests passing
+
+## Task: Comprehensive product testing
+- [x] Test CJM: New user → create presentation (quick mode)
+- [x] Test CJM: New user → create presentation (step-by-step mode)
+- [x] Test CJM: User → view/edit existing presentation
+- [x] Test CJM: User → file upload → presentation
+- [x] Test all UI elements, text visibility, chart labels
+- [x] Fix any discovered issues (3 bugs fixed: delete confirm, SESSION_NOT_FOUND, template encoding)
+
+## Bug Fixes from CJM Testing
+- [x] Bug 1: Add confirmation dialog before deleting a chat
+- [x] Bug 2: Localize SESSION_NOT_FOUND error to Russian "Чат не найден"
+- [x] Bug 3: Fix template name encoding issue in settings panel (garbled Cyrillic)

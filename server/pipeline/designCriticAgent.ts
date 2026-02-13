@@ -226,13 +226,13 @@ export function checkContrast(
 const TEXT_LIMITS: Record<string, { title: number; description: number; bullet_title: number; bullet_desc: number }> = {
   "title-slide": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
   "section-header": { title: 60, description: 150, bullet_title: 60, bullet_desc: 150 },
-  "text-slide": { title: 70, description: 200, bullet_title: 50, bullet_desc: 120 },
-  "two-column": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "image-text": { title: 60, description: 150, bullet_title: 45, bullet_desc: 100 },
-  "icons-numbers": { title: 60, description: 100, bullet_title: 30, bullet_desc: 80 },
-  "process-steps": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "timeline": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
-  "comparison": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "text-slide": { title: 80, description: 250, bullet_title: 60, bullet_desc: 150 },
+  "two-column": { title: 70, description: 200, bullet_title: 50, bullet_desc: 130 },
+  "image-text": { title: 70, description: 200, bullet_title: 55, bullet_desc: 130 },
+  "icons-numbers": { title: 70, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "process-steps": { title: 70, description: 200, bullet_title: 50, bullet_desc: 130 },
+  "timeline": { title: 70, description: 200, bullet_title: 50, bullet_desc: 130 },
+  "comparison": { title: 70, description: 200, bullet_title: 50, bullet_desc: 130 },
   "final-slide": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
   "quote-slide": { title: 60, description: 300, bullet_title: 60, bullet_desc: 150 },
   "table-slide": { title: 60, description: 150, bullet_title: 30, bullet_desc: 80 },
@@ -492,7 +492,7 @@ export function checkFontSizing(
     const maxSize = Math.max(...sizes);
     const minSize = Math.min(...sizes);
     const ratio = maxSize / minSize;
-    if (ratio > 6) {
+    if (ratio > 8) {
       issues.push({
         slideNumber,
         category: "font_size",
@@ -553,23 +553,23 @@ export function checkWhitespace(
   const estimatedContentHeight = totalItems * 80 + 120; // 120 for title area
   const availableHeight = 600; // approximate usable height
 
-  if (estimatedContentHeight > availableHeight * 1.2) {
+  if (estimatedContentHeight > availableHeight * 1.5) {
     issues.push({
       slideNumber,
       category: "whitespace",
-      severity: "warning",
+      severity: estimatedContentHeight > availableHeight * 2 ? "error" : "warning",
       message: `Content likely exceeds slide area (${totalItems} items, ~${estimatedContentHeight}px estimated vs ${availableHeight}px available). Reduce content or use smaller font.`,
       fix: `/* Reduce spacing for dense content */ .slide { line-height: 1.3 !important; } .slide > div { gap: 8px !important; }`,
     });
   }
 
-  // Check total text density (chars per slide)
-  if (totalTextChars > 800) {
+  // Check total text density (chars per slide) — only flag extreme cases
+  if (totalTextChars > 1200) {
     issues.push({
       slideNumber,
       category: "whitespace",
       severity: "warning",
-      message: `High text density (${totalTextChars} chars). Presentations should have ~200-400 chars per slide for readability.`,
+      message: `Very high text density (${totalTextChars} chars). Presentations should have ~200-600 chars per slide for readability.`,
     });
   }
 
@@ -617,6 +617,10 @@ export function checkColorHarmony(
   if (!primaryAccent) return issues;
 
   // Check for "rogue" bright colors that don't match the theme
+  // Skip SVG chart colors (charts use their own palette which is intentional)
+  const isSvgChart = html.includes('<svg') && html.includes('chart');
+  if (isSvgChart) return issues; // Charts have their own color scheme, skip harmony check
+
   let offThemeCount = 0;
   for (const colorStr of inlineColors) {
     const color = parseColor(colorStr);
@@ -625,19 +629,19 @@ export function checkColorHarmony(
     // Skip near-black, near-white, and gray colors (neutral, always OK)
     const lum = relativeLuminance(color.r, color.g, color.b);
     if (lum < 0.05 || lum > 0.9) continue; // Very dark or very light
-    const isGray = Math.abs(color.r - color.g) < 20 && Math.abs(color.g - color.b) < 20;
+    const isGray = Math.abs(color.r - color.g) < 30 && Math.abs(color.g - color.b) < 30;
     if (isGray) continue;
 
-    // Check if the color is close to theme colors
+    // Check if the color is close to theme colors (increased tolerance)
     const distPrimary = colorDistance(color, primaryAccent);
     const distSecondary = secondaryAccent ? colorDistance(color, secondaryAccent) : 999;
 
-    if (distPrimary > 150 && distSecondary > 150) {
+    if (distPrimary > 200 && distSecondary > 200) {
       offThemeCount++;
     }
   }
 
-  if (offThemeCount > 3) {
+  if (offThemeCount > 5) {
     issues.push({
       slideNumber,
       category: "color_harmony",
@@ -783,15 +787,27 @@ export function runDesignCritic(
   // Generate CSS fixes
   const cssFixesPerSlide = generateCssFixes(allIssues);
 
-  // Calculate overall score
+  // Calculate overall score — normalized by slide count with diminishing returns
+  const slideCount = slides.length || 1;
   const errorCount = allIssues.filter((i) => i.severity === "error").length;
   const warningCount = allIssues.filter((i) => i.severity === "warning").length;
   const infoCount = allIssues.filter((i) => i.severity === "info").length;
 
+  // Normalize: issues per slide (more slides naturally produce more issues)
+  const errorsPerSlide = errorCount / slideCount;
+  const warningsPerSlide = warningCount / slideCount;
+  const infosPerSlide = infoCount / slideCount;
+
+  // Diminishing returns: first few issues per slide hurt more, additional ones less
+  // Using sqrt to create diminishing penalty curve
   let score = 10;
-  score -= errorCount * 1.5;
-  score -= warningCount * 0.5;
-  score -= infoCount * 0.1;
+  score -= Math.min(4, Math.sqrt(errorsPerSlide) * 2.5);    // Max -4 for errors
+  score -= Math.min(3, Math.sqrt(warningsPerSlide) * 1.5);  // Max -3 for warnings
+  score -= Math.min(1, Math.sqrt(infosPerSlide) * 0.5);     // Max -1 for info
+
+  // Bonus: if no errors at all, add +0.5
+  if (errorCount === 0) score += 0.5;
+
   score = Math.max(1, Math.min(10, Math.round(score * 10) / 10));
 
   // Generate summary

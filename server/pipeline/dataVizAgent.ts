@@ -277,11 +277,12 @@ export async function extractChartDataWithLLM(slide: SlideContent): Promise<Data
 
 Rules:
 - Only extract if there are at least 2 clear numeric data points
-- Choose the best chart type: "bar", "horizontal-bar", "line", "pie", "donut"
+- Choose the best chart type: "bar", "horizontal-bar", "line", "pie", "donut", "radar"
 - Use "pie" or "donut" for percentage/share data that sums to ~100%
 - Use "line" for time series or trend data
 - Use "bar" for comparisons of 2-6 items
 - Use "horizontal-bar" for rankings or comparisons of 4+ items
+- Use "radar" for multi-criteria comparisons, performance profiles, or indicator assessments (4-10 data points)
 - If the data represents parts of a whole, use "donut" with center_label and center_value
 - Return has_chartable_data: false if no clear numeric data exists
 
@@ -329,7 +330,7 @@ Extract chartable data as JSON.`;
             type: "object",
             properties: {
               has_chartable_data: { type: "boolean" },
-              chart_type: { type: "string", enum: ["bar", "horizontal-bar", "line", "pie", "donut"] },
+              chart_type: { type: "string", enum: ["bar", "horizontal-bar", "line", "pie", "donut", "radar"] },
               data_points: {
                 type: "array",
                 items: {
@@ -450,10 +451,10 @@ export async function runDataVizAgent(
         unit: decision.unit,
         showGrid: true,
         showValues: true,
-        showLegend: decision.chartType === "pie" || decision.chartType === "donut",
+        showLegend: decision.chartType === "pie" || decision.chartType === "donut" || decision.chartType === "radar",
         centerLabel: decision.centerLabel,
         centerValue: decision.centerValue,
-        width: decision.chartType === "pie" || decision.chartType === "donut" ? 500 : 600,
+        width: (decision.chartType === "pie" || decision.chartType === "donut" || decision.chartType === "radar") ? 500 : 600,
         height: 340,
       };
 

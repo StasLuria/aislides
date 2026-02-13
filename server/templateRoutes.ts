@@ -64,7 +64,18 @@ router.post(
         return;
       }
 
-      const customName = req.body.name || file.originalname.replace(/\.[^.]+$/, "");
+      // Multer may encode Cyrillic filenames as latin-1; fix by re-encoding to UTF-8
+      let rawName = req.body.name || file.originalname.replace(/\.[^.]+$/, "");
+      try {
+        // Detect double-encoded UTF-8 (latin-1 interpretation of UTF-8 bytes)
+        const buf = Buffer.from(rawName, "latin1");
+        const decoded = buf.toString("utf-8");
+        // If decoding changes the string and produces valid Cyrillic, use it
+        if (decoded !== rawName && /[\u0400-\u04FF]/.test(decoded)) {
+          rawName = decoded;
+        }
+      } catch { /* keep original */ }
+      const customName = rawName;
 
       // Upload source file to S3
       const fileId = nanoid(16);

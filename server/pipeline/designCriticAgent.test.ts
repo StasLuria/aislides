@@ -252,9 +252,9 @@ describe("checkTextOverflow", () => {
   });
 
   it("uses layout-specific limits", () => {
-    // icons-numbers has stricter limits
+    // icons-numbers has stricter limits (70 chars)
     const data = {
-      title: "T".repeat(65), // Over 60 limit for icons-numbers
+      title: "T".repeat(75), // Over 70 limit for icons-numbers
     };
     const issues = checkTextOverflow(1, data, "icons-numbers");
     expect(issues.some((i) => i.message.includes("Title too long"))).toBe(true);
@@ -379,8 +379,8 @@ describe("checkWhitespace", () => {
   it("warns about high text density", () => {
     const data = {
       title: "T".repeat(50),
-      description: "D".repeat(200),
-      bullets: Array(5).fill({ title: "T".repeat(40), description: "D".repeat(100) }),
+      description: "D".repeat(300),
+      bullets: Array(8).fill({ title: "T".repeat(50), description: "D".repeat(120) }),
     };
     const issues = checkWhitespace(1, data, "text-slide");
     expect(issues.some((i) => i.message.includes("text density"))).toBe(true);
@@ -433,12 +433,16 @@ describe("checkColorHarmony", () => {
   });
 
   it("detects off-theme colors", () => {
-    // Many bright colors that don't match blue theme
+    // Many bright colors that don't match blue theme (need >5 off-theme colors)
     const html = `
       <div style="color: #ff0000;">Red</div>
       <div style="color: #00ff00;">Green</div>
       <div style="background-color: #ff00ff;">Magenta</div>
       <div style="color: #ff8800;">Orange</div>
+      <div style="color: #ffcc00;">Yellow</div>
+      <div style="color: #cc3300;">Dark Orange</div>
+      <div style="color: #ff3366;">Hot Pink</div>
+      <div style="color: #99cc00;">Lime</div>
     `;
     const issues = checkColorHarmony(1, html, themeVars);
     expect(issues.some((i) => i.category === "color_harmony")).toBe(true);

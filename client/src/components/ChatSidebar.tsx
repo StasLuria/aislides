@@ -70,6 +70,7 @@ export default function ChatSidebar({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -109,10 +110,16 @@ export default function ChatSidebar({
     }
   }, [updatedTitle, currentSessionId]);
 
-  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     if (deletingId) return;
+    setConfirmDeleteId(sessionId);
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteId || deletingId) return;
+    const sessionId = confirmDeleteId;
+    setConfirmDeleteId(null);
     setDeletingId(sessionId);
     try {
       await fetch(`${API_BASE}/sessions/${sessionId}`, { method: "DELETE" });
@@ -126,6 +133,10 @@ export default function ChatSidebar({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmDeleteId(null);
   };
 
   const startEditing = (e: React.MouseEvent, session: ChatSession) => {
@@ -316,7 +327,7 @@ export default function ChatSidebar({
                       <Pencil className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={(e) => handleDelete(e, session.session_id)}
+                      onClick={(e) => handleDeleteClick(e, session.session_id)}
                       className={`
                         p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive
                         ${deletingId === session.session_id ? "opacity-100" : ""}
@@ -336,6 +347,33 @@ export default function ChatSidebar({
           })
         )}
       </div>
+      {/* Delete confirmation overlay */}
+      {confirmDeleteId && (
+        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg p-4 shadow-lg max-w-[220px] w-full">
+            <p className="text-xs font-medium text-foreground mb-1">Удалить чат?</p>
+            <p className="text-[10px] text-muted-foreground mb-3">Это действие нельзя отменить.</p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteCancel}
+                className="flex-1 h-7 text-[11px]"
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteConfirm}
+                className="flex-1 h-7 text-[11px]"
+              >
+                Удалить
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

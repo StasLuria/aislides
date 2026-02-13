@@ -289,7 +289,7 @@ router.post(
 
         // Save file record with status "uploading"
         const db = await getDb();
-        await db.insert(chatFiles).values({
+        await db!.insert(chatFiles).values({
           fileId,
           sessionId: req.params.id,
           filename: file.originalname,
@@ -303,7 +303,7 @@ router.post(
         extractTextFromFile(file.buffer, file.mimetype, file.originalname, s3Url)
           .then(async (extraction) => {
             const dbInner = await getDb();
-            await dbInner
+            await dbInner!
               .update(chatFiles)
               .set({
                 extractedText: extraction.text || null,
@@ -315,7 +315,7 @@ router.post(
           .catch(async (err) => {
             console.error(`[Upload] Extraction failed for ${file.originalname}:`, err);
             const dbInner = await getDb();
-            await dbInner
+            await dbInner!
               .update(chatFiles)
               .set({ status: "error" })
               .where(eq(chatFiles.fileId, fileId));
@@ -347,7 +347,7 @@ router.post(
 router.get("/api/v1/chat/sessions/:id/files", async (req: Request, res: Response) => {
   try {
     const db = await getDb();
-    const files = await db
+    const files = await db!
       .select()
       .from(chatFiles)
       .where(eq(chatFiles.sessionId, req.params.id));

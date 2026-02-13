@@ -741,3 +741,158 @@ describe("SVG Chart Engine — formatValue currency handling", () => {
     expect(result.svg).toContain("20 млн");
   });
 });
+
+// ═══════════════════════════════════════════════════════
+// RADAR CHART TESTS
+// ═══════════════════════════════════════════════════════
+
+describe("renderRadarChart", () => {
+  it("should render a radar chart with 5 data points", () => {
+    const config: ChartConfig = {
+      type: "radar",
+      data: [
+        { label: "Инновации", value: 85 },
+        { label: "Качество", value: 72 },
+        { label: "Сервис", value: 90 },
+        { label: "Цена", value: 65 },
+        { label: "Бренд", value: 78 },
+      ],
+      width: 500,
+      height: 400,
+      showValues: true,
+      unit: "%",
+    };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<polygon");
+    expect(result.svg).toContain("Инновации");
+    expect(result.svg).toContain("Качество");
+    expect(result.svg).toContain("Сервис");
+    expect(result.svg).toContain("Цена");
+    expect(result.svg).toContain("Бренд");
+    expect(result.chartType).toBe("radar");
+    expect(result.dataPointCount).toBe(5);
+  });
+
+  it("should render grid rings (5 levels)", () => {
+    const config: ChartConfig = {
+      type: "radar",
+      data: [
+        { label: "A", value: 10 },
+        { label: "B", value: 20 },
+        { label: "C", value: 30 },
+        { label: "D", value: 40 },
+      ],
+      width: 500,
+      height: 400,
+    };
+    const result = renderChart(config);
+    // Should have 5 grid polygons with stroke
+    const gridMatches = result.svg.match(/<polygon[^>]*stroke="#e5e7eb"/g);
+    expect(gridMatches).not.toBeNull();
+    expect(gridMatches!.length).toBe(5);
+  });
+
+  it("should fall back to empty chart for less than 3 data points", () => {
+    const config: ChartConfig = {
+      type: "radar",
+      data: [
+        { label: "A", value: 10 },
+        { label: "B", value: 20 },
+      ],
+      width: 500,
+      height: 400,
+    };
+    const result = renderChart(config);
+    expect(result.svg).toContain("Radar chart needs 3+ data points");
+  });
+
+  it("should show value labels when showValues is true", () => {
+    const config: ChartConfig = {
+      type: "radar",
+      data: [
+        { label: "A", value: 10 },
+        { label: "B", value: 20 },
+        { label: "C", value: 30 },
+      ],
+      width: 500,
+      height: 400,
+      showValues: true,
+      unit: "%",
+    };
+    const result = renderChart(config);
+    expect(result.svg).toContain("10%");
+    expect(result.svg).toContain("20%");
+    expect(result.svg).toContain("30%");
+  });
+
+  it("should render with 10 data points (max reasonable)", () => {
+    const data = Array.from({ length: 10 }, (_, i) => ({
+      label: `Param ${i + 1}`,
+      value: (i + 1) * 10,
+    }));
+    const config: ChartConfig = { type: "radar", data, width: 500, height: 400 };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<polygon");
+    expect(result.dataPointCount).toBe(10);
+  });
+
+  it("should handle all-zero values", () => {
+    const config: ChartConfig = {
+      type: "radar",
+      data: [
+        { label: "A", value: 0 },
+        { label: "B", value: 0 },
+        { label: "C", value: 0 },
+      ],
+      width: 500,
+      height: 400,
+    };
+    const result = renderChart(config);
+    expect(result.svg).toContain("<svg");
+    expect(result.chartType).toBe("radar");
+  });
+});
+
+describe("recommendChartType — radar", () => {
+  it("should recommend radar for multi-criteria comparison data", () => {
+    const data = [
+      { label: "Инновации", value: 85 },
+      { label: "Качество", value: 72 },
+      { label: "Сервис", value: 90 },
+      { label: "Цена", value: 65 },
+      { label: "Бренд", value: 78 },
+    ];
+    const result = recommendChartType(data, "Оценка по критериям эффективности");
+    expect(result).toBe("radar");
+  });
+
+  it("should recommend radar for indicator/parameter data", () => {
+    const data = [
+      { label: "Скорость", value: 8 },
+      { label: "Надёжность", value: 7 },
+      { label: "Масштабируемость", value: 9 },
+      { label: "Безопасность", value: 6 },
+    ];
+    const result = recommendChartType(data, "Ключевые показатели системы");
+    expect(result).toBe("radar");
+  });
+
+  it("should NOT recommend radar for fewer than 4 data points", () => {
+    const data = [
+      { label: "A", value: 10 },
+      { label: "B", value: 20 },
+      { label: "C", value: 30 },
+    ];
+    const result = recommendChartType(data, "Оценка по критериям");
+    expect(result).not.toBe("radar");
+  });
+
+  it("should NOT recommend radar for more than 10 data points", () => {
+    const data = Array.from({ length: 12 }, (_, i) => ({
+      label: `Критерий ${i + 1}`,
+      value: (i + 1) * 5,
+    }));
+    const result = recommendChartType(data, "Оценка по критериям");
+    expect(result).not.toBe("radar");
+  });
+});
