@@ -21,13 +21,15 @@ import {
 import { renderPresentation, renderSlide, BASE_CSS } from "./pipeline/templateEngine";
 import { getThemePreset } from "./pipeline/themes";
 import { pickLayoutForPreview, buildPreviewData } from "./interactiveRoutes";
+import { storagePut } from "./storage";
+import { nanoid } from "nanoid";
 
 // ═══════════════════════════════════════════════════════
 // SSE EVENT TYPES
 // ═══════════════════════════════════════════════════════
 
 export interface SSEEvent {
-  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link";
+  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update";
   data: any;
 }
 
@@ -173,6 +175,59 @@ const MODE_SELECTION_PROMPT = `Пользователь указал тему д
 Спроси, какой режим предпочитает пользователь. Будь кратким (2-3 предложения).`;
 
 // ═══════════════════════════════════════════════════════
+// TITLE GENERATION
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Generate a short, meaningful title for a chat session based on the user's topic.
+ * Uses LLM to create a concise title (3-6 words) and sends it via SSE.
+ */
+async function generateSessionTitle(
+  sessionId: string,
+  userMessage: string,
+  writer: SSEWriter,
+): Promise<void> {
+  try {
+    const result = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `Ты генерируешь короткие заголовки для чат-сессий по созданию презентаций.
+ПРАВИЛА:
+- Заголовок должен быть на том же языке, что и тема пользователя
+- Максимум 5-7 слов
+- Без кавычек, без точки в конце
+- Отражай суть темы презентации
+- Не добавляй слова "презентация" — это и так понятно из контекста
+
+Примеры:
+- "Качество воды в мире" → "Качество воды в мире"
+- "Расскажи про искусственный интеллект в медицине" → "AI в медицине"
+- "Стратегия развития компании на 2026" → "Стратегия развития 2026"
+- "How AI transforms education" → "AI in Education"`,
+        },
+        {
+          role: "user",
+          content: `Сгенерируй короткий заголовок для чат-сессии. Тема пользователя: "${userMessage}"`,
+        },
+      ],
+    });
+
+    const rawContent = result.choices?.[0]?.message?.content;
+    const contentStr = typeof rawContent === "string" ? rawContent : "";
+    const title = contentStr.trim().replace(/^["']|["']$/g, "");
+    if (title && title.length > 0 && title.length < 100) {
+      await updateChatSession(sessionId, { topic: title });
+      writer({ type: "title_update", data: title });
+      console.log(`[ChatOrchestrator] Generated title for ${sessionId}: "${title}"`);
+    }
+  } catch (err: any) {
+    console.error("[ChatOrchestrator] Title generation error:", err.message);
+    // Non-critical — keep the original topic as fallback
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // ORCHESTRATOR
 // ═══════════════════════════════════════════════════════
 
@@ -278,6 +333,10 @@ async function handleTopicInput(
     topic: userMessage,
     phase: "mode_selection",
   });
+
+  // Auto-generate a short title from the user's topic
+  // Must complete before done event so the client receives the title_update
+  await generateSessionTitle(sessionId, userMessage, writer);
 
   writer({ type: "done", data: null });
 }
@@ -407,6 +466,31 @@ async function startQuickGeneration(
       },
     );
 
+    // Upload full HTML to S3
+    let htmlUrl: string | undefined;
+    try {
+      const config = (session.metadata as Record<string, any>) || {};
+      const themePreset = getThemePreset(config.theme_preset || "auto");
+      const renderedSlides = result.slides.map(s => ({
+        layoutId: s.layoutId,
+        data: s.data,
+        html: s.html || renderSlide(s.layoutId, s.data),
+      }));
+      const fullHtml = renderPresentation(
+        renderedSlides,
+        result.themeCss || themePreset.cssVariables,
+        result.title || "Presentation",
+        result.language || "ru",
+        themePreset.fontsUrl,
+      );
+      const fileKey = `presentations/${presentation.presentationId}/presentation-${nanoid(8)}.html`;
+      const uploaded = await storagePut(fileKey, fullHtml, "text/html");
+      htmlUrl = uploaded.url;
+      console.log(`[ChatOrchestrator] Uploaded HTML to S3: ${htmlUrl}`);
+    } catch (uploadErr: any) {
+      console.error(`[ChatOrchestrator] Failed to upload HTML to S3:`, uploadErr);
+    }
+
     // Save to DB
     await updatePresentationProgress(presentation.presentationId, {
       status: "completed",
@@ -416,11 +500,12 @@ async function startQuickGeneration(
       language: result.language,
       themeCss: result.themeCss,
       finalHtmlSlides: result.slides.map(s => ({
-        layout_id: s.layoutId,
+        layoutId: s.layoutId,
         data: s.data,
         html: s.html,
       })),
       slideCount: result.slides.length,
+      ...(htmlUrl ? { resultUrls: { html_preview: htmlUrl } } : {}),
     });
 
     // Send all slide previews at completion (ensures user sees them)
@@ -635,6 +720,31 @@ async function handleStructureApproval(
 
       const presentationId = session.presentationId || "";
 
+      // Upload full HTML to S3
+      let stepHtmlUrl: string | undefined;
+      try {
+        const stepConfig = (session.metadata as Record<string, any>) || {};
+        const stepThemePreset = getThemePreset(stepConfig.theme_preset || "auto");
+        const stepRenderedSlides = result.slides.map(s => ({
+          layoutId: s.layoutId,
+          data: s.data,
+          html: s.html || renderSlide(s.layoutId, s.data),
+        }));
+        const stepFullHtml = renderPresentation(
+          stepRenderedSlides,
+          result.themeCss || stepThemePreset.cssVariables,
+          result.title || "Presentation",
+          result.language || "ru",
+          stepThemePreset.fontsUrl,
+        );
+        const stepFileKey = `presentations/${presentationId}/presentation-${nanoid(8)}.html`;
+        const stepUploaded = await storagePut(stepFileKey, stepFullHtml, "text/html");
+        stepHtmlUrl = stepUploaded.url;
+        console.log(`[ChatOrchestrator] Step-by-step: Uploaded HTML to S3: ${stepHtmlUrl}`);
+      } catch (uploadErr: any) {
+        console.error(`[ChatOrchestrator] Step-by-step: Failed to upload HTML to S3:`, uploadErr);
+      }
+
       await updatePresentationProgress(presentationId, {
         status: "completed",
         currentStep: "completed",
@@ -643,11 +753,12 @@ async function handleStructureApproval(
         language: result.language,
         themeCss: result.themeCss,
         finalHtmlSlides: result.slides.map(s => ({
-          layout_id: s.layoutId,
+          layoutId: s.layoutId,
           data: s.data,
           html: s.html,
         })),
         slideCount: result.slides.length,
+        ...(stepHtmlUrl ? { resultUrls: { html_preview: stepHtmlUrl } } : {}),
       });
 
       // Send all slide previews at completion (step-by-step mode)

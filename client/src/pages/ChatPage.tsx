@@ -98,16 +98,9 @@ function ActionButtons({
 }) {
   if (!actions.length) return null;
 
-  // Filter out mode selection buttons — they're now in settings
-  const filteredActions = actions.filter(
-    (a) => a.id !== "mode_quick" && a.id !== "mode_step"
-  );
-
-  if (!filteredActions.length) return null;
-
   return (
     <div className="flex flex-wrap gap-2 mt-3">
-      {filteredActions.map((action) => (
+      {actions.map((action) => (
         <Button
           key={action.id}
           variant={action.variant === "outline" ? "outline" : "default"}
@@ -260,41 +253,6 @@ function SettingsPanel({
         </button>
       </div>
 
-      {/* Mode */}
-      <div className="mb-4">
-        <label className="text-xs text-muted-foreground mb-2 block">Режим</label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onChange({ ...settings, mode: "quick" })}
-            className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors ${
-              settings.mode === "quick"
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <div className="text-left">
-              <div className="font-medium">Быстрый</div>
-              <div className="text-[10px] opacity-70">~60 сек, автоматически</div>
-            </div>
-          </button>
-          <button
-            onClick={() => onChange({ ...settings, mode: "step" })}
-            className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors ${
-              settings.mode === "step"
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Target className="w-3.5 h-3.5" />
-            <div className="text-left">
-              <div className="font-medium">Пошаговый</div>
-              <div className="text-[10px] opacity-70">Утверждение структуры</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
       {/* Theme */}
       <div className="mb-4">
         <label className="text-xs text-muted-foreground mb-2 block">Тема дизайна</label>
@@ -359,9 +317,7 @@ function SettingsPanel({
 function SettingsChips({ settings }: { settings: ChatSettings }) {
   const chips: { label: string; icon: React.ReactNode }[] = [];
 
-  if (settings.mode === "step") {
-    chips.push({ label: "Пошаговый", icon: <Target className="w-3 h-3" /> });
-  }
+  // Mode is selected via chat buttons, not settings
 
   if (settings.themePreset !== "auto") {
     const preset = THEME_PRESETS.find((t) => t.id === settings.themePreset);
@@ -417,6 +373,7 @@ export default function ChatPage() {
     progress,
     currentActions,
     presentationLink,
+    sessionTitle,
     error,
     createSession,
     loadSession,
@@ -450,23 +407,10 @@ export default function ChatPage() {
     setInput("");
     setShowSettings(false);
 
-    // First message: send topic, then auto-trigger mode based on settings
-    if (messages.length === 0 && !settingsApplied) {
-      setSettingsApplied(true);
-      // Send the topic message first
-      await sendMessage(trimmed);
-      // Wait a moment, then auto-select the mode
-      setTimeout(async () => {
-        const modeAction = settings.mode === "quick" ? "mode_quick" : "mode_step";
-        await triggerAction(modeAction);
-        setRefreshTrigger((p) => p + 1);
-      }, 500);
-    } else {
-      await sendMessage(trimmed);
-    }
-
+    // Just send the message — mode selection happens via action buttons in chat
+    await sendMessage(trimmed);
     setRefreshTrigger((p) => p + 1);
-  }, [input, isStreaming, sendMessage, messages.length, settingsApplied, settings.mode, triggerAction]);
+  }, [input, isStreaming, sendMessage]);
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -523,11 +467,8 @@ export default function ChatPage() {
     }
   }, [error]);
 
-  // Filter out mode selection actions (they're handled by settings now)
-  const filteredActions = useMemo(
-    () => currentActions.filter((a) => a.id !== "mode_quick" && a.id !== "mode_step"),
-    [currentActions],
-  );
+  // Show all action buttons including mode selection
+  const filteredActions = currentActions;
 
   const hasMessages = messages.length > 0;
 
@@ -541,6 +482,7 @@ export default function ChatPage() {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
         refreshTrigger={refreshTrigger}
+        updatedTitle={sessionTitle}
       />
 
       {/* Main chat area */}
@@ -577,7 +519,7 @@ export default function ChatPage() {
                 </div>
               )}
 
-              {/* Action buttons (filtered — no mode buttons) */}
+              {/* Action buttons */}
               {!isStreaming && filteredActions.length > 0 && (
                 <div className="pl-10">
                   <ActionButtons

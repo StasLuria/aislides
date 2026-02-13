@@ -399,6 +399,42 @@ export default function Viewer() {
     };
   }, [editMode]);
 
+  // Fallback: render slides individually from the /slides API when no S3 HTML is available
+  const fallbackRenderFromSlides = async (presId: string) => {
+    try {
+      const slidesData = await api.getSlides(presId);
+      if (slidesData.slides.length === 0) {
+        toast.error("Слайды не найдены");
+        return;
+      }
+
+      // Fetch each slide's rendered HTML individually
+      const slideHtmlPromises = slidesData.slides.map(async (_, idx) => {
+        try {
+          const slideResp = await api.getSlide(presId, idx);
+          return slideResp.html;
+        } catch (err) {
+          console.error(`Failed to render slide ${idx}:`, err);
+          return `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;width:1280px;height:720px;font-family:sans-serif;background:#f8f9fa;}</style></head><body><div style="text-align:center;color:#6c757d;"><p>Ошибка рендеринга слайда ${idx + 1}</p></div></body></html>`;
+        }
+      });
+
+      const renderedSlides = await Promise.all(slideHtmlPromises);
+      setSlideHtmls(renderedSlides);
+      setSlideDataList(slidesData.slides);
+
+      // Also trigger reassemble in background to fix the missing result_urls
+      api.reassemblePresentation(presId).then((result) => {
+        console.log("[Viewer] Background reassemble completed:", result.html_url);
+      }).catch((err) => {
+        console.warn("[Viewer] Background reassemble failed:", err);
+      });
+    } catch (err) {
+      console.error("Failed to render slides from API:", err);
+      toast.error("Не удалось загрузить слайды");
+    }
+  };
+
   // Fetch presentation data
   useEffect(() => {
     if (!presentationId) return;
@@ -423,11 +459,14 @@ export default function Viewer() {
             const slides = parseSlides(html);
             setSlideHtmls(slides);
           } catch (err) {
-            console.error("Failed to fetch HTML:", err);
-            toast.error("Не удалось загрузить HTML презентации");
+            console.error("Failed to fetch HTML from S3:", err);
+            // Fallback: try to render from slide data via API
+            await fallbackRenderFromSlides(presentationId);
           }
         } else {
-          toast.error("URL презентации не найден");
+          // No result_urls — render from stored slide data
+          console.log("[Viewer] No result_urls, falling back to slide-by-slide rendering");
+          await fallbackRenderFromSlides(presentationId);
         }
 
         // Also fetch slide data for editing

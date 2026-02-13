@@ -109,7 +109,31 @@ router.get("/api/v1/chat/sessions/:id", async (req: Request, res: Response) => {
   }
 });
 
-// ── Delete Session ─────────────────────────────────────
+// ── Update Session Title ───────────────────────────────────
+router.patch("/api/v1/chat/sessions/:id/title", async (req: Request, res: Response) => {
+  try {
+    const { title } = req.body;
+    if (!title || typeof title !== "string") {
+      res.status(422).json({ detail: "title is required" });
+      return;
+    }
+
+    const session = await getChatSession(req.params.id);
+    if (!session) {
+      res.status(404).json({ detail: "Session not found" });
+      return;
+    }
+
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(req.params.id, { topic: title.trim() });
+    res.json({ success: true, topic: title.trim() });
+  } catch (error: any) {
+    console.error("[Chat API] Update title error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ── Delete Session ─────────────────────────────────────────
 router.delete("/api/v1/chat/sessions/:id", async (req: Request, res: Response) => {
   try {
     await deleteChatSession(req.params.id);

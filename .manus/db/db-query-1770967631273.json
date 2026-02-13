@@ -1,0 +1,35 @@
+{
+  "query": "SELECT presentationId, status, resultUrls FROM presentations WHERE status = 'completed' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT presentationId, status, resultUrls FROM presentations WHERE status = 'completed' LIMIT 5;",
+  "rows": [
+    {
+      "presentationId": "8jzOrHf1VG46nUIC",
+      "status": "completed",
+      "resultUrls": "{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/8jzOrHf1VG46nUIC/presentation-edited-4ohLPAfn.html\"}"
+    },
+    {
+      "presentationId": "qVvO4CHdhHyHcM9y",
+      "status": "completed",
+      "resultUrls": "{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/qVvO4CHdhHyHcM9y/presentation-bJ9tqu2x.html\"}"
+    },
+    {
+      "presentationId": "Tsag6V5XOXvX6gyh",
+      "status": "completed",
+      "resultUrls": "{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/Tsag6V5XOXvX6gyh/presentation-SiUU1WfJ.html\"}"
+    },
+    {
+      "presentationId": "hryrqMF6mS3Z4ZF9",
+      "status": "completed",
+      "resultUrls": "{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/hryrqMF6mS3Z4ZF9/presentation-X_AwYjgG.html\"}"
+    },
+    {
+      "presentationId": "hDrIh3Y8C6scNZNl",
+      "status": "completed",
+      "resultUrls": "{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/hDrIh3Y8C6scNZNl/presentation-rhUZTA-8.html\"}"
+    }
+  ],
+  "messages": [],
+  "stdout": "presentationId\tstatus\tresultUrls\n8jzOrHf1VG46nUIC\tcompleted\t{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/8jzOrHf1VG46nUIC/presentation-edited-4ohLPAfn.html\"}\nqVvO4CHdhHyHcM9y\tcompleted\t{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/qVvO4CHdhHyHcM9y/presentation-bJ9tqu2x.html\"}\nTsag6V5XOXvX6gyh\tcompleted\t{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/Tsag6V5XOXvX6gyh/presentation-SiUU1WfJ.html\"}\nhryrqMF6mS3Z4ZF9\tcompleted\t{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/hryrqMF6mS3Z4ZF9/presentation-X_AwYjgG.html\"}\nhDrIh3Y8C6scNZNl\tcompleted\t{\"html_preview\": \"https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/hDrIh3Y8C6scNZNl/presentation-rhUZTA-8.html\"}\n",
+  "stderr": "",
+  "execution_time_ms": 224
+}

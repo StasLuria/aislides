@@ -38,7 +38,7 @@ export interface PresentationLink {
 }
 
 interface SSEEvent {
-  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link";
+  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update";
   data: any;
 }
 
@@ -93,6 +93,7 @@ export function useSSEChat() {
   const [progress, setProgress] = useState<{ percent: number; message: string } | null>(null);
   const [currentActions, setCurrentActions] = useState<ChatAction[]>([]);
   const [presentationLink, setPresentationLink] = useState<PresentationLink | null>(null);
+  const [sessionTitle, setSessionTitle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const streamingContentRef = useRef("");
@@ -109,6 +110,7 @@ export function useSSEChat() {
       setMessages([]);
       setCurrentActions([]);
       setPresentationLink(null);
+      setSessionTitle(null);
       setProgress(null);
       setError(null);
       return data.session_id;
@@ -248,6 +250,10 @@ export function useSSEChat() {
               });
               break;
 
+            case "title_update":
+              setSessionTitle(typeof event.data === "string" ? event.data : event.data?.title || null);
+              break;
+
             case "error":
               setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
               break;
@@ -373,6 +379,10 @@ export function useSSEChat() {
               });
               break;
 
+            case "title_update":
+              setSessionTitle(typeof event.data === "string" ? event.data : event.data?.title || null);
+              break;
+
             case "error":
               setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
               break;
@@ -438,6 +448,7 @@ export function useSSEChat() {
     progress,
     currentActions,
     presentationLink,
+    sessionTitle,
     error,
 
     // Actions

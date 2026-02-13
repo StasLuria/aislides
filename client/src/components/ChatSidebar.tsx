@@ -1,9 +1,10 @@
 /**
  * ChatSidebar — Collapsible sidebar with chat session history.
  * Clean Light Design: white background, subtle borders, soft shadows.
+ * Supports inline title editing and real-time title updates.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
@@ -12,6 +13,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Loader2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +37,8 @@ interface ChatSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   refreshTrigger?: number;
+  /** Real-time title update from SSE */
+  updatedTitle?: string | null;
 }
 
 const API_BASE = "/api/v1/chat";
@@ -59,10 +65,14 @@ export default function ChatSidebar({
   isCollapsed,
   onToggleCollapse,
   refreshTrigger,
+  updatedTitle,
 }: ChatSidebarProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -86,6 +96,19 @@ export default function ChatSidebar({
     return () => clearInterval(interval);
   }, [fetchSessions]);
 
+  // Apply real-time title update from SSE
+  useEffect(() => {
+    if (updatedTitle && currentSessionId) {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.session_id === currentSessionId
+            ? { ...s, topic: updatedTitle }
+            : s,
+        ),
+      );
+    }
+  }, [updatedTitle, currentSessionId]);
+
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     if (deletingId) return;
@@ -103,6 +126,43 @@ export default function ChatSidebar({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const startEditing = (e: React.MouseEvent, session: ChatSession) => {
+    e.stopPropagation();
+    setEditingId(session.session_id);
+    setEditValue(session.topic === "Новый чат" ? "" : session.topic);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const saveTitle = async (sessionId: string) => {
+    const trimmed = editValue.trim();
+    if (!trimmed) {
+      setEditingId(null);
+      return;
+    }
+
+    try {
+      await fetch(`${API_BASE}/sessions/${sessionId}/title`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.session_id === sessionId ? { ...s, topic: trimmed } : s,
+        ),
+      );
+    } catch {
+      toast.error("Не удалось сохранить название");
+    } finally {
+      setEditingId(null);
+    }
+  };
+
+  const cancelEditing = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingId(null);
   };
 
   // Collapsed state
@@ -176,10 +236,12 @@ export default function ChatSidebar({
         ) : (
           sessions.map((session) => {
             const isActive = session.session_id === currentSessionId;
+            const isEditing = editingId === session.session_id;
+
             return (
               <div
                 key={session.session_id}
-                onClick={() => onSelectSession(session.session_id)}
+                onClick={() => !isEditing && onSelectSession(session.session_id)}
                 className={`
                   group flex items-start gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors relative
                   ${
@@ -195,13 +257,42 @@ export default function ChatSidebar({
                   }`}
                 />
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-xs truncate leading-tight ${
-                      isActive ? "font-medium" : ""
-                    }`}
-                  >
-                    {session.topic || "Новый чат"}
-                  </p>
+                  {isEditing ? (
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveTitle(session.session_id);
+                          if (e.key === "Escape") cancelEditing();
+                        }}
+                        className="text-xs w-full bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none focus:border-primary"
+                        placeholder="Название чата..."
+                      />
+                      <button
+                        onClick={() => saveTitle(session.session_id)}
+                        className="p-0.5 rounded hover:bg-primary/10 text-primary"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="p-0.5 rounded hover:bg-secondary text-muted-foreground"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p
+                      className={`text-xs truncate leading-tight ${
+                        isActive ? "font-medium" : ""
+                      }`}
+                    >
+                      {session.topic || "Новый чат"}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[10px] text-muted-foreground">
                       {formatRelativeDate(session.updated_at)}
@@ -214,22 +305,32 @@ export default function ChatSidebar({
                   </div>
                 </div>
 
-                {/* Delete button */}
-                <button
-                  onClick={(e) => handleDelete(e, session.session_id)}
-                  className={`
-                    opacity-0 group-hover:opacity-100 transition-opacity
-                    p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive
-                    ${deletingId === session.session_id ? "opacity-100" : ""}
-                  `}
-                  title="Удалить чат"
-                >
-                  {deletingId === session.session_id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3 h-3" />
-                  )}
-                </button>
+                {/* Edit & Delete buttons */}
+                {!isEditing && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => startEditing(e, session)}
+                      className="p-1 rounded-md hover:bg-primary/10 text-muted-foreground/40 hover:text-primary"
+                      title="Переименовать"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, session.session_id)}
+                      className={`
+                        p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive
+                        ${deletingId === session.session_id ? "opacity-100" : ""}
+                      `}
+                      title="Удалить чат"
+                    >
+                      {deletingId === session.session_id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })

@@ -650,3 +650,25 @@
 - [x] LLM modifies existing outline based on user feedback (using json_schema response_format)
 - [x] Test: "удали последний слайд" → 12→11 slides, phase stays step_structure, buttons shown
 - [x] 894 vitest tests passing
+
+## Bug Fix: Mode auto-starts without user selecting
+- [x] Removed auto-trigger of mode from ChatPage handleSend (was setTimeout + triggerAction)
+- [x] Mode buttons now shown in chat for user to click explicitly
+- [x] Removed mode selection from settings panel (only theme + slide count remain)
+- [x] Verified: phase stays mode_selection until user clicks a mode button
+
+## Bug Fix: Chat names should auto-generate from topic
+- [x] LLM-based title generation in chatOrchestrator (generateSessionTitle function)
+- [x] Title sent via SSE title_update event to update sidebar in real-time
+- [x] PATCH /api/v1/chat/sessions/:id/title endpoint for inline editing
+- [x] ChatSidebar supports inline title editing (pencil icon on hover)
+- [x] Verified: "сделай презентацию про качество воды в мире" → "Качество воды в мире"
+
+## Bug Fix: Viewer shows empty slides (URL not found)
+- [x] Root cause: chatOrchestrator didn't upload HTML to S3 (resultUrls was null)
+- [x] Root cause: legacy presentations stored layout_id instead of layoutId
+- [x] Fix: Added S3 HTML upload in chatOrchestrator for both quick and step-by-step modes
+- [x] Fix: Added fallbackRenderFromSlides in Viewer.tsx — renders slides individually from /slides API when result_urls is null
+- [x] Fix: Background reassemble triggered to fix missing result_urls for future visits
+- [x] Fix: Added normalizeSlides helper in slideEditRoutes to handle legacy layout_id → layoutId migration
+- [x] Verified: K0mPVkDoWhkxYUnJ now renders correctly via fallback + reassemble

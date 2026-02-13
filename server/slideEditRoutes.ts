@@ -25,6 +25,17 @@ import { buildEditableSlideHtml, getEditableFields, setFieldValue } from "./pipe
 
 const router = Router();
 
+/**
+ * Normalize slide data from DB — handles legacy `layout_id` key migration to `layoutId`.
+ * Some older presentations stored slides with `layout_id` instead of `layoutId`.
+ */
+function normalizeSlides(rawSlides: any[]): any[] {
+  return rawSlides.map((s: any) => ({
+    ...s,
+    layoutId: s.layoutId || s.layout_id || "text-slide",
+  }));
+}
+
 // Multer for image uploads (5MB limit)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -56,7 +67,7 @@ router.get("/api/v1/presentations/:id/slides", async (req: Request, res: Respons
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const config = (p.config as Record<string, any>) || {};
     const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
 
@@ -96,7 +107,7 @@ router.get("/api/v1/presentations/:id/slides/:index", async (req: Request, res: 
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -149,7 +160,7 @@ router.put("/api/v1/presentations/:id/slides/:index", async (req: Request, res: 
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -219,7 +230,7 @@ router.post(
         return;
       }
 
-      const slides = (p.finalHtmlSlides as any[]) || [];
+      const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
       const index = parseInt(req.params.index);
 
       if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -304,7 +315,7 @@ router.delete("/api/v1/presentations/:id/slides/:index/image", async (req: Reque
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -372,7 +383,7 @@ router.get("/api/v1/presentations/:id/slides/:index/editable", async (req: Reque
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -431,7 +442,7 @@ router.patch("/api/v1/presentations/:id/slides/:index", async (req: Request, res
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -515,7 +526,7 @@ router.post("/api/v1/presentations/:id/slides/:index/layout", async (req: Reques
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     const index = parseInt(req.params.index);
 
     if (isNaN(index) || index < 0 || index >= slides.length) {
@@ -579,7 +590,7 @@ router.post("/api/v1/presentations/:id/reassemble", async (req: Request, res: Re
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     if (slides.length === 0) {
       res.status(400).json({ detail: "No slides to assemble" });
       return;
@@ -644,7 +655,7 @@ router.post("/api/v1/presentations/:id/reorder", async (req: Request, res: Respo
       return;
     }
 
-    const slides = (p.finalHtmlSlides as any[]) || [];
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
     if (slides.length === 0) {
       res.status(400).json({ detail: "No slides to reorder" });
       return;
