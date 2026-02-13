@@ -918,3 +918,15 @@
 - [x] Fix chart layout fixup: protected highlight-stats, icons-numbers, table-slide, scenario-cards from chart override
 - [x] Run 7 test generations — diversity improved from 2 text-only to 9/12 slides with visual elements
 - [x] Design Critic score improved from 6.1 to 7.7/10
+
+## Round 5: HTML Composer Mapping Improvement
+- [x] Audit all templates and extract expected data keys for each
+- [x] Create per-template JSON example mappings (16 content_shape → layout pairs with concrete INPUT/OUTPUT)
+- [x] Replace short one-liner mappings in HTML Composer prompt with detailed examples
+- [x] Add 4 missing layout schemas to layout_schemas section (card-grid, financial-formula, big-statement, verdict-analysis)
+- [x] Fix buildFallbackData: financial-formula now handles Writer's "parts" field + operator→symbol mapping
+- [x] Fix buildFallbackData: verdict-analysis now handles Writer's "items" field + severity→hex color mapping
+- [x] Fix buildFallbackData: card-grid now uses icon_hint from Writer's structured_content
+- [x] Add IMPORTANT RULES section: camelCase keys, icon objects, symbol field, hex colors
+- [x] Write composerMapping.test.ts — 10 new tests for all improved fallback mappings
+- [x] All 1055 tests passing (35 test files)

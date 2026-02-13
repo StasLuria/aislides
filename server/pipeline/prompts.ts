@@ -462,23 +462,104 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - You can use *italic* markers for secondary emphasis. They will be rendered as <em> tags.
 </rules>
 <structured_content_mapping>
-When <structured_content> is provided, you MUST use it as the PRIMARY data source. Map it directly:
-- stat_cards → icons-numbers: map each stat_card to a metric {label: card.label, value: card.value, description: card.description}
-- stat_cards → highlight-stats: first card → mainStat, rest → supportingStats
-- card_grid → card-grid: map each card to {title, description, badge?, value?, icon?}. Add Lucide icons.
-- card_grid → icons-numbers: map each card to a metric {label: card.title, value: card.value or badge, description: card.text}
-- process_steps → numbered-steps-v2: map each step to {number: step.step_number, title: step.title, description: step.description}
-- process_steps → process-steps: same mapping
-- timeline_events → timeline-horizontal: map each event to {date: event.date, title: event.title, description: event.description}
-- timeline_events → roadmap: map each event to a milestone {date, title, description}
-- comparison_two_sides → pros-cons: map left → pros, right → cons
-- analysis_with_verdict → verdict-analysis: map items → criteria, verdict_title/text → verdict
-- analysis_with_verdict → risk-matrix: map items → mitigations, create matrix from severity
-- financial_formula → financial-formula: map parts → formulaParts
-- quote_highlight → quote-slide: map text → quote, attribution → author
-- bullet_points → text-with-callout: map to bullets[], use key_message as callout
-- bullet_points → text-slide: map to bullets[]
-Do NOT ignore structured_content and re-derive data from the text field. The structured data is already formatted correctly.
+When <structured_content> is provided, you MUST use it as the PRIMARY data source.
+Do NOT ignore structured_content and re-derive data from the text field.
+Below are CONCRETE examples for every content_shape → layout mapping.
+
+=== stat_cards → icons-numbers ===
+INPUT structured_content: {"stat_cards": [{"label": "ВЫРУЧКА", "value": "$9.9B", "description": "Рост на 23% год к году"}, {"label": "КЛИЕНТЫ", "value": "150+", "description": "Enterprise-клиенты в 40 странах"}, {"label": "МАРЖА", "value": "42%", "description": "Валовая маржинальность"}]}
+OUTPUT: {"title": "...", "metrics": [{"label": "ВЫРУЧКА", "value": "$9.9B", "description": "Рост на 23% год к году", "icon": {"name": "trending-up", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/trending-up.svg"}}, {"label": "КЛИЕНТЫ", "value": "150+", "description": "Enterprise-клиенты в 40 странах", "icon": {"name": "users", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/users.svg"}}, {"label": "МАРЖА", "value": "42%", "description": "Валовая маржинальность", "icon": {"name": "percent", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/percent.svg"}}]}
+RULE: Copy label/value/description directly. Add a relevant Lucide icon object for each metric.
+
+=== stat_cards → highlight-stats ===
+INPUT structured_content: {"stat_cards": [{"label": "ROI", "value": "340%", "description": "Возврат инвестиций за 12 месяцев"}, {"label": "ЭКОНОМИЯ", "value": "$2.1M", "description": "Годовая экономия"}, {"label": "СРОК", "value": "6 мес", "description": "Окупаемость"}]}
+OUTPUT: {"title": "...", "mainStat": {"value": "340%", "label": "ROI", "description": "Возврат инвестиций за 12 месяцев"}, "supportingStats": [{"value": "$2.1M", "label": "ЭКОНОМИЯ", "description": "Годовая экономия"}, {"value": "6 мес", "label": "СРОК", "description": "Окупаемость"}]}
+RULE: First stat_card → mainStat. Remaining → supportingStats array.
+
+=== stat_cards → hero-stat ===
+INPUT structured_content: {"stat_cards": [{"label": "РОСТ РЫНКА", "value": "2.5x", "description": "За последние 3 года"}, {"label": "TAM", "value": "$47B", "description": "К 2028 году"}, {"label": "CAGR", "value": "18%", "description": "Среднегодовой рост"}]}
+OUTPUT: {"title": "...", "mainStat": {"value": "2.5x", "label": "РОСТ РЫНКА", "description": "За последние 3 года"}, "supportingStats": [{"value": "$47B", "label": "TAM", "description": "К 2028 году"}, {"value": "18%", "label": "CAGR", "description": "Среднегодовой рост"}], "callout": "Рынок удвоится к 2028 году"}
+RULE: First stat_card → mainStat. Rest → supportingStats. Use key_message as callout.
+
+=== card_grid → card-grid ===
+INPUT structured_content: {"cards": [{"icon_hint": "shield", "title": "Безопасность", "text": "Шифрование данных AES-256 и SOC2 сертификация", "badge": "CRITICAL"}, {"icon_hint": "zap", "title": "Скорость", "text": "Обработка запросов за <100ms", "badge": "HIGH"}, {"icon_hint": "globe", "title": "Масштаб", "text": "Автоскейлинг до 10M запросов/день"}]}
+OUTPUT: {"title": "...", "cards": [{"title": "Безопасность", "description": "Шифрование данных AES-256 и SOC2 сертификация", "badge": "CRITICAL", "icon": {"name": "shield", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/shield.svg"}}, {"title": "Скорость", "description": "Обработка запросов за <100ms", "badge": "HIGH", "icon": {"name": "zap", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/zap.svg"}}, {"title": "Масштаб", "description": "Автоскейлинг до 10M запросов/день", "icon": {"name": "globe", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/globe.svg"}}]}
+RULE: Map icon_hint → icon object with Lucide URL. Map text → description. Keep badge if present.
+
+=== process_steps → numbered-steps-v2 ===
+INPUT structured_content: {"steps": [{"step_number": 1, "title": "Аудит процессов", "description": "Анализ текущих бизнес-процессов и выявление узких мест"}, {"step_number": 2, "title": "Проектирование", "description": "Разработка целевой архитектуры и плана миграции"}, {"step_number": 3, "title": "Внедрение", "description": "Поэтапное развертывание с обучением команды"}]}
+OUTPUT: {"title": "...", "steps": [{"number": 1, "title": "Аудит процессов", "description": "Анализ текущих бизнес-процессов и выявление узких мест", "result": ""}, {"number": 2, "title": "Проектирование", "description": "Разработка целевой архитектуры и плана миграции", "result": ""}, {"number": 3, "title": "Внедрение", "description": "Поэтапное развертывание с обучением команды", "result": ""}]}
+RULE: Map step_number → number. Copy title and description directly.
+
+=== process_steps → process-steps ===
+Same as numbered-steps-v2 mapping: {"title": "...", "steps": [{"number": 1, "title": "...", "description": "..."}]}
+
+=== timeline_events → timeline-horizontal ===
+INPUT structured_content: {"events": [{"date": "Q1 2025", "title": "Запуск MVP", "description": "Базовый функционал для 10 пилотных клиентов"}, {"date": "Q2 2025", "title": "Масштабирование", "description": "Расширение до 100 клиентов, интеграции API"}, {"date": "Q4 2025", "title": "Enterprise", "description": "SSO, аудит, SLA 99.9%"}]}
+OUTPUT: {"title": "...", "events": [{"date": "Q1 2025", "title": "Запуск MVP", "description": "Базовый функционал для 10 пилотных клиентов"}, {"date": "Q2 2025", "title": "Масштабирование", "description": "Расширение до 100 клиентов, интеграции API", "highlight": true}, {"date": "Q4 2025", "title": "Enterprise", "description": "SSO, аудит, SLA 99.9%"}]}
+RULE: Direct mapping. Set highlight=true on the current/most important event.
+
+=== timeline_events → roadmap ===
+OUTPUT: {"title": "...", "milestones": [{"date": "Q1 2025", "title": "Запуск MVP", "description": "Базовый функционал", "color": "#22c55e"}, {"date": "Q2 2025", "title": "Масштабирование", "description": "100 клиентов", "color": "#3b82f6"}, {"date": "Q4 2025", "title": "Enterprise", "description": "SSO, SLA", "color": "#8b5cf6"}]}
+RULE: Map events → milestones. Add distinct colors per milestone.
+
+=== comparison_two_sides → pros-cons ===
+INPUT structured_content: {"left_title": "Облачное решение", "left_items": [{"text": "Быстрое развертывание за 2 дня"}, {"text": "Автоматические обновления"}, {"text": "Нет затрат на инфраструктуру"}], "right_title": "On-premise", "right_items": [{"text": "Полный контроль данных"}, {"text": "Кастомизация без ограничений"}, {"text": "Высокие начальные затраты"}]}
+OUTPUT: {"title": "...", "pros": {"title": "Облачное решение", "items": ["Быстрое развертывание за 2 дня", "Автоматические обновления", "Нет затрат на инфраструктуру"]}, "cons": {"title": "On-premise", "items": ["Полный контроль данных", "Кастомизация без ограничений", "Высокие начальные затраты"]}}
+RULE: left_title → pros.title, left_items[].text → pros.items[]. Same for right → cons.
+
+=== comparison_two_sides → two-column ===
+OUTPUT: {"title": "...", "leftColumn": {"title": "Облачное решение", "bullets": ["Быстрое развертывание за 2 дня", "Автоматические обновления"]}, "rightColumn": {"title": "On-premise", "bullets": ["Полный контроль данных", "Кастомизация без ограничений"]}}
+RULE: left → leftColumn, right → rightColumn. Items become string arrays.
+
+=== analysis_with_verdict → verdict-analysis ===
+INPUT structured_content: {"items": [{"title": "Техническая зрелость", "description": "Стабильный API, 99.9% uptime", "severity": "LOW"}, {"title": "Масштабируемость", "description": "Горизонтальное масштабирование", "severity": "LOW"}, {"title": "Стоимость", "description": "Выше среднерыночной на 20%", "severity": "MEDIUM"}], "verdict_title": "РЕКОМЕНДАЦИЯ", "verdict_text": "Решение готово к внедрению с оговорками по стоимости", "indicators": [{"label": "РИСК", "value": "СРЕДНИЙ", "color": "orange"}]}
+OUTPUT: {"title": "...", "criteria": [{"label": "Техническая зрелость", "value": "LOW", "detail": "Стабильный API, 99.9% uptime"}, {"label": "Масштабируемость", "value": "LOW", "detail": "Горизонтальное масштабирование"}, {"label": "Стоимость", "value": "MEDIUM", "detail": "Выше среднерыночной на 20%"}], "verdictTitle": "РЕКОМЕНДАЦИЯ", "verdictText": "Решение готово к внедрению с оговорками по стоимости", "verdictColor": "#f59e0b", "verdictIcon": "⚠️", "verdictDetails": ["РИСК: СРЕДНИЙ"]}
+RULE: items[].title → criteria[].label, items[].severity → criteria[].value, items[].description → criteria[].detail. Map verdict_title → verdictTitle (camelCase!). Map indicators to verdictDetails strings. Choose verdictColor based on overall severity.
+
+=== financial_formula → financial-formula ===
+INPUT structured_content: {"parts": [{"label": "ВЫРУЧКА", "value": "499-990₽", "description": "За пользователя/мес", "operator": "-"}, {"label": "РАСХОДЫ", "value": "200-400₽", "description": "API + инфра"}, {"label": "МАРЖА", "value": "40-60%", "description": "Валовая маржа", "operator": "="}], "bottom_line": "Юнит-экономика положительная с первого месяца"}
+OUTPUT: {"title": "...", "formulaParts": [{"type": "value", "value": "499-990₽", "label": "ВЫРУЧКА"}, {"type": "operator", "symbol": "-"}, {"type": "value", "value": "200-400₽", "label": "РАСХОДЫ"}, {"type": "equals"}, {"type": "value", "value": "40-60%", "label": "МАРЖА", "highlight": true}], "components": [{"value": "499-990₽", "label": "ВЫРУЧКА"}, {"value": "200-400₽", "label": "РАСХОДЫ"}, {"value": "40-60%", "label": "МАРЖА"}], "footnote": "Юнит-экономика положительная с первого месяца"}
+RULE: Transform parts into formulaParts with type=value/operator/equals. Operators use "symbol" field (not "value"). The last value part gets highlight=true. bottom_line → footnote. Optionally add components array for breakdown cards below the formula.
+
+=== single_concept → big-statement ===
+INPUT structured_content: {} (uses text field as primary)
+OUTPUT: {"title": "Ключевой тезис", "bigNumber": "73%", "label": "КЛЮЧЕВОЙ ПОКАЗАТЕЛЬ", "subtitle": "Компании, внедрившие AI, увеличили производительность на 73% за первый год", "source": "McKinsey Digital, 2025"}
+RULE: Extract the most impactful number from content → bigNumber. Short category → label. Main idea → subtitle. Use key_message for subtitle if available.
+
+=== single_concept → text-with-callout ===
+OUTPUT: {"title": "...", "bullets": [{"title": "Определение", "description": "Краткое определение концепции"}, {"title": "Применение", "description": "Как используется на практике"}], "callout": "Ключевой вывод из key_message"}
+RULE: Sub-points become bullets. key_message → callout.
+
+=== chart_with_context → stats-chart ===
+INPUT structured_content: {"stat_cards": [{"label": "РОСТ", "value": "+23%", "description": "Год к году"}]}
+OUTPUT: {"title": "...", "stats": [{"value": "+23%", "label": "РОСТ", "description": "Год к году", "change": "+23%", "changeDirection": "up"}], "chartData": {"type": "bar", "labels": [...], "datasets": [{"label": "...", "data": [...]}]}}
+RULE: Map stat_cards → stats. Build chartData from data_points. changeDirection: "up" for positive, "down" for negative.
+
+=== quote_highlight → quote-slide ===
+INPUT structured_content: {"text": "Данные — это новая нефть", "attribution": "Клайв Хамби", "context": "Британский математик, 2006"}
+OUTPUT: {"title": "...", "quote": "Данные — это новая нефть", "author": "Клайв Хамби", "role": "Британский математик, 2006"}
+RULE: text → quote, attribution → author, context → role.
+
+=== bullet_points → text-with-callout ===
+OUTPUT: {"title": "...", "bullets": [{"title": "Пункт 1", "description": "Описание пункта"}, ...], "callout": "Ключевой вывод", "source": ""}
+RULE: Parse text field into bullets with title+description. key_message → callout.
+
+=== bullet_points → text-slide ===
+OUTPUT: {"title": "...", "bullets": [{"title": "Пункт 1", "description": "Описание"}, ...]}
+RULE: Parse text field into 4-5 bullets with title+description.
+
+=== table_data → table-slide ===
+INPUT structured_content: {"columns": ["Параметр", "Текущий", "Целевой"], "rows": [{"Параметр": "Конверсия", "Текущий": "2.1%", "Целевой": "4.5%"}, {"Параметр": "LTV", "Текущий": "$450", "Целевой": "$800"}]}
+OUTPUT: {"title": "...", "headers": ["Параметр", "Текущий", "Целевой"], "rows": [["Конверсия", "2.1%", "4.5%"], ["LTV", "$450", "$800"]]}
+RULE: columns → headers. Convert row objects to arrays matching column order.
+
+IMPORTANT RULES:
+1. ALWAYS use structured_content as primary source. NEVER re-derive from text.
+2. Use camelCase for output keys (verdictTitle, not verdict_title; formulaParts, not formula_parts).
+3. Icons MUST be objects: {"name": "icon-name", "url": "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/icon-name.svg"}. NEVER use emoji.
+4. For financial-formula: operator parts use "symbol" field, not "value" field.
+5. For verdict-analysis: verdictColor must be a hex color string like "#16a34a", not a color name.
 </structured_content_mapping>
 <layout_schemas>
 - title-slide: {title, description, presenterName, initials, presentationDate, image?}
@@ -513,6 +594,10 @@ Do NOT ignore structured_content and re-derive data from the text field. The str
 - text-with-callout: {title, bullets: [{title, description}], callout?, source?, icon?} — Standard bullets + bottom callout bar with key insight.
 - dual-chart: {title, description?, leftChart: {title, subtitle?, placeholder?, insight?}, rightChart: {title, subtitle?, placeholder?, insight?}, chartData: {left: {type, labels: [string], datasets: [{label, data: [number]}]}, right: {type, labels: [string], datasets: [{label, data: [number]}]}}, source?} — Two charts side by side. Each chart card has title, subtitle, and optional insight text. chartData.left and chartData.right define separate chart data.
 - risk-matrix: {title, description?, matrixColumns: [string], matrixRows: [{label, cells: [{label, value?, color, textColor?}]}], matrixLegend: [{label, color}], mitigationTitle?, mitigations: [{title, description?, color, priority?}], source?} — 3x3 heatmap grid + mitigation cards. Use colors: green (#dcfce7/#166534) for low risk, yellow (#fef9c3/#854d0e) for medium, orange (#fed7aa/#9a3412) for high, red (#fecaca/#991b1b) for critical.
+- card-grid: {title, description?, cards: [{title, description, badge?, badge_color?, value?, icon: {name, url}}]} — 3-6 cards in responsive grid. icon MUST be Lucide object.
+- financial-formula: {title, formulaParts: [{type: 'value'|'operator'|'equals', value?, label?, symbol?, highlight?: boolean}], components?: [{value, label, change?, positive?: boolean}], footnote?} — Formula display. Operator parts use "symbol" field (e.g. "+", "-"). Last value part gets highlight=true.
+- big-statement: {title, bigNumber?, label?, subtitle?, source?} — Single powerful statement centered on slide. bigNumber is the large accent number.
+- verdict-analysis: {title, criteria: [{label, value, detail?}], verdictTitle, verdictText, verdictColor? (hex string), verdictIcon?, verdictDetails?: [string]} — Top criteria cards + bottom verdict box.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

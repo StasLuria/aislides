@@ -768,13 +768,18 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
     case "card-grid": {
       const sc = content.structured_content as any;
       if (sc?.cards && Array.isArray(sc.cards)) {
-        data.cards = sc.cards.slice(0, 6).map((c: any, i: number) => ({
-          title: c.title || `Элемент ${i + 1}`,
-          description: c.description || c.text || "",
-          badge: c.badge || c.value || "",
-          value: c.value || "",
-          icon: { name: ["layers", "zap", "shield", "target", "globe", "star"][i] || "box", url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${["layers", "zap", "shield", "target", "globe", "star"][i] || "box"}.svg` },
-        }));
+        const defaultIcons = ["layers", "zap", "shield", "target", "globe", "star"];
+        data.cards = sc.cards.slice(0, 6).map((c: any, i: number) => {
+          // Use icon_hint from Writer if available, otherwise fall back to defaults
+          const iconName = c.icon_hint || c.icon?.name || defaultIcons[i] || "box";
+          return {
+            title: c.title || `Элемент ${i + 1}`,
+            description: c.description || c.text || "",
+            badge: c.badge || "",
+            value: c.value || "",
+            icon: { name: iconName, url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${iconName}.svg` },
+          };
+        });
       } else {
         data.cards = bullets.slice(0, 6).map((b, i) => ({
           title: b.title,
@@ -786,25 +791,49 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
     }
     case "financial-formula": {
       const sc2 = content.structured_content as any;
-      if (sc2?.formula_parts && Array.isArray(sc2.formula_parts)) {
-        data.formulaParts = sc2.formula_parts.map((p: any) => ({
-          type: p.type || "value",
-          value: p.value || "?",
-          label: p.label || "",
-          highlight: p.highlight || false,
-        }));
+      // Writer may use "parts" or "formula_parts" — check both
+      const rawParts = sc2?.formula_parts || sc2?.parts || sc2?.formulaParts;
+      if (rawParts && Array.isArray(rawParts)) {
+        // Transform Writer's parts format into template's formulaParts format
+        const formulaParts: any[] = [];
+        for (let i = 0; i < rawParts.length; i++) {
+          const p = rawParts[i];
+          // If the part has an operator field, insert an operator part before the value
+          if (i > 0 && rawParts[i - 1]?.operator) {
+            formulaParts.push({ type: "operator", symbol: rawParts[i - 1].operator });
+          } else if (p.type === "operator") {
+            formulaParts.push({ type: "operator", symbol: p.symbol || p.value || "+" });
+            continue;
+          } else if (p.type === "equals") {
+            formulaParts.push({ type: "equals" });
+            continue;
+          }
+          // Check if this is the last value part (result) — look for "=" operator
+          const isResult = p.operator === "=" || (i === rawParts.length - 1 && !p.type);
+          if (isResult && !formulaParts.some((fp: any) => fp.type === "equals")) {
+            formulaParts.push({ type: "equals" });
+          }
+          formulaParts.push({
+            type: p.type || "value",
+            value: p.value || "?",
+            label: p.label || "",
+            highlight: p.highlight || isResult || false,
+          });
+        }
+        data.formulaParts = formulaParts;
       } else {
         data.formulaParts = [
           { type: "value", value: "A", label: bullets[0]?.title || "Показатель 1" },
-          { type: "operator", value: "+" },
+          { type: "operator", symbol: "+" },
           { type: "value", value: "B", label: bullets[1]?.title || "Показатель 2" },
-          { type: "equals", value: "=" },
+          { type: "equals" },
           { type: "value", value: "C", label: bullets[2]?.title || "Результат", highlight: true },
         ];
       }
       if (sc2?.components && Array.isArray(sc2.components)) {
         data.components = sc2.components;
       }
+      data.footnote = sc2?.bottom_line || sc2?.footnote || "";
       break;
     }
     case "big-statement": {
@@ -817,11 +846,13 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
     }
     case "verdict-analysis": {
       const sc4 = content.structured_content as any;
-      if (sc4?.criteria && Array.isArray(sc4.criteria)) {
-        data.criteria = sc4.criteria.map((c: any) => ({
-          label: c.label || c.title || "",
-          value: c.value || "",
-          detail: c.detail || "",
+      // Writer may use "items" (analysis_with_verdict shape) or "criteria" (direct)
+      const rawCriteria = sc4?.criteria || sc4?.items;
+      if (rawCriteria && Array.isArray(rawCriteria)) {
+        data.criteria = rawCriteria.map((c: any) => ({
+          label: c.label || c.title || c.name || "",
+          value: c.value || c.severity || c.score || "",
+          detail: c.detail || c.description || c.comment || "",
         }));
       } else {
         data.criteria = bullets.slice(0, 4).map((b) => ({
@@ -832,8 +863,17 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       }
       data.verdictTitle = sc4?.verdict_title || sc4?.verdictTitle || content.key_message || "Вердикт";
       data.verdictText = sc4?.verdict_text || sc4?.verdictText || content.text.substring(0, 200);
-      data.verdictColor = sc4?.verdict_color || sc4?.verdictColor || "#16a34a";
-      data.verdictDetails = sc4?.verdict_details || sc4?.verdictDetails || [];
+      // Map severity to color: LOW=green, MEDIUM=amber, HIGH=red
+      const severityColorMap: Record<string, string> = { LOW: "#16a34a", MEDIUM: "#f59e0b", HIGH: "#dc2626" };
+      const rawColor = sc4?.verdict_color || sc4?.verdictColor;
+      data.verdictColor = rawColor?.startsWith("#") ? rawColor : (severityColorMap[rawColor?.toUpperCase?.()] || "#16a34a");
+      // Map indicators to verdictDetails strings
+      if (sc4?.indicators && Array.isArray(sc4.indicators)) {
+        data.verdictDetails = sc4.indicators.map((ind: any) => `${ind.label}: ${ind.value}`);
+      } else {
+        data.verdictDetails = sc4?.verdict_details || sc4?.verdictDetails || [];
+      }
+      data.verdictIcon = sc4?.verdict_icon || sc4?.verdictIcon || "";
       break;
     }
     default:
