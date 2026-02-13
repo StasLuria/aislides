@@ -203,6 +203,11 @@ const SKIP_CHART_LAYOUTS = new Set([
   "title-slide", "final-slide", "section-header", "quote-slide",
   "image-text", "image-fullscreen", "agenda-table-of-contents",
   "checklist", "pros-cons",
+  // Rich structured layouts that have their own visual format
+  "card-grid", "financial-formula", "big-statement", "verdict-analysis",
+  "timeline-horizontal", "timeline-vertical", "process-steps",
+  "comparison-table", "risk-matrix",
+  "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
 ]);
 
 /** Layouts that already have chart support */

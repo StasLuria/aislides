@@ -1211,6 +1211,154 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
   {% endif %}
 </div>`,
+
+  // ═══════════════════════════════════════════════════════
+  // NEW LAYOUTS — Sprint 4 (content_shape support)
+  // ═══════════════════════════════════════════════════════
+
+  "card-grid": `{% set c_count = cards | default([]) | length %}{% set c_cols = c_count if c_count <= 3 else (c_count <= 6 ? 3 : 3) %}{% set c_rows = ((c_count + c_cols - 1) / c_cols) | int %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat({{ c_cols }}, 1fr); grid-template-rows: repeat({{ c_rows }}, 1fr); gap: var(--at-gap, 14px); overflow: hidden;">
+    {% for card in cards | default([]) %}
+    <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 18px); overflow: hidden; position: relative;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-shrink: 0;">
+        {% if card.icon and card.icon.url %}
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="{{ card.icon.url }}" alt="" style="width: 18px; height: 18px;" />
+        </div>
+        {% else %}
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="color: var(--primary-accent-color, #9333ea); font-size: 16px; font-weight: 700;">{{ loop.index }}</span>
+        </div>
+        {% endif %}
+        {% if card.badge %}
+        <div style="margin-left: auto; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: {{ card.badge_color | default('var(--primary-accent-color, #9333ea)') }}; background: {{ card.badge_color | default('var(--primary-accent-color, #9333ea)') }}15;">{{ card.badge }}</div>
+        {% endif %}
+      </div>
+      <div style="color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 15px); font-weight: 600; line-height: 1.3; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ card.title | default('') }}</div>
+      {% if card.description %}
+      <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ card.description }}</div>
+      {% endif %}
+      {% if card.value %}
+      <div style="margin-top: auto; padding-top: 8px; font-size: 22px; font-weight: 800; color: var(--primary-accent-color, #9333ea);">{{ card.value }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>`,
+
+  "financial-formula": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 32px; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center;">
+      {% for part in formulaParts | default([]) %}
+      {% if part.type == 'operator' %}
+      <div style="font-size: 36px; font-weight: 300; color: var(--text-body-color, #4b5563); line-height: 1;">{{ part.symbol | default('+') }}</div>
+      {% elif part.type == 'equals' %}
+      <div style="font-size: 36px; font-weight: 300; color: var(--primary-accent-color, #9333ea); line-height: 1;">=</div>
+      {% else %}
+      <div style="text-align: center; padding: 16px 24px; border-radius: 16px; background: {% if part.highlight %}color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, white){% else %}var(--card-background-color, #ffffff){% endif %}; border: {% if part.highlight %}2px solid var(--primary-accent-color, #9333ea){% else %}1px solid var(--card-border-color, rgba(0,0,0,0.08)){% endif %}; box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,0.06));">
+        <div style="font-size: 28px; font-weight: 800; color: {% if part.highlight %}var(--primary-accent-color, #9333ea){% else %}var(--text-heading-color, #111827){% endif %}; line-height: 1.1;">{{ part.value | default('') }}</div>
+        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-body-color, #4b5563); margin-top: 6px;">{{ part.label | default('') }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% if components and components | length > 0 %}
+    <div style="display: grid; grid-template-columns: repeat({{ components | length }}, 1fr); gap: 16px; width: 100%; max-width: 900px;">
+      {% for comp in components %}
+      <div style="text-align: center; padding: 14px; border-radius: 12px; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08));">
+        <div style="font-size: 20px; font-weight: 700; color: var(--text-heading-color, #111827);">{{ comp.value | default('') }}</div>
+        <div style="font-size: 11px; color: var(--text-body-color, #4b5563); margin-top: 4px;">{{ comp.label | default('') }}</div>
+        {% if comp.change %}
+        <div style="font-size: 11px; font-weight: 600; margin-top: 4px; color: {% if comp.positive %}#16a34a{% else %}#dc2626{% endif %};">{{ comp.change }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if footnote %}
+    <div style="font-size: 12px; color: var(--text-body-color, #4b5563); opacity: 0.7; text-align: center;">{{ footnote }}</div>
+    {% endif %}
+  </div>
+</div>`,
+
+  "big-statement": `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 48px 80px; text-align: center; overflow: hidden; position: relative;">
+  <div style="position: absolute; top: -100px; right: -100px; width: 350px; height: 350px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 6%, transparent); pointer-events: none;"></div>
+  <div style="position: absolute; bottom: -60px; left: -60px; width: 250px; height: 250px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 5%, transparent); pointer-events: none;"></div>
+  <div style="position: relative; z-index: 10; max-width: 800px;">
+    {% if label %}
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary-accent-color, #9333ea); margin-bottom: 20px;">{{ label }}</div>
+    {% endif %}
+    {% if bigNumber %}
+    <div style="font-size: 72px; font-weight: 800; color: var(--primary-accent-color, #9333ea); line-height: 1; margin-bottom: 16px;">{{ bigNumber }}</div>
+    {% endif %}
+    <h1 style="color: var(--text-heading-color, #111827); font-size: 40px; font-weight: 700; line-height: 1.15; margin: 0 0 20px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div style="width: 60px; height: 3px; background: var(--primary-accent-color, #9333ea); border-radius: 2px; margin: 0 auto 20px;"></div>
+    {% if subtitle %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: 18px; line-height: 1.6; margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">{{ subtitle }}</p>
+    {% endif %}
+    {% if source %}
+    <div style="margin-top: 24px; font-size: 12px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+    {% endif %}
+  </div>
+</div>`,
+
+  "verdict-analysis": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+    {% if criteria and criteria | length > 0 %}
+    <div style="display: grid; grid-template-columns: repeat({{ criteria | length if criteria | length <= 4 else 4 }}, 1fr); gap: 12px; flex-shrink: 0;">
+      {% for item in criteria %}
+      <div style="padding: 14px; border-radius: 12px; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,0.06));">
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-body-color, #4b5563); margin-bottom: 6px;">{{ item.label | default('') }}</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--text-heading-color, #111827);">{{ item.value | default('') }}</div>
+        {% if item.detail %}
+        <div style="font-size: 11px; color: var(--text-body-color, #4b5563); margin-top: 4px;">{{ item.detail }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div style="flex: 1; display: flex; align-items: center; overflow: hidden;">
+      <div style="width: 100%; padding: 20px 24px; border-radius: 16px; background: color-mix(in srgb, {{ verdictColor | default('var(--primary-accent-color, #9333ea)') }} 8%, white); border: 2px solid {{ verdictColor | default('var(--primary-accent-color, #9333ea)') }}20;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: {{ verdictColor | default('var(--primary-accent-color, #9333ea)') }}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            {% if verdictIcon %}
+            <span style="color: white; font-size: 16px;">{{ verdictIcon }}</span>
+            {% else %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            {% endif %}
+          </div>
+          <div style="font-size: 18px; font-weight: 700; color: {{ verdictColor | default('var(--primary-accent-color, #9333ea)') }};">{{ verdictTitle | default('Вердикт') }}</div>
+        </div>
+        <div style="font-size: var(--at-body-size, 15px); color: var(--text-heading-color, #111827); line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">{{ verdictText | default('') }}</div>
+        {% if verdictDetails %}
+        <div style="display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap;">
+          {% for detail in verdictDetails %}
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; background: {{ verdictColor | default('var(--primary-accent-color, #9333ea)') }};"></div>
+            <span style="font-size: 12px; color: var(--text-body-color, #4b5563);">{{ detail }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -2093,6 +2241,32 @@ export function computeDensity(layoutId: string, data: Record<string, any>): Den
       denseThreshold = 6;
       break;
     }
+
+    case "card-grid":
+      itemCount = countItems(data.cards);
+      textLength = totalTextLen(data.cards);
+      compactThreshold = 4;
+      denseThreshold = 7;
+      break;
+
+    case "financial-formula":
+      itemCount = countItems(data.formulaParts) + countItems(data.components);
+      compactThreshold = 8;
+      denseThreshold = 12;
+      break;
+
+    case "big-statement":
+      textLength = ((data.title || "").length + (data.subtitle || "").length);
+      compactThreshold = 999;
+      denseThreshold = 999;
+      break;
+
+    case "verdict-analysis":
+      itemCount = countItems(data.criteria);
+      textLength = (data.verdictText || "").length;
+      compactThreshold = 4;
+      denseThreshold = 6;
+      break;
 
     default:
       return "normal";

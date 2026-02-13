@@ -318,6 +318,10 @@ Your goal is to create a visually diverse, professional presentation where every
 31. text-with-callout — Standard bullet list + bottom callout bar with key insight. Best for slides that need a summary takeaway. Data: bullets[] + callout string.
 32. dual-chart — Two charts side by side in cards, each with title, subtitle, and optional insight. Best for comparative data visualization (e.g., revenue vs costs, before vs after). Data: leftChart + rightChart + chartData for both.
 33. risk-matrix — Left: 3x3 color-coded heatmap grid (rows x columns). Right: numbered mitigation cards with priority badges. Best for risk assessment, impact/probability analysis. Data: matrixColumns[], matrixRows[] with cells[], mitigations[].
+34. card-grid — 3-6 cards in responsive grid, each with icon/number, title, description, optional badge and value. Best for feature lists, capability overviews, tool comparisons. Data: cards[] with title, description, badge?, value?, icon?.
+35. financial-formula — Large formula display (A + B = C) with labeled components below. Best for financial models, unit economics, ROI calculations. Data: formulaParts[] with type (value/operator/equals), value, label, highlight?. Optional: components[] for breakdown.
+36. big-statement — Single powerful statement/number centered on slide with optional label and subtitle. Best for key insights, dramatic statistics, thesis statements. Data: title, subtitle?, bigNumber?, label?, source?.
+37. verdict-analysis — Top: criteria cards row. Bottom: highlighted verdict box with icon and details. Best for conclusions, recommendations, go/no-go decisions. Data: criteria[] with label, value, detail?. verdictTitle, verdictText, verdictColor?, verdictDetails[].
 </available_layouts>
 <content_shape_to_layout_mapping>
 When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
@@ -326,11 +330,11 @@ When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
 - [SHAPE: comparison_two_sides] → pros-cons (preferred) or comparison
 - [SHAPE: table_data] → table-slide
 - [SHAPE: process_steps] → numbered-steps-v2 (preferred) or process-steps
-- [SHAPE: card_grid] → icons-numbers or checklist
+- [SHAPE: card_grid] → card-grid (preferred), icons-numbers, or checklist
 - [SHAPE: timeline_events] → timeline-horizontal (preferred) or timeline
-- [SHAPE: financial_formula] → hero-stat or highlight-stats
-- [SHAPE: analysis_with_verdict] → pros-cons, risk-matrix, or swot-analysis
-- [SHAPE: single_concept] → text-with-callout
+- [SHAPE: financial_formula] → financial-formula (preferred), hero-stat, or highlight-stats
+- [SHAPE: analysis_with_verdict] → verdict-analysis (preferred), pros-cons, risk-matrix, or swot-analysis
+- [SHAPE: single_concept] → big-statement (preferred) or text-with-callout
 - [SHAPE: chart_with_context] → stats-chart (preferred) or chart-text
 - [SHAPE: quote_highlight] → quote-slide
 The shape tag is a STRONG hint — follow it unless the content clearly doesn't match.
@@ -457,6 +461,25 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 - You can use **bold** markers around key terms or numbers in description text for emphasis. They will be rendered as <strong> tags.
 - You can use *italic* markers for secondary emphasis. They will be rendered as <em> tags.
 </rules>
+<structured_content_mapping>
+When <structured_content> is provided, you MUST use it as the PRIMARY data source. Map it directly:
+- stat_cards → icons-numbers: map each stat_card to a metric {label: card.label, value: card.value, description: card.description}
+- stat_cards → highlight-stats: first card → mainStat, rest → supportingStats
+- card_grid → card-grid: map each card to {title, description, badge?, value?, icon?}. Add Lucide icons.
+- card_grid → icons-numbers: map each card to a metric {label: card.title, value: card.value or badge, description: card.text}
+- process_steps → numbered-steps-v2: map each step to {number: step.step_number, title: step.title, description: step.description}
+- process_steps → process-steps: same mapping
+- timeline_events → timeline-horizontal: map each event to {date: event.date, title: event.title, description: event.description}
+- timeline_events → roadmap: map each event to a milestone {date, title, description}
+- comparison_two_sides → pros-cons: map left → pros, right → cons
+- analysis_with_verdict → verdict-analysis: map items → criteria, verdict_title/text → verdict
+- analysis_with_verdict → risk-matrix: map items → mitigations, create matrix from severity
+- financial_formula → financial-formula: map parts → formulaParts
+- quote_highlight → quote-slide: map text → quote, attribution → author
+- bullet_points → text-with-callout: map to bullets[], use key_message as callout
+- bullet_points → text-slide: map to bullets[]
+Do NOT ignore structured_content and re-derive data from the text field. The structured data is already formatted correctly.
+</structured_content_mapping>
 <layout_schemas>
 - title-slide: {title, description, presenterName, initials, presentationDate, image?}
 - section-header: {title, subtitle}

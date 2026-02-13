@@ -901,3 +901,20 @@
 - [x] Improve: Outline Critic — added content_shape diversity validation (min 4 shapes, max 40% bullets)
 - [x] Improve: Text length constraints — title max 60 chars, subtitle max 200 chars, enforced at multiple levels
 - [x] Write vitest tests — 1024 tests passing (34 test files)
+
+## Round 4: New Templates + Design Critic + Test Generation
+- [x] Audit existing HTML templates — identified 18 layouts, found gaps for card_grid, financial_formula, big_statement, verdict_analysis
+- [x] Create card-grid HTML template (3-6 cards with icons/badges/descriptions)
+- [x] Create financial-formula HTML template (formula + breakdown components)
+- [x] Create big-statement HTML template (large quote/statement with attribution)
+- [x] Create verdict-analysis HTML template (criteria grid + verdict box)
+- [x] Register all 4 new templates in templateEngine.ts + layout agent prompts
+- [x] Strengthen Design Critic with visual density checks (empty slide detection)
+- [x] Strengthen Design Critic with content shape diversity validation
+- [x] Strengthen Design Critic with text conciseness checks (max 500 chars per bullet)
+- [x] Write tests for new templates and design critic (1045 tests passing)
+- [x] Fix Writer structured_content: switched from strict JSON schema to llmText for free-form content
+- [x] Fix image-text override: protected 20+ rich layouts from being replaced by image-text
+- [x] Fix chart layout fixup: protected highlight-stats, icons-numbers, table-slide, scenario-cards from chart override
+- [x] Run 7 test generations — diversity improved from 2 text-only to 9/12 slides with visual elements
+- [x] Design Critic score improved from 6.1 to 7.7/10

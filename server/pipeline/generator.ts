@@ -274,45 +274,57 @@ export async function runWriterSingle(
     slideInfo.slide_category,
   );
 
-  const result = await llmStructured<{ slide: SlideContent }>(system, user, "WriterOutput", {
-    type: "object",
-    properties: {
-      slide: {
-        type: "object",
-        properties: {
-          slide_number: { type: "integer" },
-          title: { type: "string" },
-          text: { type: "string" },
-          notes: { type: "string" },
-          data_points: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                label: { type: "string" },
-                value: { type: "string" },
-                unit: { type: "string" },
-              },
-              required: ["label", "value", "unit"],
-              additionalProperties: false,
-            },
-          },
-          key_message: { type: "string" },
-          content_shape: { type: "string" },
-          structured_content: { type: "object" },
-        },
-        required: ["slide_number", "title", "text", "notes", "data_points", "key_message"],
-        additionalProperties: false,
-      },
-    },
-    required: ["slide"],
-    additionalProperties: false,
-  });
+  // Use llmText instead of llmStructured because structured_content is free-form
+  // (strict JSON schema mode returns {} for untyped objects)
+  const rawResponse = await llmText(system, user);
+  
+  // Extract JSON from response (may be wrapped in ```json blocks)
+  let jsonStr = rawResponse;
+  const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[1];
+  }
+  
+  let result: { slide: SlideContent };
+  try {
+    result = JSON.parse(jsonStr.trim());
+  } catch {
+    // Fallback: try to extract just the slide object
+    try {
+      const slideObj = JSON.parse(jsonStr.trim());
+      result = slideObj.slide ? slideObj : { slide: slideObj };
+    } catch {
+      // Last resort: create minimal slide from outline
+      result = {
+        slide: {
+          slide_number: slideInfo.slide_number,
+          title: slideInfo.title,
+          text: slideInfo.key_points.join("\n"),
+          notes: "",
+          data_points: [],
+          key_message: slideInfo.purpose,
+        } as SlideContent,
+      };
+    }
+  }
 
   // Carry over content_shape and slide_category from outline
   const slide = result.slide;
-  slide.content_shape = slideInfo.content_shape || "bullet_points";
+  // Use outline's content_shape as fallback if writer didn't return one
+  if (!slide.content_shape || slide.content_shape === "bullet_points") {
+    slide.content_shape = slideInfo.content_shape || "bullet_points";
+  }
   slide.slide_category = slideInfo.slide_category;
+  
+  // Ensure structured_content exists
+  if (!slide.structured_content || typeof slide.structured_content !== 'object' || Object.keys(slide.structured_content).length === 0) {
+    slide.structured_content = undefined;
+  }
+  
+  // Log structured content for debugging
+  const structKeys = slide.structured_content ? Object.keys(slide.structured_content) : [];
+  console.log(`[Writer] Slide ${slide.slide_number}: shape=${slide.content_shape}, structured_keys=[${structKeys.join(',')}], text_len=${slide.text?.length || 0}`);
+  
   return slide;
 }
 
@@ -523,9 +535,13 @@ export async function runHtmlComposer(
   }
 
   try {
-    return JSON.parse(jsonStr.trim());
+    const parsed = JSON.parse(jsonStr.trim());
+    const keys = Object.keys(parsed);
+    console.log(`[Composer] Slide ${slideContent.slide_number} "${layoutName}": LLM returned keys=[${keys.join(',')}]`);
+    return parsed;
   } catch {
     // Fallback: create basic data from content
+    console.log(`[Composer] Slide ${slideContent.slide_number} "${layoutName}": JSON parse failed, using fallback`);
     return buildFallbackData(slideContent, layoutName);
   }
 }
@@ -749,6 +765,77 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
         priority: ["Критичный", "Высокий", "Средний", "Низкий"][i] || "",
       }));
       break;
+    case "card-grid": {
+      const sc = content.structured_content as any;
+      if (sc?.cards && Array.isArray(sc.cards)) {
+        data.cards = sc.cards.slice(0, 6).map((c: any, i: number) => ({
+          title: c.title || `Элемент ${i + 1}`,
+          description: c.description || c.text || "",
+          badge: c.badge || c.value || "",
+          value: c.value || "",
+          icon: { name: ["layers", "zap", "shield", "target", "globe", "star"][i] || "box", url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${["layers", "zap", "shield", "target", "globe", "star"][i] || "box"}.svg` },
+        }));
+      } else {
+        data.cards = bullets.slice(0, 6).map((b, i) => ({
+          title: b.title,
+          description: b.description || "",
+          icon: { name: "box", url: "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/box.svg" },
+        }));
+      }
+      break;
+    }
+    case "financial-formula": {
+      const sc2 = content.structured_content as any;
+      if (sc2?.formula_parts && Array.isArray(sc2.formula_parts)) {
+        data.formulaParts = sc2.formula_parts.map((p: any) => ({
+          type: p.type || "value",
+          value: p.value || "?",
+          label: p.label || "",
+          highlight: p.highlight || false,
+        }));
+      } else {
+        data.formulaParts = [
+          { type: "value", value: "A", label: bullets[0]?.title || "Показатель 1" },
+          { type: "operator", value: "+" },
+          { type: "value", value: "B", label: bullets[1]?.title || "Показатель 2" },
+          { type: "equals", value: "=" },
+          { type: "value", value: "C", label: bullets[2]?.title || "Результат", highlight: true },
+        ];
+      }
+      if (sc2?.components && Array.isArray(sc2.components)) {
+        data.components = sc2.components;
+      }
+      break;
+    }
+    case "big-statement": {
+      const sc3 = content.structured_content as any;
+      data.subtitle = sc3?.subtitle || content.key_message || "";
+      data.bigNumber = sc3?.big_number || sc3?.bigNumber || "";
+      data.label = sc3?.label || "";
+      data.source = sc3?.source || "";
+      break;
+    }
+    case "verdict-analysis": {
+      const sc4 = content.structured_content as any;
+      if (sc4?.criteria && Array.isArray(sc4.criteria)) {
+        data.criteria = sc4.criteria.map((c: any) => ({
+          label: c.label || c.title || "",
+          value: c.value || "",
+          detail: c.detail || "",
+        }));
+      } else {
+        data.criteria = bullets.slice(0, 4).map((b) => ({
+          label: b.title,
+          value: "—",
+          detail: b.description,
+        }));
+      }
+      data.verdictTitle = sc4?.verdict_title || sc4?.verdictTitle || content.key_message || "Вердикт";
+      data.verdictText = sc4?.verdict_text || sc4?.verdictText || content.text.substring(0, 200);
+      data.verdictColor = sc4?.verdict_color || sc4?.verdictColor || "#16a34a";
+      data.verdictDetails = sc4?.verdict_details || sc4?.verdictDetails || [];
+      break;
+    }
     default:
       data.bullets = bullets.slice(0, 5);
   }
@@ -1077,6 +1164,7 @@ export async function generatePresentation(
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
+  console.log(`[Pipeline] Layout assignments: ${layoutDecisions.map(d => `${d.slide_number}:${d.layout_name}`).join(', ')}`);
 
   // 5.5. IMAGE GENERATION (between layout and HTML composer)
   let imageMap = new Map<number, string>();
@@ -1100,8 +1188,22 @@ export async function generatePresentation(
         });
 
         // Override layouts for slides that got images
+        // BUT protect rich content layouts that shouldn't be replaced
+        const IMAGE_PROTECTED_LAYOUTS = new Set([
+          "card-grid", "financial-formula", "big-statement", "verdict-analysis",
+          "icons-numbers", "highlight-stats", "pros-cons", "risk-matrix",
+          "numbered-steps-v2", "process-steps", "scenario-cards",
+          "timeline-horizontal", "roadmap", "chart-slide", "stats-chart",
+          "dual-chart", "table-slide", "agenda-table-of-contents",
+          "title-slide", "final-slide", "section-header",
+        ]);
         Array.from(imageMap.keys()).forEach((slideNum) => {
-          layoutMap.set(slideNum, "image-text");
+          const currentLayout = layoutMap.get(slideNum) || "text-slide";
+          if (!IMAGE_PROTECTED_LAYOUTS.has(currentLayout)) {
+            layoutMap.set(slideNum, "image-text");
+          } else {
+            console.log(`[Pipeline] Image override skipped: slide ${slideNum} "${currentLayout}" is a rich layout`);
+          }
         });
 
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: `Готово: ${imageMap.size} иллюстраций` });
@@ -1172,23 +1274,39 @@ export async function generatePresentation(
   }
 
   // 5.9. POST-CHART LAYOUT FIXUP: ensure chart-bearing slides use chart-capable layouts
+  // BUT preserve rich content layouts that shouldn't be overridden by charts
   const CHART_CAPABLE_LAYOUTS = new Set(["chart-slide", "stats-chart", "chart-text", "dual-chart"]);
   const STATS_LIKE_LAYOUTS = new Set(["highlight-stats", "icons-numbers"]);
+  // These layouts have rich structured content that should NOT be replaced by chart layouts
+  const CHART_PROTECTED_LAYOUTS = new Set([
+    "card-grid", "financial-formula", "big-statement", "verdict-analysis",
+    "timeline-horizontal", "timeline-vertical", "process-steps",
+    "comparison-table", "risk-matrix", "section-header", "title-slide", "final-slide",
+    "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
+    "highlight-stats", "icons-numbers", "table-slide", "scenario-cards",
+  ]);
   for (const [slideNum, svgChart] of Array.from(chartMap.entries())) {
     const currentLayout = layoutMap.get(slideNum) || "text-slide";
-    if (!CHART_CAPABLE_LAYOUTS.has(currentLayout)) {
-      // Swap to an appropriate chart layout based on the current layout type
-      let newLayout: string;
-      if (STATS_LIKE_LAYOUTS.has(currentLayout)) {
-        newLayout = "stats-chart"; // stats + chart hybrid
-      } else if (currentLayout === "image-text" || currentLayout === "two-column" || currentLayout === "text-slide") {
-        newLayout = "chart-text"; // text/bullets + chart
-      } else {
-        newLayout = "chart-slide"; // generic full chart
-      }
-      console.log(`[Pipeline] Chart layout fixup: slide ${slideNum} "${currentLayout}" → "${newLayout}" (chart available)`);
-      layoutMap.set(slideNum, newLayout);
+    if (CHART_CAPABLE_LAYOUTS.has(currentLayout)) {
+      continue; // Already chart-capable, no change needed
     }
+    if (CHART_PROTECTED_LAYOUTS.has(currentLayout)) {
+      // Don't override rich layouts — discard the chart for this slide
+      console.log(`[Pipeline] Chart skipped: slide ${slideNum} "${currentLayout}" is a protected layout (chart discarded)`);
+      chartMap.delete(slideNum);
+      continue;
+    }
+    // Only override simple text/bullet/image layouts
+    let newLayout: string;
+    if (STATS_LIKE_LAYOUTS.has(currentLayout)) {
+      newLayout = "stats-chart"; // stats + chart hybrid
+    } else if (currentLayout === "image-text" || currentLayout === "two-column" || currentLayout === "text-slide") {
+      newLayout = "chart-text"; // text/bullets + chart
+    } else {
+      newLayout = "chart-slide"; // generic full chart
+    }
+    console.log(`[Pipeline] Chart layout fixup: slide ${slideNum} "${currentLayout}" → "${newLayout}" (chart available)`);
+    layoutMap.set(slideNum, newLayout);
   }
 
   // 6. HTML COMPOSER (parallel per slide)

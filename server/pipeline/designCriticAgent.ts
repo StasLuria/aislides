@@ -16,7 +16,7 @@ import { invokeLLM } from "../_core/llm";
 
 export interface DesignIssue {
   slideNumber: number;
-  category: "contrast" | "overflow" | "balance" | "font_size" | "whitespace" | "color_harmony" | "consistency";
+  category: "contrast" | "overflow" | "balance" | "font_size" | "whitespace" | "color_harmony" | "consistency" | "density" | "conciseness";
   severity: "error" | "warning" | "info";
   message: string;
   fix?: string; // CSS fix suggestion
@@ -241,6 +241,10 @@ const TEXT_LIMITS: Record<string, { title: number; description: number; bullet_t
   "team-profiles": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
   "logo-grid": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
   "video-embed": { title: 70, description: 200, bullet_title: 60, bullet_desc: 150 },
+  "card-grid": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "financial-formula": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "big-statement": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
+  "verdict-analysis": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
 };
 
 const DEFAULT_LIMITS = { title: 70, description: 200, bullet_title: 50, bullet_desc: 120 };
@@ -736,6 +740,224 @@ export function checkConsistency(
 }
 
 // ═══════════════════════════════════════════════════════
+// VALIDATOR 8: VISUAL DENSITY (Fill Ratio)
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Check visual density — detect slides that are too sparse or too cramped.
+ * Calculates a "fill ratio" based on content elements vs available space.
+ */
+export function checkVisualDensity(
+  slideNumber: number,
+  data: Record<string, any>,
+  layoutId: string,
+  html: string,
+): DesignIssue[] {
+  const issues: DesignIssue[] = [];
+
+  // Skip special layouts
+  const exemptLayouts = new Set(["title-slide", "section-header", "final-slide", "image-fullscreen", "video-embed", "big-statement"]);
+  if (exemptLayouts.has(layoutId)) return issues;
+
+  // Count content elements
+  let contentElements = 0;
+  let totalTextChars = 0;
+  let hasVisualElement = false;
+
+  // Count all list-like data
+  const listFields = ["bullets", "metrics", "steps", "events", "rows", "items", "cards", "criteria", "stages", "levels", "milestones", "logos", "teamMembers", "scenarios"];
+  for (const field of listFields) {
+    if (data[field] && Array.isArray(data[field])) {
+      contentElements += data[field].length;
+    }
+  }
+
+  // Count text
+  const countText = (obj: any): number => {
+    if (!obj) return 0;
+    if (typeof obj === "string") return obj.length;
+    if (Array.isArray(obj)) return obj.reduce((s: number, item: any) => s + countText(item), 0);
+    if (typeof obj === "object") return Object.values(obj).reduce((s: number, v: any) => s + countText(v), 0);
+    return 0;
+  };
+  totalTextChars = countText(data);
+
+  // Check for visual elements
+  if (html.includes("<svg") || html.includes("<canvas") || html.includes("<img") || html.includes("chart")) {
+    hasVisualElement = true;
+  }
+
+  // Too sparse: content slide with minimal content
+  if (contentElements <= 1 && totalTextChars < 100 && !hasVisualElement) {
+    issues.push({
+      slideNumber,
+      category: "balance",
+      severity: "warning",
+      message: `Slide appears too sparse (${contentElements} elements, ${totalTextChars} chars). Add more content or use a simpler layout like big-statement.`,
+    });
+  }
+
+  // Too dense: wall of text without visual breaks
+  if (totalTextChars > 800 && !hasVisualElement && contentElements > 5) {
+    issues.push({
+      slideNumber,
+      category: "whitespace",
+      severity: "warning",
+      message: `Slide is text-heavy (${totalTextChars} chars, ${contentElements} items) with no visual elements. Consider adding a chart, icon, or splitting into two slides.`,
+      fix: `/* Reduce text density */ .slide { font-size: 90% !important; line-height: 1.3 !important; }`,
+    });
+  }
+
+  return issues;
+}
+
+// ═══════════════════════════════════════════════════════
+// VALIDATOR 9: CONTENT SHAPE DIVERSITY
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Check content shape diversity across the presentation.
+ * Detects monotonous presentations where all slides have the same content structure.
+ */
+export function checkContentDiversity(
+  slides: SlideDesignData[],
+): DesignIssue[] {
+  const issues: DesignIssue[] = [];
+
+  if (slides.length < 5) return issues;
+
+  const contentSlides = slides.filter(
+    (s) => !["title-slide", "final-slide", "section-header"].includes(s.layoutId),
+  );
+
+  if (contentSlides.length < 4) return issues;
+
+  // Classify each slide's content structure
+  const structures: string[] = [];
+  for (const slide of contentSlides) {
+    const d = slide.data;
+    if (d.bullets && Array.isArray(d.bullets) && d.bullets.length > 0) {
+      structures.push("bullets");
+    } else if (d.metrics && Array.isArray(d.metrics)) {
+      structures.push("metrics");
+    } else if (d.steps && Array.isArray(d.steps)) {
+      structures.push("steps");
+    } else if (d.events && Array.isArray(d.events)) {
+      structures.push("timeline");
+    } else if (d.rows && Array.isArray(d.rows)) {
+      structures.push("table");
+    } else if (d.cards && Array.isArray(d.cards)) {
+      structures.push("cards");
+    } else if (d.criteria && Array.isArray(d.criteria)) {
+      structures.push("analysis");
+    } else {
+      structures.push("other");
+    }
+  }
+
+  // Check bullet dominance
+  const bulletCount = structures.filter((s) => s === "bullets").length;
+  const bulletPct = bulletCount / structures.length;
+  if (bulletPct > 0.6 && contentSlides.length >= 6) {
+    issues.push({
+      slideNumber: 0,
+      category: "consistency",
+      severity: "warning",
+      message: `${Math.round(bulletPct * 100)}% of content slides use bullet-point structure. Mix in stat cards, tables, timelines, or card grids for visual variety.`,
+    });
+  }
+
+  // Check unique structure count
+  const uniqueStructures = new Set(structures).size;
+  if (contentSlides.length >= 8 && uniqueStructures < 3) {
+    issues.push({
+      slideNumber: 0,
+      category: "consistency",
+      severity: "warning",
+      message: `Only ${uniqueStructures} unique content structure(s) across ${contentSlides.length} slides. Professional presentations use 4-5 different content forms.`,
+    });
+  }
+
+  // Check for visual element presence in long presentations
+  const hasVisual = contentSlides.filter((s) => {
+    const html = s.html || "";
+    return html.includes("<svg") || html.includes("<canvas") || html.includes("chart") || s.layoutId.includes("chart") || s.layoutId.includes("image");
+  }).length;
+
+  if (contentSlides.length >= 8 && hasVisual === 0) {
+    issues.push({
+      slideNumber: 0,
+      category: "balance",
+      severity: "info",
+      message: `No visual elements (charts, images) in ${contentSlides.length} content slides. Consider adding data visualizations for engagement.`,
+    });
+  }
+
+  return issues;
+}
+
+// ═══════════════════════════════════════════════════════
+// VALIDATOR 10: TEXT CONCISENESS
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Check text conciseness — detect verbose bullets and monotonous text patterns.
+ * Professional presentations use short, punchy text, not paragraphs.
+ */
+export function checkTextConciseness(
+  slideNumber: number,
+  data: Record<string, any>,
+  layoutId: string,
+): DesignIssue[] {
+  const issues: DesignIssue[] = [];
+
+  // Skip layouts where long text is expected
+  const longTextLayouts = new Set(["quote-slide", "final-slide", "section-header", "title-slide", "big-statement"]);
+  if (longTextLayouts.has(layoutId)) return issues;
+
+  // Check bullet descriptions for verbosity
+  if (data.bullets && Array.isArray(data.bullets)) {
+    const longBullets = data.bullets.filter((b: any) => {
+      const desc = typeof b === "object" ? (b.description || "") : (typeof b === "string" ? b : "");
+      return desc.length > 120;
+    });
+
+    if (longBullets.length >= 3) {
+      issues.push({
+        slideNumber,
+        category: "overflow",
+        severity: "warning",
+        message: `${longBullets.length} bullets have descriptions over 120 chars. Presentations work best with 1-2 sentence bullets. Consider splitting into two slides.`,
+      });
+    }
+
+    // Check for monotonous bullet structure (all same length ±20%)
+    if (data.bullets.length >= 4) {
+      const lengths = data.bullets.map((b: any) => {
+        if (typeof b === "object") return (b.description || "").length;
+        if (typeof b === "string") return b.length;
+        return 0;
+      }).filter((l: number) => l > 0);
+
+      if (lengths.length >= 4) {
+        const avg = lengths.reduce((s: number, l: number) => s + l, 0) / lengths.length;
+        const allSimilar = lengths.every((l: number) => Math.abs(l - avg) / avg < 0.25);
+        if (allSimilar && avg > 80) {
+          issues.push({
+            slideNumber,
+            category: "consistency",
+            severity: "info",
+            message: `All ${lengths.length} bullets have similar length (~${Math.round(avg)} chars). Vary bullet length for visual rhythm — mix short punchy lines with longer explanations.`,
+          });
+        }
+      }
+    }
+  }
+
+  return issues;
+}
+
+// ═══════════════════════════════════════════════════════
 // AUTO-FIX ENGINE
 // ═══════════════════════════════════════════════════════
 
@@ -779,10 +1001,13 @@ export function runDesignCritic(
     allIssues.push(...checkFontSizing(slide.slideNumber, slide.html, slide.layoutId));
     allIssues.push(...checkWhitespace(slide.slideNumber, slide.data, slide.layoutId));
     allIssues.push(...checkColorHarmony(slide.slideNumber, slide.html, themeVars));
+    allIssues.push(...checkVisualDensity(slide.slideNumber, slide.data, slide.layoutId, slide.html));
+    allIssues.push(...checkTextConciseness(slide.slideNumber, slide.data, slide.layoutId));
   }
 
   // Run cross-slide validators
   allIssues.push(...checkConsistency(slides));
+  allIssues.push(...checkContentDiversity(slides));
 
   // Generate CSS fixes
   const cssFixesPerSlide = generateCssFixes(allIssues);
