@@ -643,3 +643,10 @@
 - [x] Remove dark-specific CSS (section-number, swiss-divider, glow-*, font-heading)
 - [x] Update all pages for light theme (History, Generate, Viewer, Interactive, NotFound)
 - [x] Test full flow with new design — 894 tests passed
+
+## Bug Fix: Text messages during awaiting_approval treated as approval
+- [x] Fix chatOrchestrator: text messages in step_structure phase are now edit requests, not approval
+- [x] Only the explicit "approve_structure" action button triggers generation
+- [x] LLM modifies existing outline based on user feedback (using json_schema response_format)
+- [x] Test: "удали последний слайд" → 12→11 slides, phase stays step_structure, buttons shown
+- [x] 894 vitest tests passing

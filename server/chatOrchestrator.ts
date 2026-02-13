@@ -583,27 +583,19 @@ async function startStepByStepGeneration(
 
 /**
  * Handle messages after structure is shown (approve/regenerate).
+ * IMPORTANT: Only the explicit "approve_structure" action button triggers generation.
+ * Any text message is treated as a request to modify the structure.
  */
 async function handleStructureApproval(
   sessionId: string,
   userMessage: string,
   writer: SSEWriter,
+  isExplicitApproval: boolean = false,
 ): Promise<void> {
   const session = await getChatSession(sessionId);
   if (!session) return;
 
-  const lowerMsg = userMessage.toLowerCase();
-  const isApprove =
-    lowerMsg.includes("утверд") ||
-    lowerMsg.includes("approve") ||
-    lowerMsg.includes("да") ||
-    lowerMsg.includes("ок") ||
-    lowerMsg.includes("approve_structure") ||
-    lowerMsg.includes("✅") ||
-    lowerMsg.includes("хорошо") ||
-    lowerMsg.includes("отлично");
-
-  if (isApprove) {
+  if (isExplicitApproval) {
     // Proceed to full generation with approved structure
     writer({ type: "token", data: "✅ Структура утверждена! Запускаю генерацию контента и дизайна...\n\n" });
 
@@ -702,13 +694,160 @@ async function handleStructureApproval(
       await updateChatSession(sessionId, { phase: "step_structure" });
     }
   } else {
-    // User wants changes — regenerate or modify
-    writer({ type: "token", data: "🔄 Пересоздаю структуру с учётом ваших пожеланий...\n\n" });
-    await updateChatSession(sessionId, { phase: "generating" });
-    await startStepByStepGeneration(sessionId, writer);
+    // User sent text feedback — use LLM to modify the existing structure
+    await handleStructureEditRequest(sessionId, userMessage, writer);
   }
 
   writer({ type: "done", data: null });
+}
+
+/**
+ * Handle user's text feedback on the structure — use LLM to modify it.
+ */
+async function handleStructureEditRequest(
+  sessionId: string,
+  userFeedback: string,
+  writer: SSEWriter,
+): Promise<void> {
+  const session = await getChatSession(sessionId);
+  if (!session) return;
+
+  const metadata = session.metadata as any || {};
+  const currentOutline = metadata.outline;
+
+  if (!currentOutline) {
+    // No outline to modify — regenerate from scratch
+    writer({ type: "token", data: "🔄 Пересоздаю структуру с учётом ваших пожеланий...\n\n" });
+    await updateChatSession(sessionId, { phase: "generating" });
+    await startStepByStepGeneration(sessionId, writer);
+    return;
+  }
+
+  writer({ type: "token", data: "✏️ Вношу изменения в структуру...\n\n" });
+
+  // Format current outline for LLM context
+  const currentOutlineText = currentOutline.slides
+    .map((s: any, i: number) => `${i + 1}. ${s.title} — ${s.purpose}`)
+    .join("\n");
+
+  const editPrompt = `Ты — AI-ассистент для создания презентаций. У тебя есть текущая структура презентации, и пользователь просит внести изменения.
+
+Текущая структура презентации «${currentOutline.presentation_title}»:
+${currentOutlineText}
+
+Запрос пользователя: "${userFeedback}"
+
+Внеси ТОЧНО те изменения, которые просит пользователь. Не меняй ничего другого.
+Ответь СТРОГО в JSON формате (без markdown-обёртки):
+{
+  "presentation_title": "...",
+  "slides": [
+    { "title": "...", "purpose": "..." }
+  ]
+}`;
+
+  try {
+    // Use structured JSON response format for reliable parsing
+    const llmResult = await invokeLLM({
+      messages: [
+        { role: "system", content: "You are an AI assistant that modifies presentation outlines. Always respond with valid JSON." },
+        { role: "user", content: editPrompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "modified_outline",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              presentation_title: { type: "string", description: "Title of the presentation" },
+              slides: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string", description: "Slide title" },
+                    purpose: { type: "string", description: "Slide purpose/description" },
+                  },
+                  required: ["title", "purpose"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["presentation_title", "slides"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const llmContent = llmResult.choices?.[0]?.message?.content || "";
+    let modifiedOutline;
+    try {
+      modifiedOutline = JSON.parse(typeof llmContent === "string" ? llmContent : JSON.stringify(llmContent));
+    } catch {
+      // Fallback: try to extract JSON from text
+      const jsonStart = (typeof llmContent === "string" ? llmContent : "").indexOf("{");
+      const jsonEnd = (typeof llmContent === "string" ? llmContent : "").lastIndexOf("}");
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        modifiedOutline = JSON.parse((llmContent as string).slice(jsonStart, jsonEnd + 1));
+      } else {
+        throw new Error("Не удалось разобрать ответ AI");
+      }
+    }
+
+    // Update the outline in metadata
+    const updatedOutline = {
+      ...currentOutline,
+      presentation_title: modifiedOutline.presentation_title || currentOutline.presentation_title,
+      slides: modifiedOutline.slides || currentOutline.slides,
+    };
+
+    await updateChatSession(sessionId, {
+      metadata: {
+        ...metadata,
+        outline: updatedOutline,
+      },
+    });
+
+    // Format and display the updated outline
+    const outlineText = updatedOutline.slides
+      .map((s: any, i: number) => `**${i + 1}. ${s.title}**\n   ${s.purpose}`)
+      .join("\n\n");
+
+    const structureMsg = `📋 **Обновлённая структура: «${updatedOutline.presentation_title}»**\n\n${outlineText}\n\nВсего слайдов: ${updatedOutline.slides.length}\n\nЕсли всё устраивает — нажмите «Утвердить структуру». Или напишите, что ещё нужно изменить.`;
+
+    writer({ type: "token", data: structureMsg });
+
+    const assistantMsg: ChatMessage = {
+      role: "assistant",
+      content: structureMsg,
+      timestamp: Date.now(),
+      actions: [
+        { id: "approve_structure", label: "✅ Утвердить структуру", variant: "default" },
+        { id: "regenerate_structure", label: "🔄 Пересоздать с нуля", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, assistantMsg);
+    writer({ type: "actions", data: assistantMsg.actions });
+
+  } catch (err: any) {
+    console.error("[ChatOrchestrator] Structure edit failed:", err);
+    writer({ type: "token", data: `\n\nНе удалось обработать изменения: ${err.message}. Попробуйте сформулировать иначе.` });
+
+    const errorMsg: ChatMessage = {
+      role: "assistant",
+      content: `Не удалось обработать изменения: ${err.message}`,
+      timestamp: Date.now(),
+      actions: [
+        { id: "approve_structure", label: "✅ Утвердить как есть", variant: "default" },
+        { id: "regenerate_structure", label: "🔄 Пересоздать с нуля", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, errorMsg);
+    writer({ type: "actions", data: errorMsg.actions });
+  }
 }
 
 /**
@@ -786,10 +925,10 @@ async function handleGenericMessage(
   const session = await getChatSession(sessionId);
   if (!session) return;
 
-  // Check if we're in step_structure phase
+  // Check if we're in step_structure phase — text messages are edit requests, NOT approval
   if (session.phase === "step_structure") {
     const lastUserMsg = messages[messages.length - 1]?.content || "";
-    await handleStructureApproval(sessionId, lastUserMsg, writer);
+    await handleStructureApproval(sessionId, lastUserMsg, writer, false);
     return;
   }
 
@@ -821,10 +960,27 @@ export async function processAction(
       return processMessage(sessionId, "⚡ Быстрый режим", writer);
     case "mode_step":
       return processMessage(sessionId, "🎯 Пошаговый режим", writer);
-    case "approve_structure":
-      return processMessage(sessionId, "✅ Утвердить структуру", writer);
-    case "regenerate_structure":
-      return processMessage(sessionId, "🔄 Пересоздать структуру", writer);
+    case "approve_structure": {
+      // Explicit approval via button — pass isExplicitApproval=true
+      const approveUserMsg: ChatMessage = {
+        role: "user",
+        content: "✅ Утвердить структуру",
+        timestamp: Date.now(),
+      };
+      await appendMessage(sessionId, approveUserMsg);
+      return handleStructureApproval(sessionId, "✅ Утвердить структуру", writer, true);
+    }
+    case "regenerate_structure": {
+      // Regenerate from scratch
+      const regenUserMsg: ChatMessage = {
+        role: "user",
+        content: "🔄 Пересоздать структуру",
+        timestamp: Date.now(),
+      };
+      await appendMessage(sessionId, regenUserMsg);
+      await updateChatSession(sessionId, { phase: "generating" });
+      return startStepByStepGeneration(sessionId, writer);
+    }
     case "retry_quick":
     case "retry_step":
       // Reset to mode selection and retry
