@@ -880,3 +880,10 @@
 - [x] Frontend: "Скачать PDF" button in Viewer alongside PPTX/HTML
 - [x] Frontend: PDF download in SharedViewer for public links
 - [x] Write vitest tests for PDF export (3 tests, puppeteer-based)
+
+## Bug Fix: Sidebar Scroll in Viewer
+- [x] Fix trackpad/mouse wheel scroll not working on slide thumbnail sidebar (added overflow-hidden to ScrollArea)
+- [x] Fix arrow down/up keys not navigating slides (added ArrowDown/ArrowUp to keyboard handler)
+- [x] Add auto-scroll sidebar thumbnail into view when slide changes
+- [x] Apply same overflow-hidden fix to version history and slide editor ScrollAreas
+- [x] Write vitest tests for keyboard navigation (12 tests passing)

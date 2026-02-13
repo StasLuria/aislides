@@ -608,14 +608,14 @@ export default function Viewer() {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
-      if (e.key === "ArrowRight" || e.key === " ") {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "ArrowDown") {
         e.preventDefault();
         setCurrentSlide((prev) => {
           const next = Math.min(prev + 1, totalSlides - 1);
           if (next !== prev) setSlideTransition("slide-left");
           return next;
         });
-      } else if (e.key === "ArrowLeft") {
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
         setCurrentSlide((prev) => {
           const next = Math.max(prev - 1, 0);
@@ -645,6 +645,21 @@ export default function Viewer() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Auto-scroll sidebar thumbnail into view when current slide changes
+  useEffect(() => {
+    const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
+    if (!viewport) return;
+    const thumbContainer = viewport.querySelector('.p-3.space-y-2');
+    if (!thumbContainer) return;
+    const thumbElements = thumbContainer.children;
+    if (thumbElements[currentSlide]) {
+      thumbElements[currentSlide].scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [currentSlide]);
 
   // Reassemble — re-render full HTML and upload to S3
   const handleReassemble = useCallback(async () => {
@@ -1089,7 +1104,7 @@ export default function Viewer() {
           </div>
 
           {/* Slide thumbnails with drag & drop */}
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 overflow-hidden">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -1251,7 +1266,7 @@ export default function Viewer() {
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
-                ← → навигация • E редактор • F полноэкранный
+                ← → ↑ ↓ навигация • E редактор • F полноэкранный
               </span>
 
               {/* Inline edit toggle */}
@@ -1431,7 +1446,7 @@ export default function Viewer() {
               </Button>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-3 space-y-2">
                 {isLoadingVersions ? (
                   <div className="flex items-center justify-center py-8">
