@@ -681,3 +681,12 @@
 - [x] Fix: loadSession auto-starts polling if session is in "generating" phase (handles page reload)
 - [x] Fix: Added visual indicator "Соединение восстанавливается..." with amber pulse dot
 - [x] Verified: generation completes on server, polling detects completion, 914 tests passing
+
+## Bug Fix: New empty chat sessions created repeatedly on every page load
+- [x] Root cause: ChatPage useEffect called createSession() on every /chat navigation (no ID)
+- [x] Fix: Don't auto-create session on /chat — show empty state instead
+- [x] Fix: Create session lazily on first message (pendingMessageRef pattern)
+- [x] Fix: Added resetSession() to useSSEChat to clear state without DB call
+- [x] Fix: handleNewChat and new_presentation action navigate to /chat instead of creating session
+- [x] Cleaned up 19 orphan empty sessions from DB
+- [x] 914 tests passing

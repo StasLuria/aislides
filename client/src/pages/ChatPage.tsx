@@ -376,6 +376,7 @@ export default function ChatPage() {
     presentationLink,
     sessionTitle,
     error,
+    resetSession,
     createSession,
     loadSession,
     sendMessage,
@@ -383,17 +384,15 @@ export default function ChatPage() {
     cancelStream,
   } = useSSEChat();
 
-  // Initialize session
+  // Initialize session — only load if URL has an ID, otherwise reset to empty state
   useEffect(() => {
-    const init = async () => {
-      if (params.id) {
-        await loadSession(params.id);
-      } else {
-        const newId = await createSession();
-        navigate(`/chat/${newId}`, { replace: true });
-      }
-    };
-    init().catch(console.error);
+    if (params.id) {
+      loadSession(params.id).catch(console.error);
+    } else {
+      // No ID in URL = fresh chat view, reset state
+      // Session will be created lazily on first message (see handleSend)
+      resetSession();
+    }
   }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom
@@ -401,17 +400,26 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, progress]);
 
-  // Handle send — applies settings on first message
+  // Handle send — creates session on first message if needed
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
     setInput("");
     setShowSettings(false);
 
-    // Just send the message — mode selection happens via action buttons in chat
+    // If no session yet (fresh /chat page), create one first
+    if (!sessionId) {
+      const newId = await createSession();
+      navigate(`/chat/${newId}`, { replace: true });
+      // sendMessage needs sessionId set — wait a tick then send
+      // We use a ref-based approach: store the pending message
+      pendingMessageRef.current = trimmed;
+      return;
+    }
+
     await sendMessage(trimmed);
     setRefreshTrigger((p) => p + 1);
-  }, [input, isStreaming, sendMessage]);
+  }, [input, isStreaming, sendMessage, sessionId, createSession, navigate]);
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -429,8 +437,7 @@ export default function ChatPage() {
         return;
       }
       if (actionId === "new_presentation") {
-        const newId = await createSession();
-        navigate(`/chat/${newId}`, { replace: true });
+        navigate(`/chat`, { replace: true });
         setRefreshTrigger((p) => p + 1);
         setSettingsApplied(false);
         return;
@@ -441,14 +448,23 @@ export default function ChatPage() {
     [triggerAction, presentationLink, navigate, createSession],
   );
 
-  // Handle new chat from sidebar
+  // Handle pending message after session creation
+  const pendingMessageRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (sessionId && pendingMessageRef.current) {
+      const msg = pendingMessageRef.current;
+      pendingMessageRef.current = null;
+      sendMessage(msg).then(() => setRefreshTrigger((p) => p + 1)).catch(console.error);
+    }
+  }, [sessionId, sendMessage]);
+
+  // Handle new chat from sidebar — navigate to /chat without ID
   const handleNewChat = useCallback(async () => {
-    const newId = await createSession();
-    navigate(`/chat/${newId}`, { replace: true });
+    navigate(`/chat`, { replace: true });
     setRefreshTrigger((p) => p + 1);
     setSettingsApplied(false);
     setSettings(DEFAULT_SETTINGS);
-  }, [createSession, navigate]);
+  }, [navigate]);
 
   // Handle select session from sidebar
   const handleSelectSession = useCallback(

@@ -194,6 +194,21 @@ export function useSSEChat() {
   );
 
   /**
+   * Reset to empty state (no session, no messages). Used when navigating to /chat without ID.
+   */
+  const resetSession = useCallback(() => {
+    stopPolling();
+    setSessionId(null);
+    setMessages([]);
+    setCurrentActions([]);
+    setPresentationLink(null);
+    setSessionTitle(null);
+    setProgress(null);
+    setError(null);
+    setIsStreaming(false);
+  }, [stopPolling]);
+
+  /**
    * Create a new chat session.
    */
   const createSession = useCallback(async (): Promise<string> => {
@@ -542,6 +557,7 @@ export function useSSEChat() {
     error,
 
     // Actions
+    resetSession,
     createSession,
     loadSession,
     sendMessage,
