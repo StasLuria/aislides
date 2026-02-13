@@ -876,6 +876,126 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       data.verdictIcon = sc4?.verdict_icon || sc4?.verdictIcon || "";
       break;
     }
+    case "vertical-timeline": {
+      const sc5 = content.structured_content as any;
+      const rawEvents = sc5?.events || sc5?.items;
+      if (rawEvents && Array.isArray(rawEvents)) {
+        data.events = rawEvents.slice(0, 7).map((e: any, i: number) => {
+          const iconName = e.icon_hint || e.icon?.name || "";
+          return {
+            date: e.date || e.period || "",
+            title: e.title || e.name || `Этап ${i + 1}`,
+            description: e.description || e.text || "",
+            badge: e.badge || e.status || "",
+            highlight: e.highlight || e.current || false,
+            icon: iconName ? { name: iconName, url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${iconName}.svg` } : undefined,
+          };
+        });
+      } else {
+        // Ensure at least 3 events for validation
+        const eventBullets = bullets.length >= 3 ? bullets.slice(0, 6) : [
+          ...bullets,
+          ...Array.from({ length: 3 - bullets.length }, (_, i) => ({
+            title: `Этап ${bullets.length + i + 1}`,
+            description: "",
+          })),
+        ];
+        data.events = eventBullets.map((b, i) => ({
+          date: `Этап ${i + 1}`,
+          title: b.title,
+          description: b.description || "",
+        }));
+      }
+      break;
+    }
+    case "comparison-table": {
+      const sc6 = content.structured_content as any;
+      if (sc6?.columns && Array.isArray(sc6.columns) && sc6?.features && Array.isArray(sc6.features)) {
+        data.columns = sc6.columns.map((c: any) => ({
+          name: c.name || c.title || "",
+          highlight: c.highlight || false,
+        }));
+        data.features = sc6.features.map((f: any) => ({
+          name: f.name || f.feature || f.label || "",
+          values: f.values || [],
+        }));
+        data.featureLabel = sc6.featureLabel || sc6.feature_label || "Параметр";
+        data.footnote = sc6.footnote || "";
+      } else {
+        // Fallback: create 2-column comparison from bullets, ensure at least 2 features
+        data.columns = [{ name: "Вариант A", highlight: false }, { name: "Вариант B", highlight: true }];
+        const featureBullets = bullets.length >= 2 ? bullets.slice(0, 5) : [
+          ...bullets,
+          ...Array.from({ length: 2 - bullets.length }, (_, i) => ({
+            title: `Параметр ${bullets.length + i + 1}`,
+            description: "",
+          })),
+        ];
+        data.features = featureBullets.map((b) => ({
+          name: b.title,
+          values: ["✓", "✓"],
+        }));
+      }
+      break;
+    }
+    case "quote-highlight": {
+      const sc7 = content.structured_content as any;
+      data.quote = sc7?.quote || sc7?.text || content.key_message || content.text.substring(0, 300);
+      data.author = sc7?.author || sc7?.attribution || "Эксперт";
+      data.role = sc7?.role || sc7?.context || sc7?.position || "";
+      data.source = sc7?.source || "";
+      data.context = "";
+      if (sc7?.accentPanel) {
+        data.accentPanel = {
+          bigNumber: sc7.accentPanel.bigNumber || sc7.accentPanel.big_number || "",
+          label: sc7.accentPanel.label || "",
+          description: sc7.accentPanel.description || "",
+        };
+      }
+      break;
+    }
+    case "checklist": {
+      const sc8 = content.structured_content as any;
+      const rawItems = sc8?.items;
+      if (rawItems && Array.isArray(rawItems)) {
+        data.items = rawItems.map((item: any) => ({
+          title: item.title || item.name || "",
+          description: item.description || item.text || "",
+          done: item.done ?? item.completed ?? false,
+          status: item.done ? "Готово" : "В процессе",
+          statusColor: item.done ? "#dcfce7" : "#fef9c3",
+          statusTextColor: item.done ? "#166534" : "#854d0e",
+        }));
+      } else {
+        data.items = bullets.slice(0, 8).map((b, i) => ({
+          title: b.title,
+          description: b.description,
+          done: i < Math.ceil(bullets.length / 2),
+          status: i < Math.ceil(bullets.length / 2) ? "Готово" : "В процессе",
+          statusColor: i < Math.ceil(bullets.length / 2) ? "#dcfce7" : "#fef9c3",
+          statusTextColor: i < Math.ceil(bullets.length / 2) ? "#166534" : "#854d0e",
+        }));
+      }
+      break;
+    }
+    case "swot-analysis": {
+      const sc9 = content.structured_content as any;
+      if (sc9?.strengths && sc9?.weaknesses && sc9?.opportunities && sc9?.threats) {
+        data.strengths = { title: sc9.strengths.title || "Сильные стороны", items: sc9.strengths.items || [] };
+        data.weaknesses = { title: sc9.weaknesses.title || "Слабые стороны", items: sc9.weaknesses.items || [] };
+        data.opportunities = { title: sc9.opportunities.title || "Возможности", items: sc9.opportunities.items || [] };
+        data.threats = { title: sc9.threats.title || "Угрозы", items: sc9.threats.items || [] };
+      } else {
+        // Text-only fallback: split bullets into 4 quadrants
+        const allBullets = bullets.map(b => b.title);
+        const quarter = Math.max(1, Math.ceil(allBullets.length / 4));
+        data.strengths = { title: "Сильные стороны", items: allBullets.slice(0, quarter) };
+        data.weaknesses = { title: "Слабые стороны", items: allBullets.slice(quarter, quarter * 2) };
+        data.opportunities = { title: "Возможности", items: allBullets.slice(quarter * 2, quarter * 3) };
+        data.threats = { title: "Угрозы", items: allBullets.slice(quarter * 3) };
+      }
+      break;
+    }
     default:
       data.bullets = bullets.slice(0, 5);
   }
@@ -1229,12 +1349,13 @@ export async function generatePresentation(
 
         // Override layouts for slides that got images
         // BUT protect rich content layouts that shouldn't be replaced
-        const IMAGE_PROTECTED_LAYOUTS = new Set([
-          "card-grid", "financial-formula", "big-statement", "verdict-analysis",
-          "icons-numbers", "highlight-stats", "pros-cons", "risk-matrix",
-          "numbered-steps-v2", "process-steps", "scenario-cards",
-          "timeline-horizontal", "roadmap", "chart-slide", "stats-chart",
-          "dual-chart", "table-slide", "agenda-table-of-contents",
+const IMAGE_PROTECTED_LAYOUTS = new Set([
+           "card-grid", "financial-formula", "big-statement", "verdict-analysis",
+           "icons-numbers", "highlight-stats", "pros-cons", "risk-matrix",
+           "numbered-steps-v2", "process-steps", "scenario-cards",
+           "timeline-horizontal", "vertical-timeline", "roadmap", "chart-slide", "stats-chart",
+           "dual-chart", "table-slide", "agenda-table-of-contents",
+           "comparison-table", "quote-highlight",
           "title-slide", "final-slide", "section-header",
         ]);
         Array.from(imageMap.keys()).forEach((slideNum) => {
@@ -1318,12 +1439,12 @@ export async function generatePresentation(
   const CHART_CAPABLE_LAYOUTS = new Set(["chart-slide", "stats-chart", "chart-text", "dual-chart"]);
   const STATS_LIKE_LAYOUTS = new Set(["highlight-stats", "icons-numbers"]);
   // These layouts have rich structured content that should NOT be replaced by chart layouts
-  const CHART_PROTECTED_LAYOUTS = new Set([
-    "card-grid", "financial-formula", "big-statement", "verdict-analysis",
-    "timeline-horizontal", "timeline-vertical", "process-steps",
-    "comparison-table", "risk-matrix", "section-header", "title-slide", "final-slide",
-    "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
-    "highlight-stats", "icons-numbers", "table-slide", "scenario-cards",
+const CHART_PROTECTED_LAYOUTS = new Set([
+     "card-grid", "financial-formula", "big-statement", "verdict-analysis",
+     "timeline-horizontal", "vertical-timeline", "process-steps",
+     "comparison-table", "quote-highlight", "risk-matrix", "section-header", "title-slide", "final-slide",
+     "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
+     "highlight-stats", "icons-numbers", "table-slide", "scenario-cards",
   ]);
   for (const [slideNum, svgChart] of Array.from(chartMap.entries())) {
     const currentLayout = layoutMap.get(slideNum) || "text-slide";

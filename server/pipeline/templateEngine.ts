@@ -1359,6 +1359,149 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     </div>
   </div>
 </div>`,
+
+  // ═══════════════════════════════════════════════════════
+  // ROUND 6 LAYOUTS
+  // ═══════════════════════════════════════════════════════
+
+  "vertical-timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; overflow: hidden;">
+    <div style="position: relative; display: flex; flex-direction: column; gap: var(--at-gap-sm, 10px); width: 100%; padding-left: 40px;">
+      <div style="position: absolute; left: 15px; top: 4px; bottom: 4px; width: 2px; background: linear-gradient(to bottom, var(--primary-accent-color, #9333ea), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 60%, transparent)); border-radius: 1px;"></div>
+      {% for event in events | default([]) %}
+      <div style="display: flex; align-items: flex-start; gap: 16px; position: relative;">
+        <div style="position: absolute; left: -40px; top: 2px; width: 32px; height: 32px; border-radius: 50%; background: {% if event.highlight %}var(--primary-accent-color, #9333ea){% else %}var(--card-background-color, #ffffff){% endif %}; border: 2px solid var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          {% if event.icon and event.icon.url %}
+          <img src="{{ event.icon.url }}" alt="" style="width: 14px; height: 14px; {% if event.highlight %}filter: brightness(0) invert(1);{% endif %}" />
+          {% else %}
+          <span style="font-size: 12px; font-weight: 700; color: {% if event.highlight %}#ffffff{% else %}var(--primary-accent-color, #9333ea){% endif %};">{{ loop.index }}</span>
+          {% endif %}
+        </div>
+        <div class="card" style="flex: 1; min-width: 0; padding: var(--at-card-padding, 14px) 16px; {% if event.highlight %}border-left: 3px solid var(--primary-accent-color, #9333ea);{% endif %}">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            {% if event.date %}
+            <span style="font-size: var(--at-tiny-size, 11px); font-weight: 600; color: var(--primary-accent-color, #9333ea); text-transform: uppercase; letter-spacing: 0.05em;">{{ event.date }}</span>
+            {% endif %}
+            {% if event.badge %}
+            <span style="font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: {{ event.badgeColor | default('color-mix(in srgb, var(--primary-accent-color, #9333ea) 10%, transparent)') }}; color: {{ event.badgeTextColor | default('var(--primary-accent-color, #9333ea)') }};">{{ event.badge }}</span>
+            {% endif %}
+          </div>
+          <div style="color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 14px); font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.title }}</div>
+          {% if event.description %}
+          <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-desc-clamp, 2); -webkit-box-orient: vertical;">{{ event.description }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>`,
+
+  "comparison-table": `{% set ct_cols = columns | default([]) | length %}<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 16px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
+    <div class="accent-line" style="margin-top: 12px;"></div>
+    {% if description %}
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    {% endif %}
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: flex-start; overflow: hidden;">
+    <div style="width: 100%; border-radius: 16px; overflow: auto; max-height: 100%;">
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 12px 16px; font-size: var(--at-small-size, 13px); font-weight: 700; color: #ffffff; background: var(--primary-accent-color, #9333ea); border-bottom: 2px solid var(--primary-accent-color, #9333ea); position: sticky; top: 0; z-index: 1;">{{ featureLabel | default('Параметр') }}</th>
+            {% for col in columns | default([]) %}
+            <th style="text-align: center; padding: 12px 16px; font-size: var(--at-small-size, 13px); font-weight: 700; color: #ffffff; background: {% if col.highlight %}var(--primary-accent-color, #9333ea){% else %}color-mix(in srgb, var(--primary-accent-color, #9333ea) 85%, black){% endif %}; border-bottom: 2px solid var(--primary-accent-color, #9333ea); position: sticky; top: 0; z-index: 1; {% if col.highlight %}box-shadow: inset 0 -3px 0 var(--secondary-accent-color, #3b82f6);{% endif %}">{{ col.name | default('') }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for feature in features | default([]) %}
+          <tr>
+            <td style="padding: 10px 16px; font-size: var(--at-tiny-size, 12px); font-weight: 600; color: var(--text-heading-color, #111827); background: var(--card-background-color, #ffffff); border-bottom: 1px solid var(--card-border-color, rgba(0,0,0,0.06)); white-space: nowrap;">{{ feature.name | default('') }}</td>
+            {% for val in feature.values | default([]) %}
+            <td style="text-align: center; padding: 10px 16px; font-size: var(--at-tiny-size, 12px); color: var(--text-body-color, #4b5563); background: var(--card-background-color, #ffffff); border-bottom: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+              {% if val == true or val == 'yes' or val == '✓' %}
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #dcfce7; display: inline-flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+              {% elif val == false or val == 'no' or val == '✗' %}
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #fef2f2; display: inline-flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+              {% elif val == 'partial' or val == '~' %}
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #fef9c3; display: inline-flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              {% else %}
+              <span style="font-weight: 500;">{{ val }}</span>
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if footnote %}
+  <div style="flex-shrink: 0; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-color, rgba(0,0,0,0.06));">
+    <div style="font-size: 10px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ footnote }}</div>
+  </div>
+  {% endif %}
+</div>`,
+
+  "quote-highlight": `<div style="display: flex; height: 100%; overflow: hidden; position: relative;">
+  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--slide-bg-accent-gradient, linear-gradient(135deg, var(--primary-accent-color, #9333ea), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 70%, var(--primary-accent-color, #9333ea)))); opacity: 0.06;"></div>
+  <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; padding: 48px 64px; position: relative; z-index: 1; min-width: 0;">
+    <div style="position: relative; margin-bottom: 32px;">
+      <div style="position: absolute; top: -20px; left: -10px; font-size: 120px; line-height: 1; color: var(--primary-accent-color, #9333ea); opacity: 0.15; font-family: Georgia, serif; pointer-events: none;">“</div>
+      <blockquote style="color: var(--text-heading-color, #111827); font-size: 28px; font-weight: 600; line-height: 1.4; margin: 0; padding-left: 24px; border-left: 4px solid var(--primary-accent-color, #9333ea); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;">{{ quote }}</blockquote>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-left: 24px;">
+      {% if authorImage and authorImage.url %}
+      <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 2px solid var(--primary-accent-color, #9333ea);">
+        <img src="{{ authorImage.url }}" alt="{{ author | default('') }}" style="width: 100%; height: 100%; object-fit: cover;" />
+      </div>
+      {% else %}
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-accent-color, #9333ea); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="color: #ffffff; font-size: 18px; font-weight: 700;">{{ author[0] | default('“') }}</span>
+      </div>
+      {% endif %}
+      <div>
+        <div style="color: var(--text-heading-color, #111827); font-size: 16px; font-weight: 700;">{{ author | default('') }}</div>
+        {% if role %}
+        <div style="color: var(--text-body-color, #4b5563); font-size: 13px; margin-top: 2px;">{{ role }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if context %}
+    <div style="margin-top: 24px; padding: 12px 16px; border-radius: 10px; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 6%, transparent); border: 1px solid color-mix(in srgb, var(--primary-accent-color, #9333ea) 12%, transparent);">
+      <div style="font-size: 12px; color: var(--text-body-color, #4b5563); line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ context }}</div>
+    </div>
+    {% endif %}
+    {% if source %}
+    <div style="margin-top: 12px; padding-left: 24px;">
+      <div style="font-size: 11px; color: var(--text-body-color, #4b5563); opacity: 0.6;">{{ source }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% if accentPanel %}
+  <div style="width: 320px; flex-shrink: 0; background: var(--slide-bg-accent-gradient, var(--primary-accent-color, #9333ea)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 32px; text-align: center;">
+    {% if accentPanel.bigNumber %}
+    <div style="font-size: 64px; font-weight: 800; color: #ffffff; line-height: 1;">{{ accentPanel.bigNumber }}</div>
+    {% endif %}
+    {% if accentPanel.label %}
+    <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 12px; text-transform: uppercase; letter-spacing: 0.05em;">{{ accentPanel.label }}</div>
+    {% endif %}
+    {% if accentPanel.description %}
+    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px; line-height: 1.4;">{{ accentPanel.description }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════

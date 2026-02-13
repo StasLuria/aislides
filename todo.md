@@ -930,3 +930,22 @@
 - [x] Add IMPORTANT RULES section: camelCase keys, icon objects, symbol field, hex colors
 - [x] Write composerMapping.test.ts — 10 new tests for all improved fallback mappings
 - [x] All 1055 tests passing (35 test files)
+
+## Round 6: New Templates + Composer Validation + Test Generation
+- [x] Create vertical-timeline HTML template (vertical connector line, icons, badges, highlight for current event)
+- [x] Create comparison-table HTML template (multi-column with highlight column, check/cross marks, footnote)
+- [x] Create quote-highlight HTML template (large quote with accent border, optional accentPanel with big number)
+- [x] Register new templates in templateEngine, layout agent (available_layouts + content_matching_rules), autoDensity, buildFallbackData
+- [x] Add new templates to IMAGE_PROTECTED_LAYOUTS and CHART_PROTECTED_LAYOUTS
+- [x] Strengthen HTML Composer: 6 new mapping examples (quote-highlight, vertical-timeline, comparison-table, checklist, swot-analysis)
+- [x] Add 3 new layout schemas to layout_schemas section
+- [x] Expand IMPORTANT RULES: 5 new rules for new templates
+- [x] Add LAYOUT_REQUIREMENTS for 18 previously missing layouts (card-grid, financial-formula, big-statement, verdict-analysis, vertical-timeline, comparison-table, quote-highlight, highlight-stats, waterfall-chart, swot-analysis, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist)
+- [x] Add validation checks: cards icon format, features/columns match, verdictColor hex, formulaParts symbol, vertical-timeline icons, quote length
+- [x] Add auto-fix logic: card-grid icons, verdict-analysis color names→hex, financial-formula operator→symbol, vertical-timeline string icons, comparison-table feature_label→featureLabel, checklist status colors
+- [x] Add buildFallbackData cases for checklist and swot-analysis (with text-only fallbacks)
+- [x] Fix quote-highlight fallback: text→quote, attribution→author mapping
+- [x] Fix text-only fallbacks: ensure min 3 events (vertical-timeline), min 2 features (comparison-table)
+- [x] Write newTemplatesQA.test.ts — 26 tests for validation + auto-fix
+- [x] Write testGeneration.test.ts — 11 integration tests (buildFallbackData → autoFix → validate)
+- [x] All 1092 tests passing (38 test files)

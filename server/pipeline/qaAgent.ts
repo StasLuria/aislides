@@ -36,6 +36,8 @@ interface LayoutRequirement {
   minRows?: number;
   minSections?: number;
   minPoints?: number;
+  minCards?: number;
+  minFeatures?: number;
   bulletNeedsTitleAndDesc?: boolean;
 }
 
@@ -138,6 +140,57 @@ const LAYOUT_REQUIREMENTS: Record<string, LayoutRequirement> = {
   },
   "risk-matrix": {
     requiredFields: ["title", "matrixColumns", "matrixRows", "mitigations"],
+  },
+  "card-grid": {
+    requiredFields: ["title", "cards"],
+    minCards: 3,
+  },
+  "financial-formula": {
+    requiredFields: ["title", "formulaParts"],
+  },
+  "big-statement": {
+    requiredFields: ["title"],
+  },
+  "verdict-analysis": {
+    requiredFields: ["title", "criteria", "verdictTitle", "verdictText"],
+  },
+  "vertical-timeline": {
+    requiredFields: ["title", "events"],
+    minEvents: 3,
+  },
+  "comparison-table": {
+    requiredFields: ["title", "columns", "features"],
+    minFeatures: 2,
+  },
+  "quote-highlight": {
+    requiredFields: ["title", "quote", "author"],
+  },
+  "highlight-stats": {
+    requiredFields: ["title", "mainStat"],
+  },
+  "waterfall-chart": {
+    requiredFields: ["title", "bars"],
+  },
+  "swot-analysis": {
+    requiredFields: ["title", "strengths", "weaknesses", "opportunities", "threats"],
+  },
+  "funnel": {
+    requiredFields: ["title", "stages"],
+  },
+  "roadmap": {
+    requiredFields: ["title", "milestones"],
+  },
+  "pyramid": {
+    requiredFields: ["title", "levels"],
+  },
+  "matrix-2x2": {
+    requiredFields: ["title", "quadrants"],
+  },
+  "pros-cons": {
+    requiredFields: ["title", "pros", "cons"],
+  },
+  "checklist": {
+    requiredFields: ["title", "items"],
   },
 };
 
@@ -353,7 +406,123 @@ export function validateSlideData(
     }
   }
 
-  // 10. Check chart data
+  // 10. Check cards (card-grid)
+  if (req.minCards && data.cards) {
+    if (!Array.isArray(data.cards)) {
+      issues.push({ field: "cards", severity: "error", message: "cards must be an array" });
+    } else {
+      if (data.cards.length < req.minCards) {
+        issues.push({
+          field: "cards",
+          severity: "error",
+          message: `Need at least ${req.minCards} cards, got ${data.cards.length}.`,
+        });
+      }
+      // Check icon format in cards
+      for (let i = 0; i < data.cards.length; i++) {
+        const card = data.cards[i];
+        if (card.icon && typeof card.icon === "string") {
+          issues.push({
+            field: `cards[${i}].icon`,
+            severity: "error",
+            message: `Card ${i + 1} icon is a string "${card.icon}". Must be object {name, url}. Use Lucide icon URL format.`,
+          });
+        }
+      }
+    }
+  }
+
+  // 11. Check features (comparison-table)
+  if (req.minFeatures && data.features) {
+    if (!Array.isArray(data.features)) {
+      issues.push({ field: "features", severity: "error", message: "features must be an array" });
+    } else {
+      if (data.features.length < req.minFeatures) {
+        issues.push({
+          field: "features",
+          severity: "error",
+          message: `Need at least ${req.minFeatures} features, got ${data.features.length}.`,
+        });
+      }
+      // Check values length matches columns length
+      if (data.columns && Array.isArray(data.columns)) {
+        const colCount = data.columns.length;
+        for (let i = 0; i < data.features.length; i++) {
+          const feature = data.features[i];
+          if (feature.values && Array.isArray(feature.values) && feature.values.length !== colCount) {
+            issues.push({
+              field: `features[${i}].values`,
+              severity: "error",
+              message: `Feature "${feature.name}" has ${feature.values.length} values but ${colCount} columns. Must match.`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 12. Check verdict-analysis required fields
+  if (layoutName === "verdict-analysis") {
+    if (data.verdictColor && typeof data.verdictColor === "string" && !data.verdictColor.startsWith("#")) {
+      issues.push({
+        field: "verdictColor",
+        severity: "error",
+        message: `verdictColor must be a hex color string (e.g. "#16a34a"), got "${data.verdictColor}".`,
+      });
+    }
+  }
+
+  // 13. Check financial-formula parts
+  if (layoutName === "financial-formula" && data.formulaParts) {
+    if (!Array.isArray(data.formulaParts)) {
+      issues.push({ field: "formulaParts", severity: "error", message: "formulaParts must be an array" });
+    } else {
+      for (let i = 0; i < data.formulaParts.length; i++) {
+        const part = data.formulaParts[i];
+        if (part.type === "operator" && !part.symbol) {
+          issues.push({
+            field: `formulaParts[${i}].symbol`,
+            severity: "error",
+            message: `Operator part ${i + 1} is missing "symbol" field. Use "+", "-", "×", etc.`,
+          });
+        }
+      }
+    }
+  }
+
+  // 14. Check vertical-timeline events have dates
+  if (layoutName === "vertical-timeline" && data.events && Array.isArray(data.events)) {
+    for (let i = 0; i < data.events.length; i++) {
+      const event = data.events[i];
+      if (!event.title || (typeof event.title === "string" && event.title.trim().length === 0)) {
+        issues.push({
+          field: `events[${i}].title`,
+          severity: "error",
+          message: `Event ${i + 1} has empty title.`,
+        });
+      }
+      if (event.icon && typeof event.icon === "string") {
+        issues.push({
+          field: `events[${i}].icon`,
+          severity: "error",
+          message: `Event ${i + 1} icon is a string. Must be object {name, url}.`,
+        });
+      }
+    }
+  }
+
+  // 15. Check quote-highlight
+  if (layoutName === "quote-highlight") {
+    if (data.quote && typeof data.quote === "string" && data.quote.length > 500) {
+      issues.push({
+        field: "quote",
+        severity: "warning",
+        message: `Quote is very long (${data.quote.length} chars). Keep under 300 chars for best display.`,
+      });
+    }
+  }
+
+  // 16. Check chart data
   if (layoutName === "chart-slide" && data.chartData) {
     if (!data.chartData.labels || !Array.isArray(data.chartData.labels) || data.chartData.labels.length === 0) {
       issues.push({ field: "chartData.labels", severity: "error", message: "Chart must have labels array." });
@@ -459,6 +628,102 @@ export function autoFixSlideData(
         return { ...section, number: i + 1 };
       }
       return section;
+    });
+  }
+
+  // Fix 6: Fix emoji/string icons in cards (card-grid)
+  if (result.cards && Array.isArray(result.cards)) {
+    const defaultIcons = ["layers", "shield", "zap", "globe", "star", "target"];
+    result.cards = result.cards.map((card: any, i: number) => {
+      if (!card.icon || typeof card.icon === "string") {
+        fixed = true;
+        const iconName = typeof card.icon === "string" && card.icon.length > 1 && !card.icon.includes(" ")
+          ? card.icon
+          : defaultIcons[i % defaultIcons.length];
+        return {
+          ...card,
+          icon: {
+            name: iconName,
+            url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${iconName}.svg`,
+          },
+        };
+      }
+      if (typeof card.icon === "object" && !card.icon.url && card.icon.name) {
+        fixed = true;
+        return {
+          ...card,
+          icon: {
+            ...card.icon,
+            url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${card.icon.name}.svg`,
+          },
+        };
+      }
+      return card;
+    });
+  }
+
+  // Fix 7: Fix verdict-analysis color names to hex
+  if (layoutName === "verdict-analysis" && result.verdictColor && !result.verdictColor.startsWith("#")) {
+    const colorMap: Record<string, string> = {
+      green: "#16a34a", red: "#dc2626", amber: "#f59e0b", orange: "#f59e0b",
+      yellow: "#eab308", blue: "#2563eb", LOW: "#16a34a", MEDIUM: "#f59e0b", HIGH: "#dc2626",
+    };
+    const mapped = colorMap[result.verdictColor] || colorMap[result.verdictColor.toUpperCase()];
+    if (mapped) {
+      result.verdictColor = mapped;
+      fixed = true;
+    }
+  }
+
+  // Fix 8: Fix financial-formula operator parts missing symbol
+  if (layoutName === "financial-formula" && result.formulaParts && Array.isArray(result.formulaParts)) {
+    result.formulaParts = result.formulaParts.map((part: any) => {
+      if (part.type === "operator" && !part.symbol) {
+        fixed = true;
+        return { ...part, symbol: part.value || "+" };
+      }
+      return part;
+    });
+  }
+
+  // Fix 9: Fix vertical-timeline string icons to objects
+  if (layoutName === "vertical-timeline" && result.events && Array.isArray(result.events)) {
+    result.events = result.events.map((event: any) => {
+      if (event.icon && typeof event.icon === "string") {
+        fixed = true;
+        const iconName = event.icon.length > 1 && !event.icon.includes(" ") ? event.icon : "circle";
+        return {
+          ...event,
+          icon: {
+            name: iconName,
+            url: `https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${iconName}.svg`,
+          },
+        };
+      }
+      return event;
+    });
+  }
+
+  // Fix 10: Fix comparison-table feature_label → featureLabel
+  if (layoutName === "comparison-table" && result.feature_label && !result.featureLabel) {
+    result.featureLabel = result.feature_label;
+    delete result.feature_label;
+    fixed = true;
+  }
+
+  // Fix 11: Fix checklist items missing status colors
+  if (layoutName === "checklist" && result.items && Array.isArray(result.items)) {
+    result.items = result.items.map((item: any) => {
+      if (item.done !== undefined && !item.statusColor) {
+        fixed = true;
+        return {
+          ...item,
+          status: item.done ? "Готово" : "В процессе",
+          statusColor: item.done ? "#dcfce7" : "#fef9c3",
+          statusTextColor: item.done ? "#166534" : "#854d0e",
+        };
+      }
+      return item;
     });
   }
 

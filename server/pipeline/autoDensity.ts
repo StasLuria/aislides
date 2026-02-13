@@ -367,6 +367,36 @@ export function estimateContentHeight(
       return headerH + 200; // Fixed height for horizontal timeline
     }
 
+    case "vertical-timeline": {
+      const events = data.events || [];
+      let eventsH = 0;
+      for (const event of events) {
+        const titleLines = clampLines(estimateTextLines(event?.title || "", p.smallSize, 900), 2);
+        const descLines = clampLines(estimateTextLines(event?.description || "", p.tinySize, 900), p.descClamp);
+        const dateH = event?.date ? p.tinySize * 1.2 + 4 : 0;
+        eventsH += dateH + titleLines * (p.smallSize * 1.3) + descLines * (p.tinySize * 1.4) + p.cardPadding * 2 + p.gapSm;
+      }
+      return headerH + eventsH;
+    }
+
+    case "comparison-table": {
+      const features = data.features || [];
+      const headerRowH = p.smallSize * 1.3 + 24; // header row
+      const dataRowH = p.tinySize * 1.3 + 20; // each data row
+      const footnoteH = data.footnote ? 30 : 0;
+      return headerH + headerRowH + features.length * dataRowH + footnoteH;
+    }
+
+    case "quote-highlight": {
+      // Quote + author + optional context + optional accent panel
+      const quoteText = data.quote || "";
+      const quoteLines = clampLines(estimateTextLines(quoteText, 28, 800), 5);
+      const quoteH = quoteLines * (28 * 1.4) + 32; // quote + margin
+      const authorH = 48 + 16; // avatar + gap
+      const contextH = data.context ? 60 : 0;
+      return quoteH + authorH + contextH + 96; // padding
+    }
+
     case "text-with-callout": {
       const bullets = data.bullets || [];
       let bulletsH = 0;
