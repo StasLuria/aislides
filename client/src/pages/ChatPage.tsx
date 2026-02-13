@@ -63,6 +63,41 @@ const DEFAULT_SETTINGS: ChatSettings = {
   customFontsUrl: null,
 };
 
+const SETTINGS_STORAGE_KEY = "ai-slides-settings";
+
+/** Load saved settings from localStorage, falling back to defaults */
+function loadSavedSettings(): ChatSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_SETTINGS };
+    const parsed = JSON.parse(raw);
+    return {
+      mode: parsed.mode === "quick" || parsed.mode === "step" ? parsed.mode : DEFAULT_SETTINGS.mode,
+      themePreset: typeof parsed.themePreset === "string" ? parsed.themePreset : DEFAULT_SETTINGS.themePreset,
+      slideCount: typeof parsed.slideCount === "number" && parsed.slideCount >= 5 && parsed.slideCount <= 20
+        ? parsed.slideCount : DEFAULT_SETTINGS.slideCount,
+      // Don't restore custom template — it may have been deleted
+      customTemplateId: null,
+      customTemplateName: null,
+      customCssVariables: null,
+      customFontsUrl: null,
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+/** Save core settings (mode, theme, slideCount) to localStorage */
+function saveSettings(s: ChatSettings) {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      mode: s.mode,
+      themePreset: s.themePreset,
+      slideCount: s.slideCount,
+    }));
+  } catch {}
+}
+
 // ═══════════════════════════════════════════════════════
 // TYPING INDICATOR
 // ═══════════════════════════════════════════════════════
@@ -577,7 +612,14 @@ export default function ChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [settings, setSettings] = useState<ChatSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettingsRaw] = useState<ChatSettings>(() => loadSavedSettings());
+  const setSettings = useCallback((s: ChatSettings | ((prev: ChatSettings) => ChatSettings)) => {
+    setSettingsRaw((prev) => {
+      const next = typeof s === "function" ? s(prev) : s;
+      saveSettings(next);
+      return next;
+    });
+  }, []);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsApplied, setSettingsApplied] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -747,7 +789,7 @@ export default function ChatPage() {
     navigate(`/chat`, { replace: true });
     setRefreshTrigger((p) => p + 1);
     setSettingsApplied(false);
-    setSettings(DEFAULT_SETTINGS);
+    setSettingsRaw(loadSavedSettings());
     setAttachedFiles([]);
   }, [navigate]);
 

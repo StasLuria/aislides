@@ -763,3 +763,11 @@
 - [x] /history redirects to /chat for backwards compatibility
 - [x] Logo now links to /chat instead of /
 - [x] 953 tests passing
+
+## Auto-save Settings in localStorage
+- [x] Save last selected theme preset to localStorage on change
+- [x] Save last selected generation mode (quick/step_by_step) to localStorage on change
+- [x] Save last selected slide count to localStorage on change
+- [x] Restore saved settings when opening a new chat (not when loading existing session)
+- [x] Handle edge cases: invalid/corrupted localStorage data, custom template not restored (may be deleted)
+- [x] 953 tests passing
