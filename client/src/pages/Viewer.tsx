@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { useParams, useLocation, Link } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -329,8 +329,20 @@ type EditMode = "off" | "inline" | "sidebar";
 
 export default function Viewer() {
   const params = useParams<{ id: string }>();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const presentationId = params.id || "";
+
+  // Determine back path from query param (?from=chat/xxx) or default to /chat
+  const backPath = useMemo(() => {
+    try {
+      const url = new URL(window.location.href);
+      const from = url.searchParams.get("from");
+      if (from && from.startsWith("chat/")) {
+        return `/${from}`;
+      }
+    } catch {}
+    return "/chat";
+  }, [location]);
 
   const [presentation, setPresentation] = useState<PresentationDetail | null>(null);
   const [slideHtmls, setSlideHtmls] = useState<string[]>([]);
@@ -601,7 +613,7 @@ export default function Viewer() {
         } else if (isFullscreen) {
           setIsFullscreen(false);
         } else {
-          navigate("/history");
+          navigate(backPath);
         }
       } else if (e.key === "f" || e.key === "F") {
         if (!isEditing) setIsFullscreen((prev) => !prev);
@@ -611,7 +623,7 @@ export default function Viewer() {
         }
       }
     },
-    [totalSlides, isFullscreen, isEditing, navigate]
+    [totalSlides, isFullscreen, isEditing, navigate, backPath]
   );
 
   useEffect(() => {
@@ -889,9 +901,9 @@ export default function Viewer() {
           {/* Header */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center gap-2 mb-3">
-              <Link href="/history" className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => navigate(backPath)} className="text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="w-4 h-4" />
-              </Link>
+              </button>
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Просмотр</span>
             </div>
             <h3 className="text-sm font-semibold truncate text-foreground">

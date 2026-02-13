@@ -4,7 +4,7 @@
  */
 
 import { Link, useLocation } from "wouter";
-import { Presentation, Clock, MessageSquare } from "lucide-react";
+import { Presentation, MessageSquare } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AppLayoutProps {
@@ -16,7 +16,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   const navItems = [
     { href: "/chat", label: "Чат", icon: MessageSquare },
-    { href: "/history", label: "История", icon: Clock },
   ];
 
   return (
@@ -25,7 +24,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="container flex items-center justify-between h-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/chat" className="flex items-center gap-2.5 group">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center group-hover:bg-primary/90 transition-colors">
               <Presentation className="w-3.5 h-3.5 text-primary-foreground" />
             </div>

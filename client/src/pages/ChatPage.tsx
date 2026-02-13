@@ -717,7 +717,7 @@ export default function ChatPage() {
   const handleAction = useCallback(
     async (actionId: string) => {
       if (actionId === "view_presentation" && presentationLink?.presentationId) {
-        navigate(`/view/${presentationLink.presentationId}`);
+        navigate(`/view/${presentationLink.presentationId}?from=chat/${sessionId}`);
         return;
       }
       if (actionId === "new_presentation") {
@@ -845,7 +845,7 @@ export default function ChatPage() {
                     variant="default"
                     size="sm"
                     className="gap-2"
-                    onClick={() => navigate(`/view/${presentationLink.presentationId}`)}
+                    onClick={() => navigate(`/view/${presentationLink.presentationId}?from=chat/${sessionId}`)}
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Открыть презентацию

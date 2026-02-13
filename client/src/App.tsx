@@ -6,13 +6,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Generate from "./pages/Generate";
 import Viewer from "./pages/Viewer";
-import History from "./pages/History";
 import Interactive from "./pages/Interactive";
 import ChatPage from "./pages/ChatPage";
 import AppLayout from "./components/AppLayout";
@@ -25,7 +24,10 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/generate/:id" component={Generate} />
         <Route path="/view/:id" component={Viewer} />
-        <Route path="/history" component={History} />
+        {/* Redirect /history to /chat — history is now in the chat sidebar */}
+        <Route path="/history">
+          <Redirect to="/chat" />
+        </Route>
         <Route path="/interactive/:id" component={Interactive} />
         <Route path="/chat" component={ChatPage} />
         <Route path="/chat/:id" component={ChatPage} />

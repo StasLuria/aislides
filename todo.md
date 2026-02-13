@@ -754,3 +754,12 @@
 - [x] Show animated dots indicator in assistant message bubble when isStreaming and content is empty
 - [x] Smooth transition from typing indicator to actual content when first token arrives (StreamingText auto-switches)
 - [x] 953 tests passing
+
+## Navigation: Back from presentation viewer → originating chat
+- [x] "Back" button in presentation viewer returns to the chat session that opened it (via ?from=chat/{id} query param)
+- [x] Pass session ID context when navigating from chat to presentation viewer
+- [x] Escape key in viewer also returns to originating chat
+- [x] Removed History page from navigation (redundant with chat sidebar)
+- [x] /history redirects to /chat for backwards compatibility
+- [x] Logo now links to /chat instead of /
+- [x] 953 tests passing
