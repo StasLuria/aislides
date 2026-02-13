@@ -1502,6 +1502,57 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
   {% endif %}
 </div>`,
+
+  "kanban-board": `<div style="display: flex; flex-direction: column; height: 100%; padding: 40px 48px 28px; overflow: hidden;">
+  <h2 style="color: var(--text-heading-color, #111827); font-size: 28px; font-weight: 700; margin: 0 0 4px 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ title }}</h2>
+  {% if description %}
+  <p style="color: var(--text-body-color, #6b7280); font-size: 13px; margin: 0 0 16px 0; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ description }}</p>
+  {% else %}
+  <div style="margin-bottom: 16px;"></div>
+  {% endif %}
+  <div style="display: flex; gap: 16px; flex: 1; min-height: 0; overflow: hidden;">
+    {% for column in columns %}
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: {% if column.color %}{{ column.color }}12{% else %}var(--card-background-color, #f9fafb){% endif %}; border-radius: 12px; border: 1px solid {% if column.color %}{{ column.color }}30{% else %}#e5e7eb{% endif %}; overflow: hidden;">
+      <div style="padding: 12px 14px; border-bottom: 2px solid {% if column.color %}{{ column.color }}{% else %}var(--primary-accent-color, #9333ea){% endif %};">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 13px; font-weight: 700; color: {% if column.color %}{{ column.color }}{% else %}var(--text-heading-color, #111827){% endif %}; text-transform: uppercase; letter-spacing: 0.05em;">{{ column.title }}</span>
+          {% if column.cards %}
+          <span style="font-size: 11px; font-weight: 600; color: var(--text-body-color, #9ca3af); background: rgba(0,0,0,0.05); border-radius: 10px; padding: 2px 8px;">{{ column.cards | length }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; gap: 8px;">
+        {% if column.cards %}
+        {% for card in column.cards %}
+        <div style="background: white; border-radius: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04);{% if card.priority == 'high' %} border-left: 3px solid #ef4444;{% elif card.priority == 'medium' %} border-left: 3px solid #f59e0b;{% elif card.priority == 'low' %} border-left: 3px solid #22c55e;{% endif %}">
+          <div style="font-size: 12.5px; font-weight: 600; color: var(--text-heading-color, #1f2937); margin-bottom: 3px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ card.title }}</div>
+          {% if card.description %}
+          <div style="font-size: 11px; color: var(--text-body-color, #6b7280); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ card.description }}</div>
+          {% endif %}
+          {% if card.tags or card.assignee %}
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+            {% if card.tags %}
+            {% for tag in card.tags %}
+            <span style="font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px; background: {% if column.color %}{{ column.color }}18{% else %}#f3f4f6{% endif %}; color: {% if column.color %}{{ column.color }}{% else %}#6b7280{% endif %};">{{ tag }}</span>
+            {% endfor %}
+            {% endif %}
+            {% if card.assignee %}
+            <span style="font-size: 10px; color: var(--text-body-color, #9ca3af); margin-left: auto;">{{ card.assignee }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+    <span style="font-size: 10px; color: var(--text-body-color, #9ca3af);">{{ footerText | default('') }}</span>
+    <span style="font-size: 10px; color: var(--text-body-color, #9ca3af);">{{ slideNumber | default('') }}</span>
+  </div>
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════

@@ -430,6 +430,23 @@ export function estimateContentHeight(
       return headerH + descH + Math.max(matrixH, mitigH) + sourceH;
     }
 
+    case "kanban-board": {
+      const columns = data.columns || [];
+      let maxCardH = 0;
+      for (const col of columns) {
+        const cards = col?.cards || [];
+        let colH = 48; // column header
+        for (const card of cards) {
+          const titleLines = clampLines(estimateTextLines(card?.title || "", p.smallSize, 200), 2);
+          const descLines = card?.description ? clampLines(estimateTextLines(card.description, p.tinySize, 200), 2) : 0;
+          const tagsH = (card?.tags?.length || card?.assignee) ? 24 : 0;
+          colH += titleLines * (p.smallSize * 1.3) + descLines * (p.tinySize * 1.35) + tagsH + 16 + p.gapSm;
+        }
+        maxCardH = Math.max(maxCardH, colH);
+      }
+      return headerH + maxCardH + 40; // footer
+    }
+
     default:
       // Unknown layout — assume it fits
       return AVAILABLE_HEIGHT;

@@ -20,7 +20,7 @@ import {
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
 import { getThemePreset, type ThemePreset } from "./themes";
 import { generateImage } from "../_core/imageGeneration";
-import { validateSlideData, autoFixSlideData } from "./qaAgent";
+import { validateSlideData, autoFixSlideData, validateCriticalSlideContent, isCriticalLayout } from "./qaAgent";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
 import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
@@ -115,7 +115,15 @@ export interface StructuredContent {
   /** For analysis_with_verdict: {items, verdict} */
   analysis?: { items: Array<{ title: string; description: string; code?: string; severity?: string }>; verdict_title: string; verdict_text: string; indicators?: Array<{ label: string; value: string; color?: string }> };
   /** For quote_highlight: {quote, attribution, context} */
-  quote?: { text: string; attribution: string; context: string };
+  quote?: { text: string; attribution: string; context: string; source?: string };
+  /** For kanban_board: columns with task cards */
+  columns?: Array<{ title: string; color?: string; cards: Array<{ title: string; description?: string; priority?: string; tags?: string[]; assignee?: string }> }>;
+  /** For checklist_items: items with done status */
+  checklist?: Array<{ title: string; description: string; done: boolean }>;
+  /** For swot_quadrants: four quadrants */
+  swot?: { strengths: { title: string; items: string[] }; weaknesses: { title: string; items: string[] }; opportunities: { title: string; items: string[] }; threats: { title: string; items: string[] } };
+  /** Catch-all for any other structured data from Writer */
+  [key: string]: unknown;
 }
 
 export interface ThemeResult {
@@ -956,7 +964,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
     }
     case "checklist": {
       const sc8 = content.structured_content as any;
-      const rawItems = sc8?.items;
+      const rawItems = sc8?.checklist || sc8?.items;
       if (rawItems && Array.isArray(rawItems)) {
         data.items = rawItems.map((item: any) => ({
           title: item.title || item.name || "",
@@ -980,11 +988,13 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
     }
     case "swot-analysis": {
       const sc9 = content.structured_content as any;
-      if (sc9?.strengths && sc9?.weaknesses && sc9?.opportunities && sc9?.threats) {
-        data.strengths = { title: sc9.strengths.title || "Сильные стороны", items: sc9.strengths.items || [] };
-        data.weaknesses = { title: sc9.weaknesses.title || "Слабые стороны", items: sc9.weaknesses.items || [] };
-        data.opportunities = { title: sc9.opportunities.title || "Возможности", items: sc9.opportunities.items || [] };
-        data.threats = { title: sc9.threats.title || "Угрозы", items: sc9.threats.items || [] };
+      // Check for both direct SWOT fields and nested swot object from Writer
+      const swotData = sc9?.swot || sc9;
+      if (swotData?.strengths && swotData?.weaknesses && swotData?.opportunities && swotData?.threats) {
+        data.strengths = { title: swotData.strengths.title || "Сильные стороны", items: swotData.strengths.items || [] };
+        data.weaknesses = { title: swotData.weaknesses.title || "Слабые стороны", items: swotData.weaknesses.items || [] };
+        data.opportunities = { title: swotData.opportunities.title || "Возможности", items: swotData.opportunities.items || [] };
+        data.threats = { title: swotData.threats.title || "Угрозы", items: swotData.threats.items || [] };
       } else {
         // Text-only fallback: split bullets into 4 quadrants
         const allBullets = bullets.map(b => b.title);
@@ -993,6 +1003,42 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
         data.weaknesses = { title: "Слабые стороны", items: allBullets.slice(quarter, quarter * 2) };
         data.opportunities = { title: "Возможности", items: allBullets.slice(quarter * 2, quarter * 3) };
         data.threats = { title: "Угрозы", items: allBullets.slice(quarter * 3) };
+      }
+      break;
+    }
+    case "kanban-board": {
+      const sc10 = content.structured_content as any;
+      // Writer may return columns directly or nested in kanban/board field
+      const kanbanCols = sc10?.columns || sc10?.kanban?.columns;
+      if (kanbanCols && Array.isArray(kanbanCols)) {
+        data.columns = kanbanCols.map((col: any) => ({
+          title: col.title || "Column",
+          color: col.color || "",
+          cards: (col.cards || []).map((card: any) => ({
+            title: card.title || "",
+            description: card.description || "",
+            priority: card.priority || "",
+            tags: card.tags || [],
+            assignee: card.assignee || "",
+          })),
+        }));
+      } else {
+        // Text-only fallback: create 3 columns from bullets
+        const allBullets = bullets.map(b => b.title);
+        const third = Math.max(1, Math.ceil(allBullets.length / 3));
+        const statusColors = ["#f59e0b", "#3b82f6", "#22c55e"];
+        const statusNames = ["\u0412 \u043e\u0447\u0435\u0440\u0435\u0434\u0438", "\u0412 \u0440\u0430\u0431\u043e\u0442\u0435", "\u0413\u043e\u0442\u043e\u0432\u043e"];
+        data.columns = statusNames.map((name, i) => ({
+          title: name,
+          color: statusColors[i],
+          cards: allBullets.slice(i * third, (i + 1) * third).map(text => ({
+            title: text,
+            description: "",
+            priority: i === 0 ? "high" : i === 1 ? "medium" : "low",
+            tags: [],
+            assignee: "",
+          })),
+        }));
       }
       break;
     }
@@ -1352,7 +1398,7 @@ export async function generatePresentation(
 const IMAGE_PROTECTED_LAYOUTS = new Set([
            "card-grid", "financial-formula", "big-statement", "verdict-analysis",
            "icons-numbers", "highlight-stats", "pros-cons", "risk-matrix",
-           "numbered-steps-v2", "process-steps", "scenario-cards",
+           "numbered-steps-v2", "process-steps", "scenario-cards", "kanban-board",
            "timeline-horizontal", "vertical-timeline", "roadmap", "chart-slide", "stats-chart",
            "dual-chart", "table-slide", "agenda-table-of-contents",
            "comparison-table", "quote-highlight",
@@ -1442,7 +1488,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
 const CHART_PROTECTED_LAYOUTS = new Set([
      "card-grid", "financial-formula", "big-statement", "verdict-analysis",
      "timeline-horizontal", "vertical-timeline", "process-steps",
-     "comparison-table", "quote-highlight", "risk-matrix", "section-header", "title-slide", "final-slide",
+     "comparison-table", "quote-highlight", "kanban-board", "risk-matrix", "section-header", "title-slide", "final-slide",
      "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
      "highlight-stats", "icons-numbers", "table-slide", "scenario-cards",
   ]);
@@ -1519,6 +1565,50 @@ const CHART_PROTECTED_LAYOUTS = new Set([
         data._slideNumber = slideContent.slide_number;
         data._totalSlides = content.length;
         data._presentationTitle = plannerResult.presentation_title;
+
+        // LLM content quality check for critical slides (title, final)
+        if (isCriticalLayout(layoutName)) {
+          try {
+            const llmQA = await validateCriticalSlideContent(data, layoutName, prompt, invokeLLM);
+            if (!llmQA.passed) {
+              console.warn(`[LLM-QA] Slide ${slideContent.slide_number} "${layoutName}": score ${llmQA.score}/10. Issues: ${llmQA.issues.join("; ")}. Suggestions: ${llmQA.suggestions.join("; ")}`);
+              // Apply suggestions if score is very low
+              if (llmQA.score <= 4 && llmQA.suggestions.length > 0) {
+                // Re-run composer with LLM feedback
+                const feedbackStr = `Content quality issues:\n${llmQA.issues.map(i => `- ${i}`).join("\n")}\n\nSuggestions:\n${llmQA.suggestions.map(s => `- ${s}`).join("\n")}`;
+                const layoutTemplate = getLayoutTemplate(layoutName);
+                const retrySystem = htmlComposerSystem(feedbackStr);
+                const retryUser = htmlComposerUser(
+                  layoutName,
+                  layoutTemplate || `Layout: ${layoutName}`,
+                  slideContent.title,
+                  slideContent.text,
+                  slideContent.notes,
+                  slideContent.key_message,
+                  theme.css_variables,
+                  slideContent.structured_content,
+                  slideContent.content_shape,
+                  slideContent.slide_category,
+                );
+                try {
+                  const rawResponse = await llmText(retrySystem, retryUser);
+                  let jsonStr = rawResponse;
+                  const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+                  if (jsonMatch) jsonStr = jsonMatch[1];
+                  const retryData = JSON.parse(jsonStr.trim());
+                  Object.assign(data, retryData);
+                  console.log(`[LLM-QA] Slide ${slideContent.slide_number}: re-composed after quality feedback`);
+                } catch {
+                  console.warn(`[LLM-QA] Slide ${slideContent.slide_number}: retry failed, keeping original`);
+                }
+              }
+            } else {
+              console.log(`[LLM-QA] Slide ${slideContent.slide_number} "${layoutName}": passed (score ${llmQA.score}/10)`);
+            }
+          } catch (e) {
+            console.warn(`[LLM-QA] Slide ${slideContent.slide_number}: validation error, skipping`, e);
+          }
+        }
 
         let html = renderSlide(layoutName, data);
 

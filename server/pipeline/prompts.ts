@@ -79,6 +79,17 @@ Available content_shapes:
 10. "single_concept" — One central idea explained with a short description + 3-4 supporting sub-points. Best for definitions, architecture.
 11. "chart_with_context" — Data for chart visualization + 2-3 contextual stat cards. Best for market data, trends.
 12. "quote_highlight" — One powerful quote or statement + attribution + context.
+13. "kanban_board" — 3-5 columns of task cards with status, priority, and assignees. Best for project status, sprint boards, implementation plans.
+14. "checklist_items" — 4-8 items with done/not-done status. Best for readiness checks, requirements, action items.
+15. "swot_quadrants" — Four quadrants: strengths, weaknesses, opportunities, threats. Best for strategic analysis.
+
+CONTENT SHAPE SELECTION RULES:
+- When the user explicitly mentions "канбан", "kanban", "доска задач", "статусы задач" → MUST use "kanban_board"
+- When the user mentions "таймлайн", "хронология", "история развития", "этапы" → MUST use "timeline_events"
+- When the user mentions "сравнительная таблица", "сравнение подходов", "матрица сравнения" → MUST use "comparison_two_sides" (will be rendered as comparison-table)
+- When the user mentions "цитата", "мнение эксперта", "quote" → MUST use "quote_highlight"
+- When the user mentions "чеклист", "готовность", "checklist" → MUST use "checklist_items"
+- When the user mentions "SWOT", "стратегический анализ" → MUST use "swot_quadrants"
 
 DIVERSITY RULE: No content_shape may appear more than 2 times. Use at least 5 different shapes in a 10-slide presentation.
 NEVER default everything to "bullet_points" — this is the #1 cause of boring presentations.
@@ -170,7 +181,13 @@ The content_shape field determines what you put in structured_content. Follow th
 
 "chart_with_context": Provide data_points for chart + stat_cards in structured_content for context numbers.
 
-"quote_highlight": Write {text: "the quote", attribution: "who said it", context: "why it matters"}.
+"quote_highlight": Write {text: "the quote", attribution: "who said it", context: "why it matters", source: "optional source reference"}.
+
+"kanban_board": Write 3-5 columns with task cards. {columns: [{title: "Backlog", color: "#f59e0b", cards: [{title: "Task name", description: "1-2 sentences", priority: "high"/"medium"/"low", tags: ["tag1"], assignee: "Name"}]}]}. Max 4 cards per column.
+
+"checklist_items": Write 4-8 checklist items. {items: [{title: "Item title" (2-4 words), description: "1-2 sentences", done: true/false}]}. Mix of done and not-done items.
+
+"swot_quadrants": Write SWOT analysis. {strengths: {title: "Сильные стороны", items: ["item1", "item2"]}, weaknesses: {title: "Слабые стороны", items: [...]}, opportunities: {title: "Возможности", items: [...]}, threats: {title: "Угрозы", items: [...]}}. 3-5 items per quadrant.
 </content_shape_instructions>
 <text_conciseness_rules>
 - Card/bullet descriptions: MAX 2 sentences, 30 words each.
@@ -325,33 +342,43 @@ Your goal is to create a visually diverse, professional presentation where every
 38. vertical-timeline — Vertical timeline with connector line, numbered/icon circles, and card-style events. Best for detailed chronological narratives, project histories, evolution stories with 4-7 events. Data: events[] with date, title, description, badge?, highlight?, icon?.
 39. comparison-table — Feature comparison table with colored header, check/cross/partial marks, and highlighted column. Best for product comparisons, vendor evaluations, feature matrices. Data: columns[] with name, highlight?. features[] with name, values[]. featureLabel?, footnote?.
 40. quote-highlight — Large quote with left accent border, author avatar, optional context box, and optional accent side panel with big number. Best for expert opinions, customer testimonials, key insights with supporting data. Data: quote, author, role?, source?, context?, accentPanel? with bigNumber, label, description.
+41. kanban-board — 3-5 columns with task cards, priority indicators (high/medium/low), tags, and assignees. Best for project status overviews, task management, implementation plans, sprint boards. Data: columns[] with title, color?, cards[] with title, description?, priority?, tags[]?, assignee?.
 </available_layouts>
 <content_shape_to_layout_mapping>
 When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
 - [SHAPE: stat_cards] → icons-numbers, highlight-stats, or hero-stat
 - [SHAPE: bullet_points] → text-with-callout (preferred) or text-slide
-- [SHAPE: comparison_two_sides] → pros-cons (preferred) or comparison
-- [SHAPE: table_data] → table-slide
-- [SHAPE: process_steps] → numbered-steps-v2 (preferred) or process-steps
-- [SHAPE: card_grid] → card-grid (preferred), icons-numbers, or checklist
-- [SHAPE: timeline_events] → timeline-horizontal (preferred) or timeline
+- [SHAPE: comparison_two_sides] → comparison-table (preferred for multi-feature comparison), pros-cons (preferred for pro/con analysis), or two-column
+- [SHAPE: table_data] → comparison-table (preferred for product/vendor comparison), table-slide (for general tabular data)
+- [SHAPE: process_steps] → numbered-steps-v2 (preferred), kanban-board (if steps represent parallel workstreams), or process-steps
+- [SHAPE: card_grid] → card-grid (preferred), kanban-board (if cards represent tasks/statuses), icons-numbers, or checklist
+- [SHAPE: timeline_events] → vertical-timeline (preferred for 4+ events with detailed descriptions), timeline-horizontal (preferred for 3-4 events with short descriptions), or roadmap
 - [SHAPE: financial_formula] → financial-formula (preferred), hero-stat, or highlight-stats
 - [SHAPE: analysis_with_verdict] → verdict-analysis (preferred), pros-cons, risk-matrix, or swot-analysis
 - [SHAPE: single_concept] → big-statement (preferred) or text-with-callout
 - [SHAPE: chart_with_context] → stats-chart (preferred) or chart-text
-- [SHAPE: quote_highlight] → quote-highlight (preferred) or quote-slide
+- [SHAPE: quote_highlight] → quote-highlight (STRONGLY preferred, use quote-slide only if quote-highlight was already used)
 - [SHAPE: checklist_items] → checklist (preferred) or card-grid
 - [SHAPE: swot_quadrants] → swot-analysis
+- [SHAPE: kanban_board] → kanban-board (MANDATORY — no alternatives)
 The shape tag is a STRONG hint — follow it unless the content clearly doesn't match.
+NEW TEMPLATES PRIORITY: When the shape tag matches one of these, the corresponding layout is MANDATORY:
+- [SHAPE: kanban_board] → kanban-board (ALWAYS)
+- [SHAPE: quote_highlight] → quote-highlight (ALWAYS, never quote-slide)
+- [SHAPE: timeline_events] with 4+ events → vertical-timeline (ALWAYS)
+- [SHAPE: comparison_two_sides] with 3+ features → comparison-table (ALWAYS)
+- [SHAPE: checklist_items] → checklist (ALWAYS)
+- [SHAPE: swot_quadrants] → swot-analysis (ALWAYS)
 </content_shape_to_layout_mapping>
 <content_matching_rules>
 - Match layout to content type:
   * Slide with 3-5 key metrics/numbers/percentages → icons-numbers or highlight-stats
   * Slide with ONE dominant metric + supporting data → highlight-stats
   * Slide with sequential process or methodology → process-steps
-  * Slide with chronological events or roadmap → timeline or roadmap
-  * Slide with product/project roadmap spanning months/quarters → roadmap
-  * Slide with two opposing options or perspectives → comparison, two-column, or pros-cons
+  * Slide with chronological events (4+ events with detailed descriptions) → vertical-timeline
+  * Slide with chronological events (3-4 events, brief) → timeline-horizontal
+  * Slide with project/product roadmap spanning months/quarters → roadmap
+  * Slide with two opposing options or perspectives → comparison-table, two-column, or pros-cons
   * Slide with advantages vs disadvantages analysis → pros-cons
   * Slide with detailed explanation of one topic → text-slide
   * Slide with tabular data → table-slide
@@ -368,12 +395,14 @@ The shape tag is a STRONG hint — follow it unless the content clearly doesn't 
   * Slide with comparing two datasets or metrics side by side → dual-chart
   * Slide with risk assessment, impact/probability analysis → risk-matrix
   * Slide with action items, requirements, or readiness checklist → checklist
+  * Slide with project tasks organized by status/phase/team → kanban-board
+  * Slide with implementation plan showing parallel workstreams → kanban-board
   * Slide with detailed chronological narrative (4-7 events with descriptions) → vertical-timeline
-  * Slide with product/vendor/feature comparison matrix → comparison-table
-  * Slide with expert quote + supporting data/context → quote-highlight
+  * Slide with product/vendor/feature comparison matrix (3+ features, 2+ options) → comparison-table
+  * Slide with expert quote + supporting data/context → quote-highlight (ALWAYS prefer over quote-slide)
 </content_matching_rules>
 <diversity_rules>
-- Use at LEAST 6 unique layouts across the presentation (with 40 layouts available, aim for maximum variety).
+- Use at LEAST 6 unique layouts across the presentation (with 41 layouts available, aim for maximum variety).
 - No single layout may appear more than 2 times.
 - Slide 1 MUST be title-slide.
 - Last slide MUST be final-slide.
@@ -577,6 +606,11 @@ INPUT structured_content: {"strengths": {"title": "Сильные стороны
 OUTPUT: {"title": "SWOT-анализ", "strengths": {"title": "Сильные стороны", "items": ["Уникальная технология", "Сильная команда"]}, "weaknesses": {"title": "Слабые стороны", "items": ["Ограниченный бюджет"]}, "opportunities": {"title": "Возможности", "items": ["Растущий рынок AI"]}, "threats": {"title": "Угрозы", "items": ["Конкуренция Big Tech"]}}
 RULE: Direct mapping. Each quadrant has title + items[]. 3-5 items per quadrant recommended.
 
+=== card_grid → kanban-board ===
+INPUT structured_content: {"columns": [{"title": "Бэклог", "color": "#f59e0b", "cards": [{"title": "Исследование рынка", "priority": "high", "tags": ["research"]}]}, {"title": "В работе", "color": "#3b82f6", "cards": [{"title": "MVP дизайн", "priority": "medium", "assignee": "Анна"}]}, {"title": "Готово", "color": "#22c55e", "cards": [{"title": "Бриф", "priority": "low"}]}]}
+OUTPUT: {"title": "...", "columns": [{"title": "Бэклог", "color": "#f59e0b", "cards": [{"title": "Исследование рынка", "description": "", "priority": "high", "tags": ["research"], "assignee": ""}]}, {"title": "В работе", "color": "#3b82f6", "cards": [{"title": "MVP дизайн", "description": "", "priority": "medium", "tags": [], "assignee": "Анна"}]}, {"title": "Готово", "color": "#22c55e", "cards": [{"title": "Бриф", "description": "", "priority": "low", "tags": [], "assignee": ""}]}]}
+RULE: 3-5 columns. Each column has title, color (hex), and cards[]. Cards have priority: "high"/"medium"/"low". Max 4 cards per column.
+
 === bullet_points → text-with-callout ===
 OUTPUT: {"title": "...", "bullets": [{"title": "Пункт 1", "description": "Описание пункта"}, ...], "callout": "Ключевой вывод", "source": ""}
 RULE: Parse text field into bullets with title+description. key_message → callout.
@@ -601,6 +635,7 @@ IMPORTANT RULES:
 8. For quote-highlight: accentPanel is optional — only add if there's a supporting metric.
 9. For checklist: done=true → green status, done=false → yellow status. Use hex colors.
 10. For swot-analysis: 4 quadrants are required (strengths, weaknesses, opportunities, threats). 3-5 items each.
+11. For kanban-board: columns[] with title + color (hex) + cards[]. Cards have priority ("high"/"medium"/"low"), tags[], assignee. Max 4 cards per column, 3-5 columns.
 </structured_content_mapping>
 <layout_schemas>
 - title-slide: {title, description, presenterName, initials, presentationDate, image?}
@@ -642,6 +677,7 @@ IMPORTANT RULES:
 - vertical-timeline: {title, events: [{date, title, description, badge?, highlight?: boolean, icon?: {name, url}}]} — Vertical timeline with connector line. 4-7 events. Set highlight=true on current event. badge is optional status text.
 - comparison-table: {title, columns: [{name, highlight?: boolean}], features: [{name, values: [string]}], featureLabel?, footnote?} — Feature comparison table. values[] length MUST match columns[] length. highlight=true marks recommended column.
 - quote-highlight: {title, quote, author, role?, source?, context?, accentPanel?: {bigNumber, label, description}} — Large quote with accent border + optional side panel with big number.
+- kanban-board: {title, description?, columns: [{title, color? (hex), cards: [{title, description?, priority?: 'high'|'medium'|'low', tags?: [string], assignee?}]}]} — 3-5 columns with task cards. Max 4 cards per column. Priority adds colored left border.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

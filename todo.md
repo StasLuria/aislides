@@ -949,3 +949,23 @@
 - [x] Write newTemplatesQA.test.ts — 26 tests for validation + auto-fix
 - [x] Write testGeneration.test.ts — 11 integration tests (buildFallbackData → autoFix → validate)
 - [x] All 1092 tests passing (38 test files)
+
+## Round 7: Test Generation + Kanban Board + LLM Validation
+- [x] Run test generation #1: "Управление IT-проектом" — Layout Agent used old templates (timeline-horizontal, pros-cons)
+- [x] Run test generation #2: "AI-стартап: запуск и развитие до Series A" — Layout Agent assigned vertical-timeline (slide 5) and comparison-table (slide 8) ✅
+- [x] Verify vertical-timeline renders correctly: 4 events with connector line, badges, highlighted event
+- [x] Verify comparison-table renders correctly: 3 columns, 5 features, highlighted "our solution" column
+- [x] Add 3 new content_shapes to Outline Agent: kanban_board, checklist_items, swot_quadrants
+- [x] Add Writer instructions for new content_shapes with structured_content field definitions
+- [x] Update content_shape_to_layout_mapping with MANDATORY rules for new shapes
+- [x] Strengthen Layout Agent: MANDATORY vertical-timeline for timeline_events(4+), comparison-table for comparison_matrix
+- [x] Add StructuredContent interface fields: columns (kanban), checklist, swot
+- [x] Update buildFallbackData: checklist handles structured_content.checklist, swot handles .swot, kanban handles .columns
+- [x] Create kanban-board HTML template (3-5 columns, cards with priority dots, tags, assignee avatars)
+- [x] Register kanban-board in: templateEngine, layout agent (available_layouts + content_matching_rules), autoDensity, buildFallbackData, IMAGE/CHART_PROTECTED, qaAgent (LAYOUT_REQUIREMENTS + validation + auto-fix)
+- [x] Add Composer mapping example for kanban-board and layout schema
+- [x] Add LLM validation for critical slides: validateCriticalSlideContent() checks title-slide (title length, description, no placeholder text) and final-slide (thankYouText, no lorem ipsum)
+- [x] Integrate LLM validation into batch processing loop in generator.ts
+- [x] Write round7.test.ts — 26 tests for kanban-board, LLM validation, new content_shapes
+- [x] All 1118 tests passing (39 test files)
+- [x] DataViz error found: parseNumericValue str.replace not a function — non-blocking, charts skipped gracefully

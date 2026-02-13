@@ -192,6 +192,9 @@ const LAYOUT_REQUIREMENTS: Record<string, LayoutRequirement> = {
   "checklist": {
     requiredFields: ["title", "items"],
   },
+  "kanban-board": {
+    requiredFields: ["title", "columns"],
+  },
 };
 
 // ═══════════════════════════════════════════════════════
@@ -522,7 +525,65 @@ export function validateSlideData(
     }
   }
 
-  // 16. Check chart data
+  // 16. Check kanban-board columns and cards
+  if (layoutName === "kanban-board" && data.columns) {
+    if (!Array.isArray(data.columns)) {
+      issues.push({ field: "columns", severity: "error", message: "columns must be an array" });
+    } else {
+      if (data.columns.length < 2) {
+        issues.push({
+          field: "columns",
+          severity: "error",
+          message: `Need at least 2 columns, got ${data.columns.length}.`,
+        });
+      }
+      if (data.columns.length > 5) {
+        issues.push({
+          field: "columns",
+          severity: "warning",
+          message: `${data.columns.length} columns may overflow. Keep to 3-5 columns.`,
+        });
+      }
+      for (let i = 0; i < data.columns.length; i++) {
+        const col = data.columns[i];
+        if (!col.title || (typeof col.title === "string" && col.title.trim().length === 0)) {
+          issues.push({
+            field: `columns[${i}].title`,
+            severity: "error",
+            message: `Column ${i + 1} has empty title.`,
+          });
+        }
+        if (col.cards && Array.isArray(col.cards)) {
+          if (col.cards.length > 4) {
+            issues.push({
+              field: `columns[${i}].cards`,
+              severity: "warning",
+              message: `Column "${col.title}" has ${col.cards.length} cards. Max 4 recommended.`,
+            });
+          }
+          for (let j = 0; j < col.cards.length; j++) {
+            const card = col.cards[j];
+            if (!card.title || (typeof card.title === "string" && card.title.trim().length === 0)) {
+              issues.push({
+                field: `columns[${i}].cards[${j}].title`,
+                severity: "error",
+                message: `Card ${j + 1} in column "${col.title}" has empty title.`,
+              });
+            }
+            if (card.priority && !["high", "medium", "low"].includes(card.priority)) {
+              issues.push({
+                field: `columns[${i}].cards[${j}].priority`,
+                severity: "warning",
+                message: `Card priority "${card.priority}" is not standard. Use "high", "medium", or "low".`,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 17. Check chart data
   if (layoutName === "chart-slide" && data.chartData) {
     if (!data.chartData.labels || !Array.isArray(data.chartData.labels) || data.chartData.labels.length === 0) {
       issues.push({ field: "chartData.labels", severity: "error", message: "Chart must have labels array." });
@@ -727,7 +788,157 @@ export function autoFixSlideData(
     });
   }
 
+  // Fix 12: Fix kanban-board cards — normalize priority and ensure card fields
+  if (layoutName === "kanban-board" && result.columns && Array.isArray(result.columns)) {
+    const priorityMap: Record<string, string> = {
+      "high": "high", "medium": "medium", "low": "low",
+      "urgent": "high", "critical": "high", "normal": "medium",
+      "minor": "low", "важный": "high", "средний": "medium", "низкий": "low",
+    };
+    result.columns = result.columns.map((col: any) => {
+      if (!col.cards) return { ...col, cards: [] };
+      const fixedCards = col.cards.map((card: any) => {
+        let cardFixed = false;
+        const newCard = { ...card };
+        if (newCard.priority && !['high', 'medium', 'low'].includes(newCard.priority)) {
+          const mapped = priorityMap[newCard.priority.toLowerCase()];
+          if (mapped) {
+            newCard.priority = mapped;
+            cardFixed = true;
+          }
+        }
+        if (!newCard.tags) { newCard.tags = []; cardFixed = true; }
+        if (!newCard.assignee) { newCard.assignee = ""; cardFixed = true; }
+        if (!newCard.description) { newCard.description = ""; cardFixed = true; }
+        if (cardFixed) fixed = true;
+        return newCard;
+      });
+      return { ...col, cards: fixedCards };
+    });
+  }
+
   return { data: result, fixed };
+}
+
+// ═══════════════════════════════════════════════════════
+// LLM CONTENT QUALITY VALIDATION (for critical slides)
+// ═══════════════════════════════════════════════════════
+
+/** Layouts that warrant LLM content review */
+const CRITICAL_LAYOUTS = new Set(["title-slide", "final-slide"]);
+
+export interface LLMQAResult {
+  passed: boolean;
+  score: number; // 1-10
+  issues: string[];
+  suggestions: string[];
+}
+
+/**
+ * Validate content quality of critical slides using LLM.
+ * Returns structured feedback with score and actionable suggestions.
+ * Only call for title-slide and final-slide — these set first/last impression.
+ */
+export async function validateCriticalSlideContent(
+  data: Record<string, any>,
+  layoutName: string,
+  originalPrompt: string,
+  invokeLLMFn: (opts: { messages: Array<{ role: "system" | "user" | "assistant"; content: string }>; response_format?: any }) => Promise<any>,
+): Promise<LLMQAResult> {
+  if (!CRITICAL_LAYOUTS.has(layoutName)) {
+    return { passed: true, score: 10, issues: [], suggestions: [] };
+  }
+
+  const systemPrompt = `You are a presentation quality reviewer. You evaluate whether a slide's content is compelling, clear, and appropriate for its role in the presentation.
+
+You will receive:
+- The slide layout type (title-slide or final-slide)
+- The slide data (JSON)
+- The original presentation prompt/topic
+
+Evaluate on these criteria:
+1. **Relevance** (1-10): Does the content match the presentation topic?
+2. **Clarity** (1-10): Is the title concise and impactful? Is the description clear?
+3. **Professionalism** (1-10): Is the language professional and appropriate for business presentations?
+4. **Completeness** (1-10): Are all important fields filled with meaningful content (not placeholders)?
+
+For title-slide: The title should be compelling and capture the essence of the presentation. Description should set context.
+For final-slide: Should provide a strong closing — call to action, summary, or memorable takeaway.
+
+Return JSON with your evaluation.`;
+
+  const userPrompt = `Layout: ${layoutName}
+Original presentation topic: ${originalPrompt}
+
+Slide data:
+${JSON.stringify(data, null, 2)}
+
+Evaluate this slide's content quality.`;
+
+  try {
+    const response = await invokeLLMFn({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "slide_quality_review",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              relevance: { type: "integer", description: "Relevance score 1-10" },
+              clarity: { type: "integer", description: "Clarity score 1-10" },
+              professionalism: { type: "integer", description: "Professionalism score 1-10" },
+              completeness: { type: "integer", description: "Completeness score 1-10" },
+              issues: {
+                type: "array",
+                items: { type: "string" },
+                description: "List of specific content problems found",
+              },
+              suggestions: {
+                type: "array",
+                items: { type: "string" },
+                description: "List of specific improvement suggestions",
+              },
+            },
+            required: ["relevance", "clarity", "professionalism", "completeness", "issues", "suggestions"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) {
+      return { passed: true, score: 7, issues: [], suggestions: ["LLM review returned empty response"] };
+    }
+
+    const review = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+    const avgScore = Math.round(
+      (review.relevance + review.clarity + review.professionalism + review.completeness) / 4,
+    );
+
+    return {
+      passed: avgScore >= 6,
+      score: avgScore,
+      issues: review.issues || [],
+      suggestions: review.suggestions || [],
+    };
+  } catch (error) {
+    // If LLM review fails, don't block the pipeline — pass with a note
+    console.warn(`[LLM-QA] Failed to review ${layoutName}:`, error);
+    return { passed: true, score: 7, issues: [], suggestions: ["LLM review failed, skipped"] };
+  }
+}
+
+/**
+ * Check if a layout is critical and warrants LLM content review.
+ */
+export function isCriticalLayout(layoutName: string): boolean {
+  return CRITICAL_LAYOUTS.has(layoutName);
 }
 
 // ═══════════════════════════════════════════════════════
