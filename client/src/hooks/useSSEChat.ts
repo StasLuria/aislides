@@ -21,6 +21,14 @@ export interface SlidePreview {
   html: string;
 }
 
+export interface ChatFileRef {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  fileSize: number;
+  s3Url: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -30,6 +38,7 @@ export interface ChatMessage {
   presentationLink?: string;
   slidePreviews?: SlidePreview[];
   isStreaming?: boolean;
+  files?: ChatFileRef[];
 }
 
 export interface PresentationLink {

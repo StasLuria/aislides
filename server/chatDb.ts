@@ -111,3 +111,22 @@ export async function deleteChatSession(sessionId: string): Promise<void> {
 
   await db.delete(chatSessions).where(eq(chatSessions.sessionId, sessionId));
 }
+
+export async function getSessionFiles(sessionId: string): Promise<Array<{
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  fileSize: number;
+  s3Url: string;
+  extractedText: string | null;
+  status: string;
+}>> {
+  const { chatFiles } = await import("../drizzle/schema");
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(chatFiles)
+    .where(eq(chatFiles.sessionId, sessionId));
+}

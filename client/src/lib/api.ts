@@ -629,6 +629,56 @@ class ApiClient {
     return data;
   }
 
+  // — Chat File Upload —
+
+  async uploadChatFiles(
+    sessionId: string,
+    files: File[],
+    onProgress?: (percent: number) => void,
+  ): Promise<Array<{
+    file_id: string;
+    filename: string;
+    mime_type: string;
+    size: number;
+    s3_url: string;
+    status: string;
+  }>> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("files", file);
+    }
+
+    const { data } = await axios.post(
+      `/api/v1/chat/sessions/${sessionId}/upload`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        },
+      },
+    );
+    return data.files;
+  }
+
+  async getChatSessionFiles(
+    sessionId: string,
+  ): Promise<Array<{
+    file_id: string;
+    filename: string;
+    mime_type: string;
+    size: number;
+    s3_url: string;
+    status: string;
+  }>> {
+    const { data } = await axios.get(`/api/v1/chat/sessions/${sessionId}/files`);
+    return data;
+  }
+
   // — Health —
 
   async checkHealth(): Promise<{ status: string; version?: string }> {

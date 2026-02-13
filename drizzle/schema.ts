@@ -108,6 +108,16 @@ export interface ChatMessage {
   progress?: { percent: number; message: string };
   /** Optional: presentation link */
   presentationLink?: string;
+  /** Optional: attached files */
+  files?: ChatFileRef[];
+}
+
+export interface ChatFileRef {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  fileSize: number;
+  s3Url: string;
 }
 
 export interface ChatAction {
@@ -118,3 +128,30 @@ export interface ChatAction {
 
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertChatSession = typeof chatSessions.$inferInsert;
+
+/**
+ * Chat files table — stores uploaded files for chat sessions.
+ */
+export const chatFiles = mysqlTable("chat_files", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Public-facing file ID */
+  fileId: varchar("fileId", { length: 64 }).notNull().unique(),
+  /** Linked session ID */
+  sessionId: varchar("sessionId", { length: 64 }).notNull(),
+  /** Original filename */
+  filename: varchar("filename", { length: 512 }).notNull(),
+  /** MIME type */
+  mimeType: varchar("mimeType", { length: 128 }).notNull(),
+  /** File size in bytes */
+  fileSize: int("fileSize").notNull(),
+  /** S3 URL */
+  s3Url: text("s3Url").notNull(),
+  /** Extracted text content (for PDF, DOCX, TXT, PPTX) */
+  extractedText: text("extractedText"),
+  /** Status: uploading, ready, error */
+  status: mysqlEnum("status", ["uploading", "ready", "error"]).default("uploading").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChatFile = typeof chatFiles.$inferSelect;
+export type InsertChatFile = typeof chatFiles.$inferInsert;

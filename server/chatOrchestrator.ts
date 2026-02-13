@@ -12,7 +12,7 @@
 import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import type { ChatMessage, ChatAction } from "../drizzle/schema";
-import { getChatSession, updateChatSession, appendMessage } from "./chatDb";
+import { getChatSession, updateChatSession, appendMessage, getSessionFiles } from "./chatDb";
 import { generatePresentation, type PipelineProgress } from "./pipeline/generator";
 import {
   createPresentation,
@@ -152,6 +152,7 @@ async function llmStructuredChat(
 // ═══════════════════════════════════════════════════════
 
 const CHAT_SYSTEM_PROMPT = `Ты — AI-ассистент для создания презентаций. Твоя задача — помочь пользователю создать профессиональную презентацию.
+Пользователь может прикрепить файлы (PDF, DOCX, TXT, PPTX, изображения) к сообщению. Если прикреплены файлы, используй их содержимое как основу для презентации.
 
 ПРАВИЛА:
 1. Всегда отвечай на русском языке
@@ -246,11 +247,23 @@ export async function processMessage(
     return;
   }
 
+  // Check for uploaded files to attach to the message
+  const sessionFiles = await getSessionFiles(sessionId);
+  const pendingFiles = sessionFiles.filter(f => f.status === "ready");
+  const fileRefs = pendingFiles.length > 0 ? pendingFiles.map(f => ({
+    fileId: f.fileId,
+    filename: f.filename,
+    mimeType: f.mimeType,
+    fileSize: f.fileSize,
+    s3Url: f.s3Url,
+  })) : undefined;
+
   // Save user message
   const userMsg: ChatMessage = {
     role: "user",
     content: userMessage,
     timestamp: Date.now(),
+    ...(fileRefs ? { files: fileRefs } : {}),
   };
   await appendMessage(sessionId, userMsg);
 
@@ -299,10 +312,23 @@ async function handleTopicInput(
   messages: ChatMessage[],
   writer: SSEWriter,
 ): Promise<void> {
+  // Check for attached files
+  const sessionFiles = await getSessionFiles(sessionId);
+  const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
+  
+  let fileContext = "";
+  if (readyFiles.length > 0) {
+    fileContext = `\n\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ${readyFiles.length} ФАЙЛ(ОВ):\n`;
+    for (const f of readyFiles) {
+      fileContext += `\n─── Файл: ${f.filename} (${f.mimeType}) ───\n${(f.extractedText || "").slice(0, 8000)}\n`;
+    }
+    fileContext += `\nИспользуй содержимое этих файлов как основу для презентации. Упомяни, что файлы получены и будут использованы.`;
+  }
+
   // Stream AI response acknowledging the topic
   const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
-  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\n${MODE_SELECTION_PROMPT}\n\nТема пользователя: "${userMessage}"`;
+  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\n${MODE_SELECTION_PROMPT}\n\nТема пользователя: "${userMessage}"${fileContext}`;
 
   const fullResponse = await streamLLMResponse(
     systemPrompt,
@@ -412,12 +438,26 @@ async function startQuickGeneration(
 
   const topic = session.topic || "";
 
+  // Gather file context for the pipeline prompt
+  const sessionFiles = await getSessionFiles(sessionId);
+  const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
+  let fileContextForPipeline = "";
+  if (readyFiles.length > 0) {
+    fileContextForPipeline = "\n\nМАТЕРИАЛЫ ИЗ ПРИКРЕПЛЁННЫХ ФАЙЛОВ:\n";
+    for (const f of readyFiles) {
+      fileContextForPipeline += `\n─── ${f.filename} ───\n${(f.extractedText || "").slice(0, 12000)}\n`;
+    }
+    fileContextForPipeline += "\nИспользуй данные из этих файлов как основу для содержимого презентации. Структурируй информацию по слайдам.";
+  }
+  const enrichedTopic = topic + fileContextForPipeline;
+
   // Send starting message
-  writer({ type: "token", data: "🚀 Запускаю быструю генерацию! Это займёт около 60 секунд.\n\n" });
+  const fileNote = readyFiles.length > 0 ? ` Использую данные из ${readyFiles.length} файл(ов). 📄` : "";
+  writer({ type: "token", data: `🚀 Запускаю быструю генерацию!${fileNote} Это займёт около 60 секунд.\n\n` });
 
   // Create presentation record
   const presentation = await createPresentation({
-    prompt: topic,
+    prompt: enrichedTopic,
     mode: "batch",
     config: { theme_preset: "auto" },
   });
@@ -439,7 +479,7 @@ async function startQuickGeneration(
   try {
     // Run the pipeline with progress streaming + slide previews
     const result = await generatePresentation(
-      topic,
+      enrichedTopic,
       { themePreset: "auto", enableImages: true },
       (progress: PipelineProgress) => {
         writer({

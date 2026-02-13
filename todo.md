@@ -690,3 +690,22 @@
 - [x] Fix: handleNewChat and new_presentation action navigate to /chat instead of creating session
 - [x] Cleaned up 19 orphan empty sessions from DB
 - [x] 914 tests passing
+
+## Feature: File Upload for Presentation Creation
+- [x] Backend: POST /api/v1/chat/sessions/:id/upload endpoint (multipart/form-data with multer)
+- [x] Backend: GET /api/v1/chat/sessions/:id/files endpoint to list uploaded files
+- [x] Backend: Text extraction from PDF (pdf-parse), DOCX (mammoth), PPTX (jszip), TXT, images (LLM vision)
+- [x] Backend: Upload files to S3 via storagePut, store metadata in chat_files table
+- [x] Backend: DB schema — chat_files table (fileId, sessionId, filename, mimeType, fileSize, s3Url, extractedText, status, createdAt)
+- [x] Backend: Integrate extracted file content into chatOrchestrator (handleTopicInput + startQuickGeneration)
+- [x] Backend: Pass file context to pipeline prompt (appended to topic with file content sections)
+- [x] Frontend: FileUploadButton component (paperclip icon) in chat input area
+- [x] Frontend: Drag-and-drop file upload support in FileUploadButton
+- [x] Frontend: FileChips showing attached files (filename + type icon + remove button) above input
+- [x] Frontend: Display attached files in MessageBubble (clickable links to S3 with file/image icons)
+- [x] Frontend: Upload progress indicator (isUploading state)
+- [x] Frontend: Support PDF, DOCX, TXT, PPTX, PNG, JPG, WEBP, GIF, PPT, DOC
+- [x] Frontend: File size limit (10MB per file, max 5 files per message)
+- [x] Frontend: api.ts uploadChatFiles + getChatFiles methods
+- [x] Write vitest tests for file extraction and constants (23 new tests — 937 total passing)
+- [x] Verified: TXT upload → S3 → text extraction → ready status
