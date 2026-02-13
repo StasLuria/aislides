@@ -734,7 +734,7 @@ export default function ChatPage() {
         // After file upload completes, send message directly
         // (pendingMessageRef useEffect already fired when sessionId changed,
         //  so we can't rely on it — it ran before files were uploaded)
-        await sendMessage(trimmed);
+        await sendMessage(trimmed, newId);
         setRefreshTrigger((p) => p + 1);
         return;
       }
@@ -749,7 +749,7 @@ export default function ChatPage() {
       await new Promise(r => setTimeout(r, 1500));
     }
 
-    await sendMessage(trimmed);
+    await sendMessage(trimmed, sessionId);
     setRefreshTrigger((p) => p + 1);
   }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession, settings]);
 
@@ -786,7 +786,7 @@ export default function ChatPage() {
     if (sessionId && pendingMessageRef.current) {
       const msg = pendingMessageRef.current;
       pendingMessageRef.current = null;
-      sendMessage(msg).then(() => setRefreshTrigger((p) => p + 1)).catch(console.error);
+      sendMessage(msg, sessionId).then(() => setRefreshTrigger((p) => p + 1)).catch(console.error);
     }
   }, [sessionId, sendMessage]);
 

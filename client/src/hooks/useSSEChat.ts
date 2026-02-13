@@ -368,10 +368,13 @@ export function useSSEChat() {
 
   /**
    * Send a message and stream the AI response via SSE.
+   * @param overrideSessionId - Optional session ID to use instead of the state value
+   *   (needed when sending right after createSession, before React state updates)
    */
   const sendMessage = useCallback(
-    async (message: string): Promise<void> => {
-      if (!sessionId || isStreaming) return;
+    async (message: string, overrideSessionId?: string): Promise<void> => {
+      const sid = overrideSessionId || sessionId;
+      if (!sid || isStreaming) return;
 
       setError(null);
       setCurrentActions([]);
@@ -402,7 +405,7 @@ export function useSSEChat() {
       abortRef.current = controller;
 
       try {
-        const res = await fetch(`${API_BASE}/sessions/${sessionId}/message`, {
+        const res = await fetch(`${API_BASE}/sessions/${sid}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message }),
@@ -429,7 +432,7 @@ export function useSSEChat() {
             percent: lastProg.percent,
             message: "Соединение прервалось, но генерация продолжается...",
           });
-          startPolling(sessionId);
+          startPolling(sid);
           return; // Don't reset isStreaming — polling will handle it
         }
 

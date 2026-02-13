@@ -788,3 +788,10 @@
 - [x] Root cause: pendingMessageRef useEffect fires when sessionId changes (from navigate), but pendingMessageRef.current is still null because uploadFilesToSession hasn't finished yet
 - [x] Fix: when files are attached, call sendMessage directly after file upload completes instead of relying on pendingMessageRef
 - [x] 953 tests passing
+
+## Bug Fix: Pressing Enter with attached file does nothing
+- [x] File is shown as chip, text is entered, but pressing Enter/Send button does nothing
+- [x] Root cause: stale closure in sendMessage — sessionId was null after createSession() because React state hadn't updated yet
+- [x] Fix: added overrideSessionId parameter to sendMessage in useSSEChat, pass explicit session ID from handleSend and pendingMessageRef effect
+- [x] Verified: file attach + send creates session, uploads file, sends message, AI responds correctly
+- [x] 953 tests passing
