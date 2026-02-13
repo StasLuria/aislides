@@ -731,6 +731,12 @@ export default function ChatPage() {
         await uploadFilesToSession(newId, filesToUpload);
         // Wait a bit for text extraction to start
         await new Promise(r => setTimeout(r, 1500));
+        // After file upload completes, send message directly
+        // (pendingMessageRef useEffect already fired when sessionId changed,
+        //  so we can't rely on it — it ran before files were uploaded)
+        await sendMessage(trimmed);
+        setRefreshTrigger((p) => p + 1);
+        return;
       }
       pendingMessageRef.current = trimmed;
       return;

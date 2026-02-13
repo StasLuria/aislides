@@ -781,3 +781,10 @@
 - [x] Extracted validateFiles() helper for reuse between file input and paste
 - [x] Updated hint text to mention Ctrl+V
 - [x] 953 tests passing
+
+## Bug Fix: Chat resets to empty after sending message with attached file
+- [x] After uploading a file and sending a message, the chat resets to "Создайте презентацию"
+- [x] The session is not saved — it disappears from the sidebar
+- [x] Root cause: pendingMessageRef useEffect fires when sessionId changes (from navigate), but pendingMessageRef.current is still null because uploadFilesToSession hasn't finished yet
+- [x] Fix: when files are attached, call sendMessage directly after file upload completes instead of relying on pendingMessageRef
+- [x] 953 tests passing
