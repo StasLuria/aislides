@@ -25,7 +25,7 @@ import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing"
 import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
-import { runDesignCritic, type SlideDesignData } from "./designCriticAgent";
+import { runDesignCritic, autoFixSlideData as designAutoFixSlideData, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
@@ -259,6 +259,117 @@ export async function runOutline(
     required: ["presentation_title", "target_audience", "narrative_arc", "slides"],
     additionalProperties: false,
   });
+}
+
+/**
+ * Post-process outline to force specialized content_shapes based on user keywords.
+ * The LLM often defaults to generic shapes (bullet_points, card_grid) even when
+ * the user explicitly mentions SWOT, org chart, checklist, kanban, etc.
+ * This function scans the user prompt AND slide titles/purposes for keyword matches
+ * and upgrades generic shapes to specialized ones.
+ */
+function postProcessOutlineShapes(outline: OutlineResult, userPrompt: string): OutlineResult {
+  const promptLower = userPrompt.toLowerCase();
+  console.log(`[OutlinePostProcess] Processing prompt (${promptLower.length} chars): "${promptLower.substring(0, 100)}..."`);
+  console.log(`[OutlinePostProcess] Slides: ${outline.slides.map(s => `${s.slide_number}:${s.content_shape}`).join(', ')}`);
+  
+  // All generic shapes that can be overridden by specialized ones
+  const ALL_GENERIC_SHAPES = [
+    "bullet_points", "card_grid", "process_steps", "single_concept",
+    "action_plan", "product_features", "stat_cards", "comparison_two_sides",
+    "analysis_with_verdict", "comparison_matrix", "table_data",
+    "chart_with_context", "timeline_events", "financial_formula",
+  ];
+
+  // Keyword → shape mapping with priority (higher = more specific)
+  const KEYWORD_SHAPE_RULES: Array<{
+    keywords: string[];
+    shape: string;
+    /** Only override these generic shapes */
+    overrideShapes: string[];
+    /** Max number of slides to upgrade (-1 = unlimited) */
+    maxSlides: number;
+  }> = [
+    {
+      keywords: ["swot", "swot-анализ", "swot анализ", "свот", "свот-анализ"],
+      shape: "swot_quadrants",
+      overrideShapes: ALL_GENERIC_SHAPES,
+      maxSlides: 1,
+    },
+    {
+      keywords: ["организационная структура", "структура команды", "структура организации", "org chart", "org structure", "иерархия команды", "иерархия управления", "оргструктура", "структура компании"],
+      shape: "org_structure",
+      overrideShapes: ALL_GENERIC_SHAPES,
+      maxSlides: 1,
+    },
+    {
+      keywords: ["чеклист", "чек-лист", "checklist", "готовность к", "критерии готовности", "готовность"],
+      shape: "checklist_items",
+      overrideShapes: ALL_GENERIC_SHAPES,
+      maxSlides: 1,
+    },
+    {
+      keywords: ["kanban", "канбан", "доска задач", "статусы задач", "task board"],
+      shape: "kanban_board",
+      overrideShapes: ALL_GENERIC_SHAPES,
+      maxSlides: 1,
+    },
+    {
+      keywords: ["цитата", "quote", "высказывание"],
+      shape: "quote_highlight",
+      overrideShapes: ["bullet_points", "single_concept", "card_grid"],
+      maxSlides: 1,
+    },
+  ];
+
+  let modified = false;
+  const usedShapes = new Set<string>();
+
+  for (const rule of KEYWORD_SHAPE_RULES) {
+    // Check if any keyword appears in the user prompt
+    const promptMatch = rule.keywords.some(kw => promptLower.includes(kw));
+    if (!promptMatch) continue;
+
+    let assignedCount = 0;
+
+    for (const slide of outline.slides) {
+      if (rule.maxSlides >= 0 && assignedCount >= rule.maxSlides) break;
+      if (slide.content_shape === rule.shape) {
+        // Already correctly assigned
+        assignedCount++;
+        console.log(`[OutlinePostProcess] Slide ${slide.slide_number} "${slide.title}": already has correct shape ${rule.shape}`);
+        continue;
+      }
+
+      // Check if this slide's shape is generic enough to override
+      if (!rule.overrideShapes.includes(slide.content_shape || "")) {
+        console.log(`[OutlinePostProcess] Slide ${slide.slide_number} "${slide.title}": shape "${slide.content_shape}" not in overrideShapes, skipping`);
+        continue;
+      }
+
+      // Check if slide title/purpose matches any keyword (stronger signal)
+      const slideLower = `${slide.title} ${slide.purpose}`.toLowerCase();
+      const slideMatch = rule.keywords.some(kw => slideLower.includes(kw));
+
+      // For prompt-only matches, prefer slides with related titles
+      // For slide-level matches, always upgrade
+      if (slideMatch || (promptMatch && !usedShapes.has(rule.shape))) {
+        const oldShape = slide.content_shape;
+        slide.content_shape = rule.shape;
+        usedShapes.add(rule.shape);
+        assignedCount++;
+        modified = true;
+        console.log(`[OutlinePostProcess] Slide ${slide.slide_number} "${slide.title}": ${oldShape} → ${rule.shape} (keyword match)`);
+        if (!slideMatch) break; // For prompt-only match, only upgrade first suitable slide
+      }
+    }
+  }
+
+  if (modified) {
+    console.log(`[OutlinePostProcess] Shapes upgraded based on user keywords`);
+  }
+
+  return outline;
 }
 
 export async function runWriterSingle(
@@ -1042,6 +1153,38 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       }
       break;
     }
+    case "org-chart": {
+      const sc11 = content.structured_content as any;
+      const orgRoot = sc11?.root;
+      const orgChildren = sc11?.children;
+      if (orgRoot && orgChildren && Array.isArray(orgChildren)) {
+        data.root = {
+          name: orgRoot.name || content.title,
+          role: orgRoot.role || "",
+        };
+        data.children = orgChildren.slice(0, 6).map((child: any) => ({
+          name: child.name || "",
+          role: child.role || "",
+          avatar: child.avatar || "",
+          detail: child.detail || "",
+          members: (child.members || []).slice(0, 3).map((m: any) => ({
+            name: m.name || "",
+            role: m.role || "",
+          })),
+        }));
+      } else {
+        // Text-only fallback: create org chart from bullets
+        data.root = { name: content.title, role: "" };
+        data.children = bullets.slice(0, 5).map((b, i) => ({
+          name: b.title,
+          role: b.description ? b.description.slice(0, 40) : "",
+          avatar: ["\ud83d\udc68\u200d\ud83d\udcbb", "\ud83d\udcca", "\ud83d\udee0\ufe0f", "\ud83c\udf10", "\ud83d\udcb0"][i % 5],
+          detail: "",
+          members: [],
+        }));
+      }
+      break;
+    }
     default:
       data.bullets = bullets.slice(0, 5);
   }
@@ -1291,6 +1434,9 @@ export async function generatePresentation(
     onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
   }
 
+  // 2.6. OUTLINE SHAPE POST-PROCESSING — force specialized shapes based on user keywords
+  outline = postProcessOutlineShapes(outline, prompt);
+
   // 2.7. RESEARCH AGENT — gather facts and statistics for content enrichment
   onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 23, message: "Исследование фактов и статистики..." });
   let researchContext: ResearchContext | null = null;
@@ -1401,7 +1547,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
            "numbered-steps-v2", "process-steps", "scenario-cards", "kanban-board",
            "timeline-horizontal", "vertical-timeline", "roadmap", "chart-slide", "stats-chart",
            "dual-chart", "table-slide", "agenda-table-of-contents",
-           "comparison-table", "quote-highlight",
+           "comparison-table", "quote-highlight", "org-chart",
           "title-slide", "final-slide", "section-header",
         ]);
         Array.from(imageMap.keys()).forEach((slideNum) => {
@@ -1488,7 +1634,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
 const CHART_PROTECTED_LAYOUTS = new Set([
      "card-grid", "financial-formula", "big-statement", "verdict-analysis",
      "timeline-horizontal", "vertical-timeline", "process-steps",
-     "comparison-table", "quote-highlight", "kanban-board", "risk-matrix", "section-header", "title-slide", "final-slide",
+      "comparison-table", "quote-highlight", "kanban-board", "org-chart", "risk-matrix", "section-header", "title-slide", "final-slide",
      "roadmap", "numbered-steps-v2", "pros-cons", "text-with-callout",
      "highlight-stats", "icons-numbers", "table-slide", "scenario-cards",
   ]);
@@ -1643,7 +1789,28 @@ const CHART_PROTECTED_LAYOUTS = new Set([
       data: s.data,
       html: s.html,
     }));
-    const critique = runDesignCritic(designSlides, theme.css_variables);
+    // Pre-fix: auto-fix slide data to prevent overflow before critique
+    let totalDataFixes = 0;
+    for (const slide of slides) {
+      const dataFixes = designAutoFixSlideData(slide.data, slide.layoutId);
+      if (dataFixes.length > 0) {
+        totalDataFixes += dataFixes.length;
+        console.log(`[Pipeline] Data auto-fix slide ${slide.layoutId}: ${dataFixes.join(', ')}`);
+        // Re-render the slide with fixed data
+        slide.html = renderSlide(slide.layoutId, slide.data);
+      }
+    }
+    if (totalDataFixes > 0) {
+      console.log(`[Pipeline] Applied ${totalDataFixes} data-level auto-fixes across all slides`);
+    }
+
+    const designSlides2 = slides.map((s, i) => ({
+      slideNumber: i + 1,
+      layoutId: s.layoutId,
+      data: s.data,
+      html: s.html,
+    }));
+    const critique = runDesignCritic(designSlides2, theme.css_variables);
 
     // Apply CSS fixes to slides that have issues
     for (const [slideIdx, cssFix] of Array.from(critique.cssFixesPerSlide.entries())) {

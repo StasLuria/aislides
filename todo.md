@@ -969,3 +969,25 @@
 - [x] Write round7.test.ts — 26 tests for kanban-board, LLM validation, new content_shapes
 - [x] All 1118 tests passing (39 test files)
 - [x] DataViz error found: parseNumericValue str.replace not a function — non-blocking, charts skipped gracefully
+
+## Round 8: DataViz Fix + Design Critique + Org-Chart + Prompt Fix
+- [x] Diagnose DataViz parseNumericValue str.replace bug — already fixed with type-guard (string|number|null|undefined handling)
+- [x] Verified type-guards for numeric values in DataViz pipeline (parseNumericValue handles all types)
+- [x] Audit Design Critique scoring — identified common fixable errors (contrast, font sizing, truncation)
+- [x] Improve autoFixSlideData: smart truncation by sentence boundary (not character cutoff)
+- [x] Improve autoFixSlideData: lower threshold from 1.5x to 1.3x for earlier intervention
+- [x] Add auto-fix: two-column rebalancing when columns differ by 3+ items
+- [x] Add auto-fix: SWOT quadrant items limited to 4 per quadrant
+- [x] Add auto-fix: org-chart members (max 9) and departments (max 5)
+- [x] Add auto-fix: table cell truncation (max 55 chars)
+- [x] Add auto-fix: quote truncation (max 240 chars)
+- [x] Add auto-fix: cards (max 6), checklist items (max 8), kanban cards per column (max 4)
+- [x] Add auto-fix: comparison features (max 6 rows)
+- [x] Org-chart template already fully implemented: templateEngine, layout agent, autoDensity, buildFallbackData, QA, Composer
+- [x] Fix critical bug: postProcessOutlineShapes received short chat title instead of full user prompt
+- [x] Root cause: generateSessionTitle() overwrote session.topic with 5-7 word title
+- [x] Fix: generateSessionTitle now saves title to metadata.displayTitle, preserving original prompt in session.topic
+- [x] Fix: chat routes updated to use metadata.displayTitle for display, topic for pipeline
+- [x] Verified: test generation with full prompt → all 4 specialized shapes correctly assigned (org_structure, swot_quadrants, checklist_items, kanban_board)
+- [x] Write 18 new vitest tests for autoFixSlideData (smart truncation, limits, rebalancing, SWOT, org-chart)
+- [x] All 1152 tests passing (40 test files)

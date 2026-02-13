@@ -195,6 +195,9 @@ const LAYOUT_REQUIREMENTS: Record<string, LayoutRequirement> = {
   "kanban-board": {
     requiredFields: ["title", "columns"],
   },
+  "org-chart": {
+    requiredFields: ["title", "root", "children"],
+  },
 };
 
 // ═══════════════════════════════════════════════════════
@@ -583,7 +586,53 @@ export function validateSlideData(
     }
   }
 
-  // 17. Check chart data
+  // 17. Check org-chart structure
+  if (layoutName === "org-chart") {
+    if (data.root) {
+      if (!data.root.name || (typeof data.root.name === "string" && data.root.name.trim().length === 0)) {
+        issues.push({ field: "root.name", severity: "error", message: "Root node must have a name." });
+      }
+    }
+    if (data.children) {
+      if (!Array.isArray(data.children)) {
+        issues.push({ field: "children", severity: "error", message: "children must be an array" });
+      } else {
+        if (data.children.length < 2) {
+          issues.push({
+            field: "children",
+            severity: "error",
+            message: `Need at least 2 children, got ${data.children.length}.`,
+          });
+        }
+        if (data.children.length > 6) {
+          issues.push({
+            field: "children",
+            severity: "warning",
+            message: `${data.children.length} children may overflow. Keep to 3-6.`,
+          });
+        }
+        for (let i = 0; i < data.children.length; i++) {
+          const child = data.children[i];
+          if (!child.name || (typeof child.name === "string" && child.name.trim().length === 0)) {
+            issues.push({
+              field: `children[${i}].name`,
+              severity: "error",
+              message: `Child ${i + 1} has empty name.`,
+            });
+          }
+          if (child.members && Array.isArray(child.members) && child.members.length > 3) {
+            issues.push({
+              field: `children[${i}].members`,
+              severity: "warning",
+              message: `Child "${child.name}" has ${child.members.length} members. Max 3 recommended.`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 18. Check chart data
   if (layoutName === "chart-slide" && data.chartData) {
     if (!data.chartData.labels || !Array.isArray(data.chartData.labels) || data.chartData.labels.length === 0) {
       issues.push({ field: "chartData.labels", severity: "error", message: "Chart must have labels array." });
@@ -815,6 +864,30 @@ export function autoFixSlideData(
       });
       return { ...col, cards: fixedCards };
     });
+  }
+
+  // Fix 13: Fix org-chart — ensure children have required fields, limit members
+  if (layoutName === "org-chart") {
+    if (result.root && typeof result.root === "object") {
+      if (!result.root.name) { result.root.name = result.title || "Root"; fixed = true; }
+      if (!result.root.role) { result.root.role = ""; fixed = true; }
+    }
+    if (result.children && Array.isArray(result.children)) {
+      result.children = result.children.slice(0, 6).map((child: any) => {
+        let childFixed = false;
+        const newChild = { ...child };
+        if (!newChild.avatar) { newChild.avatar = "\ud83d\udc64"; childFixed = true; }
+        if (!newChild.role) { newChild.role = ""; childFixed = true; }
+        if (!newChild.detail) { newChild.detail = ""; childFixed = true; }
+        if (!newChild.members) { newChild.members = []; childFixed = true; }
+        if (Array.isArray(newChild.members) && newChild.members.length > 3) {
+          newChild.members = newChild.members.slice(0, 3);
+          childFixed = true;
+        }
+        if (childFixed) fixed = true;
+        return newChild;
+      });
+    }
   }
 
   return { data: result, fixed };

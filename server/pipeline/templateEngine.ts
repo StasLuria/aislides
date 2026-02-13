@@ -1553,6 +1553,57 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <span style="font-size: 10px; color: var(--text-body-color, #9ca3af);">{{ slideNumber | default('') }}</span>
   </div>
 </div>`,
+
+  "org-chart": `<div style="display: flex; flex-direction: column; height: 100%; padding: 40px 48px 28px; overflow: hidden;">
+  <h2 style="color: var(--text-heading-color, #111827); font-size: 28px; font-weight: 700; margin: 0 0 4px 0; line-height: 1.2; text-align: center;">{{ title }}</h2>
+  {% if description %}
+  <p style="color: var(--text-body-color, #6b7280); font-size: 13px; margin: 0 0 20px 0; line-height: 1.4; text-align: center;">{{ description }}</p>
+  {% endif %}
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; gap: 0;">
+    <!-- Root node -->
+    <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 0;">
+      <div style="background: linear-gradient(135deg, var(--primary-accent-color, #6366f1), var(--secondary-accent-color, #8b5cf6)); border-radius: 12px; padding: 14px 28px; text-align: center; box-shadow: 0 4px 16px rgba(99,102,241,0.25); min-width: 180px; max-width: 320px;">
+        <div style="color: #ffffff; font-size: 16px; font-weight: 700; line-height: 1.3;">{{ root.name }}</div>
+        {% if root.role %}<div style="color: rgba(255,255,255,0.8); font-size: 11px; margin-top: 2px;">{{ root.role }}</div>{% endif %}
+      </div>
+      <!-- Connector line down from root -->
+      <div style="width: 2px; height: 20px; background: var(--primary-accent-color, #6366f1); opacity: 0.4;"></div>
+    </div>
+    <!-- Horizontal connector bar -->
+    {% if children.length > 1 %}
+    <div style="width: {{ children.length > 4 ? '90%' : '70%' }}; height: 2px; background: var(--primary-accent-color, #6366f1); opacity: 0.25; margin-bottom: 0;"></div>
+    {% endif %}
+    <!-- Children row -->
+    <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; width: 100%;">
+      {% for child in children %}
+      <div style="display: flex; flex-direction: column; align-items: center; flex: 0 1 auto; min-width: 140px; max-width: 220px;">
+        <!-- Connector line down to child -->
+        <div style="width: 2px; height: 16px; background: var(--primary-accent-color, #6366f1); opacity: 0.3;"></div>
+        <div style="background: var(--card-background-color, #ffffff); border: 1.5px solid color-mix(in srgb, var(--primary-accent-color, #6366f1) 20%, transparent); border-radius: 10px; padding: 12px 16px; text-align: center; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+          {% if child.avatar %}
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #6366f1) 12%, transparent); display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 16px;">{{ child.avatar }}</div>
+          {% endif %}
+          <div style="color: var(--text-heading-color, #111827); font-size: 13px; font-weight: 600; line-height: 1.3;">{{ child.name }}</div>
+          {% if child.role %}<div style="color: var(--text-body-color, #6b7280); font-size: 10px; margin-top: 2px; line-height: 1.3;">{{ child.role }}</div>{% endif %}
+          {% if child.detail %}<div style="color: var(--primary-accent-color, #6366f1); font-size: 9px; margin-top: 4px; font-weight: 500;">{{ child.detail }}</div>{% endif %}
+        </div>
+        <!-- Sub-children (grandchildren) -->
+        {% if child.members and child.members.length > 0 %}
+        <div style="width: 1.5px; height: 12px; background: var(--primary-accent-color, #6366f1); opacity: 0.2;"></div>
+        <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+          {% for member in child.members %}
+          <div style="background: color-mix(in srgb, var(--primary-accent-color, #6366f1) 5%, var(--card-background-color, #ffffff)); border: 1px solid color-mix(in srgb, var(--primary-accent-color, #6366f1) 10%, transparent); border-radius: 6px; padding: 6px 10px; text-align: center;">
+            <span style="color: var(--text-heading-color, #374151); font-size: 10px; font-weight: 500;">{{ member.name }}</span>
+            {% if member.role %}<span style="color: var(--text-body-color, #9ca3af); font-size: 9px; margin-left: 4px;">{{ member.role }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>`,
 };
 
 // ═══════════════════════════════════════════════════════

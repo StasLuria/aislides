@@ -169,19 +169,22 @@ export function checkContrast(
   if (headingColor && bgColor) {
     const ratio = contrastRatio(headingColor, bgColor);
     if (ratio < 3) {
+      const fixedColor = findReadableColor(headingColor, bgColor, 3);
       issues.push({
         slideNumber,
         category: "contrast",
         severity: "error",
         message: `Heading text contrast too low (${ratio.toFixed(1)}:1). WCAG AA requires >= 3:1 for large text.`,
-        fix: `/* Increase heading contrast */ h1, h2 { color: #000000 !important; }`,
+        fix: `/* Smart contrast fix for headings */ h1, h2, .slide-title { color: ${fixedColor} !important; }`,
       });
     } else if (ratio < 4.5) {
+      const fixedColor = findReadableColor(headingColor, bgColor, 4.5);
       issues.push({
         slideNumber,
         category: "contrast",
         severity: "warning",
         message: `Heading text contrast marginal (${ratio.toFixed(1)}:1). Consider increasing for better readability.`,
+        fix: `/* Improve heading contrast */ h1, h2, .slide-title { color: ${fixedColor} !important; }`,
       });
     }
   }
@@ -190,12 +193,13 @@ export function checkContrast(
   if (bodyColor && bgColor) {
     const ratio = contrastRatio(bodyColor, bgColor);
     if (ratio < 4.5) {
+      const fixedColor = findReadableColor(bodyColor, bgColor, 4.5);
       issues.push({
         slideNumber,
         category: "contrast",
         severity: "error",
         message: `Body text contrast too low (${ratio.toFixed(1)}:1). WCAG AA requires >= 4.5:1 for normal text.`,
-        fix: `/* Increase body text contrast */ p, span, li { color: #1f2937 !important; }`,
+        fix: `/* Smart contrast fix for body text */ p, span, li, .description { color: ${fixedColor} !important; }`,
       });
     }
   }
@@ -245,6 +249,20 @@ const TEXT_LIMITS: Record<string, { title: number; description: number; bullet_t
   "financial-formula": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
   "big-statement": { title: 80, description: 200, bullet_title: 60, bullet_desc: 150 },
   "verdict-analysis": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "vertical-timeline": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "comparison-table": { title: 60, description: 150, bullet_title: 30, bullet_desc: 80 },
+  "quote-highlight": { title: 80, description: 300, bullet_title: 60, bullet_desc: 150 },
+  "kanban-board": { title: 60, description: 120, bullet_title: 30, bullet_desc: 80 },
+  "org-chart": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "highlight-stats": { title: 70, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "waterfall-chart": { title: 70, description: 200, bullet_title: 60, bullet_desc: 150 },
+  "swot-analysis": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "funnel": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "roadmap": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "pyramid": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "matrix-2x2": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
+  "pros-cons": { title: 60, description: 150, bullet_title: 40, bullet_desc: 120 },
+  "checklist": { title: 60, description: 150, bullet_title: 40, bullet_desc: 100 },
 };
 
 const DEFAULT_LIMITS = { title: 70, description: 200, bullet_title: 50, bullet_desc: 120 };
@@ -960,6 +978,236 @@ export function checkTextConciseness(
 // ═══════════════════════════════════════════════════════
 // AUTO-FIX ENGINE
 // ═══════════════════════════════════════════════════════
+
+/**
+ * Smart truncation: cut text at the last sentence boundary before maxLen.
+ * Falls back to word boundary if no sentence fits.
+ */
+function smartTruncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+
+  // Try to cut at sentence boundary (. ! ? followed by space or end)
+  const sentenceEnd = /[.!?](?:\s|$)/g;
+  let lastGoodPos = -1;
+  let match;
+  while ((match = sentenceEnd.exec(text)) !== null) {
+    if (match.index + 1 <= maxLen) {
+      lastGoodPos = match.index + 1; // include the punctuation
+    } else {
+      break;
+    }
+  }
+  if (lastGoodPos > maxLen * 0.4) {
+    return text.substring(0, lastGoodPos).trim();
+  }
+
+  // Fall back to word boundary
+  const wordBoundary = text.lastIndexOf(' ', maxLen);
+  if (wordBoundary > maxLen * 0.4) {
+    return text.substring(0, wordBoundary).trim() + '...';
+  }
+
+  // Hard cut as last resort
+  return text.substring(0, maxLen) + '...';
+}
+
+/**
+ * Auto-fix slide data to prevent overflow and improve visual quality.
+ * Modifies data in-place and returns the list of fixes applied.
+ * 
+ * Enhanced v2: smart sentence-boundary truncation, column rebalancing,
+ * table cell truncation, and SWOT/org-chart item limits.
+ */
+export function autoFixSlideData(
+  data: Record<string, any>,
+  layoutId: string,
+): string[] {
+  const fixes: string[] = [];
+  const limits = TEXT_LIMITS[layoutId] || DEFAULT_LIMITS;
+
+  // 1. Smart-truncate overly long titles (sentence-aware)
+  if (data.title && typeof data.title === 'string' && data.title.length > limits.title * 1.3) {
+    const original = data.title;
+    data.title = smartTruncate(data.title, limits.title);
+    if (data.title !== original) {
+      fixes.push(`Title smart-truncated: ${original.length}→${data.title.length} chars`);
+    }
+  }
+
+  // 2. Smart-truncate overly long descriptions
+  if (data.description && typeof data.description === 'string' && data.description.length > limits.description * 1.3) {
+    const original = data.description;
+    data.description = smartTruncate(data.description, limits.description);
+    if (data.description !== original) {
+      fixes.push(`Description smart-truncated to ${data.description.length} chars`);
+    }
+  }
+
+  // 3. Limit and smart-truncate bullet descriptions
+  if (data.bullets && Array.isArray(data.bullets)) {
+    for (let i = 0; i < data.bullets.length; i++) {
+      const b = data.bullets[i];
+      if (typeof b === 'object' && b.description && b.description.length > limits.bullet_desc * 1.3) {
+        b.description = smartTruncate(b.description, limits.bullet_desc);
+        fixes.push(`Bullet ${i + 1} description smart-truncated`);
+      }
+      if (typeof b === 'object' && b.title && b.title.length > limits.bullet_title * 1.3) {
+        b.title = smartTruncate(b.title, limits.bullet_title);
+        fixes.push(`Bullet ${i + 1} title smart-truncated`);
+      }
+    }
+    // Limit max bullets for non-list layouts
+    const maxBullets = layoutId === 'text-slide' ? 8 : 6;
+    if (data.bullets.length > maxBullets) {
+      data.bullets = data.bullets.slice(0, maxBullets);
+      fixes.push(`Bullets limited to ${maxBullets} items`);
+    }
+  }
+
+  // 4. Limit metrics count (icons-numbers, highlight-stats)
+  if (data.metrics && Array.isArray(data.metrics) && data.metrics.length > 6) {
+    data.metrics = data.metrics.slice(0, 6);
+    fixes.push('Metrics limited to 6 items');
+  }
+
+  // 5. Limit steps count (process-steps)
+  if (data.steps && Array.isArray(data.steps) && data.steps.length > 7) {
+    data.steps = data.steps.slice(0, 7);
+    fixes.push('Steps limited to 7 items');
+  }
+
+  // 6. Limit events count (timeline)
+  if (data.events && Array.isArray(data.events) && data.events.length > 8) {
+    data.events = data.events.slice(0, 8);
+    fixes.push('Events limited to 8 items');
+  }
+
+  // 7. Limit table rows and truncate long cells
+  if (data.rows && Array.isArray(data.rows)) {
+    if (data.rows.length > 8) {
+      data.rows = data.rows.slice(0, 8);
+      fixes.push('Table rows limited to 8');
+    }
+    // Truncate long table cells
+    for (let r = 0; r < data.rows.length; r++) {
+      if (Array.isArray(data.rows[r])) {
+        for (let c = 0; c < data.rows[r].length; c++) {
+          const cell = String(data.rows[r][c] || '');
+          if (cell.length > 60) {
+            data.rows[r][c] = smartTruncate(cell, 55);
+            fixes.push(`Table cell [${r + 1},${c + 1}] truncated`);
+          }
+        }
+      }
+    }
+  }
+
+  // 8. Limit kanban cards per column
+  if (data.columns && Array.isArray(data.columns)) {
+    for (const col of data.columns) {
+      if (col.cards && Array.isArray(col.cards) && col.cards.length > 4) {
+        col.cards = col.cards.slice(0, 4);
+        fixes.push(`Kanban column "${col.title}" cards limited to 4`);
+      }
+    }
+  }
+
+  // 9. Ensure font-size consistency hints for dense layouts
+  if (layoutId === 'comparison-table' && data.features && Array.isArray(data.features) && data.features.length > 6) {
+    data.features = data.features.slice(0, 6);
+    fixes.push('Comparison features limited to 6 rows');
+  }
+
+  // 10. Rebalance two-column layouts
+  if (layoutId === 'two-column') {
+    const leftBullets = data.leftColumn?.bullets;
+    const rightBullets = data.rightColumn?.bullets;
+    if (Array.isArray(leftBullets) && Array.isArray(rightBullets)) {
+      const total = leftBullets.length + rightBullets.length;
+      const diff = Math.abs(leftBullets.length - rightBullets.length);
+      if (diff >= 3 && total >= 4) {
+        // Move items from the longer column to the shorter one
+        const allBullets = [...leftBullets, ...rightBullets];
+        const half = Math.ceil(allBullets.length / 2);
+        data.leftColumn.bullets = allBullets.slice(0, half);
+        data.rightColumn.bullets = allBullets.slice(half);
+        fixes.push(`Two-column rebalanced: ${leftBullets.length}/${rightBullets.length} → ${half}/${allBullets.length - half}`);
+      }
+    }
+  }
+
+  // 11. SWOT quadrant item limits (max 4 items per quadrant)
+  if (layoutId === 'swot-analysis') {
+    const quadrants = ['strengths', 'weaknesses', 'opportunities', 'threats'];
+    for (const q of quadrants) {
+      if (data[q] && Array.isArray(data[q]) && data[q].length > 4) {
+        data[q] = data[q].slice(0, 4);
+        fixes.push(`SWOT ${q} limited to 4 items`);
+      }
+    }
+  }
+
+  // 12. Org-chart depth/breadth limits
+  if (layoutId === 'org-chart') {
+    if (data.members && Array.isArray(data.members) && data.members.length > 9) {
+      data.members = data.members.slice(0, 9);
+      fixes.push('Org-chart members limited to 9');
+    }
+    if (data.departments && Array.isArray(data.departments) && data.departments.length > 5) {
+      data.departments = data.departments.slice(0, 5);
+      fixes.push('Org-chart departments limited to 5');
+    }
+  }
+
+  // 13. Quote text truncation
+  if (data.quote && typeof data.quote === 'string' && data.quote.length > 250) {
+    data.quote = smartTruncate(data.quote, 240);
+    fixes.push(`Quote smart-truncated to ${data.quote.length} chars`);
+  }
+
+  // 14. Limit cards count (card-grid)
+  if (data.cards && Array.isArray(data.cards) && data.cards.length > 6) {
+    data.cards = data.cards.slice(0, 6);
+    fixes.push('Cards limited to 6 items');
+  }
+
+  // 15. Limit checklist items
+  if (data.items && Array.isArray(data.items) && layoutId === 'checklist' && data.items.length > 8) {
+    data.items = data.items.slice(0, 8);
+    fixes.push('Checklist items limited to 8');
+  }
+
+  return fixes;
+}
+
+/**
+ * Find the nearest color that meets WCAG contrast ratio against a background.
+ * Adjusts lightness while preserving hue.
+ */
+export function findReadableColor(
+  fg: { r: number; g: number; b: number },
+  bg: { r: number; g: number; b: number },
+  targetRatio: number = 4.5,
+): string {
+  const bgLum = relativeLuminance(bg.r, bg.g, bg.b);
+  const isDarkBg = bgLum < 0.5;
+
+  // Try adjusting the foreground color in steps
+  for (let step = 0; step <= 20; step++) {
+    const factor = isDarkBg ? 1 + step * 0.1 : 1 - step * 0.05;
+    const adjusted = {
+      r: Math.min(255, Math.max(0, Math.round(fg.r * factor))),
+      g: Math.min(255, Math.max(0, Math.round(fg.g * factor))),
+      b: Math.min(255, Math.max(0, Math.round(fg.b * factor))),
+    };
+    if (contrastRatio(adjusted, bg) >= targetRatio) {
+      return `#${adjusted.r.toString(16).padStart(2, '0')}${adjusted.g.toString(16).padStart(2, '0')}${adjusted.b.toString(16).padStart(2, '0')}`;
+    }
+  }
+
+  // Fallback: use black or white
+  return isDarkBg ? "#ffffff" : "#111827";
+}
 
 /**
  * Generate CSS fixes for detected issues.

@@ -110,8 +110,22 @@ export function extractFromText(text: string): ChartDataPoint[] | null {
 /**
  * Parse a string value into a number, handling units and formatting.
  */
-export function parseNumericValue(str: string): number | null {
-  if (!str) return null;
+export function parseNumericValue(str: string | number | null | undefined): number | null {
+  if (str === null || str === undefined) return null;
+  
+  // If already a number, return directly
+  if (typeof str === 'number') {
+    return isNaN(str) ? null : str;
+  }
+  
+  // Ensure string type
+  if (typeof str !== 'string') {
+    const coerced = String(str);
+    const num = parseFloat(coerced);
+    return isNaN(num) ? null : num;
+  }
+  
+  if (str.trim().length === 0) return null;
   
   const cleaned = str.replace(/\s/g, "").replace(/,/g, ".");
 
@@ -316,7 +330,7 @@ ${slide.text}
 Key message: ${slide.key_message || "N/A"}
 
 Data points provided:
-${slide.data_points.map(dp => `- ${dp.label}: ${dp.value} ${dp.unit}`).join("\n") || "None"}
+${(slide.data_points || []).map(dp => `- ${dp.label}: ${dp.value} ${dp.unit || ''}`).join("\n") || "None"}
 
 Extract chartable data as JSON.`;
 

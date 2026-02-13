@@ -218,9 +218,14 @@ async function generateSessionTitle(
     const contentStr = typeof rawContent === "string" ? rawContent : "";
     const title = contentStr.trim().replace(/^["']|["']$/g, "");
     if (title && title.length > 0 && title.length < 100) {
-      await updateChatSession(sessionId, { topic: title });
+      // Save title in metadata, NOT in topic (topic keeps the original user prompt for the pipeline)
+      const currentSession = await getChatSession(sessionId);
+      const currentMeta = (currentSession?.metadata as Record<string, any>) || {};
+      await updateChatSession(sessionId, {
+        metadata: { ...currentMeta, displayTitle: title },
+      });
       writer({ type: "title_update", data: title });
-      console.log(`[ChatOrchestrator] Generated title for ${sessionId}: "${title}"`);
+      console.log(`[ChatOrchestrator] Generated title for ${sessionId}: "${title}" (topic preserved as original prompt)`);
     }
   } catch (err: any) {
     console.error("[ChatOrchestrator] Title generation error:", err.message);

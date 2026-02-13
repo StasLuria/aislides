@@ -19,6 +19,7 @@ import {
   checkConsistency,
   generateCssFixes,
   runDesignCritic,
+  autoFixSlideData,
   type SlideDesignData,
   type DesignIssue,
 } from "./designCriticAgent";
@@ -694,9 +695,249 @@ describe("runDesignCritic", () => {
       makeSlide(6, "final-slide"),
     ];
 
-    const result = runDesignCritic(slides, themeCss);
-
+     const result = runDesignCritic(slides, themeCss);
     // Well-designed presentation should score 7+
     expect(result.overallScore).toBeGreaterThanOrEqual(7);
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// AUTO-FIX ENGINE (enhanced v2)
+// ═══════════════════════════════════════════════════════
+
+describe("autoFixSlideData", () => {
+  it("smart-truncates title that exceeds 1.3x limit", () => {
+    const longTitle = "A".repeat(200);
+    const data = { title: longTitle };
+    const fixes = autoFixSlideData(data, "text-slide");
+    // text-slide title limit = 80, trigger at 80*1.3=104
+    expect(fixes.length).toBeGreaterThan(0);
+    expect(data.title.length).toBeLessThanOrEqual(84); // 80 + "..."
+    expect(fixes.some(f => f.includes("smart-truncated"))).toBe(true);
+  });
+
+  it("does not truncate title under 1.3x limit", () => {
+    const data = { title: "Short title that fits" };
+    const fixes = autoFixSlideData(data, "text-slide");
+    expect(data.title).toBe("Short title that fits");
+  });
+
+  it("limits bullets to max count for non-text layouts", () => {
+    const data = {
+      bullets: Array.from({ length: 10 }, (_, i) => ({
+        title: `Bullet ${i + 1}`,
+        description: `Description ${i + 1}`,
+      })),
+    };
+    const fixes = autoFixSlideData(data, "two-column");
+    expect(data.bullets.length).toBeLessThanOrEqual(6);
+    expect(fixes.some(f => f.includes("Bullets limited"))).toBe(true);
+  });
+
+  it("allows up to 8 bullets for text-slide", () => {
+    const data = {
+      bullets: Array.from({ length: 8 }, (_, i) => ({
+        title: `Bullet ${i + 1}`,
+        description: "Desc",
+      })),
+    };
+    const fixes = autoFixSlideData(data, "text-slide");
+    expect(data.bullets.length).toBe(8);
+  });
+
+  it("limits metrics to 6", () => {
+    const data = {
+      metrics: Array.from({ length: 9 }, (_, i) => ({
+        value: `${(i + 1) * 10}%`,
+        label: `Metric ${i + 1}`,
+      })),
+    };
+    const fixes = autoFixSlideData(data, "icons-numbers");
+    expect(data.metrics.length).toBe(6);
+    expect(fixes).toContain("Metrics limited to 6 items");
+  });
+
+  it("limits steps to 7", () => {
+    const data = {
+      steps: Array.from({ length: 10 }, (_, i) => ({
+        number: i + 1,
+        title: `Step ${i + 1}`,
+        description: "Description",
+      })),
+    };
+    const fixes = autoFixSlideData(data, "process-steps");
+    expect(data.steps.length).toBe(7);
+    expect(fixes).toContain("Steps limited to 7 items");
+  });
+
+  it("limits events to 8", () => {
+    const data = {
+      events: Array.from({ length: 12 }, (_, i) => ({
+        date: `202${i}`,
+        title: `Event ${i + 1}`,
+      })),
+    };
+    const fixes = autoFixSlideData(data, "timeline");
+    expect(data.events.length).toBe(8);
+    expect(fixes).toContain("Events limited to 8 items");
+  });
+
+  it("limits table rows to 8 and truncates long cells", () => {
+    const data = {
+      rows: [
+        ["Short", "A".repeat(80), "OK"],
+        ...Array.from({ length: 9 }, () => ["a", "b", "c"]),
+      ],
+    };
+    const fixes = autoFixSlideData(data, "table-slide");
+    expect(data.rows.length).toBe(8);
+    expect(data.rows[0][1].length).toBeLessThanOrEqual(60);
+    expect(fixes.some(f => f.includes("Table rows limited"))).toBe(true);
+    expect(fixes.some(f => f.includes("Table cell"))).toBe(true);
+  });
+
+  it("limits kanban cards per column to 4", () => {
+    const data = {
+      columns: [
+        {
+          title: "To Do",
+          cards: Array.from({ length: 7 }, (_, i) => ({ title: `Card ${i + 1}` })),
+        },
+        {
+          title: "Done",
+          cards: [{ title: "Card 1" }],
+        },
+      ],
+    };
+    const fixes = autoFixSlideData(data, "kanban-board");
+    expect(data.columns[0].cards.length).toBe(4);
+    expect(data.columns[1].cards.length).toBe(1);
+    expect(fixes.some(f => f.includes("Kanban column"))).toBe(true);
+  });
+
+  it("limits comparison features to 6", () => {
+    const data = {
+      features: Array.from({ length: 10 }, (_, i) => ({
+        name: `Feature ${i + 1}`,
+        optionA: "Yes",
+        optionB: "No",
+      })),
+    };
+    const fixes = autoFixSlideData(data, "comparison-table");
+    expect(data.features.length).toBe(6);
+    expect(fixes).toContain("Comparison features limited to 6 rows");
+  });
+
+  it("rebalances two-column layout when columns are very uneven", () => {
+    const data = {
+      leftColumn: {
+        bullets: [
+          { title: "A", description: "a" },
+          { title: "B", description: "b" },
+          { title: "C", description: "c" },
+          { title: "D", description: "d" },
+          { title: "E", description: "e" },
+        ],
+      },
+      rightColumn: {
+        bullets: [
+          { title: "X", description: "x" },
+        ],
+      },
+    };
+    const fixes = autoFixSlideData(data, "two-column");
+    expect(fixes.some(f => f.includes("rebalanced"))).toBe(true);
+    const leftLen = data.leftColumn.bullets.length;
+    const rightLen = data.rightColumn.bullets.length;
+    expect(Math.abs(leftLen - rightLen)).toBeLessThanOrEqual(1);
+  });
+
+  it("does not rebalance two-column when columns are roughly even", () => {
+    const data = {
+      leftColumn: {
+        bullets: [
+          { title: "A", description: "a" },
+          { title: "B", description: "b" },
+          { title: "C", description: "c" },
+        ],
+      },
+      rightColumn: {
+        bullets: [
+          { title: "X", description: "x" },
+          { title: "Y", description: "y" },
+        ],
+      },
+    };
+    const fixes = autoFixSlideData(data, "two-column");
+    expect(fixes.some(f => f.includes("rebalanced"))).toBe(false);
+  });
+
+  it("limits SWOT quadrant items to 4", () => {
+    const data = {
+      strengths: ["s1", "s2", "s3", "s4", "s5", "s6"],
+      weaknesses: ["w1", "w2"],
+      opportunities: ["o1", "o2", "o3", "o4", "o5"],
+      threats: ["t1"],
+    };
+    const fixes = autoFixSlideData(data, "swot-analysis");
+    expect(data.strengths.length).toBe(4);
+    expect(data.weaknesses.length).toBe(2);
+    expect(data.opportunities.length).toBe(4);
+    expect(data.threats.length).toBe(1);
+    expect(fixes.some(f => f.includes("SWOT strengths"))).toBe(true);
+    expect(fixes.some(f => f.includes("SWOT opportunities"))).toBe(true);
+  });
+
+  it("limits org-chart members and departments", () => {
+    const data = {
+      members: Array.from({ length: 12 }, (_, i) => ({ name: `Member ${i + 1}` })),
+      departments: Array.from({ length: 7 }, (_, i) => ({ name: `Dept ${i + 1}` })),
+    };
+    const fixes = autoFixSlideData(data, "org-chart");
+    expect(data.members.length).toBe(9);
+    expect(data.departments.length).toBe(5);
+    expect(fixes.some(f => f.includes("Org-chart members"))).toBe(true);
+    expect(fixes.some(f => f.includes("Org-chart departments"))).toBe(true);
+  });
+
+  it("truncates long quotes", () => {
+    const data = { quote: "A".repeat(300) };
+    const fixes = autoFixSlideData(data, "quote-highlight");
+    expect(data.quote.length).toBeLessThanOrEqual(244);
+    expect(fixes.some(f => f.includes("Quote smart-truncated"))).toBe(true);
+  });
+
+  it("limits cards to 6", () => {
+    const data = {
+      cards: Array.from({ length: 9 }, (_, i) => ({ title: `Card ${i + 1}` })),
+    };
+    const fixes = autoFixSlideData(data, "card-grid");
+    expect(data.cards.length).toBe(6);
+    expect(fixes).toContain("Cards limited to 6 items");
+  });
+
+  it("limits checklist items to 8", () => {
+    const data = {
+      items: Array.from({ length: 12 }, (_, i) => ({
+        text: `Item ${i + 1}`,
+        checked: i < 5,
+      })),
+    };
+    const fixes = autoFixSlideData(data, "checklist");
+    expect(data.items.length).toBe(8);
+    expect(fixes).toContain("Checklist items limited to 8");
+  });
+
+  it("returns empty array when no fixes needed", () => {
+    const data = {
+      title: "Short title",
+      description: "Short description",
+      bullets: [
+        { title: "A", description: "Brief" },
+        { title: "B", description: "Brief" },
+      ],
+    };
+    const fixes = autoFixSlideData(data, "text-slide");
+    expect(fixes).toEqual([]);
   });
 });

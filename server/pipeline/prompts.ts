@@ -82,6 +82,7 @@ Available content_shapes:
 13. "kanban_board" — 3-5 columns of task cards with status, priority, and assignees. Best for project status, sprint boards, implementation plans.
 14. "checklist_items" — 4-8 items with done/not-done status. Best for readiness checks, requirements, action items.
 15. "swot_quadrants" — Four quadrants: strengths, weaknesses, opportunities, threats. Best for strategic analysis.
+16. "org_structure" — Hierarchical org chart with root node and children. Best for team structure, company hierarchy, department organization.
 
 CONTENT SHAPE SELECTION RULES:
 - When the user explicitly mentions "канбан", "kanban", "доска задач", "статусы задач" → MUST use "kanban_board"
@@ -90,6 +91,7 @@ CONTENT SHAPE SELECTION RULES:
 - When the user mentions "цитата", "мнение эксперта", "quote" → MUST use "quote_highlight"
 - When the user mentions "чеклист", "готовность", "checklist" → MUST use "checklist_items"
 - When the user mentions "SWOT", "стратегический анализ" → MUST use "swot_quadrants"
+- When the user mentions "команда", "структура компании", "оргструктура", "org chart", "иерархия" → MUST use "org_structure"
 
 DIVERSITY RULE: No content_shape may appear more than 2 times. Use at least 5 different shapes in a 10-slide presentation.
 NEVER default everything to "bullet_points" — this is the #1 cause of boring presentations.
@@ -188,6 +190,8 @@ The content_shape field determines what you put in structured_content. Follow th
 "checklist_items": Write 4-8 checklist items. {items: [{title: "Item title" (2-4 words), description: "1-2 sentences", done: true/false}]}. Mix of done and not-done items.
 
 "swot_quadrants": Write SWOT analysis. {strengths: {title: "Сильные стороны", items: ["item1", "item2"]}, weaknesses: {title: "Слабые стороны", items: [...]}, opportunities: {title: "Возможности", items: [...]}, threats: {title: "Угрозы", items: [...]}}. 3-5 items per quadrant.
+
+"org_structure": Write org hierarchy. {root: {name: "CEO name or title", role: "CEO / Генеральный директор"}, children: [{name: "Department/Person", role: "CTO / VP / Head of", avatar: "👨‍💻" (emoji), detail: "optional KPI or team size", members: [{name: "Team member", role: "Role"}]}]}. 3-6 children, 0-3 members per child.
 </content_shape_instructions>
 <text_conciseness_rules>
 - Card/bullet descriptions: MAX 2 sentences, 30 words each.
@@ -343,6 +347,7 @@ Your goal is to create a visually diverse, professional presentation where every
 39. comparison-table — Feature comparison table with colored header, check/cross/partial marks, and highlighted column. Best for product comparisons, vendor evaluations, feature matrices. Data: columns[] with name, highlight?. features[] with name, values[]. featureLabel?, footnote?.
 40. quote-highlight — Large quote with left accent border, author avatar, optional context box, and optional accent side panel with big number. Best for expert opinions, customer testimonials, key insights with supporting data. Data: quote, author, role?, source?, context?, accentPanel? with bigNumber, label, description.
 41. kanban-board — 3-5 columns with task cards, priority indicators (high/medium/low), tags, and assignees. Best for project status overviews, task management, implementation plans, sprint boards. Data: columns[] with title, color?, cards[] with title, description?, priority?, tags[]?, assignee?.
+42. org-chart — Hierarchical organization chart with root node (gradient accent), children nodes with avatars and roles, and optional grandchildren (members). Best for team structure, company hierarchy, department organization, reporting lines. Data: root {name, role?}, children[] with name, role?, avatar?, detail?, members[]? with name, role?.
 </available_layouts>
 <content_shape_to_layout_mapping>
 When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
@@ -361,9 +366,11 @@ When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
 - [SHAPE: checklist_items] → checklist (preferred) or card-grid
 - [SHAPE: swot_quadrants] → swot-analysis
 - [SHAPE: kanban_board] → kanban-board (MANDATORY — no alternatives)
+- [SHAPE: org_structure] → org-chart (MANDATORY — no alternatives)
 The shape tag is a STRONG hint — follow it unless the content clearly doesn't match.
 NEW TEMPLATES PRIORITY: When the shape tag matches one of these, the corresponding layout is MANDATORY:
 - [SHAPE: kanban_board] → kanban-board (ALWAYS)
+- [SHAPE: org_structure] → org-chart (ALWAYS)
 - [SHAPE: quote_highlight] → quote-highlight (ALWAYS, never quote-slide)
 - [SHAPE: timeline_events] with 4+ events → vertical-timeline (ALWAYS)
 - [SHAPE: comparison_two_sides] with 3+ features → comparison-table (ALWAYS)
@@ -397,6 +404,8 @@ NEW TEMPLATES PRIORITY: When the shape tag matches one of these, the correspondi
   * Slide with action items, requirements, or readiness checklist → checklist
   * Slide with project tasks organized by status/phase/team → kanban-board
   * Slide with implementation plan showing parallel workstreams → kanban-board
+  * Slide with team structure, org hierarchy, or reporting lines → org-chart
+  * Slide with department structure or company organization → org-chart
   * Slide with detailed chronological narrative (4-7 events with descriptions) → vertical-timeline
   * Slide with product/vendor/feature comparison matrix (3+ features, 2+ options) → comparison-table
   * Slide with expert quote + supporting data/context → quote-highlight (ALWAYS prefer over quote-slide)
@@ -636,6 +645,12 @@ IMPORTANT RULES:
 9. For checklist: done=true → green status, done=false → yellow status. Use hex colors.
 10. For swot-analysis: 4 quadrants are required (strengths, weaknesses, opportunities, threats). 3-5 items each.
 11. For kanban-board: columns[] with title + color (hex) + cards[]. Cards have priority ("high"/"medium"/"low"), tags[], assignee. Max 4 cards per column, 3-5 columns.
+12. For org-chart: root has name + role. children[] have name, role, avatar (emoji), detail (optional KPI). members[] are sub-team items. 3-6 children, 0-3 members per child.
+
+=== org_structure → org-chart ===
+INPUT structured_content: {"root": {"name": "Алексей Петров", "role": "CEO"}, "children": [{"name": "Технологии", "role": "CTO", "avatar": "👨‍💻", "detail": "15 человек", "members": [{"name": "Иван", "role": "Backend Lead"}, {"name": "Мария", "role": "Frontend Lead"}]}, {"name": "Продукт", "role": "CPO", "avatar": "📊", "detail": "8 человек"}]}
+OUTPUT: {"title": "Структура команды", "root": {"name": "Алексей Петров", "role": "CEO"}, "children": [{"name": "Технологии", "role": "CTO", "avatar": "👨‍💻", "detail": "15 человек", "members": [{"name": "Иван", "role": "Backend Lead"}, {"name": "Мария", "role": "Frontend Lead"}]}, {"name": "Продукт", "role": "CPO", "avatar": "📊", "detail": "8 человек", "members": []}]}
+RULE: root is the top-level person/entity. children[] are direct reports or departments. avatar is an emoji. members[] are sub-team members (optional). 3-6 children max.
 </structured_content_mapping>
 <layout_schemas>
 - title-slide: {title, description, presenterName, initials, presentationDate, image?}
@@ -678,6 +693,7 @@ IMPORTANT RULES:
 - comparison-table: {title, columns: [{name, highlight?: boolean}], features: [{name, values: [string]}], featureLabel?, footnote?} — Feature comparison table. values[] length MUST match columns[] length. highlight=true marks recommended column.
 - quote-highlight: {title, quote, author, role?, source?, context?, accentPanel?: {bigNumber, label, description}} — Large quote with accent border + optional side panel with big number.
 - kanban-board: {title, description?, columns: [{title, color? (hex), cards: [{title, description?, priority?: 'high'|'medium'|'low', tags?: [string], assignee?}]}]} — 3-5 columns with task cards. Max 4 cards per column. Priority adds colored left border.
+- org-chart: {title, description?, root: {name, role?}, children: [{name, role?, avatar? (emoji), detail?, members?: [{name, role?}]}]} — Hierarchical org chart. Root node with gradient accent. 3-6 children, 0-3 members per child.
 </layout_schemas>${feedbackSection}
 <output_format>
 Return a JSON object with the data fields required by the layout template.

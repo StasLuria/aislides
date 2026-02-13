@@ -82,7 +82,7 @@ router.get("/api/v1/chat/sessions", async (req: Request, res: Response) => {
     res.json(
       filtered.map((s) => ({
         session_id: s.sessionId,
-        topic: s.topic || "Новый чат",
+        topic: ((s.metadata as any)?.displayTitle) || s.topic || "Новый чат",
         phase: s.phase,
         mode: s.mode,
         presentation_id: s.presentationId,
@@ -108,7 +108,8 @@ router.get("/api/v1/chat/sessions/:id", async (req: Request, res: Response) => {
 
     res.json({
       session_id: session.sessionId,
-      topic: session.topic,
+      topic: ((session.metadata as any)?.displayTitle) || session.topic,
+      originalPrompt: session.topic,
       phase: session.phase,
       mode: session.mode,
       presentation_id: session.presentationId,
@@ -139,7 +140,11 @@ router.patch("/api/v1/chat/sessions/:id/title", async (req: Request, res: Respon
     }
 
     const { updateChatSession } = await import("./chatDb");
-    await updateChatSession(req.params.id, { topic: title.trim() });
+    // Save display title in metadata, keep original prompt in topic
+    const currentMeta = (session.metadata as Record<string, any>) || {};
+    await updateChatSession(req.params.id, {
+      metadata: { ...currentMeta, displayTitle: title.trim() },
+    });
     res.json({ success: true, topic: title.trim() });
   } catch (error: any) {
     console.error("[Chat API] Update title error:", error);

@@ -447,6 +447,21 @@ export function estimateContentHeight(
       return headerH + maxCardH + 40; // footer
     }
 
+    case "org-chart": {
+      const children = data.children || [];
+      // Root node: ~80px, connector: ~20px, horizontal bar: ~2px, children row: variable
+      let rootH = 80;
+      let childrenH = 120; // base child card height
+      let maxMembers = 0;
+      for (const child of children) {
+        const members = child?.members || [];
+        maxMembers = Math.max(maxMembers, members.length);
+      }
+      // Each member row adds ~28px
+      childrenH += maxMembers * 28;
+      return headerH + rootH + 20 + childrenH;
+    }
+
     default:
       // Unknown layout — assume it fits
       return AVAILABLE_HEIGHT;
