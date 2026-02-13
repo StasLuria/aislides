@@ -1,14 +1,12 @@
 /**
  * History Page — List of all generated presentations
- * Swiss Precision: Table-like layout with status indicators
- * Horizontal lines, monospaced data, clean information hierarchy
+ * Clean light theme with card-based layout
  */
 
 import { useEffect, useState, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
   Eye,
@@ -21,11 +19,10 @@ import {
   XCircle,
   AlertCircle,
   Layers,
+  FileText,
 } from "lucide-react";
 import api from "@/lib/api";
 import type { PresentationDetail, PresentationStatus } from "@/lib/api";
-
-const EMPTY_STATE_IMG = "https://private-us-east-1.manuscdn.com/sessionFile/KBKMulqyrRTtBkQ7DeuSuk/sandbox/fEV2zCiRVgoVEHmhF3i7FE-img-3_1770801491000_na1fn_ZW1wdHktc3RhdGUtaWxsdXN0cmF0aW9u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvS0JLTXVscXlyUlR0QmtRN0RldVN1ay9zYW5kYm94L2ZFVjJ6Q2lSVmdvVkVIbWhGM2k3RkUtaW1nLTNfMTc3MDgwMTQ5MTAwMF9uYTFmbl9aVzF3ZEhrdGMzUmhkR1V0YVd4c2RYTjBjbUYwYVc5dS5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=aEh9GJsl1B5QhxaJSEO4n4BBfkfng8KQkfdIkgpP3B5XJ9G6bHfUBhBFGo5AvoK3njkFcW2BpdN8FDRWUmn5NPJ2Rzh1A3tLfRc310bB1upPmpEau3FiTfPuIWvvkyi~vFsf1boUH99p4QcFbGXJkmglJZ6Kv8KhBPAfp-t95WvSuV9vhuKIcSO1qymVHHUGxoJO52ZV~iEKzOdxO55gMba-RrolPLRS-eQO2kUi-3EnBYUKySmTly8GiXrOoURjkzco1beU33UaAG3EzfQrspx-6B4WlERbi~UbMhz~6iezGmiBzBu~iB4nkN7eA8PEnW5fEDprm~~cKD55Cfq5Hw__";
 
 const STATUS_CONFIG: Record<
   PresentationStatus,
@@ -34,8 +31,8 @@ const STATUS_CONFIG: Record<
   completed: {
     label: "Готово",
     icon: CheckCircle2,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-400/10",
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-50",
   },
   processing: {
     label: "Генерация",
@@ -46,14 +43,14 @@ const STATUS_CONFIG: Record<
   pending: {
     label: "В очереди",
     icon: Clock,
-    color: "text-yellow-400",
-    bgColor: "bg-yellow-400/10",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
   },
   failed: {
     label: "Ошибка",
     icon: XCircle,
-    color: "text-destructive",
-    bgColor: "bg-destructive/10",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
   },
   cancelled: {
     label: "Отменено",
@@ -64,14 +61,14 @@ const STATUS_CONFIG: Record<
   awaiting_outline_approval: {
     label: "Структура",
     icon: Clock,
-    color: "text-amber-400",
-    bgColor: "bg-amber-400/10",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
   },
   awaiting_content_approval: {
     label: "Контент",
     icon: Clock,
-    color: "text-orange-400",
-    bgColor: "bg-orange-400/10",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
   },
   assembling: {
     label: "Сборка",
@@ -94,7 +91,6 @@ export default function History() {
       setTotal(items.length);
     } catch (error) {
       console.error("Failed to fetch presentations:", error);
-      // Show empty state instead of error for demo
     } finally {
       setIsLoading(false);
     }
@@ -143,23 +139,19 @@ export default function History() {
 
   const modeLabels: Record<string, string> = {
     batch: "Авто",
-    interactive: "Интерактивный",
-    design_only: "Только дизайн",
+    interactive: "Пошаговый",
+    design_only: "Дизайн",
   };
 
   return (
     <div className="container py-8 max-w-5xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="section-number mb-3">02 — ИСТОРИЯ</div>
-          <h1
-            className="text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Мои презентации
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {total > 0
               ? `${total} презентаций`
               : "Здесь появятся ваши презентации"}
@@ -168,24 +160,23 @@ export default function History() {
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={fetchPresentations}
             disabled={isLoading}
+            className="h-8 w-8"
           >
             <RefreshCw
               className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
             />
           </Button>
-          <Link href="/">
-            <Button size="sm" className="gap-2">
+          <Link href="/chat">
+            <Button size="sm" className="gap-1.5 h-8">
               <Plus className="w-3.5 h-3.5" />
               Создать
             </Button>
           </Link>
         </div>
       </div>
-
-      <div className="swiss-divider mb-6" />
 
       {/* Loading */}
       {isLoading && (
@@ -200,22 +191,16 @@ export default function History() {
       {/* Empty state */}
       {!isLoading && presentations.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20">
-          <img
-            src={EMPTY_STATE_IMG}
-            alt="No presentations"
-            className="w-32 h-32 opacity-40 mb-6"
-          />
-          <h3
-            className="text-lg font-medium mb-2"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <FileText className="w-8 h-8 text-primary/60" />
+          </div>
+          <h3 className="text-lg font-medium mb-2 text-foreground">
             Пока нет презентаций
           </h3>
           <p className="text-sm text-muted-foreground mb-6 text-center max-w-sm">
-            Создайте первую презентацию — опишите тему, и AI-агенты сделают
-            остальное
+            Создайте первую презентацию — опишите тему, и AI создаст контент и дизайн
           </p>
-          <Link href="/">
+          <Link href="/chat">
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
               Создать презентацию
@@ -226,106 +211,103 @@ export default function History() {
 
       {/* Presentations list */}
       {!isLoading && presentations.length > 0 && (
-        <ScrollArea className="h-[calc(100vh-16rem)]">
-          <div className="space-y-2">
-            {/* Table header */}
-            <div className="grid grid-cols-[1fr_100px_80px_80px_120px_80px] gap-4 px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-              <span>ID</span>
-              <span>Статус</span>
-              <span>Режим</span>
-              <span>Слайды</span>
-              <span>Дата</span>
-              <span className="text-right">Действия</span>
-            </div>
+        <div className="space-y-2">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_90px_80px_60px_110px_70px] gap-3 px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
+            <span>Презентация</span>
+            <span>Статус</span>
+            <span>Режим</span>
+            <span>Слайды</span>
+            <span>Дата</span>
+            <span className="text-right">Действия</span>
+          </div>
 
-            <div className="swiss-divider" />
+          {presentations.map((p) => {
+            const statusConfig = STATUS_CONFIG[p.status];
+            const StatusIcon = statusConfig.icon;
 
-            {presentations.map((p) => {
-              const statusConfig = STATUS_CONFIG[p.status];
-              const StatusIcon = statusConfig.icon;
-
-              return (
-                <div
-                  key={p.presentation_id}
-                  className="grid grid-cols-[1fr_100px_80px_80px_120px_80px] gap-4 items-center px-4 py-3 rounded-md hover:bg-secondary/30 transition-colors group cursor-pointer"
-                  onClick={() => handleView(p)}
-                >
-                  {/* ID */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded bg-secondary/50 flex items-center justify-center shrink-0">
-                      <Layers className="w-4 h-4 text-muted-foreground/50" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-mono truncate">
-                        {p.presentation_id.slice(0, 12)}...
-                      </p>
-                      {p.progress_percent > 0 && p.status === "processing" && (
-                        <p className="text-[10px] text-primary font-mono">
-                          {Math.round(p.progress_percent)}%
-                        </p>
-                      )}
-                    </div>
+            return (
+              <div
+                key={p.presentation_id}
+                className="grid grid-cols-[1fr_90px_80px_60px_110px_70px] gap-3 items-center px-4 py-3 rounded-lg hover:bg-secondary/50 transition-colors group cursor-pointer border border-transparent hover:border-border/50"
+                onClick={() => handleView(p)}
+              >
+                {/* ID */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4 text-primary/40" />
                   </div>
-
-                  {/* Status */}
-                  <Badge
-                    variant="outline"
-                    className={`${statusConfig.bgColor} ${statusConfig.color} border-0 gap-1 text-[10px] font-mono w-fit`}
-                  >
-                    <StatusIcon
-                      className={`w-3 h-3 ${
-                        p.status === "processing" ? "animate-spin" : ""
-                      }`}
-                    />
-                    {statusConfig.label}
-                  </Badge>
-
-                  {/* Mode */}
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {modeLabels[p.mode] || p.mode}
-                  </span>
-
-                  {/* Slides */}
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {p.slide_count || "—"}
-                  </span>
-
-                  {/* Date */}
-                  <span className="text-[11px] text-muted-foreground font-mono">
-                    {formatDate(p.created_at)}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {p.status === "completed" && (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/view/${p.presentation_id}`);
-                        }}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {p.presentation_id.slice(0, 12)}...
+                    </p>
+                    {p.progress_percent > 0 && p.status === "processing" && (
+                      <p className="text-[10px] text-primary">
+                        {Math.round(p.progress_percent)}%
+                      </p>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(p.presentation_id);
-                      }}
-                      className="text-destructive/60 hover:text-destructive"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
+
+                {/* Status */}
+                <Badge
+                  variant="outline"
+                  className={`${statusConfig.bgColor} ${statusConfig.color} border-0 gap-1 text-[10px] font-medium w-fit`}
+                >
+                  <StatusIcon
+                    className={`w-3 h-3 ${
+                      p.status === "processing" || p.status === "assembling" ? "animate-spin" : ""
+                    }`}
+                  />
+                  {statusConfig.label}
+                </Badge>
+
+                {/* Mode */}
+                <span className="text-xs text-muted-foreground">
+                  {modeLabels[p.mode] || p.mode}
+                </span>
+
+                {/* Slides */}
+                <span className="text-xs text-muted-foreground">
+                  {p.slide_count || "—"}
+                </span>
+
+                {/* Date */}
+                <span className="text-[11px] text-muted-foreground">
+                  {formatDate(p.created_at)}
+                </span>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {p.status === "completed" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/view/${p.presentation_id}`);
+                      }}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(p.presentation_id);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

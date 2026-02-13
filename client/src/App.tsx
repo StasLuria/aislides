@@ -1,6 +1,6 @@
 /**
  * App.tsx — Root component with routing
- * Swiss Precision Design: Dark theme, minimal transitions
+ * Clean Light Design
  */
 
 import { Toaster } from "@/components/ui/sonner";
@@ -16,6 +16,7 @@ import History from "./pages/History";
 import Interactive from "./pages/Interactive";
 import ChatPage from "./pages/ChatPage";
 import AppLayout from "./components/AppLayout";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -38,18 +39,9 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "oklch(0.15 0.015 270)",
-                border: "1px solid oklch(1 0 0 / 8%)",
-                color: "oklch(0.88 0.005 270)",
-              },
-            }}
-          />
+          <Toaster position="bottom-right" />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

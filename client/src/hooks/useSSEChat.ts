@@ -14,6 +14,12 @@ export interface ChatAction {
   variant?: "default" | "outline" | "destructive";
 }
 
+export interface SlidePreview {
+  slideNumber: number;
+  title: string;
+  html: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -21,6 +27,7 @@ export interface ChatMessage {
   actions?: ChatAction[];
   progress?: { percent: number; message: string };
   presentationLink?: string;
+  slidePreviews?: SlidePreview[];
   isStreaming?: boolean;
 }
 
@@ -225,6 +232,22 @@ export function useSSEChat() {
               setPresentationLink(event.data);
               break;
 
+            case "slide_preview":
+              // Append slide preview to the current assistant message
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+                  const existing = updated[lastIdx].slidePreviews || [];
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    slidePreviews: [...existing, event.data],
+                  };
+                }
+                return updated;
+              });
+              break;
+
             case "error":
               setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
               break;
@@ -333,6 +356,21 @@ export function useSSEChat() {
 
             case "presentation_link":
               setPresentationLink(event.data);
+              break;
+
+            case "slide_preview":
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+                  const existing = updated[lastIdx].slidePreviews || [];
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    slidePreviews: [...existing, event.data],
+                  };
+                }
+                return updated;
+              });
               break;
 
             case "error":

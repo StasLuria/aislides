@@ -612,3 +612,34 @@
 - [x] Frontend: Auto-create session and redirect to /chat/:id
 - [x] DB: chat_sessions table with messages JSON, phase, mode, presentationId, metadata columns
 - [x] Tests: 22 vitest tests for chat SSE (CRUD, streaming, actions, state machine, SSE format)
+
+## Task 1: Chat History Sidebar
+- [x] Add sidebar panel to ChatPage with list of previous chat sessions
+- [x] Show session topic, date, message count in sidebar items
+- [x] Click to switch between sessions (navigate to /chat/:id)
+- [x] Add "New chat" button at top of sidebar
+- [x] Add delete session button with confirmation
+- [x] Responsive: collapsible sidebar on mobile
+- [x] Test in browser
+
+## Task 2: Step-by-step Slide Preview in Chat
+- [x] After structure approval, show slide previews inline in chat messages
+- [x] Render slide thumbnails using existing preview-slide API
+- [x] Show slide number and title alongside preview
+- [x] Clickable previews to open fullscreen (expand/collapse)
+- [x] Test step-by-step flow with previews
+- [x] Send all slide previews at completion (both quick and step-by-step modes)
+- [x] SlidePreviewsGallery with horizontal scrolling
+
+## Task 3: Light Theme Redesign + Settings in Input Area
+- [x] Switch from dark to light theme (update index.css, ThemeProvider)
+- [x] Redesign color palette for light mode (clean, modern)
+- [x] Remove mode/theme selectors from Home page form
+- [x] Add settings popover/toolbar near chat input (like Manus/ChatGPT style)
+- [x] Move generation mode toggle to input settings
+- [x] Move theme preset selector to input settings
+- [x] Move slide count to input settings
+- [x] Clean up Home page to redirect to /chat (chat-first)
+- [x] Remove dark-specific CSS (section-number, swiss-divider, glow-*, font-heading)
+- [x] Update all pages for light theme (History, Generate, Viewer, Interactive, NotFound)
+- [x] Test full flow with new design — 894 tests passed

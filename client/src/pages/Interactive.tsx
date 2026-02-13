@@ -769,10 +769,9 @@ export default function Interactive() {
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="section-number mb-1">ИНТЕРАКТИВНЫЙ РЕЖИМ</div>
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Интерактивный режим</div>
               <h2
                 className="text-lg font-semibold tracking-tight truncate max-w-md"
-                style={{ fontFamily: "var(--font-heading)" }}
               >
                 {title || "Новая презентация"}
               </h2>
@@ -830,7 +829,6 @@ export default function Interactive() {
               <div>
                 <h3
                   className="text-xl font-semibold tracking-tight"
-                  style={{ fontFamily: "var(--font-heading)" }}
                 >
                   Структура презентации
                 </h3>
@@ -975,7 +973,6 @@ export default function Interactive() {
               <div>
                 <h3
                   className="text-xl font-semibold tracking-tight"
-                  style={{ fontFamily: "var(--font-heading)" }}
                 >
                   Контент слайдов
                 </h3>
@@ -1400,7 +1397,6 @@ export default function Interactive() {
             <CheckCircle2 className="w-12 h-12 text-primary" />
             <h3
               className="text-xl font-semibold"
-              style={{ fontFamily: "var(--font-heading)" }}
             >
               Презентация готова!
             </h3>
@@ -1424,7 +1420,6 @@ export default function Interactive() {
             <XCircle className="w-12 h-12 text-destructive" />
             <h3
               className="text-xl font-semibold"
-              style={{ fontFamily: "var(--font-heading)" }}
             >
               Ошибка генерации
             </h3>

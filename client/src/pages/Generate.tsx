@@ -300,11 +300,7 @@ export default function Generate() {
         <div className="lg:w-[40%] p-8 lg:p-10 border-r border-border/50">
           {/* Header */}
           <div className="mb-8">
-            <div className="section-number mb-3">03 — ГЕНЕРАЦИЯ</div>
-            <h2
-              className="text-2xl font-semibold tracking-tight mb-2"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
+            <h2 className="text-xl font-semibold tracking-tight mb-2 text-foreground">
               {isCompleted
                 ? "Презентация готова"
                 : isFailed
@@ -387,8 +383,8 @@ export default function Generate() {
                   <span
                     className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ${
                       agentInfo?.team === "content"
-                        ? "text-blue-400/60 bg-blue-400/5"
-                        : "text-purple-400/60 bg-purple-400/5"
+                    ? "text-blue-600/60 bg-blue-50"
+                    : "text-purple-600/60 bg-purple-50"
                     }`}
                   >
                     {agentInfo?.team === "content" ? "CTN" : "DSN"}
@@ -400,8 +396,8 @@ export default function Generate() {
 
           {/* Action buttons */}
           <div className="mt-8 space-y-3">
-            <div className="swiss-divider" />
-            <div className="flex gap-3 pt-3">
+            <div className="border-t border-border pt-4" />
+            <div className="flex gap-3">
               {isCompleted && (
                 <Button
                   onClick={() => navigate(`/view/${presentationId}`)}
@@ -427,7 +423,7 @@ export default function Generate() {
                     {isRetrying ? "Перезапуск..." : "Повторить"}
                   </Button>
                   <Button
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/chat")}
                     variant="outline"
                     className="flex-1 gap-2"
                   >
@@ -465,7 +461,7 @@ export default function Generate() {
           <div className="relative z-10 w-full max-w-2xl">
             {/* Preview header */}
             <div className="flex items-center justify-between mb-4">
-              <span className="section-number">ПРЕВЬЮ</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Превью</span>
               {slidePreviews.length > 0 && (
                 <span className="text-[11px] text-muted-foreground font-mono">
                   {slidePreviews.length} слайд(ов)

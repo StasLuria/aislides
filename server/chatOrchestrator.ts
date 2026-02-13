@@ -18,7 +18,9 @@ import {
   createPresentation,
   updatePresentationProgress,
 } from "./presentationDb";
-import { renderPresentation } from "./pipeline/templateEngine";
+import { renderPresentation, renderSlide, BASE_CSS } from "./pipeline/templateEngine";
+import { getThemePreset } from "./pipeline/themes";
+import { pickLayoutForPreview, buildPreviewData } from "./interactiveRoutes";
 
 // ═══════════════════════════════════════════════════════
 // SSE EVENT TYPES
@@ -376,7 +378,7 @@ async function startQuickGeneration(
   await appendMessage(sessionId, startMsg);
 
   try {
-    // Run the pipeline with progress streaming
+    // Run the pipeline with progress streaming + slide previews
     const result = await generatePresentation(
       topic,
       { themePreset: "auto", enableImages: true },
@@ -388,6 +390,20 @@ async function startQuickGeneration(
             message: progress.message || progress.currentStep,
           },
         });
+        // Send slide preview when composer produces a slide
+        if (progress.slidePreview && progress.currentStep === "composing") {
+          const slideMatch = progress.message?.match(/(\d+)\s+из\s+(\d+)/);
+          const slideNum = slideMatch ? parseInt(slideMatch[1]) : 0;
+          console.log(`[ChatOrchestrator] Sending slide_preview for slide ${slideNum}`);
+          writer({
+            type: "slide_preview",
+            data: {
+              slideNumber: slideNum,
+              title: `Слайд ${slideNum}`,
+              html: progress.slidePreview,
+            },
+          });
+        }
       },
     );
 
@@ -406,6 +422,20 @@ async function startQuickGeneration(
       })),
       slideCount: result.slides.length,
     });
+
+    // Send all slide previews at completion (ensures user sees them)
+    for (let si = 0; si < result.slides.length; si++) {
+      if (result.slides[si].html) {
+        writer({
+          type: "slide_preview",
+          data: {
+            slideNumber: si + 1,
+            title: `Слайд ${si + 1}`,
+            html: result.slides[si].html,
+          },
+        });
+      }
+    }
 
     // Send completion message
     writer({ type: "token", data: `\n\n✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов создано.` });
@@ -594,8 +624,22 @@ async function handleStructureApproval(
               message: progress.message || progress.currentStep,
             },
           });
-        },
-      );
+        // Send slide preview when composer produces a slide
+        if (progress.slidePreview && progress.currentStep === "composing") {
+          const slideMatch = progress.message?.match(/(\d+)\s+из\s+(\d+)/);
+          const slideNum = slideMatch ? parseInt(slideMatch[1]) : 0;
+          console.log(`[ChatOrchestrator] Sending slide_preview for slide ${slideNum} (step mode)`);
+          writer({
+            type: "slide_preview",
+            data: {
+              slideNumber: slideNum,
+              title: `Слайд ${slideNum}`,
+              html: progress.slidePreview,
+            },
+          });
+        }
+      },
+    );
 
       const presentationId = session.presentationId || "";
 
@@ -613,6 +657,20 @@ async function handleStructureApproval(
         })),
         slideCount: result.slides.length,
       });
+
+      // Send all slide previews at completion (step-by-step mode)
+      for (let si = 0; si < result.slides.length; si++) {
+        if (result.slides[si].html) {
+          writer({
+            type: "slide_preview",
+            data: {
+              slideNumber: si + 1,
+              title: `Слайд ${si + 1}`,
+              html: result.slides[si].html,
+            },
+          });
+        }
+      }
 
       writer({ type: "token", data: `\n\n✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов.` });
 

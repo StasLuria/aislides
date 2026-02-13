@@ -1,12 +1,11 @@
 /**
- * AppLayout — Global layout with navigation header
- * Swiss Precision: Minimal top bar with horizontal divider, section numbers
+ * AppLayout — Global layout with minimal navigation header
+ * Clean Light Design: subtle top bar, no section numbers
  */
 
 import { Link, useLocation } from "wouter";
-import { Presentation, Clock, Plus, MessageSquare } from "lucide-react";
+import { Presentation, Clock, MessageSquare } from "lucide-react";
 import type { ReactNode } from "react";
-import ConnectionStatus from "./ConnectionStatus";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -16,67 +15,52 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Создать", icon: Plus, section: "01" },
-    { href: "/chat", label: "Чат", icon: MessageSquare, section: "02" },
-    { href: "/history", label: "История", icon: Clock, section: "03" },
+    { href: "/chat", label: "Чат", icon: MessageSquare },
+    { href: "/history", label: "История", icon: Clock },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Navigation header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
-        <div className="container flex items-center justify-between h-14">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="container flex items-center justify-between h-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-              <Presentation className="w-4 h-4 text-primary" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center group-hover:bg-primary/90 transition-colors">
+              <Presentation className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-                AI Slides
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono leading-none mt-0.5">
-                generator v1.0
-              </span>
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-foreground">
+              AI Slides
+            </span>
           </Link>
 
-          {/* Navigation + Status */}
-          <div className="flex items-center gap-4">
-            <ConnectionStatus />
-            <nav className="flex items-center gap-1">
-              {navItems.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? location === "/"
-                    : location.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`
-                      flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors
-                      ${
-                        isActive
-                          ? "text-foreground bg-secondary"
-                          : "text-muted-foreground hover:text-foreground"
-                      }
-                    `}
-                  >
-                    <span className="font-mono text-[10px] text-primary/60">
-                      {item.section}
-                    </span>
-                    <item.icon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+          {/* Navigation */}
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? location === "/"
+                  : location.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors
+                    ${
+                      isActive
+                        ? "text-foreground bg-secondary font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                    }
+                  `}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-
-        {/* Swiss divider */}
-        <div className="swiss-divider" />
       </header>
 
       {/* Main content */}

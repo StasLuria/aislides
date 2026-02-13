@@ -853,12 +853,9 @@ export default function Viewer() {
               <Link href="/history" className="text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
-              <div className="section-number">04 — ПРОСМОТР</div>
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Просмотр</span>
             </div>
-            <h3
-              className="text-sm font-semibold truncate"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
+            <h3 className="text-sm font-semibold truncate text-foreground">
               {presentation?.title || "Презентация"}
             </h3>
             <p className="text-[10px] text-muted-foreground font-mono mt-0.5">

@@ -1,0 +1,65 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_NAME = 'chat_sessions' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_NAME = 'chat_sessions' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int",
+      "COLUMN_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "sessionId",
+      "DATA_TYPE": "varchar",
+      "COLUMN_TYPE": "varchar(64)"
+    },
+    {
+      "COLUMN_NAME": "userId",
+      "DATA_TYPE": "int",
+      "COLUMN_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "presentationId",
+      "DATA_TYPE": "varchar",
+      "COLUMN_TYPE": "varchar(64)"
+    },
+    {
+      "COLUMN_NAME": "phase",
+      "DATA_TYPE": "varchar",
+      "COLUMN_TYPE": "varchar(64)"
+    },
+    {
+      "COLUMN_NAME": "messages",
+      "DATA_TYPE": "json",
+      "COLUMN_TYPE": "json"
+    },
+    {
+      "COLUMN_NAME": "topic",
+      "DATA_TYPE": "varchar",
+      "COLUMN_TYPE": "varchar(512)"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "DATA_TYPE": "timestamp",
+      "COLUMN_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "DATA_TYPE": "timestamp",
+      "COLUMN_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "mode",
+      "DATA_TYPE": "varchar",
+      "COLUMN_TYPE": "varchar(32)"
+    },
+    {
+      "COLUMN_NAME": "metadata",
+      "DATA_TYPE": "json",
+      "COLUMN_TYPE": "json"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\tCOLUMN_TYPE\nid\tint\tint\nsessionId\tvarchar\tvarchar(64)\nuserId\tint\tint\npresentationId\tvarchar\tvarchar(64)\nphase\tvarchar\tvarchar(64)\nmessages\tjson\tjson\ntopic\tvarchar\tvarchar(512)\ncreatedAt\ttimestamp\ttimestamp\nupdatedAt\ttimestamp\ttimestamp\nmode\tvarchar\tvarchar(32)\nmetadata\tjson\tjson\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}
