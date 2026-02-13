@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
-import FileUploadButton, { FileChips, type AttachedFile } from "@/components/FileUploadButton";
+import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@/components/FileUploadButton";
 import api, { type CustomTemplateListItem } from "@/lib/api";
 import { THEME_PRESETS } from "@/lib/constants";
 
@@ -921,10 +921,7 @@ export default function ChatPage() {
               {/* Settings chips (shown when non-default settings are active) */}
               {!settingsApplied && <SettingsChips settings={settings} />}
 
-              {/* Attached files preview */}
-              <FileChips files={attachedFiles} onRemove={(id) => setAttachedFiles(prev => prev.filter(f => f.id !== id))} />
-
-              {/* Input row */}
+              {/* Input row with integrated file chips */}
               <div className="flex gap-2 items-end">
                 {/* Settings toggle button */}
                 <Button
@@ -949,22 +946,57 @@ export default function ChatPage() {
                   disabled={isStreaming || isUploading}
                 />
 
-                {/* Textarea */}
+                {/* Unified input container: file chips on top + textarea below */}
                 <div className="flex-1 relative">
-                  <Textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      hasMessages
-                        ? "Напишите сообщение..."
-                        : "Опишите тему презентации..."
-                    }
-                    disabled={isStreaming}
-                    className="min-h-[44px] max-h-[160px] resize-none bg-secondary/40 border-border text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-1 focus:ring-primary/20 text-sm leading-relaxed rounded-xl pr-4"
-                    rows={1}
-                  />
+                  <div className={`rounded-xl border bg-secondary/40 transition-colors focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 ${
+                    attachedFiles.length > 0 ? "border-border" : "border-border"
+                  }`}>
+                    {/* File chips inside the input box */}
+                    {attachedFiles.length > 0 && (
+                      <div className="pt-2.5 px-2 pb-1">
+                        <FileChips
+                          files={attachedFiles}
+                          onRemove={(id) => setAttachedFiles(prev => prev.filter(f => f.id !== id))}
+                        />
+                      </div>
+                    )}
+                    {/* Textarea */}
+                    <Textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onPaste={(e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        const files: File[] = [];
+                        for (let i = 0; i < items.length; i++) {
+                          const item = items[i];
+                          if (item.kind === "file") {
+                            const file = item.getAsFile();
+                            if (file) files.push(file);
+                          }
+                        }
+                        if (files.length > 0) {
+                          e.preventDefault();
+                          const validated = validateFiles(files, attachedFiles.length);
+                          if (validated.length > 0) {
+                            setAttachedFiles(prev => [...prev, ...validated]);
+                          }
+                        }
+                      }}
+                      placeholder={
+                        hasMessages
+                          ? "Напишите сообщение..."
+                          : "Опишите тему презентации..."
+                      }
+                      disabled={isStreaming}
+                      className={`min-h-[44px] max-h-[160px] resize-none bg-transparent border-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed pr-4 ${
+                        attachedFiles.length > 0 ? "pt-1" : ""
+                      }`}
+                      rows={1}
+                    />
+                  </div>
                 </div>
 
                 {/* Send / Stop button */}
@@ -994,7 +1026,7 @@ export default function ChatPage() {
             </div>
 
             <p className="text-[10px] text-center text-muted-foreground/50 mt-2">
-              Enter — отправить · Shift+Enter — новая строка · 📎 — прикрепить файлы
+              Enter — отправить · Shift+Enter — новая строка · 📎 или Ctrl+V — прикрепить файлы
             </p>
           </div>
         </div>

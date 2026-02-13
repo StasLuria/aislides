@@ -771,3 +771,13 @@
 - [x] Restore saved settings when opening a new chat (not when loading existing session)
 - [x] Handle edge cases: invalid/corrupted localStorage data, custom template not restored (may be deleted)
 - [x] 953 tests passing
+
+## Paste-to-attach & File chips inside input area
+- [x] Add paste event handler (Ctrl+V / Cmd+V) on textarea to attach files from clipboard
+- [x] Move attached file chips from separate area to inside the input container (above textarea)
+- [x] File chips: show file icon (by type), truncated name, file size, and X remove button
+- [x] Support pasting images from clipboard as attachments
+- [x] Visual: unified input container with file chips on top, textarea below (like ChatGPT/Claude UI)
+- [x] Extracted validateFiles() helper for reuse between file input and paste
+- [x] Updated hint text to mention Ctrl+V
+- [x] 953 tests passing

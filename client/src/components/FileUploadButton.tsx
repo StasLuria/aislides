@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Paperclip, X, FileText, Image, File as FileIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const ACCEPTED_TYPES = [
+export const ACCEPTED_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -23,8 +23,35 @@ const ACCEPTED_TYPES = [
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.pptx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp,.gif";
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const MAX_FILES = 5;
+export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+export const MAX_FILES = 5;
+
+/** Validate files and return AttachedFile[] — reusable for both file input and paste */
+export function validateFiles(newFiles: File[], existingCount: number): AttachedFile[] {
+  if (newFiles.length === 0) return [];
+  const totalCount = existingCount + newFiles.length;
+  if (totalCount > MAX_FILES) {
+    toast.error(`Максимум ${MAX_FILES} файлов за раз`);
+    return [];
+  }
+  const validFiles: AttachedFile[] = [];
+  for (const file of newFiles) {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`${file.name} слишком большой (макс. 20 МБ)`);
+      continue;
+    }
+    if (!ACCEPTED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|docx|pptx|txt|md|csv|png|jpg|jpeg|webp|gif)$/i)) {
+      toast.error(`${file.name}: неподдерживаемый формат`);
+      continue;
+    }
+    validFiles.push({
+      file,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      uploading: false,
+    });
+  }
+  return validFiles;
+}
 
 export interface AttachedFile {
   file: File;
@@ -70,37 +97,10 @@ export default function FileUploadButton({
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFiles = Array.from(e.target.files || []);
-      if (selectedFiles.length === 0) return;
-
-      // Validate count
-      const totalCount = files.length + selectedFiles.length;
-      if (totalCount > MAX_FILES) {
-        toast.error(`Максимум ${MAX_FILES} файлов за раз`);
-        return;
-      }
-
-      // Validate each file
-      const validFiles: AttachedFile[] = [];
-      for (const file of selectedFiles) {
-        if (file.size > MAX_FILE_SIZE) {
-          toast.error(`${file.name} слишком большой (макс. 20 МБ)`);
-          continue;
-        }
-        if (!ACCEPTED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|docx|pptx|txt|md|csv|png|jpg|jpeg|webp|gif)$/i)) {
-          toast.error(`${file.name}: неподдерживаемый формат`);
-          continue;
-        }
-        validFiles.push({
-          file,
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          uploading: false,
-        });
-      }
-
+      const validFiles = validateFiles(selectedFiles, files.length);
       if (validFiles.length > 0) {
         onFilesChange([...files, ...validFiles]);
       }
-
       // Reset input so same file can be selected again
       if (inputRef.current) inputRef.current.value = "";
     },
