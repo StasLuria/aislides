@@ -370,6 +370,7 @@ export default function ChatPage() {
     messages,
     sessionId,
     isStreaming,
+    isPolling,
     progress,
     currentActions,
     presentationLink,
@@ -516,6 +517,12 @@ export default function ChatPage() {
               {progress && (
                 <div className="pl-10">
                   <ProgressBar percent={progress.percent} message={progress.message} />
+                  {isPolling && (
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      Соединение восстанавливается, генерация продолжается на сервере...
+                    </p>
+                  )}
                 </div>
               )}
 

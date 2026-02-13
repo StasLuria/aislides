@@ -1,8 +1,9 @@
 /**
  * useSSEChat — React hook for SSE-based chat with streaming AI responses.
  * Handles connection lifecycle, token accumulation, progress events, and actions.
+ * Includes polling fallback when SSE connection drops during long-running generation.
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -85,6 +86,7 @@ async function readSSEStream(
 // ═══════════════════════════════════════════════════════
 
 const API_BASE = "/api/v1/chat";
+const POLL_INTERVAL_MS = 5000;
 
 export function useSSEChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -98,10 +100,104 @@ export function useSSEChat() {
   const abortRef = useRef<AbortController | null>(null);
   const streamingContentRef = useRef("");
 
+  // Polling fallback state
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastProgressRef = useRef<{ percent: number; message: string } | null>(null);
+  const receivedDoneRef = useRef(false);
+
+  /**
+   * Stop polling if running.
+   */
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
+
+  /**
+   * Start polling the session status to detect when generation completes.
+   */
+  const startPolling = useCallback(
+    (sid: string) => {
+      if (pollingRef.current) return; // Already polling
+
+      setIsPolling(true);
+      console.log("[useSSEChat] SSE dropped during generation, starting polling fallback");
+
+      pollingRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/sessions/${sid}`);
+          if (!res.ok) return;
+          const data = await res.json();
+
+          const phase = data.phase as string;
+
+          // Update progress message while still generating
+          if (phase === "generating") {
+            setProgress((prev) => ({
+              percent: prev?.percent || lastProgressRef.current?.percent || 50,
+              message: "Генерация продолжается на сервере...",
+            }));
+            return;
+          }
+
+          // Generation completed or moved to a different phase
+          if (phase === "completed" || phase === "mode_selection" || phase === "step_structure" || phase === "idle") {
+            console.log("[useSSEChat] Polling detected phase change:", phase);
+            stopPolling();
+
+            // Reload the full session to get all messages
+            const allMessages = (data.messages || []).map((m: any) => ({
+              ...m,
+              isStreaming: false,
+            }));
+            setMessages(allMessages);
+
+            // Restore actions from last assistant message
+            const lastAssistant = [...allMessages].reverse().find(
+              (m: any) => m.role === "assistant" && m.actions?.length,
+            );
+            if (lastAssistant?.actions) {
+              setCurrentActions(lastAssistant.actions);
+            }
+
+            // Restore presentation link
+            if (data.presentation_id && phase === "completed") {
+              setPresentationLink({
+                presentationId: data.presentation_id,
+                title: data.topic || "",
+              });
+            }
+
+            setIsStreaming(false);
+            setProgress(null);
+            setError(null);
+          }
+        } catch {
+          // Polling error — just continue
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [stopPolling],
+  );
+
   /**
    * Create a new chat session.
    */
   const createSession = useCallback(async (): Promise<string> => {
+    stopPolling();
     try {
       const res = await fetch(`${API_BASE}/sessions`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to create session");
@@ -118,12 +214,13 @@ export function useSSEChat() {
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [stopPolling]);
 
   /**
    * Load an existing session.
    */
   const loadSession = useCallback(async (id: string): Promise<void> => {
+    stopPolling();
     try {
       const res = await fetch(`${API_BASE}/sessions/${id}`);
       if (!res.ok) throw new Error("Session not found");
@@ -154,9 +251,92 @@ export function useSSEChat() {
           title: "",
         });
       }
+
+      // If session is in "generating" phase, start polling
+      if (data.phase === "generating") {
+        setIsStreaming(true);
+        setProgress({ percent: 50, message: "Генерация продолжается на сервере..." });
+        startPolling(id);
+      }
     } catch (err: any) {
       setError(err.message);
     }
+  }, [stopPolling, startPolling]);
+
+  /**
+   * Common SSE event handler factory.
+   */
+  const createSSEHandler = useCallback(() => {
+    return (event: SSEEvent) => {
+      switch (event.type) {
+        case "token":
+          streamingContentRef.current += event.data;
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                content: streamingContentRef.current,
+                isStreaming: true,
+              };
+            }
+            return updated;
+          });
+          break;
+
+        case "progress":
+          setProgress(event.data);
+          lastProgressRef.current = event.data;
+          break;
+
+        case "actions":
+          setCurrentActions(event.data || []);
+          break;
+
+        case "presentation_link":
+          setPresentationLink(event.data);
+          break;
+
+        case "slide_preview":
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              const existing = updated[lastIdx].slidePreviews || [];
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                slidePreviews: [...existing, event.data],
+              };
+            }
+            return updated;
+          });
+          break;
+
+        case "title_update":
+          setSessionTitle(typeof event.data === "string" ? event.data : event.data?.title || null);
+          break;
+
+        case "error":
+          setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
+          break;
+
+        case "done":
+          receivedDoneRef.current = true;
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                isStreaming: false,
+              };
+            }
+            return updated;
+          });
+          break;
+      }
+    };
   }, []);
 
   /**
@@ -171,6 +351,8 @@ export function useSSEChat() {
       setPresentationLink(null);
       setIsStreaming(true);
       streamingContentRef.current = "";
+      lastProgressRef.current = null;
+      receivedDoneRef.current = false;
 
       // Add user message immediately
       const userMsg: ChatMessage = {
@@ -204,100 +386,50 @@ export function useSSEChat() {
           throw new Error(`Server error: ${res.status}`);
         }
 
-        await readSSEStream(res, (event) => {
-          switch (event.type) {
-            case "token":
-              streamingContentRef.current += event.data;
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    content: streamingContentRef.current,
-                    isStreaming: true,
-                  };
-                }
-                return updated;
-              });
-              break;
-
-            case "progress":
-              setProgress(event.data);
-              break;
-
-            case "actions":
-              setCurrentActions(event.data || []);
-              break;
-
-            case "presentation_link":
-              setPresentationLink(event.data);
-              break;
-
-            case "slide_preview":
-              // Append slide preview to the current assistant message
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  const existing = updated[lastIdx].slidePreviews || [];
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    slidePreviews: [...existing, event.data],
-                  };
-                }
-                return updated;
-              });
-              break;
-
-            case "title_update":
-              setSessionTitle(typeof event.data === "string" ? event.data : event.data?.title || null);
-              break;
-
-            case "error":
-              setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
-              break;
-
-            case "done":
-              // Mark streaming as complete
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    isStreaming: false,
-                  };
-                }
-                return updated;
-              });
-              break;
-          }
-        });
+        await readSSEStream(res, createSSEHandler());
       } catch (err: any) {
-        if (err.name !== "AbortError") {
-          setError(err.message);
-          // Update the assistant message with error
-          setMessages((prev) => {
-            const updated = [...prev];
-            const lastIdx = updated.length - 1;
-            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-              updated[lastIdx] = {
-                ...updated[lastIdx],
-                content: updated[lastIdx].content || "Произошла ошибка при обработке запроса.",
-                isStreaming: false,
-              };
-            }
-            return updated;
+        if (err.name === "AbortError") return;
+
+        // If we had progress updates, SSE likely dropped during generation
+        const lastProg = lastProgressRef.current as { percent: number; message: string } | null;
+        const gotDone = receivedDoneRef.current;
+
+        if (lastProg && lastProg.percent > 0 && !gotDone) {
+          // SSE dropped during generation — start polling
+          console.log("[useSSEChat] SSE connection dropped during generation, switching to polling");
+          setError(null); // Don't show error
+          setProgress({
+            percent: lastProg.percent,
+            message: "Соединение прервалось, но генерация продолжается...",
           });
+          startPolling(sessionId);
+          return; // Don't reset isStreaming — polling will handle it
         }
+
+        // Regular error
+        setError(err.message);
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+            updated[lastIdx] = {
+              ...updated[lastIdx],
+              content: updated[lastIdx].content || "Произошла ошибка при обработке запроса.",
+              isStreaming: false,
+            };
+          }
+          return updated;
+        });
       } finally {
-        setIsStreaming(false);
-        setProgress(null);
+        // Only cleanup if not polling (polling handles its own cleanup)
+        if (!pollingRef.current) {
+          setIsStreaming(false);
+          setProgress(null);
+        }
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming],
+    [sessionId, isStreaming, createSSEHandler, startPolling],
   );
 
   /**
@@ -311,6 +443,8 @@ export function useSSEChat() {
       setCurrentActions([]);
       setIsStreaming(true);
       streamingContentRef.current = "";
+      lastProgressRef.current = null;
+      receivedDoneRef.current = false;
 
       // Add empty assistant message for streaming
       const assistantMsg: ChatMessage = {
@@ -332,87 +466,41 @@ export function useSSEChat() {
           signal: controller.signal,
         });
 
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-        await readSSEStream(res, (event) => {
-          switch (event.type) {
-            case "token":
-              streamingContentRef.current += event.data;
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    content: streamingContentRef.current,
-                    isStreaming: true,
-                  };
-                }
-                return updated;
-              });
-              break;
-
-            case "progress":
-              setProgress(event.data);
-              break;
-
-            case "actions":
-              setCurrentActions(event.data || []);
-              break;
-
-            case "presentation_link":
-              setPresentationLink(event.data);
-              break;
-
-            case "slide_preview":
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  const existing = updated[lastIdx].slidePreviews || [];
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    slidePreviews: [...existing, event.data],
-                  };
-                }
-                return updated;
-              });
-              break;
-
-            case "title_update":
-              setSessionTitle(typeof event.data === "string" ? event.data : event.data?.title || null);
-              break;
-
-            case "error":
-              setError(typeof event.data === "string" ? event.data : event.data?.message || "Unknown error");
-              break;
-
-            case "done":
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    isStreaming: false,
-                  };
-                }
-                return updated;
-              });
-              break;
-          }
-        });
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          setError(err.message);
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`);
         }
+
+        await readSSEStream(res, createSSEHandler());
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+
+        // If we had progress updates, SSE likely dropped during generation
+        const lastProg2 = lastProgressRef.current as { percent: number; message: string } | null;
+        const gotDone2 = receivedDoneRef.current;
+
+        if (lastProg2 && lastProg2.percent > 0 && !gotDone2) {
+          // SSE dropped during generation — start polling
+          console.log("[useSSEChat] SSE connection dropped during action, switching to polling");
+          setError(null);
+          setProgress({
+            percent: lastProg2.percent,
+            message: "Соединение прервалось, но генерация продолжается...",
+          });
+          startPolling(sessionId);
+          return;
+        }
+
+        // Regular error
+        setError(err.message);
       } finally {
-        setIsStreaming(false);
-        setProgress(null);
+        if (!pollingRef.current) {
+          setIsStreaming(false);
+          setProgress(null);
+        }
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming],
+    [sessionId, isStreaming, createSSEHandler, startPolling],
   );
 
   /**
@@ -420,9 +508,10 @@ export function useSSEChat() {
    */
   const cancelStream = useCallback(() => {
     abortRef.current?.abort();
+    stopPolling();
     setIsStreaming(false);
     setProgress(null);
-  }, []);
+  }, [stopPolling]);
 
   /**
    * List all sessions.
@@ -445,6 +534,7 @@ export function useSSEChat() {
     messages,
     sessionId,
     isStreaming,
+    isPolling,
     progress,
     currentActions,
     presentationLink,

@@ -672,3 +672,12 @@
 - [x] Fix: Background reassemble triggered to fix missing result_urls for future visits
 - [x] Fix: Added normalizeSlides helper in slideEditRoutes to handle legacy layout_id → layoutId migration
 - [x] Verified: K0mPVkDoWhkxYUnJ now renders correctly via fallback + reassemble
+
+## Bug Fix: Presentation generation hangs after selecting Quick mode
+- [x] Root cause: SSE connection drops due to proxy timeout (~60s) while generation takes 3-4 minutes
+- [x] Generation actually completes on server, but client doesn't see the result
+- [x] Fix: Added polling fallback in useSSEChat — when SSE drops during generation (progress > 0, no done event), polls session status every 5s
+- [x] Fix: When polling detects phase change to "completed", reloads full session messages and shows result
+- [x] Fix: loadSession auto-starts polling if session is in "generating" phase (handles page reload)
+- [x] Fix: Added visual indicator "Соединение восстанавливается..." with amber pulse dot
+- [x] Verified: generation completes on server, polling detects completion, 914 tests passing
