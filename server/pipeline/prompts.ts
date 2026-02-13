@@ -60,7 +60,29 @@ Your outlines produce presentations that rival McKinsey and TED Talk quality.
 - Generate content in ${language}.
 - Do NOT pad with filler slides. Only create slides that add value.
 - Slide titles should be engaging and specific (not generic like "Overview" or "Introduction").
+- Slide titles MUST be short: max 50 characters for Russian, 60 for English. No colons combining two ideas.
+- For EACH slide, assign a content_shape that tells the Writer what FORMAT of content to produce.
 </rules>
+<content_shapes>
+Each slide MUST have a content_shape field. This determines the STRUCTURE of content the Writer will produce.
+
+Available content_shapes:
+1. "stat_cards" — 3-4 key metrics as {label, value, description}. Best for data-heavy context slides.
+2. "bullet_points" — Classic 3-5 bullets with title+description. Use sparingly (max 2 per presentation).
+3. "comparison_two_sides" — Two groups (pro/con, before/after, option A/B) with items each. Best for decision slides.
+4. "table_data" — Structured rows and columns. Best for competitor analysis, feature comparison.
+5. "process_steps" — 3-5 numbered sequential steps. Best for methodology, implementation plans.
+6. "card_grid" — 3-6 cards with icon hint, title, short text, and optional badge. Best for features, strategies, categories.
+7. "timeline_events" — 4-6 chronological events with date, title, description. Best for roadmaps, history.
+8. "financial_formula" — Mathematical relationship (A - B = C) with supporting metrics. Best for unit economics.
+9. "analysis_with_verdict" — Left: analytical items with metadata. Right: summary verdict/conclusion. Best for risk analysis, SWOT.
+10. "single_concept" — One central idea explained with a short description + 3-4 supporting sub-points. Best for definitions, architecture.
+11. "chart_with_context" — Data for chart visualization + 2-3 contextual stat cards. Best for market data, trends.
+12. "quote_highlight" — One powerful quote or statement + attribution + context.
+
+DIVERSITY RULE: No content_shape may appear more than 2 times. Use at least 5 different shapes in a 10-slide presentation.
+NEVER default everything to "bullet_points" — this is the #1 cause of boring presentations.
+</content_shapes>
 <narrative_arc_types>
 Choose the best narrative arc for the topic:
 1. PROBLEM-SOLUTION: Problem framing - Impact - Solution - Evidence - Implementation - Results
@@ -89,7 +111,9 @@ Slides: [TitleSlide, agenda slide, SectionHeader "Fundamentals", text-slide with
 Key principle: Structure learning progressively, from concepts to practice.
 </few_shot_examples>
 <output_format>
-Return a JSON with: presentation_title, target_audience, narrative_arc, slides (array of slide_number, title, purpose, key_points, speaker_notes_hint).
+Return a JSON with: presentation_title, target_audience, narrative_arc, slides (array of slide_number, title, purpose, key_points, speaker_notes_hint, content_shape, slide_category).
+- content_shape: one of the shapes from <content_shapes> above
+- slide_category: a short English tag for the slide type (e.g., "DATA", "CONCEPT", "MARKET", "STRATEGY", "RISKS", "ECONOMICS", "VERDICT", "OVERVIEW", "COMPETITION", "SOLUTION", "PROCESS", "TIMELINE")
 </output_format>`;
 }
 
@@ -107,39 +131,69 @@ Create a detailed presentation outline. Choose the best narrative arc type for t
 // WRITER AGENT
 // ═══════════════════════════════════════════════════════
 export function writerSystem(language: string, presentationTitle: string, allSlidesTitles: string, targetAudience: string): string {
-  return `You are Writer Agent — a professional copywriter for presentation slides.
+  return `You are Writer Agent — a world-class presentation content strategist.
 <role>
-Write compelling, substantive content for a single presentation slide. Your content must be rich enough to fill the slide visually — no half-empty slides.
+Write compelling, substantive content for a single presentation slide.
+Your job is to produce content in the EXACT SHAPE specified by the content_shape field.
+Different slides need DIFFERENT content structures — not everything is bullet points.
 </role>
 <task>
-1. Write the main text content for the slide based on the outline.
-2. Create speaker notes with additional context.
-3. Extract structured data points if the slide needs charts or tables.
-4. Formulate a key takeaway message.
+1. Read the content_shape field to understand what FORMAT of content to produce.
+2. Write the main text content (text field) as a brief summary/fallback.
+3. Write structured_content matching the content_shape (THIS IS THE PRIMARY OUTPUT).
+4. Create speaker notes with additional context.
+5. Extract data_points if the slide involves quantitative data.
+6. Formulate a key_message — one impactful sentence.
 </task>
-<content_density_rules>
-- CRITICAL: Each slide must have ENOUGH content to fill the visual space. Empty-looking slides are unacceptable.
-- For bullet-point slides: write EXACTLY 4-5 bullet points. Each bullet must have a clear title (3-6 words) AND a description (1-2 sentences, 15-30 words).
-- For data slides: provide 3-5 data points with specific numbers, percentages, or metrics.
-- For comparison slides: provide 4-5 points per side.
-- For process/timeline slides: provide 4-6 steps/events with descriptions.
-- Text field format: Use structured bullet points separated by newlines. Each bullet should follow the pattern: "**Title**: Description sentence."
-- NEVER write just 1-2 vague bullet points. If the topic seems narrow, expand with examples, statistics, or implications.
-</content_density_rules>
+<content_shape_instructions>
+The content_shape field determines what you put in structured_content. Follow these rules STRICTLY:
+
+"stat_cards": Write 3-4 stat cards. Each: {label: "SHORT LABEL" (2-3 words, uppercase), value: "KEY NUMBER" (e.g. "1,000,000+", "47%", "$9.9B"), description: "1-2 sentences explaining the stat"}. Also provide data_points.
+
+"bullet_points": Write 4-5 bullet points. Each in text field as "**Title**: Description." Keep descriptions to 1-2 sentences max.
+
+"comparison_two_sides": Write two groups. {left_title: "GROUP A", left_items: [{text: "point"}], right_title: "GROUP B", right_items: [{text: "point"}]}. 3-4 items per side.
+
+"table_data": Write a table. {columns: ["Col1", "Col2", ...], rows: [{"Col1": "val", "Col2": "val"}]}. 4-6 rows, 3-5 columns.
+
+"process_steps": Write 3-5 sequential steps. Each: {step_number, title: "SHORT" (3-5 words), description: "1-2 sentences"}.
+
+"card_grid": Write 3-6 cards. Each: {icon_hint: "emoji or icon name", title: "SHORT TITLE" (2-4 words), text: "2-3 sentences max", badge: "optional status tag like [OK] or HIGH"}.
+
+"timeline_events": Write 4-6 events. Each: {date: "2024 Q1" or "Январь 2025", title: "Event name", description: "1-2 sentences"}.
+
+"financial_formula": Write a formula. {parts: [{label: "REVENUE", value: "499-990₽", description: "Per user/month", operator: "-"}, {label: "COSTS", value: "200-400₽", description: "API costs"}, {label: "MARGIN", value: "40-60%", description: "Gross margin", operator: "="}], bottom_line: "Key conclusion sentence"}.
+
+"analysis_with_verdict": Write analysis items + verdict. {items: [{title, description, code: "ERR_CODE", severity: "HIGH"}], verdict_title: "VERDICT", verdict_text: "conclusion", indicators: [{label: "RISK", value: "HIGH", color: "red"}]}.
+
+"single_concept": Write one central idea in text field with 3-4 supporting sub-points as bullet_points.
+
+"chart_with_context": Provide data_points for chart + stat_cards in structured_content for context numbers.
+
+"quote_highlight": Write {text: "the quote", attribution: "who said it", context: "why it matters"}.
+</content_shape_instructions>
+<text_conciseness_rules>
+- Card/bullet descriptions: MAX 2 sentences, 30 words each.
+- Stat card descriptions: MAX 1-2 sentences.
+- Table cells: MAX 10 words per cell.
+- Titles: MAX 5 words.
+- NEVER write paragraphs. Every piece of text must be scannable.
+- Use **bold** for key numbers and terms.
+</text_conciseness_rules>
+<data_points_rules>
+- Provide data_points when the slide involves quantitative data (stat_cards, chart_with_context, financial_formula).
+- LABEL: SHORT (max 2-3 words). Use abbreviations.
+- UNIT: One standard unit: "%", "$", "€", "₽", "млн", "млрд". NEVER compound units.
+- VALUE: Plain numbers only ("42", "3.5"). No units in value field.
+</data_points_rules>
 <rules>
 - Write in ${language}.
-- Be SUBSTANTIVE but slide-appropriate — not paragraphs, but rich bullet points with both titles and descriptions.
-- Speaker notes should expand on the slide content with talking points (3-5 sentences).
-- If the slide topic involves data, extract it as structured data_points (array of {label, value, unit}). Provide at least 3 data points.
-- data_points LABEL rules: Keep labels SHORT (max 2-3 words). Use abbreviations. Years: "2024", quarters: "Q1", countries: short names ("США", "Китай").
-- data_points UNIT rules: Use ONE standard unit for ALL points: "%", "$", "€", "₽", "млн", "млрд", "тыс", "шт", "ГВт" etc. For percentages use "%" with 0-100 values. For currency use symbol ("$", "₽"). For large numbers normalize to millions/billions. NEVER use compound units like "млн долларов". If no unit applies, use empty string.
-- data_points VALUE rules: Values must be plain numbers (e.g. "42", "3.5", "150"). Do NOT include units in the value field.
-- The key_message should be one impactful sentence that captures the slide's essence.
-- Use specific facts, numbers, and examples — avoid generic platitudes.
-- If previous slide context is provided, DO NOT repeat the same points. Each slide must introduce NEW information, examples, or perspectives.
-- Maintain logical flow: reference or build upon concepts from previous slides when relevant.
-- Use **bold** markers around key terms or numbers in descriptions for emphasis (e.g. "Growth of **47%** in Q3").
-- If <research_data> is provided, PRIORITIZE using those verified facts and statistics over generic statements. Integrate research data naturally into bullet points, data_points, and speaker notes. Cite sources where provided (e.g. "по данным McKinsey").
+- The structured_content field is your PRIMARY output — the text field is a FALLBACK summary.
+- Speaker notes: 3-5 sentences expanding on the slide.
+- key_message: one impactful sentence.
+- Use specific facts, numbers, examples — no generic platitudes.
+- If previous context is provided, DO NOT repeat. Each slide adds NEW information.
+- If <research_data> is provided, PRIORITIZE verified facts. Cite sources.
 </rules>
 <presentation_context>
 Title: ${presentationTitle}
@@ -147,18 +201,23 @@ All slides: ${allSlidesTitles}
 Target audience: ${targetAudience}
 </presentation_context>
 <output_format>
-Return a JSON with: slide (object with slide_number, title, text, notes, data_points, key_message).
+Return JSON: {slide: {slide_number, title, text, notes, data_points, key_message, structured_content, content_shape}}.
+structured_content must match the content_shape. Include ONLY the relevant sub-field (e.g. for "stat_cards" shape, include stat_cards array).
 </output_format>`;
 }
 
-export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string, researchContext?: string): string {
+export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string, researchContext?: string, contentShape?: string, slideCategory?: string): string {
   const contextSection = previousContext
     ? `\n<previous_slides_context>\n${previousContext}\n</previous_slides_context>\n<instruction>Use this context to maintain narrative flow and avoid repeating the same points. Build upon what was already covered. Each slide must add NEW information.</instruction>`
     : "";
 
   const researchSection = researchContext || "";
 
-  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${contextSection}${researchSection}\nWrite the content for this slide.`;
+  const shapeSection = contentShape
+    ? `\n<content_shape>${contentShape}</content_shape>\n<slide_category>${slideCategory || "CONTENT"}</slide_category>`
+    : "";
+
+  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${shapeSection}${contextSection}${researchSection}\nWrite the content for this slide. Your structured_content MUST match the content_shape "${contentShape || "bullet_points"}".`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -260,6 +319,22 @@ Your goal is to create a visually diverse, professional presentation where every
 32. dual-chart — Two charts side by side in cards, each with title, subtitle, and optional insight. Best for comparative data visualization (e.g., revenue vs costs, before vs after). Data: leftChart + rightChart + chartData for both.
 33. risk-matrix — Left: 3x3 color-coded heatmap grid (rows x columns). Right: numbered mitigation cards with priority badges. Best for risk assessment, impact/probability analysis. Data: matrixColumns[], matrixRows[] with cells[], mitigations[].
 </available_layouts>
+<content_shape_to_layout_mapping>
+When slides have a [SHAPE: xxx] tag, use this PRIORITY mapping:
+- [SHAPE: stat_cards] → icons-numbers, highlight-stats, or hero-stat
+- [SHAPE: bullet_points] → text-with-callout (preferred) or text-slide
+- [SHAPE: comparison_two_sides] → pros-cons (preferred) or comparison
+- [SHAPE: table_data] → table-slide
+- [SHAPE: process_steps] → numbered-steps-v2 (preferred) or process-steps
+- [SHAPE: card_grid] → icons-numbers or checklist
+- [SHAPE: timeline_events] → timeline-horizontal (preferred) or timeline
+- [SHAPE: financial_formula] → hero-stat or highlight-stats
+- [SHAPE: analysis_with_verdict] → pros-cons, risk-matrix, or swot-analysis
+- [SHAPE: single_concept] → text-with-callout
+- [SHAPE: chart_with_context] → stats-chart (preferred) or chart-text
+- [SHAPE: quote_highlight] → quote-slide
+The shape tag is a STRONG hint — follow it unless the content clearly doesn't match.
+</content_shape_to_layout_mapping>
 <content_matching_rules>
 - Match layout to content type:
   * Slide with 3-5 key metrics/numbers/percentages → icons-numbers or highlight-stats
@@ -429,20 +504,13 @@ export function htmlComposerUser(
   slideNotes: string,
   keyMessage: string,
   themeCss: string,
+  structuredContent?: any,
+  contentShape?: string,
+  slideCategory?: string,
 ): string {
-  return `<layout>
-Name: ${layoutName}
-Template structure:
-${layoutTemplate}
-</layout>
-<content>
-Title: ${slideTitle}
-Text: ${slideText}
-Speaker notes: ${slideNotes}
-Key message: ${keyMessage}
-</content>
-<theme>
-${themeCss}
-</theme>
-Transform the content into the correct data structure for this layout template.`;
+  const structuredSection = structuredContent
+    ? `\n<structured_content>\nContent shape: ${contentShape || "bullet_points"}\nSlide category: ${slideCategory || "CONTENT"}\nStructured data:\n${JSON.stringify(structuredContent, null, 2)}\n</structured_content>\n<instruction>PRIORITIZE using structured_content data to fill the layout fields. The structured data is already in the right format — map it to the layout schema. Use the text field only as fallback if structured_content is missing or incomplete.</instruction>`
+    : "";
+
+  return `<layout>\nName: ${layoutName}\nTemplate structure:\n${layoutTemplate}\n</layout>\n<content>\nTitle: ${slideTitle}\nText: ${slideText}\nSpeaker notes: ${slideNotes}\nKey message: ${keyMessage}\n</content>${structuredSection}\n<theme>\n${themeCss}\n</theme>\nTransform the content into the correct data structure for this layout template.`;
 }

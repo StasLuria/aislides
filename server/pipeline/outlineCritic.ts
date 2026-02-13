@@ -176,7 +176,33 @@ export function validateOutlineStructure(outline: OutlineResult): CritiqueIssue[
     }
   }
 
-  // 9. Check narrative_arc is specified
+  // 9. Check content_shape diversity (new: ensure not all slides have the same shape)
+  if (slides.length >= 5) {
+    const shapes = slides
+      .filter(s => s.content_shape)
+      .map(s => s.content_shape);
+    const uniqueShapes = new Set(shapes);
+    if (shapes.length > 0 && uniqueShapes.size < 3) {
+      issues.push({
+        severity: "warning",
+        aspect: "balance",
+        message: `Low content shape diversity: only ${uniqueShapes.size} unique shapes (${Array.from(uniqueShapes).join(", ")}). Aim for at least 4 different shapes for visual variety.`,
+        affected_slides: [],
+      });
+    }
+    // Check that bullet_points is not overused (max 40% of content slides)
+    const bulletCount = shapes.filter(s => s === "bullet_points").length;
+    if (bulletCount > Math.ceil(slides.length * 0.4)) {
+      issues.push({
+        severity: "warning",
+        aspect: "balance",
+        message: `Too many bullet_points slides (${bulletCount}/${slides.length}). Use stat_cards, process_steps, card_grid, table_data, etc. for variety.`,
+        affected_slides: [],
+      });
+    }
+  }
+
+  // 10. Check narrative_arc is specified
   if (!outline.narrative_arc || outline.narrative_arc.trim().length < 5) {
     issues.push({
       severity: "warning",
@@ -252,6 +278,8 @@ You evaluate presentation outlines against professional standards: Pyramid Princ
    - Is there variety in slide types (data, narrative, visual)?
    - Are section headers used to organize major parts?
    - Is the slide count appropriate for the topic complexity?
+   - Are content_shapes diverse? (at least 4 different shapes for 8+ slide presentations)
+   - Is bullet_points overused? (should be max 40% of content slides)
 
 5. AUDIENCE ENGAGEMENT (score 1-10):
    - Are titles specific and engaging (not generic)?
@@ -282,7 +310,9 @@ function buildCriticUserPrompt(outline: OutlineResult, localIssues: CritiqueIssu
       (s) =>
         `Slide ${s.slide_number}: "${s.title}"
   Purpose: ${s.purpose}
-  Key points: ${s.key_points.join("; ")}`,
+  Key points: ${s.key_points.join("; ")}
+  Content shape: ${(s as any).content_shape || "not assigned"}
+  Category: ${(s as any).slide_category || "not assigned"}`,
     )
     .join("\n\n");
 
@@ -336,8 +366,10 @@ export async function runOutlineCritic(
       purpose: { type: "string" as const },
       key_points: { type: "array" as const, items: { type: "string" as const } },
       speaker_notes_hint: { type: "string" as const },
+      content_shape: { type: "string" as const },
+      slide_category: { type: "string" as const },
     },
-    required: ["slide_number", "title", "purpose", "key_points", "speaker_notes_hint"] as const,
+    required: ["slide_number", "title", "purpose", "key_points", "speaker_notes_hint", "content_shape", "slide_category"] as const,
     additionalProperties: false as const,
   };
 

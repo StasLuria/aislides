@@ -73,6 +73,8 @@ export interface OutlineSlide {
   purpose: string;
   key_points: string[];
   speaker_notes_hint: string;
+  content_shape?: string;
+  slide_category?: string;
 }
 
 export interface OutlineResult {
@@ -89,6 +91,31 @@ export interface SlideContent {
   notes: string;
   data_points: Array<{ label: string; value: string; unit: string }>;
   key_message: string;
+  structured_content?: StructuredContent;
+  content_shape?: string;
+  slide_category?: string;
+}
+
+/** Structured content produced by the Writer based on content_shape */
+export interface StructuredContent {
+  /** For stat_cards: array of {label, value, description} */
+  stat_cards?: Array<{ label: string; value: string; description: string }>;
+  /** For comparison_two_sides: {left_title, left_items, right_title, right_items} */
+  comparison?: { left_title: string; left_items: Array<{ text: string; icon_hint?: string }>; right_title: string; right_items: Array<{ text: string; icon_hint?: string }> };
+  /** For table_data: {columns, rows} */
+  table?: { columns: string[]; rows: Array<Record<string, string>> };
+  /** For process_steps: array of {step_number, title, description} */
+  steps?: Array<{ step_number: number; title: string; description: string }>;
+  /** For card_grid: array of {icon_hint, title, text, badge?} */
+  cards?: Array<{ icon_hint: string; title: string; text: string; badge?: string }>;
+  /** For timeline_events: array of {date, title, description} */
+  timeline?: Array<{ date: string; title: string; description: string }>;
+  /** For financial_formula: {formula_parts, supporting_metrics} */
+  formula?: { parts: Array<{ label: string; value: string; description: string; operator?: string }>; bottom_line?: string };
+  /** For analysis_with_verdict: {items, verdict} */
+  analysis?: { items: Array<{ title: string; description: string; code?: string; severity?: string }>; verdict_title: string; verdict_text: string; indicators?: Array<{ label: string; value: string; color?: string }> };
+  /** For quote_highlight: {quote, attribution, context} */
+  quote?: { text: string; attribution: string; context: string };
 }
 
 export interface ThemeResult {
@@ -213,8 +240,10 @@ export async function runOutline(
             purpose: { type: "string" },
             key_points: { type: "array", items: { type: "string" } },
             speaker_notes_hint: { type: "string" },
+            content_shape: { type: "string" },
+            slide_category: { type: "string" },
           },
-          required: ["slide_number", "title", "purpose", "key_points", "speaker_notes_hint"],
+          required: ["slide_number", "title", "purpose", "key_points", "speaker_notes_hint", "content_shape", "slide_category"],
           additionalProperties: false,
         },
       },
@@ -241,6 +270,8 @@ export async function runWriterSingle(
     slideInfo.key_points.join(", "),
     previousContext,
     researchContext,
+    slideInfo.content_shape,
+    slideInfo.slide_category,
   );
 
   const result = await llmStructured<{ slide: SlideContent }>(system, user, "WriterOutput", {
@@ -267,6 +298,8 @@ export async function runWriterSingle(
             },
           },
           key_message: { type: "string" },
+          content_shape: { type: "string" },
+          structured_content: { type: "object" },
         },
         required: ["slide_number", "title", "text", "notes", "data_points", "key_message"],
         additionalProperties: false,
@@ -276,7 +309,11 @@ export async function runWriterSingle(
     additionalProperties: false,
   });
 
-  return result.slide;
+  // Carry over content_shape and slide_category from outline
+  const slide = result.slide;
+  slide.content_shape = slideInfo.content_shape || "bullet_points";
+  slide.slide_category = slideInfo.slide_category;
+  return slide;
 }
 
 /**
@@ -415,8 +452,14 @@ export async function runTheme(
 export async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
   const slidesSummary = content
     .map(
-      (s) =>
-        `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${s.data_points.length > 0 ? " [HAS DATA]" : ""}`,
+      (s) => {
+        const shapeHint = s.content_shape ? ` [SHAPE: ${s.content_shape}]` : "";
+        const dataHint = s.data_points.length > 0 ? " [HAS DATA]" : "";
+        const structuredHint = s.structured_content
+          ? ` [HAS STRUCTURED: ${Object.keys(s.structured_content).join(", ")}]`
+          : "";
+        return `Slide ${s.slide_number}: "${s.title}" — ${s.key_message || s.text.substring(0, 100)}${dataHint}${shapeHint}${structuredHint}`;
+      },
     )
     .join("\n");
 
@@ -464,6 +507,9 @@ export async function runHtmlComposer(
     slideContent.notes,
     slideContent.key_message,
     themeCss,
+    slideContent.structured_content,
+    slideContent.content_shape,
+    slideContent.slide_category,
   );
 
   // The composer returns the data object for the template
@@ -757,6 +803,9 @@ export async function runHtmlComposerWithQA(
       slideContent.notes,
       slideContent.key_message,
       themeCss,
+      slideContent.structured_content,
+      slideContent.content_shape,
+      slideContent.slide_category,
     );
 
     const rawResponse = await llmText(system, user).catch(() => "");
@@ -1158,9 +1207,20 @@ export async function generatePresentation(
           buildFallbackData(slideContent, layoutName),
         );
 
-        // Post-process: truncate description for title/final slides to prevent overflow
+        // Post-process: truncate text to prevent overflow
+        if (data.title && typeof data.title === "string" && data.title.length > 50) {
+          // Hard truncate title at word boundary
+          const t = data.title.substring(0, 50);
+          const ls = t.lastIndexOf(" ");
+          data.title = ls > 30 ? t.substring(0, ls) : t;
+        }
         if ((layoutName === "title-slide" || layoutName === "final-slide") && data.description && data.description.length > 200) {
           data.description = data.description.substring(0, 200);
+        }
+        if ((layoutName === "section-header" || layoutName === "final-slide") && data.subtitle && data.subtitle.length > 120) {
+          const sub = data.subtitle.substring(0, 120);
+          const ls = sub.lastIndexOf(" ");
+          data.subtitle = (ls > 80 ? sub.substring(0, ls) : sub);
         }
 
         // Inject image if available

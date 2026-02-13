@@ -66,9 +66,12 @@ Rules for action titles:
 2. Include specific numbers, percentages, or outcomes when available
 3. Use active verbs: "drives", "accelerates", "enables", "reduces", "transforms"
 4. The audience should understand the slide's message from the title ALONE
-5. Keep titles concise: 6-12 words maximum
-6. For section headers: use a provocative question or bold statement
-7. Title slide and final slide can keep their original format
+5. STRICT LENGTH LIMIT: Maximum 50 characters for Russian titles, 60 characters for English titles. This is a HARD limit — titles WILL be truncated if longer. Count characters carefully.
+6. Prefer short, punchy titles: 4-8 words. If you need more words, you're being too descriptive.
+7. For section headers: use a short provocative question or bold 3-5 word statement (max 35 characters)
+8. Title slide and final slide can keep their original format but must also respect the 50-char limit
+9. NEVER use colons (:) to combine two ideas in one title — pick the stronger idea
+10. NEVER use "и" / "and" to chain multiple concepts — focus on ONE insight per title
 </action_title_rules>
 
 <narrative_coherence_rules>
@@ -126,6 +129,29 @@ Use the content's data points and key messages to craft specific, insight-driven
 Generate transition phrases that connect each slide to the previous one.
 Assign a narrative role to each slide.
 Write in the same language as the slide content.`;
+}
+
+// ═══════════════════════════════════════════════════════
+// TITLE TRUNCATION
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Hard-truncate a title to maxChars. Tries to break at a word boundary.
+ * If the title is already short enough, returns it unchanged.
+ */
+export function truncateTitle(title: string, maxChars: number): string {
+  if (!title || title.length <= maxChars) return title;
+
+  // Try to break at last space before the limit
+  const truncated = title.substring(0, maxChars);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  if (lastSpace > maxChars * 0.6) {
+    return truncated.substring(0, lastSpace);
+  }
+
+  // No good word boundary — just cut
+  return truncated;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -222,7 +248,7 @@ export async function runStorytellingAgent(
 
     // Replace title with action title (but keep original for title-slide format)
     if (enhancement.action_title && enhancement.action_title.trim()) {
-      enhanced.title = enhancement.action_title;
+      enhanced.title = truncateTitle(enhancement.action_title, 50);
     }
 
     // Prepend transition to speaker notes (not slide text — transitions are for the speaker)

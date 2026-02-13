@@ -266,13 +266,14 @@ describe("Enhanced Writer Prompts", () => {
   it("should mention bold markers in writer system", () => {
     const system = writerSystem("ru", "Test", "Slide 1, Slide 2", "Business audience");
     expect(system).toContain("**bold**");
-    expect(system).toContain("emphasis");
   });
 
-  it("should include content density rules", () => {
+  it("should include content shape instructions", () => {
     const system = writerSystem("ru", "Test", "Slide 1", "General");
-    expect(system).toContain("content_density_rules");
-    expect(system).toContain("4-5 bullet points");
+    expect(system).toContain("content_shape_instructions");
+    expect(system).toContain("structured_content");
+    expect(system).toContain("stat_cards");
+    expect(system).toContain("process_steps");
   });
 });
 

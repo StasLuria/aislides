@@ -887,3 +887,17 @@
 - [x] Add auto-scroll sidebar thumbnail into view when slide changes
 - [x] Apply same overflow-hidden fix to version history and slide editor ScrollAreas
 - [x] Write vitest tests for keyboard navigation (12 tests passing)
+
+## Deep Quality Improvement: Presentation Generation Pipeline
+- [x] Fix: Title text overflow — storytelling agent now enforces 60-char max + hard truncation post-processing
+- [x] Fix: Text-wall slides — subtitle truncation at 200 chars for section-header and final-slide
+- [x] Audit: Analyzed writer agent — found all slides produce identical 4-5 bullet format
+- [x] Audit: Analyzed layout agent — found chart injection forces layout changes
+- [x] Audit: Analyzed design critic — found outline critic lacks content_shape diversity checks
+- [x] Improve: Writer agent — complete rewrite with 12 content_shape types (stat_cards, card_grid, process_steps, table_data, timeline_events, financial_formula, analysis_with_verdict, comparison_two_sides, chart_with_context, quote_highlight, single_concept, bullet_points)
+- [x] Improve: Outline agent — now assigns content_shape and slide_category per slide with diversity rules
+- [x] Improve: Layout agent — added content_shape-to-layout mapping for better layout selection
+- [x] Improve: HTML Composer — now receives structured_content for richer data mapping
+- [x] Improve: Outline Critic — added content_shape diversity validation (min 4 shapes, max 40% bullets)
+- [x] Improve: Text length constraints — title max 60 chars, subtitle max 200 chars, enforced at multiple levels
+- [x] Write vitest tests — 1024 tests passing (34 test files)
