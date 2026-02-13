@@ -36,7 +36,7 @@ import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview } from
 import ChatSidebar from "@/components/ChatSidebar";
 import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@/components/FileUploadButton";
 import api, { type CustomTemplateListItem } from "@/lib/api";
-import { THEME_PRESETS } from "@/lib/constants";
+import { THEME_PRESETS, THEME_CATEGORIES } from "@/lib/constants";
 
 // ═══════════════════════════════════════════════════════
 // SETTINGS TYPES
@@ -348,6 +348,8 @@ function SettingsPanel({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryFilter, setGalleryFilter] = useState<string>("all");
 
   // Load custom templates on mount
   useEffect(() => {
@@ -416,7 +418,7 @@ function SettingsPanel({
   };
 
   return (
-    <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg p-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-[400px] overflow-y-auto">
+    <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-xl shadow-lg p-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-[500px] overflow-y-auto">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">Настройки генерации</span>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
@@ -424,38 +426,138 @@ function SettingsPanel({
         </button>
       </div>
 
-      {/* Theme */}
+      {/* Theme Gallery */}
       <div className="mb-4">
-        <label className="text-xs text-muted-foreground mb-2 block">Тема дизайна</label>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs text-muted-foreground">Тема дизайна</label>
           <button
-            onClick={() => { clearCustomTemplate(); onChange({ ...settings, themePreset: "auto", customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null }); }}
-            className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
-              settings.themePreset === "auto" && !settings.customTemplateId
-                ? "border-primary bg-primary/5 text-primary font-medium"
-                : "border-border hover:border-primary/30 text-muted-foreground"
-            }`}
+            onClick={() => setShowGallery(!showGallery)}
+            className="text-[10px] text-primary hover:text-primary/80 transition-colors"
           >
-            Авто
+            {showGallery ? "Свернуть" : "Галерея"}
           </button>
-          {THEME_PRESETS.map((t) => (
+        </div>
+
+        {!showGallery ? (
+          /* Compact view — small chips */
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={t.id}
-              onClick={() => onChange({ ...settings, themePreset: t.id, customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null })}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
-                settings.themePreset === t.id && !settings.customTemplateId
+              onClick={() => { clearCustomTemplate(); onChange({ ...settings, themePreset: "auto", customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null }); }}
+              className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
+                settings.themePreset === "auto" && !settings.customTemplateId
                   ? "border-primary bg-primary/5 text-primary font-medium"
                   : "border-border hover:border-primary/30 text-muted-foreground"
               }`}
             >
-              <span
-                className="w-2.5 h-2.5 rounded-full border border-black/10"
-                style={{ backgroundColor: t.color }}
-              />
-              {t.nameRu}
+              Авто
             </button>
-          ))}
-        </div>
+            {THEME_PRESETS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onChange({ ...settings, themePreset: t.id, customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null })}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-colors ${
+                  settings.themePreset === t.id && !settings.customTemplateId
+                    ? "border-primary bg-primary/5 text-primary font-medium"
+                    : "border-border hover:border-primary/30 text-muted-foreground"
+                }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-black/10"
+                  style={{ backgroundColor: t.color }}
+                />
+                {t.nameRu}
+              </button>
+            ))}
+          </div>
+        ) : (
+          /* Gallery view — visual preview cards */
+          <div>
+            {/* Category filter tabs */}
+            <div className="flex gap-1 mb-3">
+              {THEME_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setGalleryFilter(cat.id)}
+                  className={`px-2.5 py-1 rounded-md text-[10px] border transition-colors ${
+                    galleryFilter === cat.id
+                      ? "border-primary bg-primary/5 text-primary font-medium"
+                      : "border-border hover:border-primary/30 text-muted-foreground"
+                  }`}
+                >
+                  {cat.nameRu}
+                </button>
+              ))}
+            </div>
+
+            {/* Auto option */}
+            <button
+              onClick={() => { clearCustomTemplate(); onChange({ ...settings, themePreset: "auto", customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null }); }}
+              className={`w-full mb-2 p-2.5 rounded-lg border-2 transition-all text-left ${
+                settings.themePreset === "auto" && !settings.customTemplateId
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-primary/30"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-7 rounded bg-gradient-to-br from-blue-400 via-purple-400 to-orange-400 flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-foreground">Автоматический выбор</div>
+                  <div className="text-[10px] text-muted-foreground">AI подберёт тему под контент</div>
+                </div>
+              </div>
+            </button>
+
+            {/* Theme cards grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {THEME_PRESETS
+                .filter((t) => galleryFilter === "all" || t.category === galleryFilter)
+                .map((t) => {
+                  const isSelected = settings.themePreset === t.id && !settings.customTemplateId;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => onChange({ ...settings, themePreset: t.id, customTemplateId: null, customTemplateName: null, customCssVariables: null, customFontsUrl: null })}
+                      className={`group relative rounded-lg border-2 overflow-hidden transition-all text-left ${
+                        isSelected
+                          ? "border-primary shadow-md ring-1 ring-primary/20"
+                          : "border-border hover:border-primary/30 hover:shadow-sm"
+                      }`}
+                    >
+                      {/* Gradient preview */}
+                      <div
+                        className="h-16 w-full relative"
+                        style={{ background: t.gradient }}
+                      >
+                        {/* Mini slide mockup */}
+                        <div className="absolute inset-2 flex flex-col justify-between">
+                          <div className="flex gap-1">
+                            <div className={`h-1 rounded-full ${t.dark ? 'bg-white/40' : 'bg-white/70'}`} style={{ width: '60%' }} />
+                          </div>
+                          <div className="flex gap-1">
+                            <div className={`h-0.5 rounded-full ${t.dark ? 'bg-white/25' : 'bg-white/50'}`} style={{ width: '40%' }} />
+                            <div className={`h-0.5 rounded-full ${t.dark ? 'bg-white/15' : 'bg-white/30'}`} style={{ width: '25%' }} />
+                          </div>
+                        </div>
+                        {/* Selected checkmark */}
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Info */}
+                      <div className="p-2">
+                        <div className="text-[11px] font-medium text-foreground truncate">{t.nameRu}</div>
+                        <div className="text-[9px] text-muted-foreground truncate">{t.descRu}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Custom Templates */}

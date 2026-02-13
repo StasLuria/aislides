@@ -120,3 +120,44 @@ export async function deletePresentation(presentationId: string): Promise<void> 
 
   await db.delete(presentations).where(eq(presentations.presentationId, presentationId));
 }
+
+/**
+ * Toggle sharing for a presentation. Generates a share token if none exists.
+ * Returns the share token and enabled state.
+ */
+export async function toggleShare(
+  presentationId: string,
+  enabled?: boolean,
+): Promise<{ shareToken: string; shareEnabled: boolean } | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const p = await getPresentation(presentationId);
+  if (!p) return null;
+
+  const newEnabled = enabled !== undefined ? enabled : !p.shareEnabled;
+  const shareToken = p.shareToken || nanoid(24);
+
+  await db
+    .update(presentations)
+    .set({ shareToken, shareEnabled: newEnabled })
+    .where(eq(presentations.presentationId, presentationId));
+
+  return { shareToken, shareEnabled: newEnabled };
+}
+
+/**
+ * Get a presentation by its share token (for public access).
+ */
+export async function getPresentationByShareToken(token: string): Promise<Presentation | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(presentations)
+    .where(and(eq(presentations.shareToken, token), eq(presentations.shareEnabled, true)))
+    .limit(1);
+
+  return result[0];
+}

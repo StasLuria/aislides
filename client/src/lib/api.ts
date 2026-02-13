@@ -753,6 +753,51 @@ class ApiClient {
     });
   }
 
+  // — Export —
+
+  async exportPptx(id: string): Promise<Blob> {
+    const response = await this.http.get(`/presentations/${id}/export/pptx`, {
+      responseType: "blob",
+    });
+    return response.data;
+  }
+
+  // — Share —
+
+  async getShareStatus(id: string): Promise<{ shareToken: string | null; shareEnabled: boolean }> {
+    const { data } = await this.http.get(`/presentations/${id}/share`);
+    return data;
+  }
+
+  async toggleShare(id: string, enabled?: boolean): Promise<{ shareToken: string; shareEnabled: boolean }> {
+    const { data } = await this.http.post(`/presentations/${id}/share`, { enabled });
+    return data;
+  }
+
+  // — Shared (public) —
+
+  async getSharedPresentation(token: string): Promise<any> {
+    const { data } = await axios.get(`/api/v1/shared/${token}`);
+    return data;
+  }
+
+  async getSharedSlides(token: string): Promise<any> {
+    const { data } = await axios.get(`/api/v1/shared/${token}/slides`);
+    return data;
+  }
+
+  async getSharedHtml(token: string): Promise<{ html_url: string }> {
+    const { data } = await axios.get(`/api/v1/shared/${token}/html`);
+    return data;
+  }
+
+  async exportSharedPptx(token: string): Promise<Blob> {
+    const response = await axios.get(`/api/v1/shared/${token}/export/pptx`, {
+      responseType: "blob",
+    });
+    return response.data;
+  }
+
   // — Health —
 
   async checkHealth(): Promise<{ status: string; version?: string }> {

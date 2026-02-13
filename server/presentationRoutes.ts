@@ -16,11 +16,15 @@ import {
   listPresentations,
   updatePresentationProgress,
   deletePresentation,
+  toggleShare,
+  getPresentationByShareToken,
 } from "./presentationDb";
 import { generatePresentation, type PipelineProgress } from "./pipeline/generator";
 import { wsManager } from "./wsManager";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { generatePptx } from "./pptxExport";
+import { getThemePreset } from "./pipeline/themes";
 
 const router = Router();
 
@@ -306,6 +310,201 @@ async function startGeneration(
     });
   }
 }
+
+// ── Share ───────────────────────────────────────────
+router.post("/api/v1/presentations/:id/share", async (req: Request, res: Response) => {
+  try {
+    const { enabled } = req.body || {};
+    const result = await toggleShare(req.params.id, enabled);
+    if (!result) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+    res.json(result);
+  } catch (error: any) {
+    console.error("[API] Share toggle error:", error);
+    res.status(500).json({ detail: error.message || "Failed to toggle share" });
+  }
+});
+
+router.get("/api/v1/presentations/:id/share", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+    res.json({
+      shareToken: p.shareToken || null,
+      shareEnabled: p.shareEnabled || false,
+    });
+  } catch (error: any) {
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+// ── Public shared view ─────────────────────────────────
+router.get("/api/v1/shared/:token", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentationByShareToken(req.params.token);
+    if (!p) {
+      res.status(404).json({ detail: "Shared presentation not found or sharing is disabled" });
+      return;
+    }
+
+    // Return limited data for public view (no pipeline state, no config)
+    res.json({
+      presentation_id: p.presentationId,
+      title: p.title || p.prompt.substring(0, 100),
+      status: p.status,
+      slide_count: p.slideCount,
+      result_urls: p.resultUrls || {},
+      theme_css: p.themeCss,
+      language: p.language,
+      created_at: p.createdAt,
+    });
+  } catch (error: any) {
+    console.error("[API] Shared view error:", error);
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+router.get("/api/v1/shared/:token/slides", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentationByShareToken(req.params.token);
+    if (!p) {
+      res.status(404).json({ detail: "Shared presentation not found or sharing is disabled" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    res.json({
+      presentation_id: p.presentationId,
+      title: p.title || p.prompt.substring(0, 100),
+      theme_css: p.themeCss,
+      language: p.language,
+      slides: slides.map((s: any, i: number) => ({
+        index: i,
+        layoutId: s.layoutId || s.layout_id || "text-slide",
+        data: s.data || {},
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+router.get("/api/v1/shared/:token/html", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentationByShareToken(req.params.token);
+    if (!p) {
+      res.status(404).json({ detail: "Shared presentation not found" });
+      return;
+    }
+
+    const urls = (p.resultUrls as Record<string, any>) || {};
+    const htmlUrl = urls.html_preview || urls.html;
+    if (!htmlUrl) {
+      res.status(404).json({ detail: "HTML not available" });
+      return;
+    }
+
+    res.json({ html_url: htmlUrl });
+  } catch (error: any) {
+    res.status(500).json({ detail: error.message });
+  }
+});
+
+router.get("/api/v1/shared/:token/export/pptx", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentationByShareToken(req.params.token);
+    if (!p) {
+      res.status(404).json({ detail: "Shared presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides available" });
+      return;
+    }
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+    const cssVariables = p.themeCss || themePreset.cssVariables;
+    const title = p.title || p.prompt.substring(0, 100);
+
+    const pptxBuffer = await generatePptx(
+      slides.map((s: any) => ({
+        layoutId: s.layoutId || s.layout_id || "text-slide",
+        data: s.data || {},
+      })),
+      title,
+      cssVariables,
+    );
+
+    const safeTitle = title.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s-]/g, "").substring(0, 60).trim() || "presentation";
+    const filename = `${safeTitle}.pptx`;
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(pptxBuffer);
+  } catch (error: any) {
+    console.error("[API] Shared PPTX export error:", error);
+    res.status(500).json({ detail: error.message || "PPTX export failed" });
+  }
+});
+
+// ── Export PPTX ────────────────────────────────────────
+router.get("/api/v1/presentations/:id/export/pptx", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = (p.finalHtmlSlides as any[]) || [];
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides available" });
+      return;
+    }
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+    const cssVariables = p.themeCss || themePreset.cssVariables;
+    const title = p.title || p.prompt.substring(0, 100);
+
+    const pptxBuffer = await generatePptx(
+      slides.map((s: any) => ({
+        layoutId: s.layoutId || s.layout_id || "text-slide",
+        data: s.data || {},
+      })),
+      title,
+      cssVariables,
+    );
+
+    const safeTitle = title.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s-]/g, "").substring(0, 60).trim() || "presentation";
+    const filename = `${safeTitle}.pptx`;
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(pptxBuffer);
+  } catch (error: any) {
+    console.error("[API] PPTX export error:", error);
+    res.status(500).json({ detail: error.message || "PPTX export failed" });
+  }
+});
 
 export function registerPresentationRoutes(app: import("express").Express) {
   app.use(router);

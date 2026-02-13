@@ -834,3 +834,31 @@
 - [x] Bug 1: Add confirmation dialog before deleting a chat
 - [x] Bug 2: Localize SESSION_NOT_FOUND error to Russian "Чат не найден"
 - [x] Bug 3: Fix template name encoding issue in settings panel (garbled Cyrillic)
+
+## Task: PPTX Export
+- [x] Backend: Install pptxgenjs library
+- [x] Backend: Create PPTX export endpoint GET /api/v1/presentations/:id/export/pptx
+- [x] Backend: Convert HTML slide data (title, content, images, charts) to PPTX slides
+- [x] Backend: Map all 30+ layout types to PPTX compositions (charts, tables, stats, timeline, etc.)
+- [x] Backend: Support charts (bar, line, pie, donut, radar) in PPTX via pptxgenjs native charts
+- [x] Backend: Theme colors from CSS variables applied to PPTX
+- [x] Frontend: Add "Скачать PPTX" button in Viewer with loading state
+- [x] Write vitest tests for PPTX export (6 tests)
+
+## Task: Share by Link
+- [x] Backend: Add shareToken + shareEnabled columns to presentations table, migrated schema
+- [x] Backend: POST /api/v1/presentations/:id/share — generate/toggle share link
+- [x] Backend: GET /api/v1/presentations/:id/share — get share status
+- [x] Backend: GET /api/v1/shared/:token — public endpoint to view shared presentation
+- [x] Backend: GET /api/v1/shared/:token/slides, /html, /export/pptx — public data endpoints
+- [x] Frontend: Share button + dialog with switch toggle and copy-link in Viewer
+- [x] Frontend: Public viewer page at /shared/:token (no auth, fullscreen, PPTX/HTML download)
+- [x] Write vitest tests for share feature (4 tests)
+
+## Task: Template Gallery
+- [x] Backend: Extended THEME_PRESETS with categories and descriptions (business, creative, dark, nature)
+- [x] Frontend: Gallery view in settings panel with visual preview cards (gradient + mockup)
+- [x] Frontend: Category filter tabs (Все, Бизнес, Креатив, Тёмные, Природа)
+- [x] Frontend: Toggle between compact chips view and gallery grid view
+- [x] Frontend: Click to select template → applies to next generation
+- [x] Write vitest tests for gallery feature (7 tests)

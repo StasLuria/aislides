@@ -15,26 +15,34 @@ import Viewer from "./pages/Viewer";
 import Interactive from "./pages/Interactive";
 import ChatPage from "./pages/ChatPage";
 import AppLayout from "./components/AppLayout";
+import SharedViewer from "./pages/SharedViewer";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <AppLayout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/generate/:id" component={Generate} />
-        <Route path="/view/:id" component={Viewer} />
-        {/* Redirect /history to /chat — history is now in the chat sidebar */}
-        <Route path="/history">
-          <Redirect to="/chat" />
-        </Route>
-        <Route path="/interactive/:id" component={Interactive} />
-        <Route path="/chat" component={ChatPage} />
-        <Route path="/chat/:id" component={ChatPage} />
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </AppLayout>
+    <Switch>
+      {/* Public shared viewer - no auth, no app layout */}
+      <Route path="/shared/:token" component={SharedViewer} />
+      {/* Main app routes with layout */}
+      <Route>
+        <AppLayout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/generate/:id" component={Generate} />
+            <Route path="/view/:id" component={Viewer} />
+            {/* Redirect /history to /chat — history is now in the chat sidebar */}
+            <Route path="/history">
+              <Redirect to="/chat" />
+            </Route>
+            <Route path="/interactive/:id" component={Interactive} />
+            <Route path="/chat" component={ChatPage} />
+            <Route path="/chat/:id" component={ChatPage} />
+            <Route path="/404" component={NotFound} />
+            <Route component={NotFound} />
+          </Switch>
+        </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 

@@ -112,18 +112,26 @@ export const GENERATION_STEPS = [
 
 // Theme presets — 10 curated themes with gradient backgrounds
 export const THEME_PRESETS = [
-  { id: "corporate_blue", name: "Corporate Blue", nameRu: "Корпоративный синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1e40af, #3b82f6)", dark: false },
-  { id: "modern_purple", name: "Modern Purple", nameRu: "Современный фиолетовый", color: "#7C3AED", gradient: "linear-gradient(135deg, #6d28d9, #a78bfa)", dark: false },
-  { id: "ocean_deep", name: "Ocean Deep", nameRu: "Глубокий океан", color: "#0891B2", gradient: "linear-gradient(135deg, #164e63, #06b6d4)", dark: false },
-  { id: "sunset_warm", name: "Sunset Warm", nameRu: "Тёплый закат", color: "#EA580C", gradient: "linear-gradient(135deg, #c2410c, #fb923c)", dark: false },
-  { id: "forest_green", name: "Forest Green", nameRu: "Лесной зелёный", color: "#16A34A", gradient: "linear-gradient(135deg, #166534, #4ade80)", dark: false },
-  { id: "cosmic_dark", name: "Cosmic Dark", nameRu: "Космический тёмный", color: "#8B5CF6", gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed, #06b6d4)", dark: true },
-  { id: "rose_gold", name: "Rose Gold", nameRu: "Розовое золото", color: "#E11D48", gradient: "linear-gradient(135deg, #9f1239, #fb7185)", dark: false },
-  { id: "arctic_frost", name: "Arctic Frost", nameRu: "Арктический мороз", color: "#6366F1", gradient: "linear-gradient(135deg, #e0e7ff, #c7d2fe, #a5b4fc)", dark: false },
-  { id: "midnight_noir", name: "Midnight Noir", nameRu: "Полночный нуар", color: "#F59E0B", gradient: "linear-gradient(135deg, #1c1917, #292524, #f59e0b)", dark: true },
-  { id: "citrus_energy", name: "Citrus Energy", nameRu: "Цитрусовая энергия", color: "#84CC16", gradient: "linear-gradient(135deg, #4d7c0f, #a3e635)", dark: false },
-  { id: "executive_navy_red", name: "Executive Navy & Red", nameRu: "Деловой тёмно-синий", color: "#DC2626", gradient: "linear-gradient(135deg, #1a1a3e, #dc2626)", dark: false },
-  { id: "data_navy_blue", name: "Data Navy & Blue", nameRu: "Аналитический синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1a1a3e, #2563eb, #dc2626)", dark: false },
+  { id: "corporate_blue", name: "Corporate Blue", nameRu: "Корпоративный синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1e40af, #3b82f6)", dark: false, category: "business" as const, descRu: "Профессиональный стиль для бизнес-презентаций" },
+  { id: "modern_purple", name: "Modern Purple", nameRu: "Современный фиолетовый", color: "#7C3AED", gradient: "linear-gradient(135deg, #6d28d9, #a78bfa)", dark: false, category: "creative" as const, descRu: "Творческий и инновационный дизайн" },
+  { id: "ocean_deep", name: "Ocean Deep", nameRu: "Глубокий океан", color: "#0891B2", gradient: "linear-gradient(135deg, #164e63, #06b6d4)", dark: false, category: "business" as const, descRu: "Спокойный и глубокий профессиональный стиль" },
+  { id: "sunset_warm", name: "Sunset Warm", nameRu: "Тёплый закат", color: "#EA580C", gradient: "linear-gradient(135deg, #c2410c, #fb923c)", dark: false, category: "creative" as const, descRu: "Яркий и энергичный стиль" },
+  { id: "forest_green", name: "Forest Green", nameRu: "Лесной зелёный", color: "#16A34A", gradient: "linear-gradient(135deg, #166534, #4ade80)", dark: false, category: "nature" as const, descRu: "Природный и экологичный стиль" },
+  { id: "cosmic_dark", name: "Cosmic Dark", nameRu: "Космический тёмный", color: "#8B5CF6", gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed, #06b6d4)", dark: true, category: "dark" as const, descRu: "Тёмная тема с космическими акцентами" },
+  { id: "rose_gold", name: "Rose Gold", nameRu: "Розовое золото", color: "#E11D48", gradient: "linear-gradient(135deg, #9f1239, #fb7185)", dark: false, category: "creative" as const, descRu: "Элегантный и утончённый дизайн" },
+  { id: "arctic_frost", name: "Arctic Frost", nameRu: "Арктический мороз", color: "#6366F1", gradient: "linear-gradient(135deg, #e0e7ff, #c7d2fe, #a5b4fc)", dark: false, category: "nature" as const, descRu: "Лёгкий и воздушный зимний стиль" },
+  { id: "midnight_noir", name: "Midnight Noir", nameRu: "Полночный нуар", color: "#F59E0B", gradient: "linear-gradient(135deg, #1c1917, #292524, #f59e0b)", dark: true, category: "dark" as const, descRu: "Тёмный стиль с золотыми акцентами" },
+  { id: "citrus_energy", name: "Citrus Energy", nameRu: "Цитрусовая энергия", color: "#84CC16", gradient: "linear-gradient(135deg, #4d7c0f, #a3e635)", dark: false, category: "nature" as const, descRu: "Свежий и энергичный дизайн" },
+  { id: "executive_navy_red", name: "Executive Navy & Red", nameRu: "Деловой тёмно-синий", color: "#DC2626", gradient: "linear-gradient(135deg, #1a1a3e, #dc2626)", dark: false, category: "business" as const, descRu: "Строгий деловой стиль с красным акцентом" },
+  { id: "data_navy_blue", name: "Data Navy & Blue", nameRu: "Аналитический синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1a1a3e, #2563eb, #dc2626)", dark: false, category: "business" as const, descRu: "Для аналитических и дата-презентаций" },
+] as const;
+
+export const THEME_CATEGORIES = [
+  { id: "all", nameRu: "Все" },
+  { id: "business", nameRu: "Бизнес" },
+  { id: "creative", nameRu: "Креатив" },
+  { id: "dark", nameRu: "Тёмные" },
+  { id: "nature", nameRu: "Природа" },
 ] as const;
 
 // Layout names

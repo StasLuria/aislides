@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FileDown,
   Maximize2,
   Minimize2,
   ArrowLeft,
@@ -34,7 +35,19 @@ import {
   GripVertical,
   Check,
   AlertCircle,
+  Share2,
+  Copy,
+  Link,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import {
   DndContext,
   closestCenter,
@@ -800,6 +813,66 @@ export default function Viewer() {
     toast.success("Файл скачан");
   };
 
+  // Share
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareEnabled, setShareEnabled] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isTogglingShare, setIsTogglingShare] = useState(false);
+
+  // Load share status when dialog opens
+  useEffect(() => {
+    if (shareDialogOpen && presentationId) {
+      api.getShareStatus(presentationId).then((status) => {
+        setShareEnabled(status.shareEnabled);
+        setShareToken(status.shareToken);
+      }).catch(() => {});
+    }
+  }, [shareDialogOpen, presentationId]);
+
+  const handleToggleShare = async () => {
+    setIsTogglingShare(true);
+    try {
+      const result = await api.toggleShare(presentationId, !shareEnabled);
+      setShareEnabled(result.shareEnabled);
+      setShareToken(result.shareToken);
+      toast.success(result.shareEnabled ? "Доступ по ссылке включён" : "Доступ по ссылке отключён");
+    } catch {
+      toast.error("Не удалось изменить настройку доступа");
+    } finally {
+      setIsTogglingShare(false);
+    }
+  };
+
+  const shareUrl = shareToken ? `${window.location.origin}/shared/${shareToken}` : "";
+
+  const handleCopyShareLink = () => {
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Ссылка скопирована");
+    }
+  };
+
+  // Download PPTX
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
+  const handleDownloadPptx = async () => {
+    setIsExportingPptx(true);
+    try {
+      const blob = await api.exportPptx(presentationId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `presentation-${presentationId.slice(0, 8)}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PPTX файл скачан");
+    } catch (error) {
+      console.error("PPTX export failed:", error);
+      toast.error("Не удалось экспортировать в PPTX");
+    } finally {
+      setIsExportingPptx(false);
+    }
+  };
+
   // Open in new tab
   const handleOpenInTab = () => {
     const htmlUrl = presentation?.result_urls?.html_preview || presentation?.result_urls?.html;
@@ -990,8 +1063,22 @@ export default function Viewer() {
               </div>
             )}
             <Button
-              onClick={handleDownload}
+              onClick={handleDownloadPptx}
               variant="outline"
+              size="sm"
+              className="w-full gap-2 text-xs"
+              disabled={isExportingPptx || presentation?.status !== "completed"}
+            >
+              {isExportingPptx ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              {isExportingPptx ? "Экспорт..." : "Скачать PPTX"}
+            </Button>
+            <Button
+              onClick={handleDownload}
+              variant="ghost"
               size="sm"
               className="w-full gap-2 text-xs"
               disabled={!fullHtml}
@@ -1076,6 +1163,16 @@ export default function Viewer() {
                 <PanelRightOpen className="w-4 h-4" />
               </Button>
 
+              {/* Share button */}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShareDialogOpen(true)}
+                title="Поделиться"
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -1085,6 +1182,55 @@ export default function Viewer() {
               </Button>
             </div>
           </div>
+
+          {/* Share dialog */}
+          <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Поделиться презентацией</DialogTitle>
+                <DialogDescription>
+                  Создайте публичную ссылку для просмотра презентации без авторизации.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-sm font-medium">Доступ по ссылке</div>
+                    <div className="text-xs text-muted-foreground">
+                      {shareEnabled ? "Любой с этой ссылкой может просматривать" : "Только вы можете просматривать"}
+                    </div>
+                  </div>
+                  <Switch
+                    checked={shareEnabled}
+                    onCheckedChange={handleToggleShare}
+                    disabled={isTogglingShare}
+                  />
+                </div>
+                {shareEnabled && shareToken && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 relative">
+                      <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input
+                        readOnly
+                        value={shareUrl}
+                        className="pl-9 text-xs font-mono bg-secondary/50"
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyShareLink}
+                      className="gap-1.5 shrink-0"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Копировать
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Slide display */}
           <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20">

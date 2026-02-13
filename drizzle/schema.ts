@@ -1,4 +1,4 @@
-import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -64,6 +64,10 @@ export const presentations = mysqlTable("presentations", {
   language: varchar("language", { length: 10 }).default("ru"),
   /** Theme CSS variables */
   themeCss: text("themeCss"),
+  /** Share token for public access */
+  shareToken: varchar("shareToken", { length: 64 }),
+  /** Whether sharing is enabled */
+  shareEnabled: boolean("shareEnabled").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
