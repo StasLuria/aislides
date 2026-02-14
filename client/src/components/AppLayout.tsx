@@ -4,7 +4,7 @@
  */
 
 import { Link, useLocation } from "wouter";
-import { Presentation, MessageSquare } from "lucide-react";
+import { Presentation, MessageSquare, BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AppLayoutProps {
@@ -16,6 +16,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   const navItems = [
     { href: "/chat", label: "Чат", icon: MessageSquare },
+    { href: "/analytics", label: "Аналитика", icon: BarChart3 },
   ];
 
   return (

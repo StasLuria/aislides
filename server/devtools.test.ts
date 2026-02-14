@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import type { TrpcContext } from "./_core/context";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
+
+// ─── generate-readme.mjs ──────────────────────────────────────
 
 describe("generate-readme.mjs", () => {
   it("runs in dry-run mode and outputs metrics summary", () => {
@@ -13,7 +16,6 @@ describe("generate-readme.mjs", () => {
       timeout: 30_000,
     });
 
-    // Should contain the metrics summary header
     expect(output).toContain("Codebase Metrics Summary");
     expect(output).toContain("Pipeline steps:");
     expect(output).toContain("Layouts (total):");
@@ -71,7 +73,6 @@ describe("generate-readme.mjs", () => {
   });
 
   it("updates README.md when run without --dry-run", () => {
-    // Save original README
     const readmePath = path.join(ROOT, "README.md");
     const original = fs.readFileSync(readmePath, "utf-8");
 
@@ -83,16 +84,16 @@ describe("generate-readme.mjs", () => {
       });
 
       const updated = fs.readFileSync(readmePath, "utf-8");
-      // The README should contain updated metrics from the script
       expect(updated).toContain("15-этапный мультиагентный пайплайн");
       expect(updated).toContain("45 HTML-макетов");
       expect(updated).toContain("54 REST API endpoints");
     } finally {
-      // Restore original README
       fs.writeFileSync(readmePath, original, "utf-8");
     }
   });
 });
+
+// ─── generate-changelog.mjs ───────────────────────────────────
 
 describe("generate-changelog.mjs", () => {
   it("generates CHANGELOG.md from todo.md", () => {
@@ -117,7 +118,6 @@ describe("generate-changelog.mjs", () => {
   it("dry-run mode does not modify files", () => {
     const changelogPath = path.join(ROOT, "CHANGELOG.md");
 
-    // Remove CHANGELOG if it exists
     if (fs.existsSync(changelogPath)) {
       fs.unlinkSync(changelogPath);
     }
@@ -131,7 +131,6 @@ describe("generate-changelog.mjs", () => {
     expect(output).toContain("Dry run");
     expect(output).toContain("# CHANGELOG");
 
-    // File should not exist after dry run
     expect(fs.existsSync(changelogPath)).toBe(false);
 
     // Regenerate for other tests
@@ -154,12 +153,13 @@ describe("generate-changelog.mjs", () => {
     const changelogPath = path.join(ROOT, "CHANGELOG.md");
     const content = fs.readFileSync(changelogPath, "utf-8");
 
-    // Should have the summary table
     expect(content).toMatch(/Total tasks \| \d+/);
     expect(content).toMatch(/Completed \| \d+/);
     expect(content).toMatch(/Pending \| \d+/);
   });
 });
+
+// ─── Swagger/OpenAPI docs ─────────────────────────────────────
 
 describe("Swagger/OpenAPI docs", () => {
   it("swagger spec file exists and is valid TypeScript", () => {
@@ -236,6 +236,253 @@ describe("Swagger/OpenAPI docs", () => {
   });
 });
 
+// ─── generate-postman.mjs ─────────────────────────────────────
+
+describe("generate-postman.mjs", () => {
+  it("runs in dry-run mode and lists all endpoint folders", () => {
+    const output = execSync("node scripts/generate-postman.mjs --dry-run", {
+      cwd: ROOT,
+      encoding: "utf-8",
+      timeout: 30_000,
+    });
+
+    expect(output).toContain("Generating Postman collection");
+    expect(output).toContain("Folders: 9");
+    expect(output).toContain("Endpoints: 54");
+    expect(output).toContain("Dry run");
+
+    // Check all folder names appear
+    const expectedFolders = [
+      "Health",
+      "Presentations",
+      "Sharing",
+      "Export",
+      "Slide Editing",
+      "Slide Versions",
+      "Interactive Mode",
+      "Chat",
+      "Templates",
+    ];
+    for (const f of expectedFolders) {
+      expect(output).toContain(f);
+    }
+  });
+
+  it("generates valid collection.json and environment.json", () => {
+    execSync("node scripts/generate-postman.mjs", {
+      cwd: ROOT,
+      encoding: "utf-8",
+      timeout: 30_000,
+    });
+
+    const collectionPath = path.join(ROOT, "postman", "collection.json");
+    const envPath = path.join(ROOT, "postman", "environment.json");
+
+    expect(fs.existsSync(collectionPath)).toBe(true);
+    expect(fs.existsSync(envPath)).toBe(true);
+
+    const collection = JSON.parse(fs.readFileSync(collectionPath, "utf-8"));
+    expect(collection.info.name).toBe("Presentation Generator API");
+    expect(collection.info.schema).toContain("collection/v2.1.0");
+    expect(collection.item.length).toBe(9);
+
+    const env = JSON.parse(fs.readFileSync(envPath, "utf-8"));
+    expect(env.name).toContain("Presentation Generator");
+    expect(env.values.some((v: { key: string }) => v.key === "base_url")).toBe(true);
+  });
+
+  it("collection includes correct HTTP methods", () => {
+    const collectionPath = path.join(ROOT, "postman", "collection.json");
+    const collection = JSON.parse(fs.readFileSync(collectionPath, "utf-8"));
+
+    // Flatten all requests
+    const requests: Array<{ method: string; url: { raw: string } }> = [];
+    for (const folder of collection.item) {
+      for (const item of folder.item || []) {
+        requests.push(item.request);
+      }
+    }
+
+    // Check we have various HTTP methods
+    const methods = new Set(requests.map((r) => r.method));
+    expect(methods.has("GET")).toBe(true);
+    expect(methods.has("POST")).toBe(true);
+    expect(methods.has("PUT")).toBe(true);
+    expect(methods.has("DELETE")).toBe(true);
+    expect(methods.has("PATCH")).toBe(true);
+  });
+});
+
+// ─── Pre-commit hook ──────────────────────────────────────────
+
+describe("pre-commit hook", () => {
+  it("husky pre-commit hook file exists and is executable", () => {
+    const hookPath = path.join(ROOT, ".husky", "pre-commit");
+    expect(fs.existsSync(hookPath)).toBe(true);
+
+    const stats = fs.statSync(hookPath);
+    // Check executable bit (owner)
+    expect(stats.mode & 0o100).toBeTruthy();
+  });
+
+  it("pre-commit hook runs readme and changelog scripts", () => {
+    const hookPath = path.join(ROOT, ".husky", "pre-commit");
+    const content = fs.readFileSync(hookPath, "utf-8");
+
+    expect(content).toContain("generate-readme.mjs");
+    expect(content).toContain("generate-changelog.mjs");
+    expect(content).toContain("git add");
+  });
+
+  it("package.json has prepare script for husky", () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
+    expect(pkg.scripts.prepare).toBe("husky");
+  });
+});
+
+// ─── Analytics tRPC procedures ────────────────────────────────
+
+describe("analytics tRPC procedures", () => {
+  function createAuthContext(): TrpcContext {
+    return {
+      user: {
+        id: 1,
+        openId: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+        loginMethod: "manus",
+        role: "user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: {
+        protocol: "https",
+        headers: {},
+      } as TrpcContext["req"],
+      res: {
+        clearCookie: () => {},
+      } as TrpcContext["res"],
+    };
+  }
+
+  it("overview returns correct shape", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.overview({});
+    expect(result).toHaveProperty("totalPresentations");
+    expect(result).toHaveProperty("completedPresentations");
+    expect(result).toHaveProperty("failedPresentations");
+    expect(result).toHaveProperty("averageSlideCount");
+    expect(result).toHaveProperty("successRate");
+    expect(typeof result.totalPresentations).toBe("number");
+    expect(typeof result.successRate).toBe("number");
+  });
+
+  it("overview accepts date range filters", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.overview({
+      dateFrom: "2026-01-01T00:00:00Z",
+      dateTo: "2026-12-31T23:59:59Z",
+    });
+    expect(result).toHaveProperty("totalPresentations");
+    expect(result.totalPresentations).toBeGreaterThanOrEqual(0);
+  });
+
+  it("dailyCounts returns array of date-count pairs", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.dailyCounts({
+      dateFrom: "2026-01-01T00:00:00Z",
+      dateTo: "2026-12-31T23:59:59Z",
+    });
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("date");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("statusDistribution returns array with status and count", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.statusDistribution({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("status");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("themeDistribution returns array with theme and count", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.themeDistribution({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("theme");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("modeDistribution returns array with mode and count", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.modeDistribution({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("mode");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("slideCountDistribution returns array with slideCount and count", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.slideCountDistribution({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("slideCount");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("recentPresentations returns array with correct shape", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(createAuthContext());
+
+    const result = await caller.analytics.recentPresentations({ limit: 5 });
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("presentationId");
+      expect(result[0]).toHaveProperty("status");
+      expect(result[0]).toHaveProperty("createdAt");
+    }
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const { appRouter } = await import("./routers");
+    const unauthCtx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: () => {} } as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(unauthCtx);
+
+    await expect(caller.analytics.overview({})).rejects.toThrow();
+  });
+});
+
+// ─── package.json scripts ─────────────────────────────────────
+
 describe("package.json scripts", () => {
   it("has readme script", () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
@@ -250,5 +497,15 @@ describe("package.json scripts", () => {
   it("has changelog script", () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
     expect(pkg.scripts.changelog).toBe("node scripts/generate-changelog.mjs");
+  });
+
+  it("has postman script", () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
+    expect(pkg.scripts.postman).toBe("node scripts/generate-postman.mjs");
+  });
+
+  it("has postman:dry script", () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf-8"));
+    expect(pkg.scripts["postman:dry"]).toBe("node scripts/generate-postman.mjs --dry-run");
   });
 });

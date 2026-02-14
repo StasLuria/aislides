@@ -1,0 +1,49 @@
+{
+  "id": "presentation-generator-env",
+  "name": "Presentation Generator — Local",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "templateId",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "index",
+      "value": "0",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "versionId",
+      "value": "1",
+      "enabled": true,
+      "type": "default"
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Auto-update documentation on commit
+# Regenerate README.md with live metrics (skip tests for speed)
+echo "📊 Updating README.md with live metrics..."
+node scripts/generate-readme.mjs --skip-tests
+
+# Regenerate CHANGELOG.md from todo.md
+echo "📝 Updating CHANGELOG.md..."
+node scripts/generate-changelog.mjs
+
+# Stage the updated files
+git add README.md CHANGELOG.md

@@ -16,6 +16,7 @@ import Interactive from "./pages/Interactive";
 import ChatPage from "./pages/ChatPage";
 import AppLayout from "./components/AppLayout";
 import SharedViewer from "./pages/SharedViewer";
+import Analytics from "./pages/Analytics";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -37,6 +38,7 @@ function Router() {
             <Route path="/interactive/:id" component={Interactive} />
             <Route path="/chat" component={ChatPage} />
             <Route path="/chat/:id" component={ChatPage} />
+            <Route path="/analytics" component={Analytics} />
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>

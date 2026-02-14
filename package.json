@@ -13,7 +13,10 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "readme": "node scripts/generate-readme.mjs",
     "readme:dry": "node scripts/generate-readme.mjs --dry-run --skip-tests",
-    "changelog": "node scripts/generate-changelog.mjs"
+    "changelog": "node scripts/generate-changelog.mjs",
+    "postman": "node scripts/generate-postman.mjs",
+    "postman:dry": "node scripts/generate-postman.mjs --dry-run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -110,6 +113,7 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "husky": "^9.1.7",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
     "prettier": "^3.6.2",

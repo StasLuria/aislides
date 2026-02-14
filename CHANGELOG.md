@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 95 |
-| Total tasks | 844 |
-| Completed | 832 (99%) |
+| Total sections | 96 |
+| Total tasks | 856 |
+| Completed | 844 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 14: CI/CD, Analytics Dashboard, Postman Collection ✅
+
+- [x] Pre-commit hook: install husky for git hooks
+- [x] Pre-commit hook: configure `pnpm readme --skip-tests && pnpm changelog` on pre-commit
+- [x] Pre-commit hook: auto-stage updated README.md and CHANGELOG.md
+- [x] Postman collection: create export script from OpenAPI spec (9 folders, 54 endpoints)
+- [x] Postman collection: add `pnpm postman` and `pnpm postman:dry` commands to package.json
+- [x] Postman collection: include environment variables template (postman/environment.json)
+- [x] Analytics dashboard: add 8 tRPC procedures (overview, dailyCounts, statusDistribution, themeDistribution, modeDistribution, slideCountDistribution, topPrompts, recentPresentations)
+- [x] Analytics dashboard: query presentations by status, theme, mode, time period with date range filters
+- [x] Analytics dashboard: calculate success rate, average slide count, total/completed/failed counts
+- [x] Analytics dashboard: build frontend page with 7 chart panels (Recharts: area, donut, bar, progress bars, table)
+- [x] Analytics dashboard: add /analytics route and navigation entry in AppLayout
+- [x] Write vitest tests for all new features (35 tests across 7 describe blocks)
 
 ### 🚀 Round 13: Developer Tools — Auto-README, Swagger, CHANGELOG ✅
 
@@ -1188,7 +1203,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (28 sections, 364/376 tasks)
+### 🚀 Improvements (29 sections, 376/388 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1218,6 +1233,7 @@
 - **Round 11: Project Documentation** — ✅
 - **Round 12: README Audit & Corrections** — ✅
 - **Round 13: Developer Tools — Auto-README, Swagger, CHANGELOG** — ✅
+- **Round 14: CI/CD, Analytics Dashboard, Postman Collection** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
