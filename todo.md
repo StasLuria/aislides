@@ -1345,3 +1345,17 @@
 - [x] Add client-side sanitizeSlideHtml() in SharedViewer.tsx — same per-slide-container fix for shared links
 - [x] Sanitization counts `.card` elements per slide-container to compute correct cols (min(cardCount, 3))
 - [x] All 1426 tests passing, 0 regressions
+
+## Round 28: Implement true slide-by-slide step-by-step mode
+- [x] Analyze current handleStructureApproval — currently launches full generation instead of slide-by-slide
+- [x] Add new session phases: step_slide_content, step_slide_design
+- [x] After structure approval → propose content for slide 1 (not generate all slides)
+- [x] Wait for user "готово" (approve_slide_content) before generating design for current slide
+- [x] Wait for user "готово" (approve_slide_design) on design before moving to next slide
+- [x] Support user corrections at each step (content via handleSlideContentFeedback, design via handleSlideDesignFeedback)
+- [x] Support "готово + ещё слайд + описание" to add new slides mid-process (handleAddNewSlide)
+- [x] Track currentSlideIndex in session metadata + pendingSlideIndex for resume after new slide
+- [x] Generate HTML for each slide individually after design approval (generateSlideDesign)
+- [x] Assemble final presentation after all slides approved (finalizeStepPresentation)
+- [x] Write 7 vitest tests for slide-by-slide workflow (all passing)
+- [x] All 1433 tests passing (7 new + 1426 existing), 0 TypeScript errors

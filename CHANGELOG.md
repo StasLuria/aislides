@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 109 |
-| Total tasks | 1047 |
-| Completed | 1035 (99%) |
+| Total sections | 110 |
+| Total tasks | 1059 |
+| Completed | 1047 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 28: Implement true slide-by-slide step-by-step mode ✅
+
+- [x] Analyze current handleStructureApproval — currently launches full generation instead of slide-by-slide
+- [x] Add new session phases: step_slide_content, step_slide_design
+- [x] After structure approval → propose content for slide 1 (not generate all slides)
+- [x] Wait for user "готово" (approve_slide_content) before generating design for current slide
+- [x] Wait for user "готово" (approve_slide_design) on design before moving to next slide
+- [x] Support user corrections at each step (content via handleSlideContentFeedback, design via handleSlideDesignFeedback)
+- [x] Support "готово + ещё слайд + описание" to add new slides mid-process (handleAddNewSlide)
+- [x] Track currentSlideIndex in session metadata + pendingSlideIndex for resume after new slide
+- [x] Generate HTML for each slide individually after design approval (generateSlideDesign)
+- [x] Assemble final presentation after all slides approved (finalizeStepPresentation)
+- [x] Write 7 vitest tests for slide-by-slide workflow (all passing)
+- [x] All 1433 tests passing (7 new + 1426 existing), 0 TypeScript errors
 
 ### 🚀 Round 27: Fix card-grid layout — old presentations with broken grid CSS ✅
 
@@ -1433,7 +1448,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (42 sections, 567/579 tasks)
+### 🚀 Improvements (43 sections, 579/591 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1477,6 +1492,7 @@
 - **Round 25: Fix card-grid layout issues** — ✅
 - **Round 26: Image-based structure recognition from uploaded screenshots** — ✅
 - **Round 27: Fix card-grid layout — old presentations with broken grid CSS** — ✅
+- **Round 28: Implement true slide-by-slide step-by-step mode** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
