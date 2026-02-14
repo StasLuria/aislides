@@ -415,6 +415,92 @@ describe("Slide-by-slide workflow", () => {
     });
   });
 
+  describe("slide_progress events", () => {
+    it("emits slide_progress with content phase during proposeSlideContent", async () => {
+      resetSession({
+        phase: "step_structure",
+        metadata: {
+          outline: {
+            presentation_title: "Test Presentation",
+            slides: [
+              { slide_number: 1, title: "Slide 1", purpose: "Intro", key_points: ["P1"], speaker_notes_hint: "" },
+              { slide_number: 2, title: "Slide 2", purpose: "Main", key_points: ["P2"], speaker_notes_hint: "" },
+            ],
+            target_audience: "General",
+          },
+          plannerResult: { language: "ru", branding: { company_name: "Test" } },
+          currentSlideIndex: undefined,
+          writtenSlides: undefined,
+          approvedSlides: undefined,
+        },
+      });
+      mockSession.phase = "step_structure";
+
+      const { writer, events } = createWriter();
+      await processAction("test-session-1", "approve_structure", writer);
+
+      const slideProgressEvents = events.filter((e) => e.type === "slide_progress");
+      expect(slideProgressEvents.length).toBeGreaterThan(0);
+
+      const first = slideProgressEvents[0];
+      expect(first.data).toMatchObject({
+        currentSlide: 1,
+        totalSlides: 2,
+        phase: "content",
+      });
+      expect(first.data.slideTitle).toBeDefined();
+    });
+
+    it("emits slide_progress with design phase during generateSlideDesign", async () => {
+      resetSession();
+      mockSession.phase = "step_slide_content";
+
+      const { writer, events } = createWriter();
+      await processAction("test-session-1", "approve_slide_content", writer);
+
+      const slideProgressEvents = events.filter((e) => e.type === "slide_progress");
+      const designProgress = slideProgressEvents.find((e) => e.data?.phase === "design");
+      expect(designProgress).toBeDefined();
+      expect(designProgress?.data).toMatchObject({
+        currentSlide: 1,
+        totalSlides: 3,
+        phase: "design",
+      });
+    });
+
+    it("emits null slide_progress when finalizing presentation", async () => {
+      resetSession({
+        phase: "step_slide_design",
+        metadata: {
+          ...mockSession.metadata,
+          currentSlideIndex: 2,
+          currentSlideDesign: {
+            layoutName: "text-slide",
+            slideData: { title: "Заключение" },
+            slideHtml: "<div>Slide 3</div>",
+          },
+          writtenSlides: [
+            { slide_number: 1, title: "Введение", key_message: "W", text: "I", notes: "", data_points: [] },
+            { slide_number: 2, title: "Основная часть", key_message: "M", text: "M", notes: "", data_points: [] },
+            { slide_number: 3, title: "Заключение", key_message: "C", text: "C", notes: "", data_points: [] },
+          ],
+          approvedSlides: [
+            { slideNumber: 1, layoutId: "text-slide", data: {}, html: "<div>1</div>" },
+            { slideNumber: 2, layoutId: "text-slide", data: {}, html: "<div>2</div>" },
+          ],
+        },
+      });
+      mockSession.phase = "step_slide_design";
+
+      const { writer, events } = createWriter();
+      await processAction("test-session-1", "approve_slide_design", writer);
+
+      const slideProgressEvents = events.filter((e) => e.type === "slide_progress");
+      const nullProgress = slideProgressEvents.find((e) => e.data === null);
+      expect(nullProgress).toBeDefined();
+    });
+  });
+
   describe("formatSlideContentForDisplay", () => {
     it("is called during proposeSlideContent and includes key fields", async () => {
       // Reset to a state where we can trigger proposeSlideContent via structure approval

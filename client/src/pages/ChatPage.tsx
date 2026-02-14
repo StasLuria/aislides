@@ -31,8 +31,9 @@ import {
   Loader2,
   FileUp,
   LayoutTemplate,
+  Layers,
 } from "lucide-react";
-import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview } from "@/hooks/useSSEChat";
+import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
 import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@/components/FileUploadButton";
 import api, { type CustomTemplateListItem } from "@/lib/api";
@@ -151,6 +152,81 @@ function ProgressBar({ percent, message }: { percent: number; message: string })
           className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
           style={{ width: `${Math.min(percent, 100)}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// SLIDE PROGRESS BAR
+// ═══════════════════════════════════════════════════════
+
+function SlideProgressBar({ progress }: { progress: SlideProgress }) {
+  const { currentSlide, totalSlides, phase, slideTitle } = progress;
+  const phaseLabel = phase === "content" ? "Контент" : "Дизайн";
+  const completedSlides = currentSlide - 1;
+  const progressPercent = Math.round((completedSlides / totalSlides) * 100);
+
+  return (
+    <div className="my-4 rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm p-4 space-y-3">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Layers className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-foreground">
+              Слайд {currentSlide} из {totalSlides}
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              «{slideTitle}»
+            </span>
+          </div>
+        </div>
+        <span className={
+          `text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full ${
+            phase === "content"
+              ? "bg-blue-500/10 text-blue-600"
+              : "bg-violet-500/10 text-violet-600"
+          }`
+        }>
+          {phaseLabel}
+        </span>
+      </div>
+
+      {/* Step dots */}
+      <div className="flex items-center gap-1">
+        {Array.from({ length: totalSlides }, (_, i) => {
+          const slideNum = i + 1;
+          const isCompleted = slideNum < currentSlide;
+          const isCurrent = slideNum === currentSlide;
+          return (
+            <div
+              key={i}
+              className="flex-1 h-1.5 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: isCompleted
+                  ? "oklch(0.65 0.19 260)"  /* primary completed */
+                  : isCurrent
+                    ? phase === "content"
+                      ? "oklch(0.65 0.19 260 / 0.5)"  /* half-progress for content */
+                      : "oklch(0.65 0.19 260 / 0.75)"  /* more progress for design */
+                    : "oklch(0.92 0.01 260)",  /* muted for future */
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Bottom label */}
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>
+          {phase === "content"
+            ? "Разработка контента → утвердите или отредактируйте"
+            : "Разработка дизайна → утвердите или отредактируйте"}
+        </span>
+        <span className="font-mono">{progressPercent}%</span>
       </div>
     </div>
   );
@@ -735,6 +811,7 @@ export default function ChatPage() {
     isStreaming,
     isPolling,
     progress,
+    slideProgress,
     currentActions,
     presentationLink,
     sessionTitle,
@@ -778,7 +855,7 @@ export default function ChatPage() {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, progress]);
+  }, [messages, progress, slideProgress]);
 
   // Upload attached files to a session
   const uploadFilesToSession = useCallback(async (sid: string, filesToUpload: AttachedFile[]) => {
@@ -964,6 +1041,13 @@ export default function ChatPage() {
               {messages.map((msg, i) => (
                 <MessageBubble key={`${msg.timestamp}-${i}`} message={msg} />
               ))}
+
+              {/* Slide progress indicator */}
+              {slideProgress && (
+                <div className="pl-10">
+                  <SlideProgressBar progress={slideProgress} />
+                </div>
+              )}
 
               {/* Progress bar */}
               {progress && (

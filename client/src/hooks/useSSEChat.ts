@@ -47,8 +47,15 @@ export interface PresentationLink {
   slideCount?: number;
 }
 
+export interface SlideProgress {
+  currentSlide: number;
+  totalSlides: number;
+  phase: "content" | "design";
+  slideTitle: string;
+}
+
 interface SSEEvent {
-  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update";
+  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update" | "slide_progress";
   data: any;
 }
 
@@ -106,6 +113,7 @@ export function useSSEChat() {
   const [presentationLink, setPresentationLink] = useState<PresentationLink | null>(null);
   const [sessionTitle, setSessionTitle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [slideProgress, setSlideProgress] = useState<SlideProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const streamingContentRef = useRef("");
 
@@ -213,6 +221,7 @@ export function useSSEChat() {
     setPresentationLink(null);
     setSessionTitle(null);
     setProgress(null);
+    setSlideProgress(null);
     setError(null);
     setIsStreaming(false);
   }, [stopPolling]);
@@ -338,6 +347,10 @@ export function useSSEChat() {
             }
             return updated;
           });
+          break;
+
+        case "slide_progress":
+          setSlideProgress(event.data);
           break;
 
         case "title_update":
@@ -566,6 +579,7 @@ export function useSSEChat() {
     isStreaming,
     isPolling,
     progress,
+    slideProgress,
     currentActions,
     presentationLink,
     sessionTitle,

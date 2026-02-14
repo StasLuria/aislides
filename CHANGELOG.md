@@ -7,14 +7,23 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 110 |
-| Total tasks | 1059 |
-| Completed | 1047 (99%) |
+| Total sections | 111 |
+| Total tasks | 1065 |
+| Completed | 1053 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 29: Slide progress bar in chat UI ✅
+
+- [x] Backend: Send slide_progress SSE event with currentSlide/totalSlides/phase data
+- [x] Frontend: SlideProgressBar component — visual indicator "Слайд 3 из 10" with step dots/bar
+- [x] Frontend: Integrate progress bar into ChatPage, show during step_slide_content and step_slide_design phases
+- [x] Frontend: Show current phase label (Контент / Дизайн) alongside slide number
+- [x] Write 3 vitest tests for slide_progress events (all passing)
+- [x] All 1436 tests passing (3 new + 1433 existing), 0 TypeScript errors
 
 ### 🚀 Round 28: Implement true slide-by-slide step-by-step mode ✅
 
@@ -1448,7 +1457,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (43 sections, 579/591 tasks)
+### 🚀 Improvements (44 sections, 585/597 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1493,6 +1502,7 @@
 - **Round 26: Image-based structure recognition from uploaded screenshots** — ✅
 - **Round 27: Fix card-grid layout — old presentations with broken grid CSS** — ✅
 - **Round 28: Implement true slide-by-slide step-by-step mode** — ✅
+- **Round 29: Slide progress bar in chat UI** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

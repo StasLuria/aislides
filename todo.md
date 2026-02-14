@@ -1359,3 +1359,11 @@
 - [x] Assemble final presentation after all slides approved (finalizeStepPresentation)
 - [x] Write 7 vitest tests for slide-by-slide workflow (all passing)
 - [x] All 1433 tests passing (7 new + 1426 existing), 0 TypeScript errors
+
+## Round 29: Slide progress bar in chat UI
+- [x] Backend: Send slide_progress SSE event with currentSlide/totalSlides/phase data
+- [x] Frontend: SlideProgressBar component — visual indicator "Слайд 3 из 10" with step dots/bar
+- [x] Frontend: Integrate progress bar into ChatPage, show during step_slide_content and step_slide_design phases
+- [x] Frontend: Show current phase label (Контент / Дизайн) alongside slide number
+- [x] Write 3 vitest tests for slide_progress events (all passing)
+- [x] All 1436 tests passing (3 new + 1433 existing), 0 TypeScript errors

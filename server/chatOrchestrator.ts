@@ -123,7 +123,7 @@ function parseOutlineFromFiles(
 // ═══════════════════════════════════════════════════════
 
 export interface SSEEvent {
-  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update";
+  type: "token" | "actions" | "slide_preview" | "progress" | "done" | "error" | "presentation_link" | "title_update" | "slide_progress";
   data: any;
 }
 
@@ -1312,6 +1312,14 @@ async function proposeSlideContent(
   const slideInfo = outline.slides[slideIndex];
   const totalSlides = outline.slides.length;
 
+  // Emit slide progress event
+  writer({ type: "slide_progress", data: {
+    currentSlide: slideIndex + 1,
+    totalSlides,
+    phase: "content",
+    slideTitle: slideInfo.title,
+  } });
+
   writer({ type: "token", data: `\n\n📝 **Слайд ${slideIndex + 1} из ${totalSlides}: «${slideInfo.title}»**\n\nГенерирую контент...` });
   writer({ type: "progress", data: { percent: 15 + Math.round((slideIndex / totalSlides) * 70), message: `Контент слайда ${slideIndex + 1}/${totalSlides}` } });
 
@@ -1621,6 +1629,15 @@ async function generateSlideDesign(
   }
 
   const totalSlides = outline.slides.length;
+
+  // Emit slide progress event
+  writer({ type: "slide_progress", data: {
+    currentSlide: slideIndex + 1,
+    totalSlides,
+    phase: "design",
+    slideTitle: content.title,
+  } });
+
   writer({ type: "progress", data: { percent: 15 + Math.round(((slideIndex + 0.5) / totalSlides) * 70), message: `Дизайн слайда ${slideIndex + 1}/${totalSlides}` } });
 
   try {
@@ -2034,6 +2051,9 @@ async function finalizeStepPresentation(
   const themeCss: string = metadata.themeCss || "";
   const themePresetId: string = metadata.themePresetId || "corporate_blue";
   const presentationId = session.presentationId || "";
+
+  // Clear slide progress — all slides are done
+  writer({ type: "slide_progress", data: null });
 
   if (approvedSlides.length === 0) {
     writer({ type: "token", data: "❌ Нет утверждённых слайдов." });
