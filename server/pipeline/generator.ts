@@ -28,7 +28,7 @@ import { runStorytellingAgent } from "./storytellingAgent";
 import { evaluateSlides, runEvaluatorLoop, type SlideForEval } from "./contentEvaluator";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
-import { runDesignCritic, fixSlideDensity, type SlideDesignData } from "./designCriticAgent";
+import { runDesignCritic, runLlmDesignCritique, fixSlideDensity, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
@@ -625,33 +625,98 @@ export async function runLayout(content: SlideContent[], layoutTypeHint?: string
     )
     .join("\n");
 
-  const result = await llmStructured<{ decisions: LayoutDecision[] }>(
-    LAYOUT_SYSTEM,
-    layoutUser(slidesSummary, layoutTypeHint),
-    "LayoutOutput",
-    {
-      type: "object",
-      properties: {
-        decisions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              slide_number: { type: "integer" },
-              layout_name: { type: "string" },
-              rationale: { type: "string" },
+  // Try top-3 voting schema first
+  try {
+    const votingResult = await llmStructured<{ votes: import('./layoutVoting').LayoutVote[] }>(
+      LAYOUT_SYSTEM,
+      layoutUser(slidesSummary, layoutTypeHint),
+      "LayoutVotingOutput",
+      {
+        type: "object",
+        properties: {
+          votes: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                slide_number: { type: "integer" },
+                candidates: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      layout_name: { type: "string" },
+                      confidence: { type: "number" },
+                      rationale: { type: "string" },
+                    },
+                    required: ["layout_name", "confidence", "rationale"],
+                    additionalProperties: false,
+                  },
+                },
+                rationale: { type: "string" },
+              },
+              required: ["slide_number", "candidates", "rationale"],
+              additionalProperties: false,
             },
-            required: ["slide_number", "layout_name", "rationale"],
-            additionalProperties: false,
           },
         },
+        required: ["votes"],
+        additionalProperties: false,
       },
-      required: ["decisions"],
-      additionalProperties: false,
-    },
-  );
+    );
 
-  return result.decisions;
+    // Build content_shape map for mandatory overrides
+    const shapeMap = new Map<number, string>();
+    for (const s of content) {
+      if (s.content_shape) {
+        shapeMap.set(s.slide_number, s.content_shape);
+      }
+    }
+
+    // Apply diversity-aware voting
+    const { applyLayoutVoting } = await import('./layoutVoting');
+    const votingResults = applyLayoutVoting(votingResult.votes, shapeMap);
+
+    const rerankedCount = votingResults.filter(r => r.was_reranked).length;
+    if (rerankedCount > 0) {
+      console.log(`[Layout Voting] ${rerankedCount}/${votingResults.length} slides reranked for diversity`);
+    }
+
+    return votingResults.map(r => ({
+      slide_number: r.slide_number,
+      layout_name: r.layout_name,
+      rationale: r.rationale,
+    }));
+  } catch (err) {
+    // Fallback to legacy single-choice schema
+    console.log(`[Layout Voting] Voting schema failed, falling back to legacy: ${(err as Error).message}`);
+    const result = await llmStructured<{ decisions: LayoutDecision[] }>(
+      LAYOUT_SYSTEM,
+      layoutUser(slidesSummary, layoutTypeHint),
+      "LayoutOutput",
+      {
+        type: "object",
+        properties: {
+          decisions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                slide_number: { type: "integer" },
+                layout_name: { type: "string" },
+                rationale: { type: "string" },
+              },
+              required: ["slide_number", "layout_name", "rationale"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["decisions"],
+        additionalProperties: false,
+      },
+    );
+    return result.decisions;
+  }
 }
 
 export async function runHtmlComposer(
@@ -1959,19 +2024,64 @@ const CHART_PROTECTED_LAYOUTS = new Set([
     const errorCount = critique.issues.filter(i => i.severity === "error").length;
     const warnCount = critique.issues.filter(i => i.severity === "warning").length;
     console.log(`[Pipeline] Design critique: score ${critique.overallScore}/10, ${errorCount} errors, ${warnCount} warnings, ${critique.cssFixesPerSlide.size} fixes applied`);
-    onProgress({
-      nodeName: "design_critic",
-      currentStep: "design_review",
-      progressPercent: 94,
-      message: `Дизайн: ${critique.overallScore}/10 (${critique.cssFixesPerSlide.size} исправлений)`,
-    });
+
+    // LLM Design Critic — holistic analysis for additional CSS improvements
+    try {
+      const llmCritique = await runLlmDesignCritique(designSlides2, theme.css_variables, critique);
+      if (llmCritique.suggestions.length > 0) {
+        console.log(`[Pipeline] LLM Design Critic: revised score ${llmCritique.revisedScore}/10, ${llmCritique.suggestions.length} suggestions`);
+      }
+      onProgress({
+        nodeName: "design_critic",
+        currentStep: "design_review",
+        progressPercent: 94,
+        message: `Дизайн: ${llmCritique.revisedScore}/10 (${critique.cssFixesPerSlide.size} исправлений, ${llmCritique.suggestions.length} рекомендаций)`,
+      });
+    } catch (llmErr) {
+      console.log(`[Pipeline] LLM Design Critic skipped: ${(llmErr as Error).message}`);
+      onProgress({
+        nodeName: "design_critic",
+        currentStep: "design_review",
+        progressPercent: 94,
+        message: `Дизайн: ${critique.overallScore}/10 (${critique.cssFixesPerSlide.size} исправлений)`,
+      });
+    }
   } catch (err) {
     console.error("[Pipeline] Design critic failed, continuing:", err);
     onProgress({ nodeName: "design_critic", currentStep: "design_review", progressPercent: 94, message: "Пропуск проверки дизайна" });
   }
 
+  // 6.5 VISUAL REVIEW (screenshot → Vision LLM)
+  try {
+    const { runVisualReview } = await import("./visualReviewer");
+    onProgress({ nodeName: "visual_reviewer", currentStep: "rendering", progressPercent: 95, message: "Визуальная проверка слайдов..." });
+
+    const visualSlides = slides.map((s, i) => ({
+      slideNumber: i + 1,
+      layoutId: s.layoutId,
+      title: s.data?.title || `Slide ${i + 1}`,
+      html: s.html,
+    }));
+
+    const visualReview = await runVisualReview(visualSlides, theme.css_variables);
+
+    // Apply CSS patches from visual review
+    for (const [slideNum, cssPatch] of Array.from(visualReview.cssPatches.entries())) {
+      const idx = slideNum - 1;
+      if (idx >= 0 && idx < slides.length && cssPatch.trim()) {
+        slides[idx].html = `<style>${cssPatch}</style>${slides[idx].html}`;
+      }
+    }
+
+    console.log(`[Pipeline] Visual review: avg ${visualReview.averageScore.toFixed(1)}/10, ${visualReview.cssPatches.size} patches applied`);
+    onProgress({ nodeName: "visual_reviewer", currentStep: "completed", progressPercent: 97, message: `Визуальная оценка: ${visualReview.averageScore.toFixed(1)}/10` });
+  } catch (err) {
+    console.log(`[Pipeline] Visual review skipped: ${(err as Error).message}`);
+    onProgress({ nodeName: "visual_reviewer", currentStep: "skipped", progressPercent: 97, message: "Визуальная проверка пропущена" });
+  }
+
   // 7. ASSEMBLY
-  onProgress({ nodeName: "assembler", currentStep: "assembling", progressPercent: 95, message: "Финальная сборка презентации..." });
+  onProgress({ nodeName: "assembler", currentStep: "assembling", progressPercent: 98, message: "Финальная сборка презентации..." });
   const fullHtml = renderPresentation(slides, theme.css_variables, plannerResult.presentation_title, language, themePreset?.fontsUrl);
 
   onProgress({ nodeName: "assembler", currentStep: "completed", progressPercent: 100, message: "Презентация готова!" });

@@ -1170,3 +1170,39 @@
 - [x] Key context includes all 5 narrative anchor slides for coherence
 - [x] Core slides get rich context from all key slides (not just last 4)
 - [x] Write vitest tests for execution order and context passing (33 tests in phase2.test.ts)
+
+## Round 20: Phase 3 Visual Review + Composer Few-Shot
+
+### Step 1.3 (missed): Few-Shot Examples for HTML Composer
+- [x] Already implemented: 20+ structured_content_mapping examples in htmlComposerSystem
+- [x] Covers all content_shapes: stat_cards, process_steps, timeline, comparison, etc.
+- [x] Data format matches templateEngine.ts expectations exactly
+
+### Step 3.1: Layout Voting (top-3 + scoring + diversity)
+- [x] Create layoutVoting.ts with top-3 candidates + confidence scoring
+- [x] Add diversity penalty (repeat 0.15, adjacent 0.25, unused bonus 0.05)
+- [x] Add mandatory layout overrides for specific content_shapes (kanban, org, swot)
+- [x] Update LAYOUT_SYSTEM prompt to request top-3 candidates with confidence 0-1
+- [x] Integrate into runLayout with legacy fallback on schema failure
+- [x] Write vitest tests for voting and diversity (20 tests in phase3.test.ts)
+
+### Step 3.3: LLM-based Design Critic
+- [x] Integrate existing runLlmDesignCritique into pipeline after local Design Critic
+- [x] LLM evaluates visual rhythm, hierarchy, pacing, professional polish
+- [x] Returns revised score + actionable suggestions
+- [x] Graceful fallback if LLM critique fails
+- [x] Write vitest tests for LLM critique integration
+
+### Step 3.2: Visual Review Agent (screenshot → Vision LLM)
+- [x] Create visualReviewer.ts with Puppeteer slide rendering (1280×720)
+- [x] Send screenshots to Vision LLM for quality assessment
+- [x] 4-criteria scoring: readability, balance, density, professionalism (threshold 6.0)
+- [x] Iterative improvement: if score < 6, apply CSS fixes and re-render (max 2 iterations)
+- [x] Sample strategy: review first, last, and every 3rd slide
+- [x] Integrate into pipeline after Design Critic, before Assembly (step 6.5)
+- [x] Write vitest tests for visual reviewer module structure
+
+### Tests & Checkpoint
+- [x] All 1315 tests passing (21 new tests)
+- [x] Pipeline now 17-step (added Visual Reviewer)
+- [x] Save checkpoint

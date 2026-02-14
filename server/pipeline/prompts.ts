@@ -524,8 +524,17 @@ content_shape → preferred layouts:
 Use these as strong preferences, but override if diversity or visual rhythm requires it.
 </shape_affinity_rules>
 <output_format>
-Return a JSON with: decisions (array of slide_number, layout_name, rationale).
-Use the exact layout IDs from the list above (kebab-case).
+Return a JSON with: votes (array of objects, one per slide).
+Each vote has:
+- slide_number (integer)
+- candidates: array of top-3 layout choices, each with:
+  - layout_name (string, exact kebab-case ID from the list above)
+  - confidence (number 0.0-1.0, how well this layout fits the content)
+  - rationale (string, brief explanation)
+- rationale (string, overall reasoning for this slide)
+
+Order candidates by confidence (highest first). The first candidate is your top pick.
+Provide exactly 3 candidates per slide (except title-slide and final-slide which need only 1).
 </output_format>`;
 
 export function layoutUser(slidesSummary: string, typeHint?: string): string {

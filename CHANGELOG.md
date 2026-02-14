@@ -7,14 +7,41 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 101 |
-| Total tasks | 922 |
-| Completed | 910 (99%) |
+| Total sections | 102 |
+| Total tasks | 946 |
+| Completed | 934 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 20: Phase 3 Visual Review + Composer Few-Shot ✅
+
+- [x] Already implemented: 20+ structured_content_mapping examples in htmlComposerSystem
+- [x] Covers all content_shapes: stat_cards, process_steps, timeline, comparison, etc.
+- [x] Data format matches templateEngine.ts expectations exactly
+- [x] Create layoutVoting.ts with top-3 candidates + confidence scoring
+- [x] Add diversity penalty (repeat 0.15, adjacent 0.25, unused bonus 0.05)
+- [x] Add mandatory layout overrides for specific content_shapes (kanban, org, swot)
+- [x] Update LAYOUT_SYSTEM prompt to request top-3 candidates with confidence 0-1
+- [x] Integrate into runLayout with legacy fallback on schema failure
+- [x] Write vitest tests for voting and diversity (20 tests in phase3.test.ts)
+- [x] Integrate existing runLlmDesignCritique into pipeline after local Design Critic
+- [x] LLM evaluates visual rhythm, hierarchy, pacing, professional polish
+- [x] Returns revised score + actionable suggestions
+- [x] Graceful fallback if LLM critique fails
+- [x] Write vitest tests for LLM critique integration
+- [x] Create visualReviewer.ts with Puppeteer slide rendering (1280×720)
+- [x] Send screenshots to Vision LLM for quality assessment
+- [x] 4-criteria scoring: readability, balance, density, professionalism (threshold 6.0)
+- [x] Iterative improvement: if score < 6, apply CSS fixes and re-render (max 2 iterations)
+- [x] Sample strategy: review first, last, and every 3rd slide
+- [x] Integrate into pipeline after Design Critic, before Assembly (step 6.5)
+- [x] Write vitest tests for visual reviewer module structure
+- [x] All 1315 tests passing (21 new tests)
+- [x] Pipeline now 17-step (added Visual Reviewer)
+- [x] Save checkpoint
 
 ### 🚀 Round 19: Phase 2 Evaluator-Optimizer Implementation ✅
 
@@ -1284,7 +1311,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (34 sections, 442/454 tasks)
+### 🚀 Improvements (35 sections, 466/478 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1320,6 +1347,7 @@
 - **Round 17: Development Plan for Pipeline Quality Improvements** — ✅
 - **Round 18: Phase 1 Quick Wins Implementation** — ✅
 - **Round 19: Phase 2 Evaluator-Optimizer Implementation** — ✅
+- **Round 20: Phase 3 Visual Review + Composer Few-Shot** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
