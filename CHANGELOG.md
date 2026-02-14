@@ -7,14 +7,21 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 106 |
-| Total tasks | 1027 |
-| Completed | 1015 (99%) |
+| Total sections | 107 |
+| Total tasks | 1031 |
+| Completed | 1019 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 25: Fix card-grid layout issues ✅
+
+- [x] Fix card-grid cards showing empty content — root cause: JS ternary (? :) not supported by Nunjucks, c_cols was empty
+- [x] Fix card-grid card text overflow/clipping — restructured: icon+title+badge in header row, description below, auto-rows
+- [x] Verify fix visually — both 4-card and 5-card layouts render correctly with 3-column grid
+- [x] Run full test suite — 1417 tests passing, 0 regressions
 
 ### 🚀 Round 24: Fix PPTX Export Quality ✅
 
@@ -1404,7 +1411,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (39 sections, 547/559 tasks)
+### 🚀 Improvements (40 sections, 551/563 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1445,6 +1452,7 @@
 - **Round 22: Comprehensive Quality Testing & Validation** — ✅
 - **Round 23: Fact-Checking in Final Review + Chart Label Fix** — ✅
 - **Round 24: Fix PPTX Export Quality** — ✅
+- **Round 25: Fix card-grid layout issues** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

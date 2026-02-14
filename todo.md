@@ -1319,3 +1319,9 @@
 - [x] Visual inspection: 12/12 slides rendering correctly (was 6/12)
 - [x] All 1398 vitest tests passing, 0 regressions
 - [x] Tested on Quarterly Review presentation (12 slides, all layouts)
+
+## Round 25: Fix card-grid layout issues
+- [x] Fix card-grid cards showing empty content — root cause: JS ternary (? :) not supported by Nunjucks, c_cols was empty
+- [x] Fix card-grid card text overflow/clipping — restructured: icon+title+badge in header row, description below, auto-rows
+- [x] Verify fix visually — both 4-card and 5-card layouts render correctly with 3-column grid
+- [x] Run full test suite — 1417 tests passing, 0 regressions

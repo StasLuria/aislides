@@ -9,9 +9,17 @@ import PptxGenJSDefault from "pptxgenjs";
 const PptxGenJSConstructor = (PptxGenJSDefault as any).default || PptxGenJSDefault;
 
 // shapes and charts are instance properties in pptxgenjs, not static
-const _refPptx = new PptxGenJSConstructor();
-const SHAPES = _refPptx.shapes;
-const CHARTS = _refPptx.charts;
+let SHAPES: any;
+let CHARTS: any;
+try {
+  const _refPptx = new PptxGenJSConstructor();
+  SHAPES = _refPptx.shapes;
+  CHARTS = _refPptx.charts;
+} catch {
+  // Fallback shape/chart constants if constructor fails
+  SHAPES = { OVAL: 'oval', ROUNDED_RECTANGLE: 'roundedRectangle', RECTANGLE: 'rectangle', LINE: 'line' };
+  CHARTS = { BAR: 'bar', LINE: 'line', PIE: 'pie', DOUGHNUT: 'doughnut' };
+}
 
 // Type aliases from the PptxGenJS namespace
 type PptxSlide = PptxGenJSDefault.Slide;
@@ -54,6 +62,11 @@ const FOOTER_Y = H - 0.5;
 /** Strip markdown bold/italic markers and clean up text */
 function stripMd(text: any): string {
   if (text === null || text === undefined) return "";
+  if (typeof text === "object") {
+    // Handle arrays, objects with text/name/title properties
+    if (Array.isArray(text)) return text.map(t => stripMd(t)).join(", ");
+    return String(text.text || text.name || text.title || text.label || JSON.stringify(text));
+  }
   if (typeof text !== "string") return String(text);
   return text
     .replace(/\*\*\*(.*?)\*\*\*/g, "$1")  // ***bold italic***
@@ -1018,15 +1031,19 @@ function addCardGrid(pptx: any, slide: PptxSlide, data: Record<string, any>, the
       }
     }
 
-    // Title
-    slide.addText(stripMd(card.title || card.name || ""), {
-      x: x + 0.2, y: y + (hasIcon ? 0.65 : 0.2), w: cardW - 0.4, h: 0.4,
-      fontSize: 12, fontFace: theme.headingFont, color: pc(theme.headingColor), bold: true,
-    });
+    // Title — ensure it's always a plain string for addText
+    const cardTitle = stripMd(card.title || card.name || "");
+    if (cardTitle) {
+      slide.addText(cardTitle, {
+        x: x + 0.2, y: y + (hasIcon ? 0.65 : 0.2), w: cardW - 0.4, h: 0.4,
+        fontSize: 12, fontFace: theme.headingFont, color: pc(theme.headingColor), bold: true,
+      });
+    }
 
-    // Description
-    if (card.description || card.details) {
-      slide.addText(stripMd(card.description || card.details), {
+    // Description — ensure it's always a plain string for addText
+    const cardDesc = stripMd(card.description || card.details || "");
+    if (cardDesc) {
+      slide.addText(cardDesc, {
         x: x + 0.2, y: y + (hasIcon ? 1.05 : 0.6), w: cardW - 0.4, h: cardH - (hasIcon ? 1.25 : 0.8),
         fontSize: 10, fontFace: theme.bodyFont, color: pc(theme.bodyColor), valign: "top",
         lineSpacingMultiple: 1.2,
