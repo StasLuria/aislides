@@ -650,10 +650,10 @@ export function validateSlideData(
 // ═══════════════════════════════════════════════════════
 
 /**
- * Attempt to auto-fix common data issues.
- * Returns the fixed data and whether any fixes were applied.
+ * QA structural fix — normalizes data types, required fields, icon formats.
+ * Called immediately after HTML Composer output.
  */
-export function autoFixSlideData(
+export function fixSlideStructure(
   data: Record<string, any>,
   layoutName: string,
 ): { data: Record<string, any>; fixed: boolean } {
@@ -892,6 +892,9 @@ export function autoFixSlideData(
 
   return { data: result, fixed };
 }
+
+/** @deprecated Use fixSlideStructure instead. Kept for backward compatibility in tests. */
+export const autoFixSlideData = fixSlideStructure;
 
 // ═══════════════════════════════════════════════════════
 // LLM CONTENT QUALITY VALIDATION (for critical slides)

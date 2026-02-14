@@ -20,12 +20,12 @@ import {
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
 import { getThemePreset, type ThemePreset } from "./themes";
 import { generateImage } from "../_core/imageGeneration";
-import { validateSlideData, autoFixSlideData, validateCriticalSlideContent, isCriticalLayout } from "./qaAgent";
+import { validateSlideData, fixSlideStructure, validateCriticalSlideContent, isCriticalLayout } from "./qaAgent";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
 import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
-import { runDesignCritic, autoFixSlideData as designAutoFixSlideData, type SlideDesignData } from "./designCriticAgent";
+import { runDesignCritic, fixSlideDensity, type SlideDesignData } from "./designCriticAgent";
 import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
@@ -1214,7 +1214,7 @@ export async function runHtmlComposerWithQA(
   if (qa.passed) return data;
 
   // Step 2: Auto-fix common issues
-  const { data: fixedData, fixed } = autoFixSlideData(data, layoutName);
+  const { data: fixedData, fixed } = fixSlideStructure(data, layoutName);
   if (fixed) {
     data = fixedData;
     qa = validateSlideData(data, layoutName);
@@ -1259,7 +1259,7 @@ export async function runHtmlComposerWithQA(
     }
 
     // Auto-fix the retry result too
-    const retryFix = autoFixSlideData(data, layoutName);
+    const retryFix = fixSlideStructure(data, layoutName);
     data = retryFix.data;
 
     qa = validateSlideData(data, layoutName);
@@ -1486,6 +1486,11 @@ export async function generatePresentation(
       id: config.customTemplateId ? `custom_${config.customTemplateId}` : "custom",
       name: "Custom Template",
       nameRu: "Пользовательский шаблон",
+      color: "#6366f1",
+      gradient: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+      dark: false,
+      category: "creative" as const,
+      descRu: "Пользовательский шаблон",
       previewColor: "#6366f1",
       previewGradient: "linear-gradient(135deg, #6366f1, #8b5cf6)",
       cssVariables: config.customCssVariables,
@@ -1792,7 +1797,7 @@ const CHART_PROTECTED_LAYOUTS = new Set([
     // Pre-fix: auto-fix slide data to prevent overflow before critique
     let totalDataFixes = 0;
     for (const slide of slides) {
-      const dataFixes = designAutoFixSlideData(slide.data, slide.layoutId);
+      const dataFixes = fixSlideDensity(slide.data, slide.layoutId);
       if (dataFixes.length > 0) {
         totalDataFixes += dataFixes.length;
         console.log(`[Pipeline] Data auto-fix slide ${slide.layoutId}: ${dataFixes.join(', ')}`);

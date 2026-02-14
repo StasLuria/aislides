@@ -1,16 +1,18 @@
 /**
- * Predefined Theme System — curated color palettes with gradient backgrounds.
- * Each theme provides complete CSS variables for consistent, high-quality slide design.
- * The Theme Agent can fine-tune fonts based on the topic, but colors come from presets.
+ * Server Theme System — extends shared base with CSS variables, fonts, and mood.
+ *
+ * Base metadata (id, name, nameRu, color, gradient, dark, category, descRu)
+ * lives in shared/themes.ts — the single source of truth.
+ * This file adds server-only fields: cssVariables, fontsUrl, mood.
  */
 
-export interface ThemePreset {
-  id: string;
-  name: string;
-  nameRu: string;
-  /** Preview color for the frontend selector */
+import { THEME_PRESETS_BASE, isDarkTheme as sharedIsDarkTheme, type ThemePresetBase } from "@shared/themes";
+
+/** Full theme preset with server-only rendering fields */
+export interface ThemePreset extends ThemePresetBase {
+  /** Preview color for the frontend selector (alias for color) */
   previewColor: string;
-  /** Gradient CSS for preview swatch */
+  /** Gradient CSS for preview swatch (alias for gradient) */
   previewGradient: string;
   /** Complete CSS variables block */
   cssVariables: string;
@@ -20,13 +22,9 @@ export interface ThemePreset {
   mood: string;
 }
 
-export const THEME_PRESETS: ThemePreset[] = [
-  {
-    id: "corporate_blue",
-    name: "Corporate Blue",
-    nameRu: "Корпоративный синий",
-    previewColor: "#2563EB",
-    previewGradient: "linear-gradient(135deg, #1e40af, #3b82f6)",
+/** Server-only extensions keyed by theme ID */
+const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string; mood: string }> = {
+  corporate_blue: {
     mood: "Professional, trustworthy, corporate. Clean and authoritative.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap",
     cssVariables: `:root {
@@ -46,12 +44,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(37, 99, 235, 0.08);
 }`,
   },
-  {
-    id: "modern_purple",
-    name: "Modern Purple",
-    nameRu: "Современный фиолетовый",
-    previewColor: "#7C3AED",
-    previewGradient: "linear-gradient(135deg, #6d28d9, #a78bfa)",
+  modern_purple: {
     mood: "Creative, innovative, modern tech. Bold and forward-thinking.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -71,12 +64,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
 }`,
   },
-  {
-    id: "ocean_deep",
-    name: "Ocean Deep",
-    nameRu: "Глубокий океан",
-    previewColor: "#0891B2",
-    previewGradient: "linear-gradient(135deg, #164e63, #06b6d4)",
+  ocean_deep: {
     mood: "Calm, deep, professional. Oceanic depth with clarity.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -96,12 +84,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(8, 145, 178, 0.08);
 }`,
   },
-  {
-    id: "sunset_warm",
-    name: "Sunset Warm",
-    nameRu: "Тёплый закат",
-    previewColor: "#EA580C",
-    previewGradient: "linear-gradient(135deg, #c2410c, #fb923c)",
+  sunset_warm: {
     mood: "Warm, energetic, inspiring. Sunset warmth with passion.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -121,12 +104,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(234, 88, 12, 0.08);
 }`,
   },
-  {
-    id: "forest_green",
-    name: "Forest Green",
-    nameRu: "Лесной зелёный",
-    previewColor: "#16A34A",
-    previewGradient: "linear-gradient(135deg, #166534, #4ade80)",
+  forest_green: {
     mood: "Natural, sustainable, growth-oriented. Fresh and organic.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -146,12 +124,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(22, 163, 74, 0.08);
 }`,
   },
-  {
-    id: "cosmic_dark",
-    name: "Cosmic Dark",
-    nameRu: "Космический тёмный",
-    previewColor: "#8B5CF6",
-    previewGradient: "linear-gradient(135deg, #1e1b4b, #7c3aed, #06b6d4)",
+  cosmic_dark: {
     mood: "Futuristic, bold, dark mode. Space-inspired with neon accents.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -171,12 +144,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }`,
   },
-  {
-    id: "rose_gold",
-    name: "Rose Gold",
-    nameRu: "Розовое золото",
-    previewColor: "#E11D48",
-    previewGradient: "linear-gradient(135deg, #9f1239, #fb7185)",
+  rose_gold: {
     mood: "Elegant, luxurious, refined. Sophisticated with warmth.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap",
     cssVariables: `:root {
@@ -196,12 +164,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(225, 29, 72, 0.08);
 }`,
   },
-  {
-    id: "arctic_frost",
-    name: "Arctic Frost",
-    nameRu: "Арктический мороз",
-    previewColor: "#6366F1",
-    previewGradient: "linear-gradient(135deg, #e0e7ff, #c7d2fe, #a5b4fc)",
+  arctic_frost: {
     mood: "Clean, minimal, icy cool. Scandinavian precision with clarity.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -221,12 +184,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
 }`,
   },
-  {
-    id: "midnight_noir",
-    name: "Midnight Noir",
-    nameRu: "Полночный нуар",
-    previewColor: "#F59E0B",
-    previewGradient: "linear-gradient(135deg, #1c1917, #292524, #f59e0b)",
+  midnight_noir: {
     mood: "Dark, premium, executive. Sophisticated dark mode with gold accents.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -246,12 +204,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }`,
   },
-  {
-    id: "citrus_energy",
-    name: "Citrus Energy",
-    nameRu: "Цитрусовая энергия",
-    previewColor: "#84CC16",
-    previewGradient: "linear-gradient(135deg, #4d7c0f, #a3e635)",
+  citrus_energy: {
     mood: "Energetic, fresh, dynamic. Bright and motivating with natural energy.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -271,12 +224,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(101, 163, 13, 0.08);
 }`,
   },
-  {
-    id: "executive_navy_red",
-    name: "Executive Navy & Red",
-    nameRu: "Деловой тёмно-синий",
-    previewColor: "#DC2626",
-    previewGradient: "linear-gradient(135deg, #1a1a3e, #dc2626)",
+  executive_navy_red: {
     mood: "Executive, authoritative, high-contrast. Navy and red for corporate strategy and leadership presentations.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -296,12 +244,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(26, 26, 62, 0.08);
 }`,
   },
-  {
-    id: "data_navy_blue",
-    name: "Data Navy & Blue",
-    nameRu: "Аналитический синий",
-    previewColor: "#2563EB",
-    previewGradient: "linear-gradient(135deg, #1a1a3e, #2563eb, #dc2626)",
+  data_navy_blue: {
     mood: "Data-driven, analytical, chart-heavy. Navy base with blue and red accents for data presentations.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap",
     cssVariables: `:root {
@@ -321,7 +264,24 @@ export const THEME_PRESETS: ThemePreset[] = [
   --card-shadow: 0 4px 24px rgba(37, 99, 235, 0.08);
 }`,
   },
-];
+};
+
+/**
+ * Full theme presets — base metadata from shared + server-only extensions.
+ * Built at module load time by merging the two sources.
+ */
+export const THEME_PRESETS: ThemePreset[] = THEME_PRESETS_BASE.map((base) => {
+  const ext = THEME_EXTENSIONS[base.id];
+  if (!ext) {
+    throw new Error(`Missing theme extension for "${base.id}". Add it to THEME_EXTENSIONS in server/pipeline/themes.ts`);
+  }
+  return {
+    ...base,
+    previewColor: base.color,
+    previewGradient: base.gradient,
+    ...ext,
+  };
+});
 
 /**
  * Get a theme preset by ID. Falls back to corporate_blue.
@@ -331,11 +291,9 @@ export function getThemePreset(themeId: string): ThemePreset {
 }
 
 /**
- * Check if a theme is dark-mode (dark card background).
+ * Check if a theme is dark-mode.
  */
-export function isDarkTheme(themeId: string): boolean {
-  return ["cosmic_dark", "midnight_noir"].includes(themeId);
-}
+export { sharedIsDarkTheme as isDarkTheme };
 
 /**
  * Get the list of theme IDs for frontend.

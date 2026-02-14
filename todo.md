@@ -1003,3 +1003,20 @@
 - [x] Updated interactiveRoutes.ts to use buildFallbackData + image injection
 - [x] Updated interactiveRoutes.test.ts: fixed mock to use vi.importActual for buildFallbackData, updated layout names and expectations
 - [x] All 1152 tests passing (40 test files) — zero regressions
+
+## Round 10: Deep Refactoring — THEME_PRESETS, autoFixSlideData, REST→tRPC
+- [x] Analyze THEME_PRESETS duplication between server and client — different structures (UI vs CSS generation)
+- [x] Create shared/themes.ts with base ThemePresetBase type + THEME_PRESETS + THEME_CATEGORIES
+- [x] Update server themes.ts: ThemePreset extends ThemePresetBase, eliminates id/name/nameRu/color/gradient duplication
+- [x] Update client constants.ts: imports THEME_PRESETS and THEME_CATEGORIES from shared/themes.ts
+- [x] Fix generator.ts and templateParser.ts: add base fields (color, gradient, dark, category, descRu) to custom theme objects
+- [x] Analyze two autoFixSlideData functions — QA (structural: types, icons, required fields) vs Design Critic (density: truncation, limits, rebalancing)
+- [x] Decision: keep separate (different roles, different pipeline stages), rename for clarity
+- [x] Rename QA autoFixSlideData → fixSlideStructure (called after HTML Composer)
+- [x] Rename Design Critic autoFixSlideData → fixSlideDensity (called before Design Critique)
+- [x] Add @deprecated backward-compatible aliases for test compatibility
+- [x] Update generator.ts imports to use new names
+- [x] Analyze REST→tRPC migration: 37+ Express endpoints, only ~10 are simple CRUD migratable
+- [x] Decision: skip full migration — SSE streaming, binary exports (PPTX/PDF), multer uploads, public shared endpoints all require Express
+- [x] Architecture decision: keep existing Express routes, use tRPC for new endpoints going forward
+- [x] All 1152 tests passing (40 test files) — zero regressions

@@ -1018,7 +1018,7 @@ function smartTruncate(text: string, maxLen: number): string {
  * Enhanced v2: smart sentence-boundary truncation, column rebalancing,
  * table cell truncation, and SWOT/org-chart item limits.
  */
-export function autoFixSlideData(
+export function fixSlideDensity(
   data: Record<string, any>,
   layoutId: string,
 ): string[] {
@@ -1179,6 +1179,9 @@ export function autoFixSlideData(
 
   return fixes;
 }
+
+/** @deprecated Use fixSlideDensity instead. Kept for backward compatibility in tests. */
+export const autoFixSlideData = fixSlideDensity;
 
 /**
  * Find the nearest color that meets WCAG contrast ratio against a background.
