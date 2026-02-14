@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, title FROM presentations ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT id, title FROM presentations ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "720003",
+      "title": "Daily Banking 2025-2026: Новые технологии и продукты"
+    },
+    {
+      "id": "720002",
+      "title": "Презентация"
+    },
+    {
+      "id": "720001",
+      "title": ""
+    },
+    {
+      "id": "690001",
+      "title": "Нужно ли делать ИИ-бота-агрегатора ИИ-продуктов?"
+    },
+    {
+      "id": "660007",
+      "title": "Итоги Q4 2025 и планы на Q1 2026"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\n720003\tDaily Banking 2025-2026: Новые технологии и продукты\n720002\tПрезентация\n720001\t\n690001\tНужно ли делать ИИ-бота-агрегатора ИИ-продуктов?\n660007\tИтоги Q4 2025 и планы на Q1 2026\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

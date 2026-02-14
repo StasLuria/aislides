@@ -56,7 +56,26 @@ export default function SharedViewer() {
     if (htmlUrl) {
       fetch(htmlUrl)
         .then((r) => r.text())
-        .then(setFullHtml)
+        .then((html) => {
+          // Sanitize HTML to fix broken grid CSS from old templates (per-slide)
+          if (html.includes('repeat(, 1fr)')) {
+            // Split by slide-container, fix each independently, rejoin
+            html = html.replace(
+              /(<div class="slide-container">)((?:(?!<div class="slide-container">)[\s\S])*?repeat\(, 1fr\)(?:(?!<div class="slide-container">)[\s\S])*?)(?=<div class="slide-container">|<\/body>|$)/g,
+              (match) => {
+                const cardCount = (match.match(/class="card"/g) || []).length;
+                const cols = cardCount <= 3 ? (cardCount || 2) : 3;
+                const rows = Math.ceil(cardCount / cols) || 2;
+                let idx = 0;
+                return match.replace(/repeat\(, 1fr\)/g, () => {
+                  idx++;
+                  return idx === 1 ? `repeat(${cols}, 1fr)` : `repeat(${rows}, 1fr)`;
+                });
+              }
+            );
+          }
+          setFullHtml(html);
+        })
         .catch(() => {});
     }
   }, [token, presentation]);

@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, title, createdAt FROM presentations ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT id, title, createdAt FROM presentations ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "720003",
+      "title": "Daily Banking 2025-2026: Новые технологии и продукты",
+      "createdAt": "2026-02-14 20:22:58"
+    },
+    {
+      "id": "720002",
+      "title": "Презентация",
+      "createdAt": "2026-02-14 20:07:18"
+    },
+    {
+      "id": "720001",
+      "title": "",
+      "createdAt": "2026-02-14 19:53:35"
+    },
+    {
+      "id": "690001",
+      "title": "Нужно ли делать ИИ-бота-агрегатора ИИ-продуктов?",
+      "createdAt": "2026-02-14 18:35:16"
+    },
+    {
+      "id": "660007",
+      "title": "Итоги Q4 2025 и планы на Q1 2026",
+      "createdAt": "2026-02-14 14:27:02"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tcreatedAt\n720003\tDaily Banking 2025-2026: Новые технологии и продукты\t2026-02-14 20:22:58\n720002\tПрезентация\t2026-02-14 20:07:18\n720001\t\t2026-02-14 19:53:35\n690001\tНужно ли делать ИИ-бота-агрегатора ИИ-продуктов?\t2026-02-14 18:35:16\n660007\tИтоги Q4 2025 и планы на Q1 2026\t2026-02-14 14:27:02\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

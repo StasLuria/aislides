@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Презентация</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>/* ── Slide Foundation ─────────────────────────────────── */
+.slide {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--body-font-family, 'Inter'), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-body-color, #4b5563);
+  background: var(--slide-bg-gradient, var(--card-background-color, #ffffff));
+  box-sizing: border-box;
+}
+.slide *, .slide *::before, .slide *::after { box-sizing: border-box; }
+.slide h1, .slide h2, .slide h3, .slide h4 {
+  font-family: var(--heading-font-family, 'Inter'), system-ui, sans-serif;
+  margin: 0;
+}
+.slide p, .slide ul, .slide ol, .slide blockquote { margin: 0; }
+/* ── Flexbox ─────────────────────────────────────────── */
+.slide .flex { display: flex; }
+.slide .flex-col { flex-direction: column; }
+.slide .flex-1 { flex: 1 1 0%; min-width: 0; min-height: 0; }
+.slide .items-center { align-items: center; }
+.slide .items-start { align-items: flex-start; }
+.slide .justify-center { justify-content: center; }
+.slide .justify-between { justify-content: space-between; }
+.slide .justify-end { justify-content: flex-end; }
+.slide .gap-2 { gap: 8px; }
+.slide .gap-3 { gap: 12px; }
+.slide .gap-4 { gap: 16px; }
+.slide .gap-6 { gap: 24px; }
+.slide .gap-8 { gap: 32px; }
+.slide .flex-shrink-0 { flex-shrink: 0; }
+.slide .flex-wrap { flex-wrap: wrap; }
+/* ── Sizing ──────────────────────────────────────────── */
+.slide .h-full { height: 100%; }
+.slide .w-full { width: 100%; }
+.slide .min-h-0 { min-height: 0; }
+.slide .w-2 { width: 8px; }
+.slide .h-2 { height: 8px; }
+.slide .w-9 { width: 36px; }
+.slide .h-9 { height: 36px; }
+.slide .w-10 { width: 40px; }
+.slide .h-10 { height: 40px; }
+.slide .w-20 { width: 80px; }
+.slide .h-20 { height: 80px; }
+.slide .h-80 { height: 320px; }
+/* ── Spacing ─────────────────────────────────────────── */
+.slide .px-16 { padding-left: 64px; padding-right: 64px; }
+.slide .px-20 { padding-left: 80px; padding-right: 80px; }
+.slide .pt-10 { padding-top: 40px; }
+.slide .pt-12 { padding-top: 48px; }
+.slide .pb-8 { padding-bottom: 32px; }
+.slide .pb-10 { padding-bottom: 40px; }
+.slide .pb-16 { padding-bottom: 64px; }
+.slide .pr-8 { padding-right: 32px; }
+.slide .pl-8 { padding-left: 32px; }
+.slide .p-4 { padding: 16px; }
+.slide .mb-4 { margin-bottom: 16px; }
+.slide .mb-6 { margin-bottom: 24px; }
+.slide .mb-8 { margin-bottom: 32px; }
+.slide .mt-3 { margin-top: 12px; }
+.slide .mt-4 { margin-top: 16px; }
+.slide .mt-2 { margin-top: 8px; }
+.slide .mt-8 { margin-top: 32px; }
+.slide .mt-1 { margin-top: 4px; }
+.slide .space-y-3 > * + * { margin-top: 12px; }
+.slide .space-y-4 > * + * { margin-top: 16px; }
+.slide .space-y-6 > * + * { margin-top: 24px; }
+/* ── Typography ──────────────────────────────────────── */
+.slide .text-5xl { font-size: 48px; line-height: 1.1; }
+.slide .text-6xl { font-size: 60px; line-height: 1.05; }
+.slide .text-4xl { font-size: 36px; line-height: 1.15; }
+.slide .text-3xl { font-size: 30px; line-height: 1.2; }
+.slide .text-2xl { font-size: 24px; line-height: 1.3; }
+.slide .text-xl { font-size: 20px; line-height: 1.4; }
+.slide .text-lg { font-size: 18px; line-height: 1.5; }
+.slide .text-base { font-size: 16px; line-height: 1.5; }
+.slide .text-sm { font-size: 14px; line-height: 1.5; }
+.slide .font-bold { font-weight: 700; }
+.slide .font-semibold { font-weight: 600; }
+.slide .font-medium { font-weight: 500; }
+.slide .leading-tight { line-height: 1.15; }
+.slide .leading-relaxed { line-height: 1.65; }
+.slide .text-center { text-align: center; }
+.slide .max-w-2xl { max-width: 672px; }
+.slide .max-w-3xl { max-width: 768px; }
+.slide .max-w-lg { max-width: 512px; }
+/* ── Border & Radius ─────────────────────────────────── */
+:root {
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+  --radius-xl: 16px; --radius-2xl: 20px; --radius-full: 9999px;
+}
+.slide .rounded-full { border-radius: 9999px; }
+.slide .rounded-xl { border-radius: 16px; }
+.slide .rounded-2xl { border-radius: 20px; }
+.slide .rounded-lg { border-radius: 12px; }
+.slide .border { border: 1px solid #e5e7eb; }
+/* ── Shadows ─────────────────────────────────────────── */
+.slide .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+.slide .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+.slide .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+/* ── Colors ──────────────────────────────────────────── */
+.slide .bg-white { background-color: #ffffff; }
+.slide .text-white { color: #ffffff; }
+.slide .text-white\/70 { color: rgba(255,255,255,0.7); }
+.slide .text-white\/80 { color: rgba(255,255,255,0.8); }
+/* ── Positioning ─────────────────────────────────────── */
+.slide .relative { position: relative; }
+.slide .absolute { position: absolute; }
+.slide .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.slide .z-10 { z-index: 10; }
+.slide .z-20 { z-index: 20; }
+.slide .overflow-hidden { overflow: hidden; }
+.slide .object-cover { object-fit: cover; }
+.slide .object-contain { object-fit: contain; }
+/* ── Slide Footer ──────────────────────────────────────── */
+.slide-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  z-index: 50;
+  pointer-events: none;
+}
+.slide-footer-title {
+  font-family: var(--body-font-family, 'Inter'), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-body-color, #4b5563);
+  opacity: 0.5;
+  letter-spacing: 0.02em;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slide-footer-number {
+  font-family: var(--body-font-family, 'Inter'), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-body-color, #4b5563);
+  opacity: 0.5;
+  letter-spacing: 0.05em;
+}
+/* Footer on accent slides (section-header) uses white text */
+.slide.slide-accent .slide-footer-title,
+.slide.slide-accent .slide-footer-number {
+  color: rgba(255, 255, 255, 0.5);
+}
+/* ── Decorative ──────────────────────────────────────── */
+.accent-line { width: 80px; height: 4px; background: var(--primary-accent-color); border-radius: 2px; }
+.accent-line-center { width: 80px; height: 4px; background: var(--primary-accent-color); margin-left: auto; margin-right: auto; border-radius: 2px; }
+.icon-circle { width: 40px; height: 40px; border-radius: 9999px; background: var(--primary-accent-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-circle img, .icon-circle svg { width: 20px; height: 20px; filter: brightness(0) invert(1); }
+.bullet-row { display: flex; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 12px; background: var(--decorative-shape-color, color-mix(in srgb, var(--primary-accent-color) 10%, transparent)); border: 1px solid var(--card-border-color, rgba(0,0,0,0.05)); }
+.card { padding: 24px; border-radius: 16px; border: 1px solid var(--card-border-color, #e5e7eb); background: var(--card-background-gradient, var(--card-background-color, #ffffff)); box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04)); }
+.gradient-overlay-bottom { background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.2) 50%, transparent); }
+.gradient-overlay-dark { background: rgba(0,0,0,0.5); }
+/* ── Decorative Shapes ──────────────────────────────── */
+.slide-decor-circle { position: absolute; border-radius: 50%; background: var(--decorative-shape-color, rgba(0,0,0,0.03)); pointer-events: none; }
+.slide-decor-top-right { top: -80px; right: -80px; width: 300px; height: 300px; }
+.slide-decor-bottom-left { bottom: -60px; left: -60px; width: 200px; height: 200px; }
+/* ── Accent Gradient Slide (for section headers, title, final) ── */
+.slide.slide-accent {
+  background: var(--slide-bg-accent-gradient, var(--primary-accent-color));
+  color: #ffffff;
+}
+/* ── Tables ──────────────────────────────────────────── */
+.slide table { width: 100%; border-collapse: collapse; }
+.slide thead tr { background: var(--primary-accent-color); }
+.slide th { padding: 16px 24px; text-align: left; color: #ffffff; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+.slide tbody tr { border-bottom: 1px solid #f3f4f6; }
+.slide tbody tr:nth-child(even) { background-color: var(--decorative-shape-color, #f9fafb); }
+.slide tbody tr:nth-child(odd) { background-color: var(--card-background-color, #ffffff); }
+.slide td { padding: 12px 24px; font-size: 14px; color: var(--text-body-color, #4b5563); }
+.slide .border { border: 1px solid var(--card-border-color, #e5e7eb); }
+/* ── Adaptive Typography ───────────────────────────────── */
+/* Density levels: normal (default), compact (many items), dense (very many items) */
+/* These classes are applied to the slide root div by renderSlide() based on content analysis */
+
+/* CSS custom properties for adaptive sizing — templates use these instead of hardcoded values */
+.slide {
+  --at-title-size: 36px;
+  --at-title-lh: 1.1;
+  --at-title-clamp: 2;
+  --at-subtitle-size: 20px;
+  --at-body-size: 16px;
+  --at-body-lh: 1.5;
+  --at-small-size: 14px;
+  --at-label-size: 13px;
+  --at-tiny-size: 12px;
+  --at-card-padding: 24px;
+  --at-gap: 16px;
+  --at-gap-sm: 12px;
+  --at-bullet-clamp: 3;
+  --at-desc-clamp: 2;
+  --at-icon-size: 48px;
+  --at-icon-font: 20px;
+  --at-value-size: 28px;
+}
+/* Compact: 5-7 items, or long text — reduce sizes ~15-20% */
+.slide.density-compact {
+  --at-title-size: 30px;
+  --at-subtitle-size: 17px;
+  --at-body-size: 14px;
+  --at-body-lh: 1.4;
+  --at-small-size: 13px;
+  --at-label-size: 11px;
+  --at-tiny-size: 11px;
+  --at-card-padding: 18px;
+  --at-gap: 12px;
+  --at-gap-sm: 8px;
+  --at-bullet-clamp: 2;
+  --at-desc-clamp: 1;
+  --at-icon-size: 40px;
+  --at-icon-font: 17px;
+  --at-value-size: 24px;
+}
+/* Dense: 8+ items, or very long text — reduce sizes ~30% */
+.slide.density-dense {
+  --at-title-size: 26px;
+  --at-subtitle-size: 15px;
+  --at-body-size: 13px;
+  --at-body-lh: 1.35;
+  --at-small-size: 12px;
+  --at-label-size: 10px;
+  --at-tiny-size: 10px;
+  --at-card-padding: 14px;
+  --at-gap: 10px;
+  --at-gap-sm: 6px;
+  --at-bullet-clamp: 2;
+  --at-desc-clamp: 1;
+  --at-icon-size: 36px;
+  --at-icon-font: 15px;
+  --at-value-size: 20px;
+}
+</style>
+  <style>
+:root {
+  --primary-accent-color: #3b82f6;
+  --primary-accent-light: rgba(59, 130, 246, 0.1);
+  --text-heading-color: #111827;
+  --text-body-color: #4b5563;
+  --card-background-color: #ffffff;
+  --card-border-color: rgba(0,0,0,0.08);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --slide-background-color: #f0f4ff;
+  --decorative-shape-color: rgba(59, 130, 246, 0.05);
+}
+</style>
+  
+  <style>
+    body { margin: 0; padding: 40px 0; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+    .slide-container { position: relative; }
+    .slide-number { position: absolute; top: -28px; left: 0; font-family: 'Inter', sans-serif; font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide-number">Slide 1 / 1</div>
+    <div class="slide" style="width:1280px; height:720px; overflow:hidden; border-radius:4px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+      <div class="density-compact" style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 12px;">
+    <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">Наша стратегия роста: Как мы достигнем лидерства</h1>
+    <div class="accent-line" style="margin-top: 10px;"></div>
+    
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.4; margin: 6px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">Учитывая наши сильные стороны, слабые места и рыночные возможности, вот наша стратегия.</p>
+    
+  </div>
+  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: var(--at-gap, 14px); overflow: hidden;">
+    
+    <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 16px); overflow: hidden; position: relative; min-height: 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0;">
+        
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/globe.svg" alt="" style="width: 18px; height: 18px;" />
+        </div>
+        
+        <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 14px); font-weight: 600; line-height: 1.3;">Расширение продуктовой линейки</div>
+        
+      </div>
+      
+      <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">Запуск 3 новых ИИ-модулей для автоматизации документооборота и аналитики. Ожидаемый рост выручки от новых продуктов до 18%.</div>
+      
+      
+    </div>
+    
+    <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 16px); overflow: hidden; position: relative; min-height: 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0;">
+        
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/globe.svg" alt="" style="width: 18px; height: 18px;" />
+        </div>
+        
+        <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 14px); font-weight: 600; line-height: 1.3;">Выход на новые рынки</div>
+        
+      </div>
+      
+      <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">Экспансия в Польшу и Чехию для увеличения клиентской базы на 20-30%. Фокус на локализации и партнерствах.</div>
+      
+      
+    </div>
+    
+    <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 16px); overflow: hidden; position: relative; min-height: 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0;">
+        
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/users.svg" alt="" style="width: 18px; height: 18px;" />
+        </div>
+        
+        <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 14px); font-weight: 600; line-height: 1.3;">Усиление клиентоориентированности</div>
+        
+      </div>
+      
+      <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">Внедрение омниканальной CRM-системы и запуск программы лояльности. Это повысит вовлеченность клиентов в 2.5 раза и продажи на 30%.</div>
+      
+      
+    </div>
+    
+    <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 16px); overflow: hidden; position: relative; min-height: 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0;">
+        
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-accent-light, rgba(147,51,234,0.1)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/zap.svg" alt="" style="width: 18px; height: 18px;" />
+        </div>
+        
+        <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-heading-color, #111827); font-size: var(--at-small-size, 14px); font-weight: 600; line-height: 1.3;">Цифровая трансформация операций</div>
+        
+      </div>
+      
+      <div style="color: var(--text-body-color, #4b5563); font-size: var(--at-tiny-size, 12px); line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">Инвестиции в автоматизацию внутренних процессов для повышения эффективности на 15%. Снижение операционных издержек и ускорение вывода продуктов.</div>
+      
+      
+    </div>
+    
+  </div>
+</div><div class="slide-footer">
+    <span class="slide-footer-title">Презентация</span>
+    <span class="slide-footer-number">1 / 1</span>
+  </div>
+    </div>
+  </div>
+  
+</body>
+</html>

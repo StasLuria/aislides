@@ -7,14 +7,23 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 108 |
-| Total tasks | 1041 |
-| Completed | 1029 (99%) |
+| Total sections | 109 |
+| Total tasks | 1047 |
+| Completed | 1035 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 27: Fix card-grid layout — old presentations with broken grid CSS ✅
+
+- [x] Root cause: old presentations generated with JS ternary (? :) in Nunjucks → `repeat(, 1fr)` invalid CSS → browser falls back to 1 column
+- [x] Template already fixed in Round 25 — new presentations render correctly
+- [x] Add client-side sanitizeSlideHtml() in Viewer.tsx — per-slide-container regex fix for `repeat(, 1fr)`
+- [x] Add client-side sanitizeSlideHtml() in SharedViewer.tsx — same per-slide-container fix for shared links
+- [x] Sanitization counts `.card` elements per slide-container to compute correct cols (min(cardCount, 3))
+- [x] All 1426 tests passing, 0 regressions
 
 ### 🚀 Round 26: Image-based structure recognition from uploaded screenshots ✅
 
@@ -1424,7 +1433,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (41 sections, 561/573 tasks)
+### 🚀 Improvements (42 sections, 567/579 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1467,6 +1476,7 @@
 - **Round 24: Fix PPTX Export Quality** — ✅
 - **Round 25: Fix card-grid layout issues** — ✅
 - **Round 26: Image-based structure recognition from uploaded screenshots** — ✅
+- **Round 27: Fix card-grid layout — old presentations with broken grid CSS** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

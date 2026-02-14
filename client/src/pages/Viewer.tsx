@@ -75,7 +75,35 @@ import InlineEditableSlide from "@/components/InlineEditableSlide";
  * Each slide is a `.slide-container` wrapping a `.slide` (1280×720).
  * We extract the <head> styles and wrap each slide into a standalone HTML doc.
  */
+/**
+ * Sanitize slide HTML to fix known rendering bugs from older template versions.
+ * - Fixes empty repeat(, 1fr) in grid-template-columns/rows (caused by Nunjucks not supporting JS ternary)
+ * - Counts .card elements to compute correct column count
+ */
+function sanitizeSlideHtml(html: string): string {
+  if (!html.includes('repeat(, 1fr)')) return html;
+
+  // Fix per slide-container so card counts are accurate per-slide
+  return html.replace(
+    /(<div class="slide-container">)([\s\S]*?)(?=<div class="slide-container">|<\/body>|$)/g,
+    (slideChunk) => {
+      if (!slideChunk.includes('repeat(, 1fr)')) return slideChunk;
+      const cardCount = (slideChunk.match(/class="card"/g) || []).length;
+      const cols = cardCount <= 3 ? (cardCount || 2) : 3;
+      const rows = Math.ceil(cardCount / cols) || 2;
+      let idx = 0;
+      return slideChunk.replace(/repeat\(, 1fr\)/g, () => {
+        idx++;
+        return idx === 1 ? `repeat(${cols}, 1fr)` : `repeat(${rows}, 1fr)`;
+      });
+    }
+  );
+}
+
 function parseSlides(html: string): string[] {
+  // Sanitize the full HTML first to fix any broken CSS from old templates
+  html = sanitizeSlideHtml(html);
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
