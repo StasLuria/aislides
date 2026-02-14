@@ -1020,3 +1020,9 @@
 - [x] Decision: skip full migration — SSE streaming, binary exports (PPTX/PDF), multer uploads, public shared endpoints all require Express
 - [x] Architecture decision: keep existing Express routes, use tRPC for new endpoints going forward
 - [x] All 1152 tests passing (40 test files) — zero regressions
+
+## Round 11: Project Documentation
+- [x] Inventory all features, pipeline agents, templates, and architecture — 45 layouts, 12 themes, 17 content shapes, 10 agents, 37+ API endpoints
+- [x] Write comprehensive README.md — full project description, architecture diagram, pipeline flow, template list, theme list, API reference, tech stack, file structure, DB schema, dev guide
+- [x] All 1152 tests passing (40 test files)
+- [x] Save checkpoint
