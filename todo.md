@@ -991,3 +991,15 @@
 - [x] Verified: test generation with full prompt → all 4 specialized shapes correctly assigned (org_structure, swot_quadrants, checklist_items, kanban_board)
 - [x] Write 18 new vitest tests for autoFixSlideData (smart truncation, limits, rebalancing, SWOT, org-chart)
 - [x] All 1152 tests passing (40 test files)
+
+## Round 9: Codebase Audit & Refactoring
+- [x] Inventory all files, modules, and sizes — 28k+ lines server, 7k+ lines client, 11k+ lines tests
+- [x] Audit server-side: found duplicated autoFixSlideData (QA vs DesignCritic), dead buildPreviewData, unused backendProxy
+- [x] Audit client-side: found unused ComponentShowcase, ManusDialog, ConnectionStatus, History page, 6 unused shadcn components
+- [x] Audit shared/config: found THEME_PRESETS duplication (server vs client), dual API patterns (api.ts + tRPC)
+- [x] Compiled AUDIT_REPORT.md with 7 critical findings, 5 medium, 4 low priority
+- [x] Deleted 17 dead files (~3,600 lines): backendProxy.ts, index.ts (old server), ConnectionStatus, ManusDialog, ComponentShowcase, History page, 6 unused shadcn UI components
+- [x] Consolidated buildPreviewData → buildFallbackData (eliminated duplication)
+- [x] Updated interactiveRoutes.ts to use buildFallbackData + image injection
+- [x] Updated interactiveRoutes.test.ts: fixed mock to use vi.importActual for buildFallbackData, updated layout names and expectations
+- [x] All 1152 tests passing (40 test files) — zero regressions

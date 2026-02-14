@@ -945,8 +945,13 @@ router.post("/api/v1/interactive/:id/preview-slide", async (req: Request, res: R
       layoutName = "image-text";
     }
 
-    // Build slide data from content, passing image URL if available
-    const slideData = buildPreviewData(slideContent, layoutName, slideImage?.url);
+    // Build slide data from content using the canonical buildFallbackData
+    const slideData = buildFallbackData(slideContent, layoutName);
+    // Inject image data if available
+    if (slideImage?.url) {
+      slideData.image = { url: slideImage.url, alt: slideContent.title };
+      slideData.backgroundImage = { url: slideImage.url, alt: slideContent.title };
+    }
 
     // Render the slide HTML
     const slideHtml = renderSlide(layoutName, slideData);
@@ -1017,121 +1022,6 @@ export function pickLayoutForPreview(slide: SlideContent, totalSlides: number, s
 
   // Default
   return "text-slide";
-}
-
-/**
- * Build slide data for preview from content — no LLM, uses direct mapping.
- */
-export function buildPreviewData(slide: SlideContent, layoutName: string, imageUrl?: string): Record<string, any> {
-  const text = slide.text || "";
-  const lines = text.split("\n").filter((l) => l.trim());
-
-  // Extract bullets from text
-  const bullets = lines
-    .filter((l) => /^[-•*]\s/.test(l.trim()))
-    .map((l) => l.trim().replace(/^[-•*]\s*/, ""));
-
-  // Non-bullet text
-  const bodyLines = lines.filter((l) => !/^[-•*]\s/.test(l.trim()));
-  const body = bodyLines.join("\n");
-
-  const base: Record<string, any> = {
-    title: slide.title,
-    description: body || text,
-    key_message: slide.key_message || "",
-    notes: slide.notes || "",
-  };
-
-  // Add image data if available
-  if (imageUrl) {
-    base.image = { url: imageUrl, alt: slide.title };
-    base.backgroundImage = { url: imageUrl, alt: slide.title };
-  }
-
-  switch (layoutName) {
-    case "title-slide":
-      return {
-        ...base,
-        description: (slide.key_message || body || text).substring(0, 150),
-        presenterName: "",
-        presentationDate: new Date().toLocaleDateString("ru-RU"),
-        initials: "",
-      };
-
-    case "image-text":
-      return {
-        ...base,
-        bullets: bullets.length > 0
-          ? bullets.map((b) => {
-              const colonIdx = b.indexOf(":");
-              if (colonIdx > 0 && colonIdx < 60) {
-                return { title: b.substring(0, colonIdx).trim(), description: b.substring(colonIdx + 1).trim() };
-              }
-              return { title: b, description: "" };
-            })
-          : [{ title: text.substring(0, 100), description: "" }],
-      };
-
-    case "image-fullscreen":
-      return {
-        ...base,
-        subtitle: slide.key_message || text.substring(0, 150),
-      };
-
-    case "bullet-list-slide":
-      return {
-        ...base,
-        bullets: bullets.length > 0 ? bullets : lines.slice(0, 6),
-      };
-
-    case "two-column-slide": {
-      const mid = Math.ceil(bullets.length / 2);
-      return {
-        ...base,
-        leftTitle: "Ключевые аспекты",
-        rightTitle: "Детали",
-        leftBullets: bullets.slice(0, mid),
-        rightBullets: bullets.slice(mid),
-      };
-    }
-
-    case "metrics-slide":
-      return {
-        ...base,
-        metrics: (slide.data_points || []).map((dp) => ({
-          value: dp.value,
-          label: dp.label,
-          unit: dp.unit || "",
-        })),
-      };
-
-    case "quote-slide":
-      return {
-        ...base,
-        quote: slide.key_message || text.substring(0, 200),
-        author: "",
-      };
-
-    case "section-header":
-      return {
-        ...base,
-        sectionNumber: String(slide.slide_number).padStart(2, "0"),
-      };
-
-    case "final-slide":
-      return {
-        ...base,
-        contactInfo: "",
-        callToAction: slide.key_message || "Спасибо за внимание!",
-      };
-
-    case "text-slide":
-    default:
-      return {
-        ...base,
-        bullets: bullets.length > 0 ? bullets : undefined,
-      };
-  }
 }
 
 export function registerInteractiveRoutes(app: import("express").Express) {

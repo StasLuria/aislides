@@ -20,7 +20,7 @@ import {
 } from "./presentationDb";
 import { renderPresentation, renderSlide, BASE_CSS } from "./pipeline/templateEngine";
 import { getThemePreset } from "./pipeline/themes";
-import { pickLayoutForPreview, buildPreviewData } from "./interactiveRoutes";
+import { pickLayoutForPreview } from "./interactiveRoutes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 
