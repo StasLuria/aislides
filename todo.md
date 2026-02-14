@@ -1292,3 +1292,30 @@
 - [x] Adaptive x-axis label truncation: 10 chars for >8 items
 - [x] Write vitest tests for chart label fixes (14 tests in svgChartEngine.labelOverlap.test.ts)
 - [x] All 1398 tests passing, 0 regressions
+
+## Round 24: Fix PPTX Export Quality
+
+### Investigation
+- [x] Review current PPTX export code — only 8 of 30+ layouts handled
+- [x] Test export on a real presentation — 6/12 slides blank/broken
+- [x] Document specific issues: empty slides, SVG charts ignored, markdown markers, wrong footer position
+
+### Fix Implementation
+- [x] Full rewrite of pptxExport.ts with 30+ layout handlers
+- [x] Added: highlight-stats, comparison-table, financial-formula, verdict-analysis, card-grid, image-text, SWOT, process-steps, icons-numbers, timeline, chart-text, agenda, quote-slide, section-header, final-slide
+- [x] Fix: PptxGenJS shapes/charts are instance properties, not static
+- [x] Fix: stripMd handles non-string inputs (numbers, objects)
+- [x] Fix: icon objects (not emoji strings) handled properly
+- [x] Fix: comparison-table handles empty headers with columns fallback
+- [x] Fix: verdict severity dot colors (RED/AMBER/GREEN based on HIGH/MEDIUM/LOW)
+- [x] Fix: title truncation — shrinkText + adaptive fontSize for all title functions
+- [x] Fix: section-header adaptive font sizing for long titles
+- [x] Fix: financial formula label word-wrap with smaller font + shrinkText
+- [x] Native PptxGenJS charts for bar/line/pie/doughnut data
+- [x] Images included via addImage with fallback placeholder
+- [x] Text formatting, theme colors, backgrounds all preserved
+
+### Testing
+- [x] Visual inspection: 12/12 slides rendering correctly (was 6/12)
+- [x] All 1398 vitest tests passing, 0 regressions
+- [x] Tested on Quarterly Review presentation (12 slides, all layouts)
