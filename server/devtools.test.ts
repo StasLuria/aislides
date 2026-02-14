@@ -48,7 +48,7 @@ describe("generate-readme.mjs", () => {
     expect(Number(match![1])).toBe(45);
   });
 
-  it("detects correct theme count (12)", () => {
+  it("detects correct theme count (13)", () => {
     const output = execSync("node scripts/generate-readme.mjs --dry-run --skip-tests", {
       cwd: ROOT,
       encoding: "utf-8",
@@ -57,7 +57,7 @@ describe("generate-readme.mjs", () => {
 
     const match = output.match(/Themes:\s+(\d+)/);
     expect(match).not.toBeNull();
-    expect(Number(match![1])).toBe(12);
+    expect(Number(match![1])).toBe(13);
   });
 
   it("detects at least 50 REST endpoints", () => {

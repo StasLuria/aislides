@@ -24,6 +24,70 @@ export interface ThemePreset extends ThemePresetBase {
 
 /** Server-only extensions keyed by theme ID */
 const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string; mood: string }> = {
+  bspb_corporate: {
+    mood: "Официальный корпоративный стиль Банка Санкт-Петербург. Строгий, профессиональный, банковский. Белый фон, синие заголовки, красные акценты. Логотип БСПБ обязателен.",
+    fontsUrl: "",
+    cssVariables: `:root {
+  --card-background-color: #ffffff;
+  --card-background-gradient: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+  --slide-bg-gradient: #ffffff;
+  --slide-bg-accent-gradient: linear-gradient(135deg, #003d7a 0%, #0057AB 50%, #0070d4 100%);
+  --text-heading-color: #0057AB;
+  --text-body-color: #333333;
+  --primary-accent-color: #0057AB;
+  --primary-accent-light: #4d9de0;
+  --secondary-accent-color: #E9243A;
+  --heading-font-family: 'Arial';
+  --body-font-family: 'Arial';
+  --decorative-shape-color: rgba(0, 87, 171, 0.06);
+  --card-border-color: rgba(0, 87, 171, 0.15);
+  --card-shadow: 0 2px 12px rgba(0, 87, 171, 0.08);
+}
+
+/* BSPB Logo — top-right corner on content slides */
+.slide {
+  position: relative;
+}
+.slide::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 120px;
+  height: 40px;
+  background-image: url('https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/mrevEKsYBpLxGPcu.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* BSPB Red accent line under headings */
+.accent-line {
+  width: 60px !important;
+  height: 3px !important;
+  background: #E9243A !important;
+  border-radius: 0 !important;
+}
+
+/* BSPB Decorative circles — hide for clean corporate look */
+.slide-decor-circle {
+  display: none !important;
+}
+
+/* BSPB Bottom bar — red stripe at bottom of each slide */
+.slide::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #E9243A;
+  z-index: 100;
+}`,
+  },
   corporate_blue: {
     mood: "Professional, trustworthy, corporate. Clean and authoritative.",
     fontsUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap",

@@ -34,6 +34,7 @@ export interface ThemeCategory {
  * Add new themes here; both client and server will pick them up automatically.
  */
 export const THEME_PRESETS_BASE: ThemePresetBase[] = [
+  { id: "bspb_corporate", name: "БСПБ Корпоративный", nameRu: "БСПБ Корпоративный", color: "#0057AB", gradient: "linear-gradient(135deg, #0057AB, #E9243A)", dark: false, category: "business", descRu: "Официальный стиль Банка Санкт-Петербург" },
   { id: "corporate_blue", name: "Corporate Blue", nameRu: "Корпоративный синий", color: "#2563EB", gradient: "linear-gradient(135deg, #1e40af, #3b82f6)", dark: false, category: "business", descRu: "Профессиональный стиль для бизнес-презентаций" },
   { id: "modern_purple", name: "Modern Purple", nameRu: "Современный фиолетовый", color: "#7C3AED", gradient: "linear-gradient(135deg, #6d28d9, #a78bfa)", dark: false, category: "creative", descRu: "Творческий и инновационный дизайн" },
   { id: "ocean_deep", name: "Ocean Deep", nameRu: "Глубокий океан", color: "#0891B2", gradient: "linear-gradient(135deg, #164e63, #06b6d4)", dark: false, category: "business", descRu: "Спокойный и глубокий профессиональный стиль" },

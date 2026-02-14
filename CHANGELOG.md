@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 113 |
-| Total tasks | 1074 |
-| Completed | 1062 (99%) |
+| Total sections | 114 |
+| Total tasks | 1086 |
+| Completed | 1074 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 32: BSPB Brand Template & Business Copywriter Skill ✅
+
+- [x] Install business-copywriter skill into skills directory
+- [x] Analyze BSPB brand template PPTX — extract colors, fonts, layouts, styles
+- [x] Create bspb_corporate theme with brand colors (#0057AB blue, #E9243A red accent), Arial font, white backgrounds
+- [x] Add BSPB logo (top-right), red accent line under headings, red bottom stripe to theme CSS
+- [x] Register bspb_corporate in shared/themes.ts and server/pipeline/themes.ts with full CSS variables
+- [x] Set bspb_corporate as default theme (weight 2.0 in themeSelector, fallback for ambiguous prompts)
+- [x] Add BSPB-specific keywords to themeSelector (банк, бспб, финанс, кредит, проект, etc.)
+- [x] Integrate business-copywriter skill into Writer agent prompt (full copywriting_style section with principles, frameworks PAS/BAB/FAB/4Ps, language rules, evidence handling, audience adaptation)
+- [x] Integrate copywriting guidelines into Outline agent prompt (headline-as-conclusion, one-slide-one-thought)
+- [x] Integrate copywriting guidelines into Storytelling agent prompt (no bureaucratic language, no foreign words, data-as-stories)
+- [x] Fix 6 failing tests: update theme count 12→13, default fallback corporate_blue→bspb_corporate, fintech/banking arctic_frost→bspb_corporate
+- [x] All 1436 tests passing, 0 TypeScript errors
 
 ### 🐛 Round 31: Bug fix — empty slide preview in step-by-step mode ✅
 
@@ -1472,7 +1487,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (44 sections, 585/597 tasks)
+### 🚀 Improvements (45 sections, 597/609 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1518,6 +1533,7 @@
 - **Round 27: Fix card-grid layout — old presentations with broken grid CSS** — ✅
 - **Round 28: Implement true slide-by-slide step-by-step mode** — ✅
 - **Round 29: Slide progress bar in chat UI** — ✅
+- **Round 32: BSPB Brand Template & Business Copywriter Skill** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

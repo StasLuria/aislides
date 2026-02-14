@@ -199,8 +199,8 @@ describe("Template Gallery", () => {
     expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("has exactly 12 theme presets", () => {
-    expect(THEME_PRESETS).toHaveLength(12);
+  it("has exactly 13 theme presets", () => {
+    expect(THEME_PRESETS).toHaveLength(13);
   });
 
   it("has 5 categories including 'all'", () => {

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { getThemePreset, isDarkTheme, listThemeIds, THEME_PRESETS } from "./themes";
 
 describe("Theme Presets", () => {
-  it("should have exactly 12 theme presets", () => {
-    expect(THEME_PRESETS).toHaveLength(12);
+  it("should have exactly 13 theme presets", () => {
+    expect(THEME_PRESETS).toHaveLength(13);
   });
 
   it("should have unique IDs", () => {
@@ -18,7 +18,9 @@ describe("Theme Presets", () => {
       expect(theme.nameRu).toBeTruthy();
       expect(theme.previewColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
       expect(theme.previewGradient).toContain("linear-gradient");
-      expect(theme.fontsUrl).toContain("fonts.googleapis.com");
+      if (theme.id !== 'bspb_corporate') {
+        expect(theme.fontsUrl).toContain("fonts.googleapis.com");
+      }
       expect(theme.cssVariables).toContain(":root");
       expect(theme.mood).toBeTruthy();
     }
@@ -55,9 +57,9 @@ describe("Theme Presets", () => {
     expect(theme.name).toBe("Ocean Deep");
   });
 
-  it("getThemePreset should fall back to corporate_blue for unknown ID", () => {
+  it("getThemePreset should fall back to bspb_corporate for unknown ID", () => {
     const theme = getThemePreset("nonexistent_theme");
-    expect(theme.id).toBe("corporate_blue");
+    expect(theme.id).toBe("bspb_corporate");
   });
 
   it("isDarkTheme should correctly identify dark themes", () => {
@@ -69,7 +71,8 @@ describe("Theme Presets", () => {
 
   it("listThemeIds should return all theme IDs", () => {
     const ids = listThemeIds();
-    expect(ids).toHaveLength(12);
+    expect(ids).toHaveLength(13);
+    expect(ids).toContain("bspb_corporate");
     expect(ids).toContain("corporate_blue");
     expect(ids).toContain("cosmic_dark");
     expect(ids).toContain("citrus_energy");

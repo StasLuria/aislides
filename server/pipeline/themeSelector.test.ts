@@ -71,11 +71,11 @@ describe("Theme Auto-Selector", () => {
       expect(topMatch.themeId).toBe("rose_gold");
     });
 
-    it("should match arctic_frost for fintech/banking", () => {
+    it("should match bspb_corporate for fintech/banking (BSPB is default bank theme)", () => {
       const results = keywordMatch("Финтех-платформа для банковских платежей и страхования");
       const topMatch = results[0];
       expect(topMatch).toBeDefined();
-      expect(topMatch.themeId).toBe("arctic_frost");
+      expect(topMatch.themeId).toBe("bspb_corporate");
     });
 
     it("should match ocean_deep for logistics/international", () => {
@@ -220,12 +220,12 @@ describe("Theme Auto-Selector", () => {
       expect(result.method).toBe("keyword");
     });
 
-    it("should fall back to default for ambiguous prompt without LLM", async () => {
+    it("should fall back to BSPB corporate for ambiguous prompt without LLM", async () => {
       const result = await autoSelectTheme(
         "Как сделать мир лучше",
         false,
       );
-      expect(result.themeId).toBe("corporate_blue");
+      expect(result.themeId).toBe("bspb_corporate");
       expect(result.method).toBe("default");
       expect(result.confidence).toBe("low");
     });
@@ -248,12 +248,12 @@ describe("Theme Auto-Selector", () => {
       expect(result.method).toBe("keyword");
     });
 
-    it("should select arctic_frost for fintech topic", async () => {
+    it("should select bspb_corporate for fintech topic (BSPB is default bank theme)", async () => {
       const result = await autoSelectTheme(
         "Финтех-платформа: банковские платежи и финансовые услуги",
         false,
       );
-      expect(result.themeId).toBe("arctic_frost");
+      expect(result.themeId).toBe("bspb_corporate");
       expect(result.method).toBe("keyword");
     });
 
@@ -322,7 +322,7 @@ describe("Theme Auto-Selector", () => {
       ["Обучение команды: тренинг лидерства", "sunset_warm"],
       ["Международная логистика и транспорт", "ocean_deep"],
       ["Люкс бренд: премиум ювелирные украшения", "rose_gold"],
-      ["Финтех банковские платежи и страхование", "arctic_frost"],
+      ["Финтех банковские платежи и страхование", "bspb_corporate"],
       ["Конференция: запуск продукта keynote", "midnight_noir"],
       ["SMM реклама для e-commerce магазина", "citrus_energy"],
     ];

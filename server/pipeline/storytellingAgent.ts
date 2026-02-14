@@ -74,6 +74,16 @@ Rules for action titles:
 10. NEVER use "и" / "and" to chain multiple concepts — focus on ONE insight per title
 </action_title_rules>
 
+<copywriting_guidelines>
+Правила бизнес-копирайтинга для заголовков:
+- Заголовок = вывод: Не «Результаты исследования», а «70% клиентов готовы платить больше за качество».
+- Простые слова: «Улучшить» вместо «оптимизировать», «Сделать» вместо «осуществить».
+- Без канцелярита: Избегайте «в целях», «в рамках», «по итогам проведённого анализа».
+- Без иностранных слов: «Пример» вместо «кейс», «Вывод» вместо «инсайт», «Задача» вместо «челлендж».
+- Конкретика: «Рост на 25%» вместо «значительный рост».
+- Превращайте данные в истории: Не «рост на 30%», а «каждый третий клиент стал покупать больше».
+</copywriting_guidelines>
+
 <narrative_coherence_rules>
 1. Each slide must logically follow the previous one
 2. The presentation should tell a STORY, not just list information

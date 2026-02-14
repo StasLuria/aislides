@@ -1380,3 +1380,17 @@
 - [x] Fix: send previewHtml (from renderPresentation with full CSS+theme+fonts) instead of slideHtml in both generateSlideDesign and handleSlideDesignFeedback
 - [x] Fix: SlidePreviewCard detects full HTML documents and renders directly with override styles (no dark bg, no padding)
 - [x] All 1436 tests passing, 0 TypeScript errors
+
+## Round 32: BSPB Brand Template & Business Copywriter Skill
+- [x] Install business-copywriter skill into skills directory
+- [x] Analyze BSPB brand template PPTX — extract colors, fonts, layouts, styles
+- [x] Create bspb_corporate theme with brand colors (#0057AB blue, #E9243A red accent), Arial font, white backgrounds
+- [x] Add BSPB logo (top-right), red accent line under headings, red bottom stripe to theme CSS
+- [x] Register bspb_corporate in shared/themes.ts and server/pipeline/themes.ts with full CSS variables
+- [x] Set bspb_corporate as default theme (weight 2.0 in themeSelector, fallback for ambiguous prompts)
+- [x] Add BSPB-specific keywords to themeSelector (банк, бспб, финанс, кредит, проект, etc.)
+- [x] Integrate business-copywriter skill into Writer agent prompt (full copywriting_style section with principles, frameworks PAS/BAB/FAB/4Ps, language rules, evidence handling, audience adaptation)
+- [x] Integrate copywriting guidelines into Outline agent prompt (headline-as-conclusion, one-slide-one-thought)
+- [x] Integrate copywriting guidelines into Storytelling agent prompt (no bureaucratic language, no foreign words, data-as-stories)
+- [x] Fix 6 failing tests: update theme count 12→13, default fallback corporate_blue→bspb_corporate, fintech/banking arctic_frost→bspb_corporate
+- [x] All 1436 tests passing, 0 TypeScript errors

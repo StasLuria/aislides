@@ -28,6 +28,16 @@ interface ThemeRule {
 
 const THEME_RULES: ThemeRule[] = [
   {
+    themeId: "bspb_corporate",
+    keywords: [
+      "банк", "бспб", "санкт-петербург", "финанс", "кредит", "вклад",
+      "ипотек", "депозит", "расчётн", "расчетн", "банковск",
+      "проект", "предпроект", "внедрен", "автоматизац",
+    ],
+    patterns: [/банк\w*\s+(?:санкт|петербург|бспб)/i, /бспб/i],
+    weight: 2.0,
+  },
+  {
     themeId: "corporate_blue",
     keywords: [
       "бизнес", "компания", "корпоративн", "менеджмент", "управлен",
@@ -379,11 +389,11 @@ export async function autoSelectTheme(
     };
   }
 
-  // No LLM, no keywords → default
+  // No LLM, no keywords → default to BSPB corporate theme
   return {
-    themeId: "corporate_blue",
+    themeId: "bspb_corporate",
     method: "default",
     confidence: "low",
-    reason: "No strong keyword matches, LLM fallback disabled",
+    reason: "No strong keyword matches, using BSPB corporate as default",
   };
 }
