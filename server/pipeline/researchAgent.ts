@@ -14,6 +14,7 @@
  */
 
 import { invokeLLM } from "../_core/llm";
+import { callDataApi } from "../_core/dataApi";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -149,6 +150,83 @@ export function generateResearchQueries(
 }
 
 // ═══════════════════════════════════════════════════════
+// WEB SEARCH (via Data API)
+// ═══════════════════════════════════════════════════════
+
+interface WebSearchResult {
+  title: string;
+  snippet: string;
+  url: string;
+}
+
+/**
+ * Attempt web search via Data API (Google/search).
+ * Returns null if search is unavailable.
+ */
+async function webSearch(query: string): Promise<WebSearchResult[] | null> {
+  try {
+    const result = await callDataApi("Google/search", {
+      query: { q: query, num: 5, hl: "ru" },
+    });
+    if (!result || typeof result !== "object") return null;
+    const data = result as Record<string, unknown>;
+    const items = (data.organic_results || data.items || data.results || []) as Array<Record<string, string>>;
+    if (!Array.isArray(items) || items.length === 0) return null;
+    return items.slice(0, 5).map((item) => ({
+      title: item.title || "",
+      snippet: item.snippet || item.description || "",
+      url: item.link || item.url || "",
+    }));
+  } catch (error) {
+    console.log(`[Research] Web search unavailable: ${(error as Error).message}`);
+    return null;
+  }
+}
+
+/** Test if web search is available */
+async function isWebSearchAvailable(): Promise<boolean> {
+  try {
+    const result = await webSearch("test");
+    return result !== null && result.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Gather web search context for a batch of research queries.
+ * Returns a map of slide_number -> search results text.
+ */
+async function gatherWebSearchContext(
+  queries: ResearchQuery[],
+): Promise<Map<number, string>> {
+  const contextMap = new Map<number, string>();
+  
+  // Search in parallel (max 3 concurrent)
+  const CONCURRENCY = 3;
+  for (let i = 0; i < queries.length; i += CONCURRENCY) {
+    const batch = queries.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map(async (q) => {
+        const searchQuery = q.queries[0]; // Use the primary query
+        const sr = await webSearch(searchQuery);
+        return { slideNumber: q.slide_number, searchResults: sr };
+      }),
+    );
+    for (const { slideNumber, searchResults: sr } of batchResults) {
+      if (sr && sr.length > 0) {
+        const text = sr
+          .map((r: WebSearchResult, idx: number) => `[${idx + 1}] ${r.title}\n${r.snippet}\nSource: ${r.url}`)
+          .join("\n\n");
+        contextMap.set(slideNumber, text);
+      }
+    }
+  }
+  
+  return contextMap;
+}
+
+// ═══════════════════════════════════════════════════════
 // LLM-BASED RESEARCH
 // ═══════════════════════════════════════════════════════
 
@@ -179,11 +257,17 @@ Return a JSON with research results for each slide.
 function buildResearchUserPrompt(
   presentationTitle: string,
   targetAudience: string,
-  queries: ResearchQuery[]
+  queries: ResearchQuery[],
+  webSearchContext?: Map<number, string>,
 ): string {
-  const slidesInfo = queries.map((q) => 
-    `Slide ${q.slide_number}: "${q.slide_title}"\n  Research focus: ${q.research_focus}\n  Queries: ${q.queries.join("; ")}`
-  ).join("\n\n");
+  const slidesInfo = queries.map((q) => {
+    let slideBlock = `Slide ${q.slide_number}: "${q.slide_title}"\n  Research focus: ${q.research_focus}\n  Queries: ${q.queries.join("; ")}`;
+    const webCtx = webSearchContext?.get(q.slide_number);
+    if (webCtx) {
+      slideBlock += `\n\n  WEB SEARCH RESULTS:\n${webCtx}`;
+    }
+    return slideBlock;
+  }).join("\n\n");
 
   return `<presentation>
 Title: ${presentationTitle}
@@ -200,7 +284,8 @@ For each slide, provide:
 3. Brief industry context (1-2 sentences)
 4. 2-3 recommended data points for charts (label, value, unit)
 
-Focus on REAL, VERIFIABLE data. Mark confidence levels honestly.`;
+Focus on REAL, VERIFIABLE data. Mark confidence levels honestly.
+${webSearchContext && webSearchContext.size > 0 ? "\nWEB SEARCH RESULTS are provided for some slides. Use them to find SPECIFIC facts with source URLs. Cite the source URL in source_hint." : ""}`;
 }
 
 /**
@@ -209,9 +294,10 @@ Focus on REAL, VERIFIABLE data. Mark confidence levels honestly.`;
 async function runResearchBatch(
   presentationTitle: string,
   targetAudience: string,
-  queries: ResearchQuery[]
+  queries: ResearchQuery[],
+  webSearchContext?: Map<number, string>,
 ): Promise<SlideResearch[]> {
-  const userPrompt = buildResearchUserPrompt(presentationTitle, targetAudience, queries);
+  const userPrompt = buildResearchUserPrompt(presentationTitle, targetAudience, queries, webSearchContext);
   
   const response = await invokeLLM({
     messages: [
@@ -413,6 +499,22 @@ export async function runResearchAgent(
   // 2. Generate research queries
   const queries = generateResearchQueries(outline, slidesToResearch);
 
+  // 2.5. Attempt web search for additional context
+  let webSearchContext: Map<number, string> | undefined;
+  let searchAvailable = false;
+  try {
+    searchAvailable = await isWebSearchAvailable();
+    if (searchAvailable) {
+      onProgress?.("Поиск фактов в интернете...");
+      webSearchContext = await gatherWebSearchContext(queries);
+      console.log(`[Research] Web search: found results for ${webSearchContext.size}/${queries.length} slides`);
+    } else {
+      console.log("[Research] Web search unavailable, using LLM knowledge only");
+    }
+  } catch (err) {
+    console.log(`[Research] Web search failed: ${(err as Error).message}`);
+  }
+
   // 3. Run research in batches (max 5 slides per batch to keep LLM context manageable)
   const batchSize = 5;
   const allResearch: SlideResearch[] = [];
@@ -425,7 +527,8 @@ export async function runResearchAgent(
       const batchResults = await runResearchBatch(
         outline.presentation_title,
         outline.target_audience,
-        batch
+        batch,
+        webSearchContext,
       );
       allResearch.push(...batchResults);
     } catch (err) {

@@ -24,6 +24,7 @@ import { validateSlideData, fixSlideStructure, validateSlideContentLLM, getQALev
 import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
 import { enforceAllSlidesDensity } from "./contentDensityValidator";
 import { classifyPresentation, type TypeProfile } from "./presentationTypeClassifier";
+import { matchReference, formatReferenceHint } from "./referenceLibrary";
 import { runStorytellingAgent } from "./storytellingAgent";
 import { evaluateSlides, runEvaluatorLoop, type SlideForEval } from "./contentEvaluator";
 import { runOutlineCritic } from "./outlineCritic";
@@ -1514,9 +1515,22 @@ export async function generatePresentation(
   const typeProfile = classifyPresentation(prompt);
   console.log(`[Pipeline] Presentation type: ${typeProfile.type} (${typeProfile.label})`);
 
+  // 1.6. REFERENCE MATCHING — find best exemplar structure for this type
+  const reference = matchReference(prompt, typeProfile.type);
+  let referenceHint = "";
+  if (reference) {
+    referenceHint = formatReferenceHint(reference);
+    console.log(`[Pipeline] Matched reference: ${reference.id} (${reference.name}, ${reference.slide_count} slides)`);
+  } else {
+    console.log(`[Pipeline] No reference matched for type: ${typeProfile.type}`);
+  }
+
+  // Combine type hint with reference hint for the Outline Agent
+  const combinedOutlineHint = [typeProfile.outlineHint, referenceHint].filter(Boolean).join("\n\n");
+
   // 2. OUTLINE
   onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
-  const rawOutline = await runOutline(prompt, plannerResult.branding, language, typeProfile.outlineHint);
+  const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint);
 
   // 2.5. OUTLINE CRITIC — validate and improve outline structure
   onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
@@ -2080,8 +2094,26 @@ const CHART_PROTECTED_LAYOUTS = new Set([
     onProgress({ nodeName: "visual_reviewer", currentStep: "skipped", progressPercent: 97, message: "Визуальная проверка пропущена" });
   }
 
+  // 6.8. FINAL REVIEW — holistic quality assessment of the complete presentation
+  try {
+    onProgress({ nodeName: "final_review", currentStep: "reviewing", progressPercent: 97, message: "Финальная оценка презентации..." });
+    const { runFinalReview } = await import("./finalReview");
+    const reviewSlides = slides.map((s, i) => ({
+      slideNumber: i + 1,
+      layoutId: s.layoutId,
+      title: s.data?.title || `Slide ${i + 1}`,
+      keyPoints: s.data?.key_points || s.data?.bullets || [],
+    }));
+    const finalReview = await runFinalReview(plannerResult.presentation_title, reviewSlides);
+    console.log(`[Pipeline] Final review: ${finalReview.overallScore.toFixed(1)}/10 | Strengths: ${finalReview.strengths.join(", ")}`);
+    onProgress({ nodeName: "final_review", currentStep: "completed", progressPercent: 98, message: `Итоговая оценка: ${finalReview.overallScore.toFixed(1)}/10` });
+  } catch (err) {
+    console.log(`[Pipeline] Final review skipped: ${(err as Error).message}`);
+    onProgress({ nodeName: "final_review", currentStep: "skipped", progressPercent: 98, message: "Финальная оценка пропущена" });
+  }
+
   // 7. ASSEMBLY
-  onProgress({ nodeName: "assembler", currentStep: "assembling", progressPercent: 98, message: "Финальная сборка презентации..." });
+  onProgress({ nodeName: "assembler", currentStep: "assembling", progressPercent: 99, message: "Финальная сборка презентации..." });
   const fullHtml = renderPresentation(slides, theme.css_variables, plannerResult.presentation_title, language, themePreset?.fontsUrl);
 
   onProgress({ nodeName: "assembler", currentStep: "completed", progressPercent: 100, message: "Презентация готова!" });

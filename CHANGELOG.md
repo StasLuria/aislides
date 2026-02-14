@@ -7,14 +7,41 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 102 |
-| Total tasks | 946 |
-| Completed | 934 (99%) |
+| Total sections | 103 |
+| Total tasks | 970 |
+| Completed | 958 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 21: Phase 4 Advanced Implementation ✅
+
+- [x] Create server/pipeline/referenceLibrary.ts with 12 exemplar presentation structures
+- [x] Covers all 5 presentation types (business_strategy, product_pitch, investor_deck, educational, quarterly_review)
+- [x] Each reference: name, narrative_arc, keywords, slide_count, slides with role/title_pattern/content_shape/purpose
+- [x] matchReference(prompt, type, slideCount) with keyword scoring + slide count matching
+- [x] Integrate into pipeline: Planner → Type Classifier → Reference Match → Outline Agent
+- [x] formatReferenceHint() injects reference structure into Outline Agent prompt
+- [x] Write vitest tests for reference matching and structure (phase4.test.ts)
+- [x] Integrate web search via Data API (Google search) into Research Agent
+- [x] Generate 2-3 search queries per slide topic
+- [x] Extract facts, statistics, and quotes from search results
+- [x] LLM verification of search results before injection
+- [x] Source citations added to slide content
+- [x] Graceful fallback to LLM-only if web search unavailable
+- [x] Write vitest tests for search integration (phase4.test.ts)
+- [x] Create server/pipeline/finalReview.ts
+- [x] Render sampled slides to PNG via Puppeteer (first, last, every 3rd)
+- [x] Send screenshots to Vision LLM for holistic evaluation
+- [x] 5-criteria scoring: narrative flow, visual consistency, content quality, pacing, professionalism
+- [x] Executive summary generation with strengths, weaknesses, suggestions
+- [x] Integrated into pipeline before assembly (step 7.5)
+- [x] Write vitest tests for final review module (phase4.test.ts)
+- [x] All 1347 tests passing (32 new tests)
+- [x] Pipeline now 18-step (added Final Review)
+- [x] Save checkpoint
 
 ### 🚀 Round 20: Phase 3 Visual Review + Composer Few-Shot ✅
 
@@ -1311,7 +1338,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (35 sections, 466/478 tasks)
+### 🚀 Improvements (36 sections, 490/502 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1348,6 +1375,7 @@
 - **Round 18: Phase 1 Quick Wins Implementation** — ✅
 - **Round 19: Phase 2 Evaluator-Optimizer Implementation** — ✅
 - **Round 20: Phase 3 Visual Review + Composer Few-Shot** — ✅
+- **Round 21: Phase 4 Advanced Implementation** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

@@ -24,7 +24,7 @@ describe("generate-readme.mjs", () => {
     expect(output).toContain("Dry run");
   });
 
-  it("detects correct pipeline step count (17)", () => {
+  it("detects correct pipeline step count (18)", () => {
     const output = execSync("node scripts/generate-readme.mjs --dry-run --skip-tests", {
       cwd: ROOT,
       encoding: "utf-8",
@@ -33,7 +33,7 @@ describe("generate-readme.mjs", () => {
 
     const match = output.match(/Pipeline steps:\s+(\d+)/);
     expect(match).not.toBeNull();
-    expect(Number(match![1])).toBe(17);
+    expect(Number(match![1])).toBe(18);
   });
 
   it("detects correct layout count (45)", () => {
@@ -84,7 +84,7 @@ describe("generate-readme.mjs", () => {
       });
 
       const updated = fs.readFileSync(readmePath, "utf-8");
-      expect(updated).toContain("17-этапный мультиагентный пайплайн");
+      expect(updated).toContain("18-этапный мультиагентный пайплайн");
       expect(updated).toContain("45 HTML-макетов");
       expect(updated).toContain("54 REST API endpoints");
     } finally {

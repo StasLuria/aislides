@@ -1206,3 +1206,37 @@
 - [x] All 1315 tests passing (21 new tests)
 - [x] Pipeline now 17-step (added Visual Reviewer)
 - [x] Save checkpoint
+
+## Round 21: Phase 4 Advanced Implementation
+
+### Step 4.2: Reference-based Generation
+- [x] Create server/pipeline/referenceLibrary.ts with 12 exemplar presentation structures
+- [x] Covers all 5 presentation types (business_strategy, product_pitch, investor_deck, educational, quarterly_review)
+- [x] Each reference: name, narrative_arc, keywords, slide_count, slides with role/title_pattern/content_shape/purpose
+- [x] matchReference(prompt, type, slideCount) with keyword scoring + slide count matching
+- [x] Integrate into pipeline: Planner → Type Classifier → Reference Match → Outline Agent
+- [x] formatReferenceHint() injects reference structure into Outline Agent prompt
+- [x] Write vitest tests for reference matching and structure (phase4.test.ts)
+
+### Step 4.1: Web Search for Research Agent
+- [x] Integrate web search via Data API (Google search) into Research Agent
+- [x] Generate 2-3 search queries per slide topic
+- [x] Extract facts, statistics, and quotes from search results
+- [x] LLM verification of search results before injection
+- [x] Source citations added to slide content
+- [x] Graceful fallback to LLM-only if web search unavailable
+- [x] Write vitest tests for search integration (phase4.test.ts)
+
+### Step 4.3: Multimodal Final Review
+- [x] Create server/pipeline/finalReview.ts
+- [x] Render sampled slides to PNG via Puppeteer (first, last, every 3rd)
+- [x] Send screenshots to Vision LLM for holistic evaluation
+- [x] 5-criteria scoring: narrative flow, visual consistency, content quality, pacing, professionalism
+- [x] Executive summary generation with strengths, weaknesses, suggestions
+- [x] Integrated into pipeline before assembly (step 7.5)
+- [x] Write vitest tests for final review module (phase4.test.ts)
+
+### Tests & Checkpoint
+- [x] All 1347 tests passing (32 new tests)
+- [x] Pipeline now 18-step (added Final Review)
+- [x] Save checkpoint
