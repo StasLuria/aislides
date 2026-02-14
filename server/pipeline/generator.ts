@@ -20,8 +20,10 @@ import {
 import { renderSlide, renderPresentation, getLayoutTemplate } from "./templateEngine";
 import { getThemePreset, type ThemePreset } from "./themes";
 import { generateImage } from "../_core/imageGeneration";
-import { validateSlideData, fixSlideStructure, validateCriticalSlideContent, isCriticalLayout } from "./qaAgent";
+import { validateSlideData, fixSlideStructure, validateSlideContentLLM, getQALevel, getQARetryBudget } from "./qaAgent";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing";
+import { enforceAllSlidesDensity } from "./contentDensityValidator";
+import { classifyPresentation, type TypeProfile } from "./presentationTypeClassifier";
 import { runStorytellingAgent } from "./storytellingAgent";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
@@ -227,10 +229,11 @@ export async function runOutline(
   prompt: string,
   branding: PlannerResult["branding"],
   language: string,
+  typeHint?: string,
 ): Promise<OutlineResult> {
   const system = outlineSystem(language);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr);
+  const user = outlineUser(prompt, brandingStr, typeHint);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -371,17 +374,17 @@ function postProcessOutlineShapes(outline: OutlineResult, userPrompt: string): O
 
   return outline;
 }
-
 export async function runWriterSingle(
-  slideInfo: OutlineSlide,
+  slideInfo: OutlineResult["slides"][0],
   presentationTitle: string,
   allTitles: string,
   targetAudience: string,
   language: string,
   previousContext?: string,
   researchContext?: string,
+  writerTypeHint?: string,
 ): Promise<SlideContent> {
-  const system = writerSystem(language, presentationTitle, allTitles, targetAudience);
+  const system = writerSystem(language, presentationTitle, allTitles, targetAudience, writerTypeHint);
   const user = writerUser(
     slideInfo.slide_number,
     slideInfo.title,
@@ -466,6 +469,7 @@ export async function runWriterParallel(
   language: string,
   onSlideWritten?: (slideNum: number, total: number) => void,
   researchContextFormatter?: (slideNumber: number) => string,
+  writerTypeHint?: string,
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
   const results: SlideContent[] = [];
@@ -489,6 +493,7 @@ export async function runWriterParallel(
           language,
           previousContext,
           researchContextFormatter?.(slide.slide_number),
+          writerTypeHint,
         ).catch(
           (err): SlideContent => {
             console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
@@ -580,7 +585,7 @@ export async function runTheme(
   });
 }
 
-export async function runLayout(content: SlideContent[]): Promise<LayoutDecision[]> {
+export async function runLayout(content: SlideContent[], layoutTypeHint?: string): Promise<LayoutDecision[]> {
   const slidesSummary = content
     .map(
       (s) => {
@@ -596,7 +601,7 @@ export async function runLayout(content: SlideContent[]): Promise<LayoutDecision
 
   const result = await llmStructured<{ decisions: LayoutDecision[] }>(
     LAYOUT_SYSTEM,
-    layoutUser(slidesSummary),
+    layoutUser(slidesSummary, layoutTypeHint),
     "LayoutOutput",
     {
       type: "object",
@@ -641,6 +646,7 @@ export async function runHtmlComposer(
     slideContent.structured_content,
     slideContent.content_shape,
     slideContent.slide_category,
+    (slideContent as any).transition_phrase,
   );
 
   // The composer returns the data object for the template
@@ -1242,6 +1248,7 @@ export async function runHtmlComposerWithQA(
       slideContent.structured_content,
       slideContent.content_shape,
       slideContent.slide_category,
+      (slideContent as any).transition_phrase,
     );
 
     const rawResponse = await llmText(system, user).catch(() => "");
@@ -1412,9 +1419,13 @@ export async function generatePresentation(
   const plannerResult = await runPlanner(prompt);
   const language = plannerResult.language || "ru";
 
+  // 1.5. PRESENTATION TYPE CLASSIFICATION
+  const typeProfile = classifyPresentation(prompt);
+  console.log(`[Pipeline] Presentation type: ${typeProfile.type} (${typeProfile.label})`);
+
   // 2. OUTLINE
   onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
-  const rawOutline = await runOutline(prompt, plannerResult.branding, language);
+  const rawOutline = await runOutline(prompt, plannerResult.branding, language, typeProfile.outlineHint);
 
   // 2.5. OUTLINE CRITIC — validate and improve outline structure
   onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
@@ -1457,7 +1468,7 @@ export async function generatePresentation(
   const researchFormatter = researchContext
     ? (slideNumber: number) => formatResearchForWriter(slideNumber, researchContext!)
     : undefined;
-  const rawContent = await runWriterParallel(outline, language, undefined, researchFormatter);
+  const rawContent = await runWriterParallel(outline, language, undefined, researchFormatter, typeProfile.writerHint);
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
 
   // 3.5. STORYTELLING AGENT — transform titles to action titles + narrative coherence
@@ -1473,6 +1484,15 @@ export async function generatePresentation(
   } catch (err) {
     console.error("[Pipeline] Storytelling agent failed, using original content:", err);
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
+  }
+
+  // 3.7. CONTENT DENSITY ENFORCEMENT — 6×6 rule
+  {
+    const densityResult = enforceAllSlidesDensity(content);
+    if (densityResult.totalTrimmed > 0 || densityResult.totalSplit > 0) {
+      content = densityResult.content;
+      console.log(`[Pipeline] Density: ${densityResult.totalTrimmed} trimmed, ${densityResult.totalSplit} split`);
+    }
   }
 
   // 4. THEME — auto-select, use predefined preset, or apply custom template
@@ -1517,7 +1537,7 @@ export async function generatePresentation(
 
   // 5. LAYOUT
   onProgress({ nodeName: "layout", currentStep: "layout_selection", progressPercent: 55, message: "Выбор макетов для слайдов..." });
-  const layoutDecisions = await runLayout(content);
+  const layoutDecisions = await runLayout(content, typeProfile.layoutHint);
 
   // Map layout decisions to content
   const layoutMap = new Map(layoutDecisions.map((d) => [d.slide_number, d.layout_name]));
@@ -1717,48 +1737,47 @@ const CHART_PROTECTED_LAYOUTS = new Set([
         data._totalSlides = content.length;
         data._presentationTitle = plannerResult.presentation_title;
 
-        // LLM content quality check for critical slides (title, final)
-        if (isCriticalLayout(layoutName)) {
-          try {
-            const llmQA = await validateCriticalSlideContent(data, layoutName, prompt, invokeLLM);
-            if (!llmQA.passed) {
-              console.warn(`[LLM-QA] Slide ${slideContent.slide_number} "${layoutName}": score ${llmQA.score}/10. Issues: ${llmQA.issues.join("; ")}. Suggestions: ${llmQA.suggestions.join("; ")}`);
-              // Apply suggestions if score is very low
-              if (llmQA.score <= 4 && llmQA.suggestions.length > 0) {
-                // Re-run composer with LLM feedback
-                const feedbackStr = `Content quality issues:\n${llmQA.issues.map(i => `- ${i}`).join("\n")}\n\nSuggestions:\n${llmQA.suggestions.map(s => `- ${s}`).join("\n")}`;
-                const layoutTemplate = getLayoutTemplate(layoutName);
-                const retrySystem = htmlComposerSystem(feedbackStr);
-                const retryUser = htmlComposerUser(
-                  layoutName,
-                  layoutTemplate || `Layout: ${layoutName}`,
-                  slideContent.title,
-                  slideContent.text,
-                  slideContent.notes,
-                  slideContent.key_message,
-                  theme.css_variables,
-                  slideContent.structured_content,
-                  slideContent.content_shape,
-                  slideContent.slide_category,
-                );
-                try {
-                  const rawResponse = await llmText(retrySystem, retryUser);
-                  let jsonStr = rawResponse;
-                  const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
-                  if (jsonMatch) jsonStr = jsonMatch[1];
-                  const retryData = JSON.parse(jsonStr.trim());
-                  Object.assign(data, retryData);
-                  console.log(`[LLM-QA] Slide ${slideContent.slide_number}: re-composed after quality feedback`);
-                } catch {
-                  console.warn(`[LLM-QA] Slide ${slideContent.slide_number}: retry failed, keeping original`);
-                }
+        // 3-tier LLM content quality check for ALL slides
+        const qaLevel = getQALevel(layoutName);
+        const retryBudget = getQARetryBudget(qaLevel);
+        try {
+          const llmQA = await validateSlideContentLLM(data, layoutName, prompt, invokeLLM);
+          if (!llmQA.passed) {
+            console.warn(`[LLM-QA-${qaLevel}] Slide ${slideContent.slide_number} "${layoutName}": score ${llmQA.score}/10. Issues: ${llmQA.issues.join("; ")}`);
+            if (retryBudget > 0 && llmQA.score <= 5 && llmQA.suggestions.length > 0) {
+              const feedbackStr = `Content quality issues:\n${llmQA.issues.map(i => `- ${i}`).join("\n")}\n\nSuggestions:\n${llmQA.suggestions.map(s => `- ${s}`).join("\n")}`;
+              const layoutTemplate = getLayoutTemplate(layoutName);
+              const retrySystem = htmlComposerSystem(feedbackStr);
+              const retryUser = htmlComposerUser(
+                layoutName,
+                layoutTemplate || `Layout: ${layoutName}`,
+                slideContent.title,
+                slideContent.text,
+                slideContent.notes,
+                slideContent.key_message,
+                theme.css_variables,
+                slideContent.structured_content,
+                slideContent.content_shape,
+                slideContent.slide_category,
+                (slideContent as any).transition_phrase,
+              );
+              try {
+                const rawResponse = await llmText(retrySystem, retryUser);
+                let jsonStr = rawResponse;
+                const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+                if (jsonMatch) jsonStr = jsonMatch[1];
+                const retryData = JSON.parse(jsonStr.trim());
+                Object.assign(data, retryData);
+                console.log(`[LLM-QA-${qaLevel}] Slide ${slideContent.slide_number}: re-composed after feedback`);
+              } catch {
+                console.warn(`[LLM-QA-${qaLevel}] Slide ${slideContent.slide_number}: retry failed, keeping original`);
               }
-            } else {
-              console.log(`[LLM-QA] Slide ${slideContent.slide_number} "${layoutName}": passed (score ${llmQA.score}/10)`);
             }
-          } catch (e) {
-            console.warn(`[LLM-QA] Slide ${slideContent.slide_number}: validation error, skipping`, e);
+          } else {
+            console.log(`[LLM-QA-${qaLevel}] Slide ${slideContent.slide_number} "${layoutName}": passed (${llmQA.score}/10)`);
           }
+        } catch (e) {
+          console.warn(`[LLM-QA-${qaLevel}] Slide ${slideContent.slide_number}: validation error, skipping`, e);
         }
 
         let html = renderSlide(layoutName, data);

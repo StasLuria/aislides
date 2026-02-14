@@ -7,14 +7,41 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 99 |
-| Total tasks | 887 |
-| Completed | 875 (99%) |
+| Total sections | 100 |
+| Total tasks | 911 |
+| Completed | 899 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 18: Phase 1 Quick Wins Implementation ✅
+
+- [x] Refactor qaAgent.ts: add 3 severity levels (full/content/quick) based on layout complexity
+- [x] Full QA: for critical layouts (title, final, section-header, big-statement) — deep 5-criteria validation
+- [x] Content QA: for data-heavy layouts (stats, charts, tables, etc.) — 4-criteria validation
+- [x] Quick QA: for simple layouts (text, bullets, quotes, images) — 2-criteria fast check
+- [x] Apply QA to ALL slides in pipeline (not just critical), with severity-appropriate checks
+- [x] Add retry logic: 1 retry for full/content, 0 retries for quick (getQARetryBudget)
+- [x] Write vitest tests for 3 severity levels
+- [x] Add 5 few-shot examples to Writer system prompt (stat_cards, process_steps, comparison, timeline, bullet_points)
+- [x] Examples cover key content shapes with Input/Output format
+- [x] Write vitest tests verifying few-shot examples are included in prompt
+- [x] Add content density validator (contentDensityValidator.ts): max 6 bullets, 6 stat_cards, 6 steps, etc.
+- [x] Add auto-split logic: if >8 bullets, split into 2 slides with renumbering
+- [x] Integrate density check into pipeline after Writer+Storytelling, before Layout
+- [x] Write vitest tests for density validation and auto-split
+- [x] Create presentationTypeClassifier.ts with 5 types + keyword-based classification
+- [x] Add type-specific hints for Outline, Writer, and Layout agents (outlineHint, writerHint, layoutHint)
+- [x] Integrate classification into main pipeline after Planner step
+- [x] Write vitest tests for type classification
+- [x] Add CoT instructions to LAYOUT_SYSTEM prompt (4-step reasoning: CONTENT TYPE → SHAPE HINT → VISUAL FIT → DIVERSITY)
+- [x] Add content_shape → layout affinity rules (6 shape types mapped to preferred layouts)
+- [x] Write vitest tests for CoT and affinity rules
+- [x] Inject transition_phrase from Storytelling Agent into SlideContent
+- [x] Update HTML Composer prompt + htmlComposerUser to use transition_phrase as subtitle/opening
+- [x] Write vitest tests for transition injection
 
 ### 🚀 Round 17: Development Plan for Pipeline Quality Improvements ✅
 
@@ -1243,7 +1270,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (32 sections, 407/419 tasks)
+### 🚀 Improvements (33 sections, 431/443 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1277,6 +1304,7 @@
 - **Round 15: Analytics Export, Error Notifications, Theme A/B Metrics** — ✅
 - **Round 16: Pipeline Audit & Quality Improvement Report** — ✅
 - **Round 17: Development Plan for Pipeline Quality Improvements** — ✅
+- **Round 18: Phase 1 Quick Wins Implementation** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

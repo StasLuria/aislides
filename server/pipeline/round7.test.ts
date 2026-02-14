@@ -244,8 +244,8 @@ describe("isCriticalLayout", () => {
 });
 
 describe("validateCriticalSlideContent", () => {
-  it("skips non-critical layouts", async () => {
-    const mockLLM = async () => ({ choices: [{ message: { content: "{}" } }] });
+  it("runs quick QA on non-critical layouts", async () => {
+    const mockLLM = async () => ({ choices: [{ message: { content: JSON.stringify({ completeness: 8, density: 7, issues: [], suggestions: [] }) } }] });
     const result = await validateCriticalSlideContent(
       { title: "Test" },
       "text-slide",
@@ -253,7 +253,8 @@ describe("validateCriticalSlideContent", () => {
       mockLLM,
     );
     expect(result.passed).toBe(true);
-    expect(result.score).toBe(10);
+    // Quick QA averages completeness + density scores
+    expect(result.score).toBeGreaterThanOrEqual(4);
   });
 
   it("returns passed=true when LLM gives high scores", async () => {

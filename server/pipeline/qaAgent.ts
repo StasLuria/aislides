@@ -897,90 +897,145 @@ export function fixSlideStructure(
 export const autoFixSlideData = fixSlideStructure;
 
 // ═══════════════════════════════════════════════════════
-// LLM CONTENT QUALITY VALIDATION (for critical slides)
+// 3-TIER LLM CONTENT QUALITY VALIDATION
 // ═══════════════════════════════════════════════════════
 
-/** Layouts that warrant LLM content review */
-const CRITICAL_LAYOUTS = new Set(["title-slide", "final-slide"]);
+export type QALevel = "full" | "content" | "quick";
+
+/** Map layout → QA level. Full for critical, content for data-heavy, quick for simple. */
+const QA_LEVEL_MAP: Record<string, QALevel> = {
+  "title-slide": "full",
+  "final-slide": "full",
+  "section-header": "full",
+  "big-statement": "full",
+  "stats-chart": "content",
+  "chart-text": "content",
+  "chart-slide": "content",
+  "icons-numbers": "content",
+  "comparison-table": "content",
+  "comparison": "content",
+  "table-slide": "content",
+  "highlight-stats": "content",
+  "hero-stat": "content",
+  "financial-formula": "content",
+  "swot-analysis": "content",
+  "kanban-board": "content",
+  "dual-chart": "content",
+  "waterfall-chart": "content",
+  "risk-matrix": "content",
+  "verdict-analysis": "content",
+  "funnel": "content",
+  "matrix-2x2": "content",
+  "pros-cons": "content",
+};
+
+export function getQALevel(layoutName: string): QALevel {
+  return QA_LEVEL_MAP[layoutName] || "quick";
+}
+
+export function getQARetryBudget(level: QALevel): number {
+  return level === "full" ? 1 : level === "content" ? 1 : 0;
+}
 
 export interface LLMQAResult {
   passed: boolean;
   score: number; // 1-10
   issues: string[];
   suggestions: string[];
+  level: QALevel;
+}
+
+const FULL_QA_SYSTEM = `You are a presentation quality reviewer. Evaluate this slide on 5 criteria (1-10 each):
+1. **Relevance**: Does content match the presentation topic?
+2. **Clarity**: Is the title concise and impactful? Is the message clear?
+3. **Professionalism**: Is language professional and appropriate?
+4. **Completeness**: Are all fields filled with meaningful content (not placeholders)?
+5. **Impact**: Does this slide make a strong impression (first/last slide or section opener)?
+
+For title-slide: compelling title + context-setting description.
+For final-slide: strong closing — call to action or memorable takeaway.
+For section-header: clear section transition.
+Return JSON.`;
+
+const CONTENT_QA_SYSTEM = `You are a data quality reviewer for presentation slides. Evaluate on 4 criteria (1-10 each):
+1. **Accuracy**: Are numbers, labels, and data points realistic and consistent?
+2. **Completeness**: Are all data fields filled? No empty cells or missing values?
+3. **Clarity**: Are labels short and understandable? Is the data easy to scan?
+4. **Density**: Is the amount of data appropriate (not too sparse, not overloaded)?
+Return JSON.`;
+
+const QUICK_QA_SYSTEM = `You are a slide content reviewer. Quick check on 2 criteria (1-10 each):
+1. **Completeness**: Are title and main content fields filled with real content?
+2. **Density**: Is there enough content to fill the slide without looking empty?
+Return JSON.`;
+
+function getQAPromptAndSchema(level: QALevel): { system: string; criteria: string[]; schemaProps: Record<string, any> } {
+  if (level === "full") {
+    return {
+      system: FULL_QA_SYSTEM,
+      criteria: ["relevance", "clarity", "professionalism", "completeness", "impact"],
+      schemaProps: {
+        relevance: { type: "integer" }, clarity: { type: "integer" },
+        professionalism: { type: "integer" }, completeness: { type: "integer" },
+        impact: { type: "integer" },
+        issues: { type: "array", items: { type: "string" } },
+        suggestions: { type: "array", items: { type: "string" } },
+      },
+    };
+  }
+  if (level === "content") {
+    return {
+      system: CONTENT_QA_SYSTEM,
+      criteria: ["accuracy", "completeness", "clarity", "density"],
+      schemaProps: {
+        accuracy: { type: "integer" }, completeness: { type: "integer" },
+        clarity: { type: "integer" }, density: { type: "integer" },
+        issues: { type: "array", items: { type: "string" } },
+        suggestions: { type: "array", items: { type: "string" } },
+      },
+    };
+  }
+  return {
+    system: QUICK_QA_SYSTEM,
+    criteria: ["completeness", "density"],
+    schemaProps: {
+      completeness: { type: "integer" }, density: { type: "integer" },
+      issues: { type: "array", items: { type: "string" } },
+      suggestions: { type: "array", items: { type: "string" } },
+    },
+  };
 }
 
 /**
- * Validate content quality of critical slides using LLM.
- * Returns structured feedback with score and actionable suggestions.
- * Only call for title-slide and final-slide — these set first/last impression.
+ * Validate slide content quality using LLM with 3-tier severity.
+ * Full: 5 criteria for critical slides. Content: 4 criteria for data-heavy. Quick: 2 criteria for simple.
  */
-export async function validateCriticalSlideContent(
+export async function validateSlideContentLLM(
   data: Record<string, any>,
   layoutName: string,
   originalPrompt: string,
   invokeLLMFn: (opts: { messages: Array<{ role: "system" | "user" | "assistant"; content: string }>; response_format?: any }) => Promise<any>,
 ): Promise<LLMQAResult> {
-  if (!CRITICAL_LAYOUTS.has(layoutName)) {
-    return { passed: true, score: 10, issues: [], suggestions: [] };
-  }
+  const level = getQALevel(layoutName);
+  const { system, criteria, schemaProps } = getQAPromptAndSchema(level);
 
-  const systemPrompt = `You are a presentation quality reviewer. You evaluate whether a slide's content is compelling, clear, and appropriate for its role in the presentation.
-
-You will receive:
-- The slide layout type (title-slide or final-slide)
-- The slide data (JSON)
-- The original presentation prompt/topic
-
-Evaluate on these criteria:
-1. **Relevance** (1-10): Does the content match the presentation topic?
-2. **Clarity** (1-10): Is the title concise and impactful? Is the description clear?
-3. **Professionalism** (1-10): Is the language professional and appropriate for business presentations?
-4. **Completeness** (1-10): Are all important fields filled with meaningful content (not placeholders)?
-
-For title-slide: The title should be compelling and capture the essence of the presentation. Description should set context.
-For final-slide: Should provide a strong closing — call to action, summary, or memorable takeaway.
-
-Return JSON with your evaluation.`;
-
-  const userPrompt = `Layout: ${layoutName}
-Original presentation topic: ${originalPrompt}
-
-Slide data:
-${JSON.stringify(data, null, 2)}
-
-Evaluate this slide's content quality.`;
+  const userPrompt = `Layout: ${layoutName}\nPresentation topic: ${originalPrompt}\n\nSlide data:\n${JSON.stringify(data, null, 2)}\n\nEvaluate this slide.`;
 
   try {
     const response = await invokeLLMFn({
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: system },
         { role: "user", content: userPrompt },
       ],
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "slide_quality_review",
+          name: `qa_${level}`,
           strict: true,
           schema: {
             type: "object",
-            properties: {
-              relevance: { type: "integer", description: "Relevance score 1-10" },
-              clarity: { type: "integer", description: "Clarity score 1-10" },
-              professionalism: { type: "integer", description: "Professionalism score 1-10" },
-              completeness: { type: "integer", description: "Completeness score 1-10" },
-              issues: {
-                type: "array",
-                items: { type: "string" },
-                description: "List of specific content problems found",
-              },
-              suggestions: {
-                type: "array",
-                items: { type: "string" },
-                description: "List of specific improvement suggestions",
-              },
-            },
-            required: ["relevance", "clarity", "professionalism", "completeness", "issues", "suggestions"],
+            properties: schemaProps,
+            required: [...criteria, "issues", "suggestions"],
             additionalProperties: false,
           },
         },
@@ -989,32 +1044,40 @@ Evaluate this slide's content quality.`;
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) {
-      return { passed: true, score: 7, issues: [], suggestions: ["LLM review returned empty response"] };
+      return { passed: true, score: 7, issues: [], suggestions: ["LLM review returned empty"], level };
     }
 
     const review = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
-    const avgScore = Math.round(
-      (review.relevance + review.clarity + review.professionalism + review.completeness) / 4,
-    );
+    const scores = criteria.map((c) => review[c] || 5);
+    const avgScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+    const threshold = level === "full" ? 6 : level === "content" ? 5 : 4;
 
     return {
-      passed: avgScore >= 6,
+      passed: avgScore >= threshold,
       score: avgScore,
       issues: review.issues || [],
       suggestions: review.suggestions || [],
+      level,
     };
   } catch (error) {
-    // If LLM review fails, don't block the pipeline — pass with a note
-    console.warn(`[LLM-QA] Failed to review ${layoutName}:`, error);
-    return { passed: true, score: 7, issues: [], suggestions: ["LLM review failed, skipped"] };
+    console.warn(`[LLM-QA-${level}] Failed to review ${layoutName}:`, error);
+    return { passed: true, score: 7, issues: [], suggestions: ["LLM review failed, skipped"], level };
   }
 }
 
-/**
- * Check if a layout is critical and warrants LLM content review.
- */
+/** @deprecated Use validateSlideContentLLM + getQALevel instead */
+export async function validateCriticalSlideContent(
+  data: Record<string, any>,
+  layoutName: string,
+  originalPrompt: string,
+  invokeLLMFn: (opts: { messages: Array<{ role: "system" | "user" | "assistant"; content: string }>; response_format?: any }) => Promise<any>,
+): Promise<LLMQAResult> {
+  return validateSlideContentLLM(data, layoutName, originalPrompt, invokeLLMFn);
+}
+
+/** @deprecated Use getQALevel instead */
 export function isCriticalLayout(layoutName: string): boolean {
-  return CRITICAL_LAYOUTS.has(layoutName);
+  return getQALevel(layoutName) === "full";
 }
 
 // ═══════════════════════════════════════════════════════

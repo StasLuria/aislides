@@ -1115,3 +1115,41 @@
 - [x] Write comprehensive DEVELOPMENT_PLAN.md with 4 phases, 15 steps
 - [x] Include file-level changes, acceptance criteria, and impact estimates for each step
 - [x] Include summary table with LLM call counts and time estimates
+
+## Round 18: Phase 1 Quick Wins Implementation
+
+### Step 1.1: Expand LLM QA to All Slides
+- [x] Refactor qaAgent.ts: add 3 severity levels (full/content/quick) based on layout complexity
+- [x] Full QA: for critical layouts (title, final, section-header, big-statement) — deep 5-criteria validation
+- [x] Content QA: for data-heavy layouts (stats, charts, tables, etc.) — 4-criteria validation
+- [x] Quick QA: for simple layouts (text, bullets, quotes, images) — 2-criteria fast check
+- [x] Apply QA to ALL slides in pipeline (not just critical), with severity-appropriate checks
+- [x] Add retry logic: 1 retry for full/content, 0 retries for quick (getQARetryBudget)
+- [x] Write vitest tests for 3 severity levels
+
+### Step 1.2: Few-Shot Examples for Writer Agent
+- [x] Add 5 few-shot examples to Writer system prompt (stat_cards, process_steps, comparison, timeline, bullet_points)
+- [x] Examples cover key content shapes with Input/Output format
+- [x] Write vitest tests verifying few-shot examples are included in prompt
+
+### Step 1.3: 6x6 Rule and Content Density Validation
+- [x] Add content density validator (contentDensityValidator.ts): max 6 bullets, 6 stat_cards, 6 steps, etc.
+- [x] Add auto-split logic: if >8 bullets, split into 2 slides with renumbering
+- [x] Integrate density check into pipeline after Writer+Storytelling, before Layout
+- [x] Write vitest tests for density validation and auto-split
+
+### Step 1.4: Presentation Type Routing
+- [x] Create presentationTypeClassifier.ts with 5 types + keyword-based classification
+- [x] Add type-specific hints for Outline, Writer, and Layout agents (outlineHint, writerHint, layoutHint)
+- [x] Integrate classification into main pipeline after Planner step
+- [x] Write vitest tests for type classification
+
+### Step 1.5: Chain-of-Thought for Layout Agent
+- [x] Add CoT instructions to LAYOUT_SYSTEM prompt (4-step reasoning: CONTENT TYPE → SHAPE HINT → VISUAL FIT → DIVERSITY)
+- [x] Add content_shape → layout affinity rules (6 shape types mapped to preferred layouts)
+- [x] Write vitest tests for CoT and affinity rules
+
+### Step 1.6: Storytelling Transitions in Content
+- [x] Inject transition_phrase from Storytelling Agent into SlideContent
+- [x] Update HTML Composer prompt + htmlComposerUser to use transition_phrase as subtitle/opening
+- [x] Write vitest tests for transition injection

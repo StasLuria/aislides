@@ -130,20 +130,21 @@ Return a JSON with: presentation_title, target_audience, narrative_arc, slides (
 </output_format>`;
 }
 
-export function outlineUser(userPrompt: string, branding: string): string {
+export function outlineUser(userPrompt: string, branding: string, typeHint?: string): string {
+  const typeSection = typeHint ? `\n<presentation_type_hint>\n${typeHint}\n</presentation_type_hint>` : "";
   return `<topic>
 ${userPrompt}
 </topic>
 <branding>
 ${branding}
-</branding>
+</branding>${typeSection}
 Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
 }
 
 // ═══════════════════════════════════════════════════════
 // WRITER AGENT
 // ═══════════════════════════════════════════════════════
-export function writerSystem(language: string, presentationTitle: string, allSlidesTitles: string, targetAudience: string): string {
+export function writerSystem(language: string, presentationTitle: string, allSlidesTitles: string, targetAudience: string, typeHint?: string): string {
   return `You are Writer Agent — a world-class presentation content strategist.
 <role>
 Write compelling, substantive content for a single presentation slide.
@@ -193,6 +194,27 @@ The content_shape field determines what you put in structured_content. Follow th
 
 "org_structure": Write org hierarchy. {root: {name: "CEO name or title", role: "CEO / Генеральный директор"}, children: [{name: "Department/Person", role: "CTO / VP / Head of", avatar: "👨‍💻" (emoji), detail: "optional KPI or team size", members: [{name: "Team member", role: "Role"}]}]}. 3-6 children, 0-3 members per child.
 </content_shape_instructions>
+<few_shot_examples>
+Example 1 (stat_cards):
+Input: Slide 3: "Рынок AI в цифрах" — Purpose: Show market size and growth
+Output: {"structured_content": {"stat_cards": [{"label": "ОБЪЁМ РЫНКА", "value": "$184 млрд", "description": "Глобальный рынок AI в 2024 году по данным IDC"}, {"label": "РОСТ CAGR", "value": "36.2%", "description": "Среднегодовой темп роста 2024-2030"}, {"label": "ДОЛЯ ENTERPRISE", "value": "72%", "description": "Корпоративный сегмент доминирует в расходах"}]}, "data_points": [{"label": "Market Size", "value": 184, "unit": "$млрд"}, {"label": "CAGR", "value": 36.2, "unit": "%"}]}
+
+Example 2 (process_steps):
+Input: Slide 5: "Этапы внедрения" — Purpose: Show implementation roadmap
+Output: {"structured_content": {"process_steps": [{"step_number": 1, "title": "Аудит процессов", "description": "Анализ текущих бизнес-процессов и выявление точек автоматизации. **2-3 недели**."}, {"step_number": 2, "title": "Пилотный проект", "description": "Запуск MVP на одном отделе с измерением KPI. **4-6 недель**."}, {"step_number": 3, "title": "Масштабирование", "description": "Распространение на все подразделения с обучением персонала. **8-12 недель**."}]}}
+
+Example 3 (comparison_two_sides):
+Input: Slide 4: "До и после автоматизации" — Purpose: Compare before/after
+Output: {"structured_content": {"comparison_two_sides": {"left_title": "ДО ВНЕДРЕНИЯ", "left_items": [{"text": "Ручная обработка **120 заявок/день**"}, {"text": "Ошибки в **15%** документов"}, {"text": "Время отклика **48 часов**"}], "right_title": "ПОСЛЕ ВНЕДРЕНИЯ", "right_items": [{"text": "Автоматическая обработка **500+ заявок/день**"}, {"text": "Ошибки менее **1%**"}, {"text": "Время отклика **2 часа**"}]}}}
+
+Example 4 (timeline_events):
+Input: Slide 7: "История развития" — Purpose: Show key milestones
+Output: {"structured_content": {"timeline_events": [{"date": "2022 Q1", "title": "Основание компании", "description": "Запуск с командой из **5 человек** и seed-раундом **$500K**"}, {"date": "2023 Q2", "title": "Product-Market Fit", "description": "Достигнут **PMF** с **50 платящими клиентами**"}, {"date": "2024 Q1", "title": "Series A", "description": "Привлечено **$12M** при оценке **$60M**"}, {"date": "2025 Q1", "title": "Международная экспансия", "description": "Выход на рынки **EU и SEA**, **200+ клиентов**"}]}}
+
+Example 5 (bullet_points):
+Input: Slide 6: "Ключевые преимущества" — Purpose: List main benefits
+Output: {"text": "**Скорость**: Сокращение времени обработки на 80%.\n**Точность**: Снижение ошибок до 0.5%.\n**Масштаб**: Обработка 10,000+ документов в день.\n**ROI**: Окупаемость за 4 месяца.", "key_message": "Автоматизация даёт 4x рост производительности при снижении ошибок на 97%"}
+</few_shot_examples>
 <text_conciseness_rules>
 - Card/bullet descriptions: MAX 2 sentences, 30 words each.
 - Stat card descriptions: MAX 1-2 sentences.
@@ -207,12 +229,26 @@ The content_shape field determines what you put in structured_content. Follow th
 - UNIT: One standard unit: "%", "$", "€", "₽", "млн", "млрд". NEVER compound units.
 - VALUE: Plain numbers only ("42", "3.5"). No units in value field.
 </data_points_rules>
+<density_rules>
+MANDATORY LIMITS (violations will be auto-trimmed):
+- bullet_points: MAX 6 bullets per slide
+- stat_cards: MAX 4 cards
+- process_steps: MAX 5 steps
+- card_grid: MAX 6 cards
+- table_data: MAX 6 rows, MAX 5 columns
+- timeline_events: MAX 6 events
+- comparison_two_sides: MAX 5 items per side
+- checklist_items: MAX 8 items
+- Bullet title: MAX 10 words
+- Bullet description: MAX 25 words
+</density_rules>
 <rules>
 - Write in ${language}.
 - The structured_content field is your PRIMARY output — the text field is a FALLBACK summary.
 - Speaker notes: 3-5 sentences expanding on the slide.
 - key_message: one impactful sentence.
 - Use specific facts, numbers, examples — no generic platitudes.
+${typeHint ? `- PRESENTATION TYPE GUIDANCE: ${typeHint}` : ""}
 - If previous context is provided, DO NOT repeat. Each slide adds NEW information.
 - If <research_data> is provided, PRIORITIZE verified facts. Cite sources.
 </rules>
@@ -460,14 +496,43 @@ DIVERSITY REQUIREMENTS:
 - Prefer waterfall-chart for financial breakdown slides.
 </diversity_rules>
 <output_format>
+<chain_of_thought>
+For each slide, think step by step:
+1. CONTENT TYPE: What type of information is this? (data/narrative/comparison/process/visual)
+2. SHAPE HINT: What content_shape was assigned? Check the [SHAPE: xxx] tag.
+3. VISUAL FIT: Which layout best visualizes this content type?
+4. DIVERSITY: Have I already used this layout recently? Avoid 3+ consecutive same layouts.
+5. DECISION: Select the layout with rationale.
+</chain_of_thought>
+<shape_affinity_rules>
+content_shape → preferred layouts:
+- stat_cards → icons-numbers, highlight-stats, hero-stat
+- process_steps → numbered-steps-v2, vertical-timeline
+- comparison_two_sides → comparison-table, pros-cons
+- table_data → table-slide, comparison-table
+- timeline_events → vertical-timeline
+- chart_with_context → stats-chart, chart-text, dual-chart
+- bullet_points → text-with-callout, card-grid, icons-numbers
+- card_grid → card-grid, icons-numbers
+- single_concept → big-statement, text-with-callout
+- quote_highlight → big-statement, text-with-callout
+- kanban_board → kanban-board
+- swot_quadrants → swot-analysis, matrix-2x2
+- checklist_items → checklist
+- org_structure → org-chart
+- financial_formula → financial-formula
+Use these as strong preferences, but override if diversity or visual rhythm requires it.
+</shape_affinity_rules>
+<output_format>
 Return a JSON with: decisions (array of slide_number, layout_name, rationale).
 Use the exact layout IDs from the list above (kebab-case).
 </output_format>`;
 
-export function layoutUser(slidesSummary: string): string {
+export function layoutUser(slidesSummary: string, typeHint?: string): string {
+  const typeSection = typeHint ? `\n<layout_type_hint>\n${typeHint}\n</layout_type_hint>` : "";
   return `<slides>
 ${slidesSummary}
-</slides>
+</slides>${typeSection}
 Select the optimal layout for each slide, ensuring diversity and visual rhythm.`;
 }
 
@@ -488,6 +553,7 @@ The templates use CSS variables for theming (gradients, colors, shadows) — you
 1. Read the layout template to understand what data fields it expects.
 2. Transform the slide content into the template's data schema.
 3. Structure bullet points, metrics, steps, etc. according to the layout's requirements.
+4. If the slide has a transition_phrase, include it as a subtle subtitle or opening line that connects this slide to the previous one. This creates narrative flow.
 </task>
 <rules>
 - Output a JSON object matching the template's expected data fields.
@@ -711,10 +777,12 @@ export function htmlComposerUser(
   structuredContent?: any,
   contentShape?: string,
   slideCategory?: string,
+  transitionPhrase?: string,
 ): string {
   const structuredSection = structuredContent
     ? `\n<structured_content>\nContent shape: ${contentShape || "bullet_points"}\nSlide category: ${slideCategory || "CONTENT"}\nStructured data:\n${JSON.stringify(structuredContent, null, 2)}\n</structured_content>\n<instruction>PRIORITIZE using structured_content data to fill the layout fields. The structured data is already in the right format — map it to the layout schema. Use the text field only as fallback if structured_content is missing or incomplete.</instruction>`
     : "";
 
-  return `<layout>\nName: ${layoutName}\nTemplate structure:\n${layoutTemplate}\n</layout>\n<content>\nTitle: ${slideTitle}\nText: ${slideText}\nSpeaker notes: ${slideNotes}\nKey message: ${keyMessage}\n</content>${structuredSection}\n<theme>\n${themeCss}\n</theme>\nTransform the content into the correct data structure for this layout template.`;
+  const transitionSection = transitionPhrase ? `\n<transition_phrase>${transitionPhrase}</transition_phrase>` : "";
+  return `<layout>\nName: ${layoutName}\nTemplate structure:\n${layoutTemplate}\n</layout>\n<content>\nTitle: ${slideTitle}\nText: ${slideText}\nSpeaker notes: ${slideNotes}\nKey message: ${keyMessage}\n</content>${structuredSection}${transitionSection}\n<theme>\n${themeCss}\n</theme>\nTransform the content into the correct data structure for this layout template.`;
 }

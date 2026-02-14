@@ -251,12 +251,14 @@ export async function runStorytellingAgent(
       enhanced.title = truncateTitle(enhancement.action_title, 50);
     }
 
-    // Prepend transition to speaker notes (not slide text — transitions are for the speaker)
+    // Add transition to both speaker notes AND slide content for HTML Composer
     if (enhancement.transition_from_previous && enhancement.transition_from_previous.trim()) {
       const transitionNote = `[Переход] ${enhancement.transition_from_previous}`;
       enhanced.notes = enhanced.notes
         ? `${transitionNote}\n\n${enhanced.notes}`
         : transitionNote;
+      // Store transition for HTML Composer to use as subtitle/opening line
+      (enhanced as any).transition_phrase = enhancement.transition_from_previous;
     }
 
     // Add audience takeaway to key_message if it's more specific
