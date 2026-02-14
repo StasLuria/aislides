@@ -1091,3 +1091,21 @@
 - [x] Theme A/B metrics: tRPC procedures themeQuality + exportFormatDistribution
 - [x] Theme A/B metrics: A/B quality table + export format donut chart on Analytics dashboard
 - [x] Write vitest tests for all new features (16 new tests, 1203 total across 41 files)
+
+## Round 16: Pipeline Audit & Quality Improvement Report
+
+- [x] Research: Anthropic Building Effective Agents guide (Evaluator-Optimizer, Parallelization patterns)
+- [x] Research: OpenAI Practical Guide to Building Agents (guardrails, structured outputs)
+- [x] Research: PPTAgent paper (schema-driven generation, PPTEval metrics)
+- [x] Research: PreGenie paper (visual review loop, two-level code+rendered review)
+- [x] Research: LangChain Reflection Agents (Basic Reflection, Reflexion, LATS patterns)
+- [x] Research: OpenAI Prompt Engineering Guide (few-shot, chain-of-thought, structured output)
+- [x] Research: Reddit community insights (quality differentiators, user pain points)
+- [x] Research: Presentation design principles (6x6 rule, visual hierarchy, whitespace)
+- [x] Audit: Full pipeline flow analysis (15 agents, ~45 LLM calls, timing breakdown)
+- [x] Audit: All agent prompts reviewed (prompts.ts, all agent files)
+- [x] Audit: Identified 12 critical problems with severity levels
+- [x] Report: PIPELINE_AUDIT_REPORT.md with 8 sections, 3 improvement levels, 4 implementation phases
+- [x] Report: Detailed recommendations with code examples for each improvement
+- [x] Report: Prioritized implementation plan (Quick Wins → Architecture → Advanced)
+- [x] Report: Expected impact metrics (quality scores, time, cost projections)
