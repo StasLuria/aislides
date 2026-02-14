@@ -1,0 +1,119 @@
+[
+  {
+    "testCase": "Product Pitch",
+    "testId": "product_pitch",
+    "presentationId": "Ct801BSwlgqXgmgO",
+    "status": "completed",
+    "timeSeconds": 319.5,
+    "slideCount": 10,
+    "title": "AI-ассистент для юристов: Новые возможности автоматизации и экономии времени",
+    "layoutDiversity": {
+      "unique": 10,
+      "total": 10,
+      "layouts": {
+        "title-slide": 1,
+        "highlight-stats": 1,
+        "image-text": 1,
+        "section-header": 1,
+        "card-grid": 1,
+        "chart-text": 1,
+        "stats-chart": 1,
+        "quote-highlight": 1,
+        "vertical-timeline": 1,
+        "final-slide": 1
+      },
+      "diversity": 100
+    },
+    "resultUrls": {
+      "html_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/Ct801BSwlgqXgmgO/presentation-DRWz-MIY.html"
+    }
+  },
+  {
+    "testCase": "Investor Deck",
+    "testId": "investor_deck",
+    "presentationId": "Xfl2mxpWDPaW-o3Y",
+    "status": "completed",
+    "timeSeconds": 344.1,
+    "slideCount": 12,
+    "title": "Инвестиционный раунд Series B: платформа для управления цепочками поставок с AI-оптимизацией",
+    "layoutDiversity": {
+      "unique": 10,
+      "total": 12,
+      "layouts": {
+        "title-slide": 1,
+        "highlight-stats": 2,
+        "card-grid": 2,
+        "financial-formula": 1,
+        "stats-chart": 1,
+        "icons-numbers": 1,
+        "chart-slide": 1,
+        "chart-text": 1,
+        "roadmap": 1,
+        "big-statement": 1
+      },
+      "diversity": 83.3
+    },
+    "resultUrls": {
+      "html_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/Xfl2mxpWDPaW-o3Y/presentation-7BI07LDv.html"
+    }
+  },
+  {
+    "testCase": "Educational",
+    "testId": "educational",
+    "presentationId": "PqYHjRxTe_dzp1pH",
+    "status": "completed",
+    "timeSeconds": 369.3,
+    "slideCount": 12,
+    "title": "Основы машинного обучения",
+    "layoutDiversity": {
+      "unique": 10,
+      "total": 12,
+      "layouts": {
+        "title-slide": 1,
+        "highlight-stats": 1,
+        "numbered-steps-v2": 2,
+        "section-header": 1,
+        "card-grid": 2,
+        "timeline-horizontal": 1,
+        "chart-slide": 1,
+        "table-slide": 1,
+        "checklist": 1,
+        "text-with-callout": 1
+      },
+      "diversity": 83.3
+    },
+    "resultUrls": {
+      "html_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/PqYHjRxTe_dzp1pH/presentation-ZgeNnfVx.html"
+    }
+  },
+  {
+    "testCase": "Quarterly Review",
+    "testId": "quarterly_review",
+    "presentationId": "eGLPRD89pdJdqPTI",
+    "status": "completed",
+    "timeSeconds": 344.1,
+    "slideCount": 12,
+    "title": "Итоги Q4 2025 и планы на Q1 2026",
+    "layoutDiversity": {
+      "unique": 11,
+      "total": 12,
+      "layouts": {
+        "title-slide": 1,
+        "highlight-stats": 2,
+        "stats-chart": 1,
+        "section-header": 1,
+        "icons-numbers": 1,
+        "image-text": 1,
+        "comparison-table": 1,
+        "financial-formula": 1,
+        "verdict-analysis": 1,
+        "card-grid": 1,
+        "final-slide": 1
+      },
+      "diversity": 91.7
+    },
+    "resultUrls": {
+      "html_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/eGLPRD89pdJdqPTI/presentation-JB1PT473.html"
+    }
+  }
+]

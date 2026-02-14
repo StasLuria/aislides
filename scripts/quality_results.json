@@ -1,0 +1,70 @@
+[
+  {
+    "testCase": "Business Strategy",
+    "testId": "business_strategy",
+    "presentationId": "DI7-CQwgxKsolsOL",
+    "status": "completed",
+    "timeSeconds": 339.2,
+    "slideCount": 12,
+    "title": "Стратегия выхода на рынок Юго-Восточной Азии для SaaS-компании",
+    "layoutDiversity": {
+      "unique": 11,
+      "total": 12,
+      "layouts": {
+        "title-slide": 1,
+        "icons-numbers": 1,
+        "section-header": 2,
+        "stats-chart": 1,
+        "comparison-table": 1,
+        "card-grid": 1,
+        "numbered-steps-v2": 1,
+        "financial-formula": 1,
+        "vertical-timeline": 1,
+        "verdict-analysis": 1,
+        "checklist": 1
+      },
+      "diversity": 91.7
+    },
+    "contentShapes": {
+      "unique": 1,
+      "shapes": {
+        "unknown": 12
+      }
+    },
+    "resultUrls": {
+      "html_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663124868360/beXrKFV66UQLVsECzVvhH4/presentations/DI7-CQwgxKsolsOL/presentation-ldsja2Y7.html"
+    },
+    "config": {
+      "enable_images": true,
+      "theme_preset": "auto"
+    }
+  },
+  {
+    "testCase": "Product Pitch",
+    "testId": "product_pitch",
+    "status": "failed",
+    "timeSeconds": 177.1,
+    "error": "Generation failed: {\"error_message\":\"row.slice is not a function\",\"error_type\":\"TypeError\"}"
+  },
+  {
+    "testCase": "Investor Deck",
+    "testId": "investor_deck",
+    "status": "failed",
+    "timeSeconds": 146.7,
+    "error": "fetch failed"
+  },
+  {
+    "testCase": "Educational",
+    "testId": "educational",
+    "status": "failed",
+    "timeSeconds": 0,
+    "error": "fetch failed"
+  },
+  {
+    "testCase": "Quarterly Review",
+    "testId": "quarterly_review",
+    "status": "failed",
+    "timeSeconds": 0,
+    "error": "fetch failed"
+  }
+]

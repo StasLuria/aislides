@@ -1,0 +1,120 @@
+{
+  "test_date": "2026-02-14",
+  "total_tests": 5,
+  "completed": 5,
+  "failed_initial": 1,
+  "bug_found": "row.slice TypeError in contentDensityValidator.ts (table rows as objects)",
+  "bug_fixed": true,
+  "presentations": [
+    {
+      "id": "DI7-CQwgxKsolsOL",
+      "type": "Business Strategy",
+      "prompt": "Стратегия выхода на рынок Юго-Восточной Азии для SaaS-компании",
+      "time_seconds": 339.2,
+      "slide_count": 12,
+      "unique_layouts": 11,
+      "layout_diversity": 91.7,
+      "outline_critic_score": null,
+      "content_evaluator_overall": null,
+      "content_evaluator_failed": null,
+      "design_critic_score": 8.0,
+      "llm_design_critic_score": 7.8,
+      "visual_review_avg": 8.0,
+      "final_review_score": 7.7,
+      "final_review_strengths": [
+        "Excellent visual variety with 11 unique layouts",
+        "Strong strategic framework covering market opportunity and competitive analysis",
+        "Addresses critical business aspects including financial projections and risk management"
+      ],
+      "layouts_used": ["title-slide", "icons-numbers", "section-header(x2)", "stats-chart", "comparison-table", "card-grid", "numbered-steps-v2", "financial-formula", "vertical-timeline", "verdict-analysis", "checklist"]
+    },
+    {
+      "id": "Ct801BSwlgqXgmgO",
+      "type": "Product Pitch",
+      "prompt": "AI-ассистент для юристов: автоматизация анализа контрактов",
+      "time_seconds": 319.5,
+      "slide_count": 10,
+      "unique_layouts": 10,
+      "layout_diversity": 100.0,
+      "outline_critic_score": 6.8,
+      "content_evaluator_overall": 3.25,
+      "content_evaluator_failed": 7,
+      "design_critic_score": 8.8,
+      "llm_design_critic_score": 7.8,
+      "visual_review_avg": 6.3,
+      "final_review_score": 8.8,
+      "final_review_strengths": [
+        "Exceptional use of specific, quantifiable data and metrics",
+        "Outstanding visual variety with 10 unique layouts",
+        "Strong problem-solution narrative"
+      ],
+      "layouts_used": ["title-slide", "highlight-stats", "image-text", "section-header", "card-grid", "chart-text", "stats-chart", "quote-highlight", "vertical-timeline", "final-slide"]
+    },
+    {
+      "id": "Xfl2mxpWDPaW-o3Y",
+      "type": "Investor Deck",
+      "prompt": "Series B: платформа для управления цепочками поставок с AI-оптимизацией",
+      "time_seconds": 344.1,
+      "slide_count": 12,
+      "unique_layouts": 10,
+      "layout_diversity": 83.3,
+      "outline_critic_score": 7.2,
+      "content_evaluator_overall": 3.81,
+      "content_evaluator_failed": 2,
+      "design_critic_score": 6.9,
+      "llm_design_critic_score": 7.5,
+      "visual_review_avg": 6.6,
+      "final_review_score": 7.8,
+      "final_review_strengths": [
+        "Excellent visual variety with 10 unique layouts",
+        "Strong use of specific financial metrics (LTV/CAC, Gross Margin, ARR)",
+        "Clearly articulates problem, solution, and competitive advantage"
+      ],
+      "layouts_used": ["title-slide", "highlight-stats(x2)", "card-grid(x2)", "financial-formula", "stats-chart", "icons-numbers", "chart-slide", "chart-text", "roadmap", "big-statement"]
+    },
+    {
+      "id": "PqYHjRxTe_dzp1pH",
+      "type": "Educational",
+      "prompt": "Основы машинного обучения: от линейной регрессии до нейронных сетей",
+      "time_seconds": 369.3,
+      "slide_count": 12,
+      "unique_layouts": 10,
+      "layout_diversity": 83.3,
+      "outline_critic_score": 6.8,
+      "content_evaluator_overall": 3.46,
+      "content_evaluator_failed": 3,
+      "design_critic_score": 7.8,
+      "llm_design_critic_score": 7.5,
+      "visual_review_avg": 6.3,
+      "final_review_score": 7.3,
+      "final_review_strengths": [
+        "Excellent visual variety with 10 unique layouts",
+        "Effective use of statistics and business-oriented framing",
+        "Clear structure with title, section header, and conclusion"
+      ],
+      "layouts_used": ["title-slide", "highlight-stats", "numbered-steps-v2(x2)", "section-header", "card-grid(x2)", "timeline-horizontal", "chart-slide", "table-slide", "checklist", "text-with-callout"]
+    },
+    {
+      "id": "eGLPRD89pdJdqPTI",
+      "type": "Quarterly Review",
+      "prompt": "Итоги Q4 2025: выручка 850M руб (+32% YoY), EBITDA margin 18%",
+      "time_seconds": 344.1,
+      "slide_count": 12,
+      "unique_layouts": 11,
+      "layout_diversity": 91.7,
+      "outline_critic_score": 6.8,
+      "content_evaluator_overall": 4.06,
+      "content_evaluator_failed": 1,
+      "design_critic_score": 7.2,
+      "llm_design_critic_score": 7.8,
+      "visual_review_avg": 7.8,
+      "final_review_score": 7.7,
+      "final_review_strengths": [
+        "Excellent visual variety with 11 unique layouts",
+        "Strong narrative flow from past performance to future goals",
+        "Inclusion of specific financial and operational metrics"
+      ],
+      "layouts_used": ["title-slide", "highlight-stats(x2)", "stats-chart", "section-header", "icons-numbers", "image-text", "comparison-table", "financial-formula", "verdict-analysis", "card-grid", "final-slide"]
+    }
+  ]
+}

@@ -129,9 +129,24 @@ export function enforceContentDensity(
       trimmedFields.push("table_rows");
     }
     if (sc.table_data.rows) {
-      sc.table_data.rows = sc.table_data.rows.map((row: any[]) =>
-        row.slice(0, limits.maxTableCols),
-      );
+      sc.table_data.rows = sc.table_data.rows.map((row: any) => {
+        // Handle both array rows and object rows (Record<string, string>)
+        if (Array.isArray(row)) {
+          return row.slice(0, limits.maxTableCols);
+        }
+        // Object row — trim to maxTableCols keys
+        if (row && typeof row === "object") {
+          const keys = Object.keys(row);
+          if (keys.length > limits.maxTableCols) {
+            const trimmed: Record<string, any> = {};
+            for (let k = 0; k < limits.maxTableCols; k++) {
+              trimmed[keys[k]] = row[keys[k]];
+            }
+            return trimmed;
+          }
+        }
+        return row;
+      });
     }
   }
 
