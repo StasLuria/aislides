@@ -2094,10 +2094,11 @@ const CHART_PROTECTED_LAYOUTS = new Set([
     onProgress({ nodeName: "visual_reviewer", currentStep: "skipped", progressPercent: 97, message: "Визуальная проверка пропущена" });
   }
 
-  // 6.8. FINAL REVIEW — holistic quality assessment of the complete presentation
+  // 6.8. FINAL REVIEW — holistic quality assessment + fact-checking
   try {
     onProgress({ nodeName: "final_review", currentStep: "reviewing", progressPercent: 97, message: "Финальная оценка презентации..." });
     const { runFinalReview } = await import("./finalReview");
+    const { runFactCheck } = await import("./factChecker");
     const reviewSlides = slides.map((s, i) => ({
       slideNumber: i + 1,
       layoutId: s.layoutId,
@@ -2105,8 +2106,58 @@ const CHART_PROTECTED_LAYOUTS = new Set([
       keyPoints: s.data?.key_points || s.data?.bullets || [],
     }));
     const finalReview = await runFinalReview(plannerResult.presentation_title, reviewSlides);
-    console.log(`[Pipeline] Final review: ${finalReview.overallScore.toFixed(1)}/10 | Strengths: ${finalReview.strengths.join(", ")}`);
-    onProgress({ nodeName: "final_review", currentStep: "completed", progressPercent: 98, message: `Итоговая оценка: ${finalReview.overallScore.toFixed(1)}/10` });
+
+    // Fact-checking: extract all text from slides and compare with user prompt
+    const factCheckSlides = slides.map((s, i) => {
+      const parts: string[] = [s.data?.title || ""];
+      if (s.data?.subtitle) parts.push(s.data.subtitle);
+      if (s.data?.description) parts.push(s.data.description);
+      if (Array.isArray(s.data?.key_points)) {
+        for (const kp of s.data.key_points) {
+          parts.push(typeof kp === "string" ? kp : (kp?.title || "") + " " + (kp?.description || ""));
+        }
+      }
+      if (Array.isArray(s.data?.bullets)) {
+        for (const b of s.data.bullets) {
+          parts.push(typeof b === "string" ? b : (b?.title || "") + " " + (b?.description || ""));
+        }
+      }
+      if (Array.isArray(s.data?.stats)) {
+        for (const st of s.data.stats) {
+          parts.push((st?.value || "") + " " + (st?.label || "") + " " + (st?.description || ""));
+        }
+      }
+      if (Array.isArray(s.data?.metrics)) {
+        for (const m of s.data.metrics) {
+          parts.push((m?.value || "") + " " + (m?.label || "") + " " + (m?.description || ""));
+        }
+      }
+      if (s.data?.mainStat) {
+        parts.push((s.data.mainStat.value || "") + " " + (s.data.mainStat.label || ""));
+      }
+      return {
+        slideNumber: i + 1,
+        title: s.data?.title || `Slide ${i + 1}`,
+        textContent: parts.filter(Boolean).join(" "),
+      };
+    });
+
+    const factCheck = runFactCheck(prompt, factCheckSlides);
+    console.log(`[Pipeline] Fact-check: ${factCheck.summary}`);
+    if (factCheck.violations.length > 0) {
+      for (const v of factCheck.violations) {
+        console.log(`[Pipeline] Fact violation [${v.severity}] slide ${v.slideNumber}: ${v.description}`);
+      }
+    }
+
+    // Apply fact-check penalty to overall score
+    const adjustedScore = Math.max(1, finalReview.overallScore - factCheck.penalty);
+    if (factCheck.penalty > 0) {
+      console.log(`[Pipeline] Final review score adjusted: ${finalReview.overallScore.toFixed(1)} → ${adjustedScore.toFixed(1)} (fact-check penalty: -${factCheck.penalty.toFixed(1)})`);
+    }
+
+    console.log(`[Pipeline] Final review: ${adjustedScore.toFixed(1)}/10 | Strengths: ${finalReview.strengths.join(", ")}`);
+    onProgress({ nodeName: "final_review", currentStep: "completed", progressPercent: 98, message: `Итоговая оценка: ${adjustedScore.toFixed(1)}/10` });
   } catch (err) {
     console.log(`[Pipeline] Final review skipped: ${(err as Error).message}`);
     onProgress({ nodeName: "final_review", currentStep: "skipped", progressPercent: 98, message: "Финальная оценка пропущена" });

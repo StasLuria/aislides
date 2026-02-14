@@ -222,17 +222,50 @@ export function renderBarChart(config: ChartConfig): string {
     }
   }
 
-  // Bars
-  const bars = data.map((d, i) => {
+  // Pre-calculate bar positions for overlap detection
+  const barPositions = data.map((d, i) => {
     const barH = (d.value / maxVal) * chartH;
     const x = margin.left + barGap + i * (barWidth + barGap);
     const y = margin.top + chartH - barH;
+    return { x, y, barH, labelX: x + barWidth / 2 };
+  });
+
+  // Detect value label overlaps: if bars are close in height and position,
+  // alternate label placement (above vs inside bar)
+  const valueLabelYPositions = barPositions.map((pos, i) => {
+    let labelY = pos.y - 6; // default: above bar
+    if (showValues && i > 0) {
+      const prevY = barPositions[i - 1].y - 6;
+      const prevX = barPositions[i - 1].labelX;
+      // If labels would be within 14px vertically and bars are adjacent
+      if (Math.abs(labelY - prevY) < 14 && Math.abs(pos.labelX - prevX) < barWidth + barGap + 10) {
+        // Place inside bar if bar is tall enough (>30px)
+        if (pos.barH > 30) {
+          labelY = pos.y + 16;
+        } else {
+          // Offset upward to avoid overlap
+          labelY = Math.min(labelY, prevY - 14);
+        }
+      }
+    }
+    return labelY;
+  });
+
+  // Reduce font size for x-axis labels when there are many bars
+  const xLabelFontSize = data.length > 8 ? 8 : data.length > 6 ? 9 : 10;
+  const xLabelMaxChars = data.length > 8 ? 10 : needsExtraSpace ? 14 : 18;
+
+  // Bars
+  const bars = data.map((d, i) => {
+    const { x, y, barH, labelX } = barPositions[i];
     const color = d.color || getColor(i);
-    const labelX = x + barWidth / 2;
 
     let valueLabel = "";
     if (showValues) {
-      valueLabel = `<text x="${labelX}" y="${y - 6}" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600" font-family="Inter, sans-serif">${formatValue(d.value, unit)}</text>`;
+      const labelY = valueLabelYPositions[i];
+      const isInside = labelY > y; // label is inside the bar
+      const fill = isInside ? "#ffffff" : "#6b7280";
+      valueLabel = `<text x="${labelX}" y="${labelY}" text-anchor="middle" fill="${fill}" font-size="11" font-weight="600" font-family="Inter, sans-serif">${formatValue(d.value, unit)}</text>`;
     }
 
     return `<g>
@@ -242,9 +275,9 @@ export function renderBarChart(config: ChartConfig): string {
       </rect>
       ${valueLabel}
       ${renderMultiLineLabel(labelX, height - margin.bottom + 16, d.label, {
-        maxCharsPerLine: needsExtraSpace ? 14 : 18,
+        maxCharsPerLine: xLabelMaxChars,
         maxLines: needsExtraSpace ? 2 : 1,
-        fontSize: 10,
+        fontSize: xLabelFontSize,
         textAnchor: "middle",
       })}
     </g>`;
@@ -353,18 +386,41 @@ export function renderLineChart(config: ChartConfig): string {
 
   const lineColor = getColor(0, true);
 
+  // Pre-calculate value label positions with overlap avoidance
+  const valueLabelPositions = points.map((p, i) => {
+    let labelY = p.y - 12; // default: above point
+    let labelX = p.x;
+    if (showValues && i > 0) {
+      const prevLabelY = points[i - 1].y - 12;
+      const prevLabelX = points[i - 1].x;
+      // Check if labels would overlap (within 12px vertically and 40px horizontally)
+      if (Math.abs(labelY - prevLabelY) < 12 && Math.abs(labelX - prevLabelX) < 50) {
+        // Alternate: place below the point instead
+        labelY = p.y + 18;
+      }
+    }
+    // Ensure label doesn't go above the chart area
+    if (labelY < margin.top - 5) labelY = p.y + 18;
+    return { x: labelX, y: labelY };
+  });
+
+  // Reduce font size for x-axis labels when there are many points
+  const xLabelFontSize = data.length > 8 ? 8 : data.length > 6 ? 9 : 10;
+  const xLabelMaxChars = data.length > 8 ? 10 : needsExtraSpace ? 14 : 18;
+
   const pointElements = points.map((p, i) => {
     let valueLabel = "";
     if (showValues) {
-      valueLabel = `<text x="${p.x}" y="${p.y - 12}" text-anchor="middle" fill="#6b7280" font-size="10" font-weight="600" font-family="Inter, sans-serif">${formatValue(p.d.value, unit)}</text>`;
+      const lp = valueLabelPositions[i];
+      valueLabel = `<text x="${lp.x}" y="${lp.y}" text-anchor="middle" fill="#6b7280" font-size="10" font-weight="600" font-family="Inter, sans-serif">${formatValue(p.d.value, unit)}</text>`;
     }
     return `<g>
       <circle cx="${p.x}" cy="${p.y}" r="4" fill="white" stroke="${lineColor}" stroke-width="2.5" />
       ${valueLabel}
       ${renderMultiLineLabel(p.x, height - margin.bottom + 16, p.d.label, {
-        maxCharsPerLine: needsExtraSpace ? 14 : 18,
+        maxCharsPerLine: xLabelMaxChars,
         maxLines: needsExtraSpace ? 2 : 1,
-        fontSize: 10,
+        fontSize: xLabelFontSize,
         textAnchor: "middle",
       })}
     </g>`;
@@ -443,15 +499,20 @@ export function renderPieChart(config: ChartConfig): string {
     </g>`;
   });
 
-  // Legend
+  // Legend — adaptive sizing for many items
   let legend = "";
   if (showLegend) {
     const legendX = width * 0.72;
     const maxLegendWidth = width - legendX - 10;
     const maxChars = Math.max(12, Math.floor(maxLegendWidth / 6));
-    const legendItemHeight = 28;
-    const legendStartY = Math.max(20, cy - (data.length * legendItemHeight) / 2);
-    legend = data.map((d, i) => {
+    // Reduce item height when there are many items to prevent overflow
+    const legendItemHeight = data.length > 8 ? 18 : data.length > 6 ? 22 : 28;
+    const legendFontSize = data.length > 8 ? 8 : data.length > 6 ? 9 : 10;
+    // Limit displayed items to prevent overflow, show "+ N more" if needed
+    const maxLegendItems = Math.min(data.length, Math.floor((height - 40) / legendItemHeight));
+    const legendStartY = Math.max(10, cy - (maxLegendItems * legendItemHeight) / 2);
+    const displayData = data.slice(0, maxLegendItems);
+    legend = displayData.map((d, i) => {
       const y = legendStartY + i * legendItemHeight;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
@@ -459,10 +520,14 @@ export function renderPieChart(config: ChartConfig): string {
       const availChars = Math.max(8, maxChars - suffix.length);
       const displayLabel = truncateLabel(d.label, availChars);
       return `<g>
-        <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
+        <rect x="${legendX}" y="${y}" width="10" height="10" rx="2" fill="${color}" />
+        <text x="${legendX + 16}" y="${y + 9}" fill="#6b7280" font-size="${legendFontSize}" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
       </g>`;
     }).join("\n    ");
+    if (data.length > maxLegendItems) {
+      const moreY = legendStartY + maxLegendItems * legendItemHeight;
+      legend += `\n    <text x="${legendX}" y="${moreY + 9}" fill="#9ca3af" font-size="${legendFontSize}" font-family="Inter, sans-serif">+ ${data.length - maxLegendItems} more</text>`;
+    }
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">
@@ -524,15 +589,18 @@ export function renderDonutChart(config: ChartConfig): string {
     </g>`;
   }
 
-  // Legend
+  // Legend — adaptive sizing for many items
   let legend = "";
   if (showLegend) {
     const legendX = width * 0.72;
     const maxLegendWidth = width - legendX - 10;
     const maxChars = Math.max(12, Math.floor(maxLegendWidth / 6));
-    const legendItemHeight = 28;
-    const legendStartY = Math.max(20, cy - (data.length * legendItemHeight) / 2);
-    legend = data.map((d, i) => {
+    const legendItemHeight = data.length > 8 ? 18 : data.length > 6 ? 22 : 28;
+    const legendFontSize = data.length > 8 ? 8 : data.length > 6 ? 9 : 10;
+    const maxLegendItems = Math.min(data.length, Math.floor((height - 40) / legendItemHeight));
+    const legendStartY = Math.max(10, cy - (maxLegendItems * legendItemHeight) / 2);
+    const displayData = data.slice(0, maxLegendItems);
+    legend = displayData.map((d, i) => {
       const y = legendStartY + i * legendItemHeight;
       const color = d.color || getColor(i, true);
       const pct = ((Math.abs(d.value) / total) * 100).toFixed(0);
@@ -540,10 +608,14 @@ export function renderDonutChart(config: ChartConfig): string {
       const availChars = Math.max(8, maxChars - suffix.length);
       const displayLabel = truncateLabel(d.label, availChars);
       return `<g>
-        <rect x="${legendX}" y="${y}" width="12" height="12" rx="3" fill="${color}" />
-        <text x="${legendX + 18}" y="${y + 10}" fill="#6b7280" font-size="10" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
+        <rect x="${legendX}" y="${y}" width="10" height="10" rx="2" fill="${color}" />
+        <text x="${legendX + 16}" y="${y + 9}" fill="#6b7280" font-size="${legendFontSize}" font-family="Inter, sans-serif">${escapeXml(displayLabel)}${suffix}</text>
       </g>`;
     }).join("\n    ");
+    if (data.length > maxLegendItems) {
+      const moreY = legendStartY + maxLegendItems * legendItemHeight;
+      legend += `\n    <text x="${legendX}" y="${moreY + 9}" fill="#9ca3af" font-size="${legendFontSize}" font-family="Inter, sans-serif">+ ${data.length - maxLegendItems} more</text>`;
+    }
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">

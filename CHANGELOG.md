@@ -7,14 +7,37 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 104 |
-| Total tasks | 988 |
-| Completed | 976 (99%) |
+| Total sections | 105 |
+| Total tasks | 1008 |
+| Completed | 996 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 23: Fact-Checking in Final Review + Chart Label Fix ✅
+
+- [x] Analyze current finalReview.ts to understand scoring flow
+- [x] Create factChecker.ts: extract numbers, %, currencies, dates from prompt
+- [x] normalizeNumber: handle рублей/млн/млрд/тыс/$€₽/M/B/K suffixes
+- [x] extractFacts: 4 patterns (currency, percentage, standalone numbers, dates/quarters)
+- [x] areFactsContradictory: compare same-unit facts, flag >3x ratio or >10pp % diff
+- [x] contextOverlap: keyword-based similarity to match related metrics
+- [x] Integrate fact-checker into pipeline Final Review step (generator.ts)
+- [x] Apply penalty (0-3 points) to Final Review score for contradictions
+- [x] Write vitest tests for fact-checking (16 tests in factChecker.test.ts)
+- [x] Fix: strip trailing currency names (рублей, долларов) before parsing
+- [x] Fix: skip bare numbers without units in currency extraction
+- [x] Fix: don't compare unitless numbers to avoid false positives
+- [x] SVG Bar chart: pre-calculate positions, detect overlap, place inside bar if tall enough
+- [x] SVG Line chart: alternate above/below placement when labels overlap
+- [x] SVG Pie/Donut chart: adaptive legend sizing, "+N more" truncation for many items
+- [x] Chart.js chart-slide: add autoSkip, maxRotation 45°, autoSkipPadding, maxTicksLimit
+- [x] Adaptive x-axis font size: 8px for >8 items, 9px for >6, 10px default
+- [x] Adaptive x-axis label truncation: 10 chars for >8 items
+- [x] Write vitest tests for chart label fixes (14 tests in svgChartEngine.labelOverlap.test.ts)
+- [x] All 1398 tests passing, 0 regressions
 
 ### 🚀 Round 22: Comprehensive Quality Testing & Validation ✅
 
@@ -1359,7 +1382,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (37 sections, 508/520 tasks)
+### 🚀 Improvements (38 sections, 528/540 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1398,6 +1421,7 @@
 - **Round 20: Phase 3 Visual Review + Composer Few-Shot** — ✅
 - **Round 21: Phase 4 Advanced Implementation** — ✅
 - **Round 22: Comprehensive Quality Testing & Validation** — ✅
+- **Round 23: Fact-Checking in Final Review + Chart Label Fix** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

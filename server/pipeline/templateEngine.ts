@@ -2630,7 +2630,28 @@ export function renderPresentation(
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } }
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } },
+          datalabels: false
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              autoSkip: true,
+              autoSkipPadding: 12,
+              font: { size: 11 }
+            }
+          },
+          y: {
+            ticks: {
+              font: { size: 11 },
+              maxTicksLimit: 6
+            }
+          }
+        },
+        layout: { padding: { top: 10, right: 10 } }
       }
     });
   }
