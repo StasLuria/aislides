@@ -11,6 +11,8 @@ import {
   getModeDistribution,
   getSlideCountDistribution,
   getRecentPresentations,
+  getThemeQualityMetrics,
+  getExportFormatDistribution,
 } from "./analyticsDb";
 
 const dateRangeInput = z.object({
@@ -86,6 +88,20 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getRecentPresentations(input.limit);
       }),
+
+    /** A/B theme quality metrics: completion rate, export rate, quality score */
+    themeQuality: protectedProcedure.input(dateRangeInput).query(async ({ input }) => {
+      const dateFrom = input.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
+      return getThemeQualityMetrics(dateFrom, dateTo);
+    }),
+
+    /** Export format distribution (PPTX vs PDF) */
+    exportFormatDistribution: protectedProcedure.input(dateRangeInput).query(async ({ input }) => {
+      const dateFrom = input.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
+      return getExportFormatDistribution(dateFrom, dateTo);
+    }),
   }),
 });
 

@@ -21,11 +21,13 @@ import {
 } from "./presentationDb";
 import { generatePresentation, type PipelineProgress } from "./pipeline/generator";
 import { wsManager } from "./wsManager";
+import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { generatePptx } from "./pptxExport";
 import { generatePdf } from "./pdfExport";
 import { getThemePreset } from "./pipeline/themes";
+import { logExportEvent } from "./analyticsDb";
 
 const router = Router();
 
@@ -309,6 +311,17 @@ async function startGeneration(
       error_message: error.message || "Generation failed",
       error_type: error.name || "GenerationError",
     });
+
+    // Notify owner about the failure
+    notifyOwner({
+      title: `⚠️ Ошибка генерации: ${presentationId.slice(0, 8)}`,
+      content: [
+        `**Presentation ID:** ${presentationId}`,
+        `**Error:** ${error.message || "Unknown error"}`,
+        `**Type:** ${error.name || "GenerationError"}`,
+        `**Time:** ${new Date().toISOString()}`,
+      ].join("\n"),
+    }).catch((err) => console.error("[Notify] Failed to send error notification:", err));
   }
 }
 
@@ -452,6 +465,9 @@ router.get("/api/v1/shared/:token/export/pptx", async (req: Request, res: Respon
     const safeTitle = title.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s-]/g, "").substring(0, 60).trim() || "presentation";
     const filename = `${safeTitle}.pptx`;
 
+    // Log export event for A/B theme quality tracking (shared)
+    logExportEvent(p.presentationId, "pptx", config.theme_preset || null, true).catch(() => {});
+
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
     res.send(pptxBuffer);
@@ -497,6 +513,9 @@ router.get("/api/v1/presentations/:id/export/pptx", async (req: Request, res: Re
 
     const safeTitle = title.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s-]/g, "").substring(0, 60).trim() || "presentation";
     const filename = `${safeTitle}.pptx`;
+
+    // Log export event for A/B theme quality tracking
+    logExportEvent(req.params.id, "pptx", config.theme_preset || null, false).catch(() => {});
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
@@ -544,6 +563,9 @@ router.get("/api/v1/presentations/:id/export/pdf", async (req: Request, res: Res
     const safeTitle = title.replace(/[^a-zA-Z0-9\u0430-\u044f\u0410-\u042f\u0451\u0401\s-]/g, "").substring(0, 60).trim() || "presentation";
     const filename = `${safeTitle}.pdf`;
 
+    // Log export event for A/B theme quality tracking
+    logExportEvent(req.params.id, "pdf", config.theme_preset || null, false).catch(() => {});
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
     res.send(pdfBuffer);
@@ -589,6 +611,9 @@ router.get("/api/v1/shared/:token/export/pdf", async (req: Request, res: Respons
 
     const safeTitle = title.replace(/[^a-zA-Z0-9\u0430-\u044f\u0410-\u042f\u0451\u0401\s-]/g, "").substring(0, 60).trim() || "presentation";
     const filename = `${safeTitle}.pdf`;
+
+    // Log export event for A/B theme quality tracking (shared)
+    logExportEvent(p.presentationId, "pdf", config.theme_preset || null, true).catch(() => {});
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);

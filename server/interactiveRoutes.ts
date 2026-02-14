@@ -37,6 +37,7 @@ import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { invokeLLM } from "./_core/llm";
 import { nanoid } from "nanoid";
+import { notifyOwner } from "./_core/notification";
 
 const router = Router();
 
@@ -223,6 +224,10 @@ router.post("/api/v1/interactive/:id/approve-outline", async (req: Request, res:
         error_message: error.message || "Writer failed",
         error_type: "WriterError",
       });
+      notifyOwner({
+        title: `⚠️ Ошибка генерации (интерактивный): ${presentationId.slice(0, 8)}`,
+        content: `**ID:** ${presentationId}\n**Error:** ${error.message}\n**Stage:** Writer\n**Time:** ${new Date().toISOString()}`,
+      }).catch(() => {});
     }
   } catch (error: any) {
     console.error("[Interactive] Approve outline error:", error);
@@ -895,6 +900,10 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
         error_message: error.message || "Assembly failed",
         error_type: "AssemblyError",
       });
+      notifyOwner({
+        title: `⚠️ Ошибка сборки (интерактивный): ${presentationId.slice(0, 8)}`,
+        content: `**ID:** ${presentationId}\n**Error:** ${error.message}\n**Stage:** Assembly\n**Time:** ${new Date().toISOString()}`,
+      }).catch(() => {});
     }
   } catch (error: any) {
     console.error("[Interactive] Assemble error:", error);

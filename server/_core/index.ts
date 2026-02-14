@@ -14,6 +14,7 @@ import { registerChatRoutes } from "../chatRoutes";
 import { registerTemplateRoutes } from "../templateRoutes";
 import { wsManager } from "../wsManager";
 import { registerSwaggerDocs } from "../swagger";
+import { registerAnalyticsRoutes } from "../analyticsRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -59,6 +60,9 @@ async function startServer() {
 
   // Custom Templates API — /api/v1/templates/*
   registerTemplateRoutes(app);
+
+  // Analytics export API — /api/v1/analytics/export/*
+  registerAnalyticsRoutes(app);
 
   // Swagger/OpenAPI docs — /api/docs
   registerSwaggerDocs(app);

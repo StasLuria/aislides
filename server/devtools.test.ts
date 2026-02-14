@@ -509,3 +509,198 @@ describe("package.json scripts", () => {
     expect(pkg.scripts["postman:dry"]).toBe("node scripts/generate-postman.mjs --dry-run");
   });
 });
+
+
+// ─── Analytics CSV/PDF Export ────────────────────────────────
+
+describe("analytics export endpoints", () => {
+  it("analyticsRoutes.ts exists and exports registerAnalyticsRoutes", () => {
+    const routesPath = path.join(ROOT, "server", "analyticsRoutes.ts");
+    expect(fs.existsSync(routesPath)).toBe(true);
+
+    const content = fs.readFileSync(routesPath, "utf-8");
+    expect(content).toContain("registerAnalyticsRoutes");
+    expect(content).toContain("/api/v1/analytics/export/csv");
+    expect(content).toContain("/api/v1/analytics/export/json");
+  });
+
+  it("analytics routes are registered in server entry", () => {
+    const indexPath = path.join(ROOT, "server", "_core", "index.ts");
+    const content = fs.readFileSync(indexPath, "utf-8");
+    expect(content).toContain("registerAnalyticsRoutes");
+  });
+
+  it("CSV export returns valid CSV content", async () => {
+    const res = await fetch("http://localhost:3000/api/v1/analytics/export/csv");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/csv");
+    expect(res.headers.get("content-disposition")).toContain("attachment");
+
+    const text = await res.text();
+    // CSV should have header row
+    expect(text).toContain("ID,");
+    expect(text).toContain("Title,");
+    expect(text).toContain("Status,");
+  });
+
+  it("JSON export returns valid JSON content", async () => {
+    const res = await fetch("http://localhost:3000/api/v1/analytics/export/json");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+
+    const data = await res.json();
+    expect(data).toHaveProperty("exportedAt");
+    expect(data).toHaveProperty("overview");
+    expect(data).toHaveProperty("presentations");
+    expect(Array.isArray(data.presentations)).toBe(true);
+  });
+});
+
+// ─── Error Notifications ─────────────────────────────────────
+
+describe("error notifications via notifyOwner", () => {
+  it("presentationRoutes imports notifyOwner", () => {
+    const routesPath = path.join(ROOT, "server", "presentationRoutes.ts");
+    const content = fs.readFileSync(routesPath, "utf-8");
+    expect(content).toContain("notifyOwner");
+    expect(content).toContain("import { notifyOwner }");
+  });
+
+  it("presentationRoutes calls notifyOwner on generation failure", () => {
+    const routesPath = path.join(ROOT, "server", "presentationRoutes.ts");
+    const content = fs.readFileSync(routesPath, "utf-8");
+
+    // Should call notifyOwner in the catch block of generation
+    expect(content).toContain("Ошибка генерации");
+    expect(content).toContain("notifyOwner({");
+  });
+
+  it("interactiveRoutes imports notifyOwner", () => {
+    const routesPath = path.join(ROOT, "server", "interactiveRoutes.ts");
+    const content = fs.readFileSync(routesPath, "utf-8");
+    expect(content).toContain("notifyOwner");
+    expect(content).toContain("import { notifyOwner }");
+  });
+
+  it("interactiveRoutes calls notifyOwner on assembly failure", () => {
+    const routesPath = path.join(ROOT, "server", "interactiveRoutes.ts");
+    const content = fs.readFileSync(routesPath, "utf-8");
+
+    expect(content).toContain("Ошибка сборки (интерактивный)");
+    expect(content).toContain("notifyOwner({");
+  });
+});
+
+// ─── A/B Theme Quality Metrics ───────────────────────────────
+
+describe("A/B theme quality metrics", () => {
+  it("export_events table exists in schema", () => {
+    const schemaPath = path.join(ROOT, "drizzle", "schema.ts");
+    const content = fs.readFileSync(schemaPath, "utf-8");
+    expect(content).toContain("export_events");
+    expect(content).toContain("exportEvents");
+    expect(content).toContain("format");
+    expect(content).toContain("themePreset");
+    expect(content).toContain("isShared");
+  });
+
+  it("analyticsDb exports logExportEvent function", () => {
+    const dbPath = path.join(ROOT, "server", "analyticsDb.ts");
+    const content = fs.readFileSync(dbPath, "utf-8");
+    expect(content).toContain("export async function logExportEvent");
+    expect(content).toContain("exportEvents");
+  });
+
+  it("analyticsDb exports getThemeQualityMetrics function", () => {
+    const dbPath = path.join(ROOT, "server", "analyticsDb.ts");
+    const content = fs.readFileSync(dbPath, "utf-8");
+    expect(content).toContain("export async function getThemeQualityMetrics");
+    expect(content).toContain("qualityScore");
+    expect(content).toContain("completionRate");
+    expect(content).toContain("exportRate");
+  });
+
+  it("analyticsDb exports getExportFormatDistribution function", () => {
+    const dbPath = path.join(ROOT, "server", "analyticsDb.ts");
+    const content = fs.readFileSync(dbPath, "utf-8");
+    expect(content).toContain("export async function getExportFormatDistribution");
+  });
+
+  it("export events are logged in all 4 export endpoints", () => {
+    const routesPath = path.join(ROOT, "server", "presentationRoutes.ts");
+    const content = fs.readFileSync(routesPath, "utf-8");
+
+    // Count logExportEvent calls
+    const matches = content.match(/logExportEvent\(/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("themeQuality tRPC procedure returns correct shape", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller({
+      user: {
+        id: 1,
+        openId: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+        loginMethod: "manus",
+        role: "user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: () => {} } as TrpcContext["res"],
+    });
+
+    const result = await caller.analytics.themeQuality({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("theme");
+      expect(result[0]).toHaveProperty("totalPresentations");
+      expect(result[0]).toHaveProperty("completedPresentations");
+      expect(result[0]).toHaveProperty("exportedPresentations");
+      expect(result[0]).toHaveProperty("totalExports");
+      expect(result[0]).toHaveProperty("completionRate");
+      expect(result[0]).toHaveProperty("exportRate");
+      expect(result[0]).toHaveProperty("qualityScore");
+    }
+  });
+
+  it("exportFormatDistribution tRPC procedure returns correct shape", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller({
+      user: {
+        id: 1,
+        openId: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+        loginMethod: "manus",
+        role: "user",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: () => {} } as TrpcContext["res"],
+    });
+
+    const result = await caller.analytics.exportFormatDistribution({});
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      expect(result[0]).toHaveProperty("format");
+      expect(result[0]).toHaveProperty("count");
+    }
+  });
+
+  it("Analytics page includes theme quality section", () => {
+    const analyticsPath = path.join(ROOT, "client", "src", "pages", "Analytics.tsx");
+    const content = fs.readFileSync(analyticsPath, "utf-8");
+    expect(content).toContain("themeQuality");
+    expect(content).toContain("exportDist");
+    expect(content).toContain("qualityScore");
+    expect(content).toContain("A/B");
+    expect(content).toContain("FlaskConical");
+  });
+});

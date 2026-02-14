@@ -228,3 +228,23 @@ export const slideVersions = mysqlTable("slide_versions", {
 
 export type SlideVersion = typeof slideVersions.$inferSelect;
 export type InsertSlideVersion = typeof slideVersions.$inferInsert;
+
+/**
+ * Export events table — tracks PPTX/PDF downloads for A/B theme quality metrics.
+ * Each download is logged with the presentation ID, format, and theme used.
+ */
+export const exportEvents = mysqlTable("export_events", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Linked presentation ID (public UUID) */
+  presentationId: varchar("presentationId", { length: 64 }).notNull(),
+  /** Export format: pptx or pdf */
+  format: mysqlEnum("format", ["pptx", "pdf"]).notNull(),
+  /** Theme preset used in the presentation */
+  themePreset: varchar("themePreset", { length: 64 }),
+  /** Whether this was a shared link export */
+  isShared: boolean("isShared").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ExportEvent = typeof exportEvents.$inferSelect;
+export type InsertExportEvent = typeof exportEvents.$inferInsert;

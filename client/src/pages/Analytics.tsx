@@ -9,7 +9,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BarChart3, TrendingUp, CheckCircle, XCircle, Layers, Percent } from "lucide-react";
+import { Loader2, BarChart3, TrendingUp, CheckCircle, XCircle, Layers, Percent, Download, FileText, FlaskConical, Trophy } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -96,6 +99,8 @@ export default function Analytics() {
   const modeDist = trpc.analytics.modeDistribution.useQuery(dateRange, { enabled: !!user });
   const slideDist = trpc.analytics.slideCountDistribution.useQuery(dateRange, { enabled: !!user });
   const recent = trpc.analytics.recentPresentations.useQuery({ limit: 8 }, { enabled: !!user });
+  const themeQuality = trpc.analytics.themeQuality.useQuery(dateRange, { enabled: !!user });
+  const exportDist = trpc.analytics.exportFormatDistribution.useQuery(dateRange, { enabled: !!user });
 
   if (authLoading) {
     return (
@@ -126,17 +131,49 @@ export default function Analytics() {
             Статистика генерации презентаций
           </p>
         </div>
-        <Select value={range} onValueChange={(v) => setRange(v as DateRange)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Последние 7 дней</SelectItem>
-            <SelectItem value="30d">Последние 30 дней</SelectItem>
-            <SelectItem value="90d">Последние 90 дней</SelectItem>
-            <SelectItem value="all">Всё время</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (dateRange.dateFrom) params.set("dateFrom", dateRange.dateFrom);
+              if (dateRange.dateTo) params.set("dateTo", dateRange.dateTo);
+              window.open(`/api/v1/analytics/export/csv?${params}`, "_blank");
+              toast.success("CSV-отчёт скачивается");
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (dateRange.dateFrom) params.set("dateFrom", dateRange.dateFrom);
+              if (dateRange.dateTo) params.set("dateTo", dateRange.dateTo);
+              window.open(`/api/v1/analytics/export/pdf?${params}`, "_blank");
+              toast.success("HTML-отчёт скачивается");
+            }}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            PDF
+          </Button>
+          <Select value={range} onValueChange={(v) => setRange(v as DateRange)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Последние 7 дней</SelectItem>
+              <SelectItem value="30d">Последние 30 дней</SelectItem>
+              <SelectItem value="90d">Последние 90 дней</SelectItem>
+              <SelectItem value="all">Всё время</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Overview cards */}
@@ -383,6 +420,137 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* A/B Theme Quality Metrics */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <FlaskConical className="w-4 h-4" />
+            A/B Качество тем дизайна
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded cursor-help">❓</span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  <p>Quality Score = 40% Completion Rate + 60% Export Rate.</p>
+                  <p className="mt-1">Export Rate — какой % завершённых презентаций был экспортирован в PPTX/PDF.</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {themeQuality.isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-12 bg-secondary/50 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : (themeQuality.data?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Нет данных по экспортам
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {/* Table header */}
+              <div className="grid grid-cols-7 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider pb-1 border-b border-border">
+                <div className="col-span-2">Тема</div>
+                <div className="text-center">Всего</div>
+                <div className="text-center">Готово</div>
+                <div className="text-center">Экспорт</div>
+                <div className="text-center">Эксп. %</div>
+                <div className="text-center">Оценка</div>
+              </div>
+              {themeQuality.data?.map((t, i) => (
+                <div
+                  key={t.theme}
+                  className="grid grid-cols-7 gap-2 items-center py-1.5 text-sm"
+                >
+                  <div className="col-span-2 flex items-center gap-1.5 min-w-0">
+                    {i === 0 && <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                    <span className="truncate font-medium">{t.theme}</span>
+                  </div>
+                  <div className="text-center text-muted-foreground">{t.totalPresentations}</div>
+                  <div className="text-center text-muted-foreground">{t.completedPresentations}</div>
+                  <div className="text-center text-muted-foreground">{t.exportedPresentations}</div>
+                  <div className="text-center">
+                    <span className={t.exportRate > 30 ? "text-green-600 font-medium" : t.exportRate > 10 ? "text-yellow-600" : "text-muted-foreground"}>
+                      {t.exportRate}%
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <div className="relative w-full h-5 bg-secondary/50 rounded-full overflow-hidden">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(t.qualityScore, 100)}%`,
+                          background: t.qualityScore > 60
+                            ? "hsl(142, 71%, 45%)"
+                            : t.qualityScore > 30
+                              ? "hsl(45, 93%, 47%)"
+                              : "hsl(0, 72%, 51%)",
+                        }}
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium">
+                        {t.qualityScore}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Export format distribution */}
+      {(exportDist.data?.length ?? 0) > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Форматы экспорта
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={exportDist.data?.map((d) => ({
+                      ...d,
+                      label: d.format.toUpperCase(),
+                    }))}
+                    dataKey="count"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={65}
+                    innerRadius={35}
+                    paddingAngle={3}
+                  >
+                    {exportDist.data?.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend
+                    formatter={(value) => <span className="text-xs">{value}</span>}
+                    iconSize={8}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Recent activity */}
       <Card>

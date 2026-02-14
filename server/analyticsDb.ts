@@ -258,3 +258,135 @@ export async function getRecentPresentations(limit = 10) {
 
   return rows;
 }
+
+// ═══════════════════════════════════════════════════════
+// EXPORT TRACKING & A/B THEME QUALITY METRICS
+// ═══════════════════════════════════════════════════════
+
+import { exportEvents } from "../drizzle/schema";
+
+export interface ThemeQualityMetric {
+  theme: string;
+  totalPresentations: number;
+  completedPresentations: number;
+  exportedPresentations: number;
+  totalExports: number;
+  completionRate: number; // % of presentations that completed
+  exportRate: number; // % of completed presentations that were exported
+  qualityScore: number; // weighted score combining completion + export rate
+}
+
+/**
+ * Log an export event (PPTX or PDF download).
+ */
+export async function logExportEvent(
+  presentationId: string,
+  format: "pptx" | "pdf",
+  themePreset: string | null,
+  isShared: boolean = false
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(exportEvents).values({
+    presentationId,
+    format,
+    themePreset,
+    isShared,
+  });
+}
+
+/**
+ * Get A/B theme quality metrics — measures which themes lead to more exports.
+ * Quality score = 0.4 * completionRate + 0.6 * exportRate
+ */
+export async function getThemeQualityMetrics(
+  dateFrom?: Date,
+  dateTo?: Date
+): Promise<ThemeQualityMetric[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  let dateFilter = "";
+  if (dateFrom) {
+    dateFilter += ` AND p.createdAt >= '${dateFrom.toISOString().slice(0, 19).replace("T", " ")}'`;
+  }
+  if (dateTo) {
+    dateFilter += ` AND p.createdAt <= '${dateTo.toISOString().slice(0, 19).replace("T", " ")}'`;
+  }
+
+  const rows = await db.execute(
+    sql.raw(`
+      SELECT
+        COALESCE(JSON_UNQUOTE(JSON_EXTRACT(p.config, '$.theme_preset')), 'auto') AS theme,
+        COUNT(DISTINCT p.presentationId) AS total_presentations,
+        COUNT(DISTINCT CASE WHEN p.status = 'completed' THEN p.presentationId END) AS completed_presentations,
+        COUNT(DISTINCT CASE WHEN e.id IS NOT NULL THEN p.presentationId END) AS exported_presentations,
+        COALESCE(SUM(CASE WHEN e.id IS NOT NULL THEN 1 ELSE 0 END), 0) AS total_exports
+      FROM presentations p
+      LEFT JOIN export_events e ON e.presentationId = p.presentationId
+      WHERE 1=1${dateFilter}
+      GROUP BY theme
+      HAVING total_presentations >= 1
+      ORDER BY total_presentations DESC
+    `)
+  );
+
+  const data = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : rows) as Array<{
+    theme: string;
+    total_presentations: number;
+    completed_presentations: number;
+    exported_presentations: number;
+    total_exports: number;
+  }>;
+
+  return data
+    .filter((r) => r.theme && r.theme !== "null")
+    .map((r) => {
+      const total = Number(r.total_presentations);
+      const completed = Number(r.completed_presentations);
+      const exported = Number(r.exported_presentations);
+      const completionRate = total > 0 ? Math.round((completed / total) * 1000) / 10 : 0;
+      const exportRate = completed > 0 ? Math.round((exported / completed) * 1000) / 10 : 0;
+      const qualityScore = Math.round((0.4 * completionRate + 0.6 * exportRate) * 10) / 10;
+
+      return {
+        theme: r.theme,
+        totalPresentations: total,
+        completedPresentations: completed,
+        exportedPresentations: exported,
+        totalExports: Number(r.total_exports),
+        completionRate,
+        exportRate,
+        qualityScore,
+      };
+    })
+    .sort((a, b) => b.qualityScore - a.qualityScore);
+}
+
+/**
+ * Get export counts grouped by format.
+ */
+export async function getExportFormatDistribution(
+  dateFrom?: Date,
+  dateTo?: Date
+): Promise<Array<{ format: string; count: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+  if (dateFrom) conditions.push(gte(exportEvents.createdAt, dateFrom));
+  if (dateTo) conditions.push(lte(exportEvents.createdAt, dateTo));
+
+  const rows = await db
+    .select({
+      format: exportEvents.format,
+      count: count(),
+    })
+    .from(exportEvents)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .groupBy(exportEvents.format)
+    .orderBy(sql`count(*) DESC`);
+
+  return rows.map((r) => ({ format: r.format, count: r.count }));
+}

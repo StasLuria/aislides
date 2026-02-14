@@ -1076,3 +1076,18 @@
 - [x] Analytics dashboard: build frontend page with 7 chart panels (Recharts: area, donut, bar, progress bars, table)
 - [x] Analytics dashboard: add /analytics route and navigation entry in AppLayout
 - [x] Write vitest tests for all new features (35 tests across 7 describe blocks)
+
+## Round 15: Analytics Export, Error Notifications, Theme A/B Metrics
+- [x] CSV export: REST endpoint GET /api/v1/analytics/export/csv with BOM for Excel
+- [x] CSV export: download buttons (CSV, JSON, PDF/HTML) on Analytics dashboard header
+- [x] PDF/HTML export: REST endpoint GET /api/v1/analytics/export/pdf (styled HTML report)
+- [x] JSON export: REST endpoint GET /api/v1/analytics/export/json with structured data
+- [x] Error notifications: notifyOwner() on batch generation failure (presentationRoutes.ts)
+- [x] Error notifications: notifyOwner() on interactive assembly failure (interactiveRoutes.ts)
+- [x] Error notifications: includes presentation ID, error message, stage, and timestamp
+- [x] Theme A/B metrics: export_events DB table with format, themePreset, isShared fields
+- [x] Theme A/B metrics: logExportEvent() called in all 4 export endpoints (PPTX/PDF x auth/shared)
+- [x] Theme A/B metrics: getThemeQualityMetrics() with quality score (40% completion + 60% export rate)
+- [x] Theme A/B metrics: tRPC procedures themeQuality + exportFormatDistribution
+- [x] Theme A/B metrics: A/B quality table + export format donut chart on Analytics dashboard
+- [x] Write vitest tests for all new features (16 new tests, 1203 total across 41 files)
