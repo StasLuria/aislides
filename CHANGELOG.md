@@ -7,14 +7,21 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 112 |
-| Total tasks | 1070 |
-| Completed | 1058 (99%) |
+| Total sections | 113 |
+| Total tasks | 1074 |
+| Completed | 1062 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🐛 Round 31: Bug fix — empty slide preview in step-by-step mode ✅
+
+- [x] Root cause: slide_preview sent bare slideHtml without BASE_CSS or themeCss; section-header relies on CSS variables for colors/backgrounds
+- [x] Fix: send previewHtml (from renderPresentation with full CSS+theme+fonts) instead of slideHtml in both generateSlideDesign and handleSlideDesignFeedback
+- [x] Fix: SlidePreviewCard detects full HTML documents and renders directly with override styles (no dark bg, no padding)
+- [x] All 1436 tests passing, 0 TypeScript errors
 
 ### 🐛 Round 30: Bug fixes — slide preview clipping + design feedback not working ✅
 
@@ -1516,7 +1523,7 @@
 
 - **Auto-Theme Selection (AI-based)** — ✅
 
-### 🐛 Bug Fixes (23 sections, 121/121 tasks)
+### 🐛 Bug Fixes (24 sections, 125/125 tasks)
 
 - **Bug Fix: POST /presentations 500 error on deployed version** — ✅
 - **Bug Fixes: Viewer + Home Page** — ✅
@@ -1541,6 +1548,7 @@
 - **Bug Fixes from CJM Testing** — ✅
 - **Bug Fix: Sidebar Scroll in Viewer** — ✅
 - **Round 30: Bug fixes — slide preview clipping + design feedback not working** — ✅
+- **Round 31: Bug fix — empty slide preview in step-by-step mode** — ✅
 
 ### 🏗️ Infrastructure (7 sections, 31/31 tasks)
 

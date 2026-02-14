@@ -1716,13 +1716,13 @@ async function generateSlideDesign(
       },
     });
 
-    // Send slide preview
+    // Send slide preview (full HTML with CSS, theme, fonts)
     writer({
       type: "slide_preview",
       data: {
         slideNumber: slideIndex + 1,
         title: `Слайд ${slideIndex + 1}: ${content.title}`,
-        html: slideHtml,
+        html: previewHtml,
       },
     });
 
@@ -1945,12 +1945,13 @@ async function handleSlideDesignFeedback(
       },
     });
 
+    // Send full preview HTML with CSS, theme, fonts
     writer({
       type: "slide_preview",
       data: {
         slideNumber: slideIndex + 1,
         title: `Слайд ${slideIndex + 1}: ${content.title}`,
-        html: slideHtml,
+        html: previewHtml,
       },
     });
 

@@ -278,7 +278,16 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
       const doc = iframeRef.current.contentDocument;
       if (doc) {
         doc.open();
-        doc.write(`<!DOCTYPE html>
+        // If the HTML is a full document (from renderPresentation), write it directly.
+        // Otherwise wrap the fragment with minimal styles.
+        const isFullDoc = preview.html.trimStart().startsWith('<!DOCTYPE') || preview.html.trimStart().startsWith('<html');
+        if (isFullDoc) {
+          // Inject overrides to show only the first slide without dark background/padding
+          const overrideCss = `<style>body{margin:0!important;padding:0!important;background:transparent!important;overflow:hidden!important;display:block!important;gap:0!important;}.slide-container{margin:0!important;}.slide-number{display:none!important;}</style>`;
+          const injected = preview.html.replace('</head>', `${overrideCss}</head>`);
+          doc.write(injected);
+        } else {
+          doc.write(`<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=1280" />
@@ -291,6 +300,7 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
 </style>
 </head>
 <body><div class="slide">${preview.html}</div></body></html>`);
+        }
         doc.close();
       }
     }

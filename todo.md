@@ -1374,3 +1374,9 @@
 - [x] Added deepMerge helper and local llmText wrapper to chatOrchestrator
 - [x] Added htmlComposerSystem/htmlComposerUser imports for feedback re-composition
 - [x] All 1436 tests passing, 0 TypeScript errors
+
+## Round 31: Bug fix — empty slide preview in step-by-step mode
+- [x] Root cause: slide_preview sent bare slideHtml without BASE_CSS or themeCss; section-header relies on CSS variables for colors/backgrounds
+- [x] Fix: send previewHtml (from renderPresentation with full CSS+theme+fonts) instead of slideHtml in both generateSlideDesign and handleSlideDesignFeedback
+- [x] Fix: SlidePreviewCard detects full HTML documents and renders directly with override styles (no dark bg, no padding)
+- [x] All 1436 tests passing, 0 TypeScript errors
