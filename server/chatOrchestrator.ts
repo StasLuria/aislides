@@ -37,6 +37,7 @@ import {
   updatePresentationProgress,
 } from "./presentationDb";
 import { renderPresentation, renderSlide, BASE_CSS, getLayoutTemplate } from "./pipeline/templateEngine";
+import { htmlComposerSystem, htmlComposerUser } from "./pipeline/prompts";
 import { getThemePreset, type ThemePreset } from "./pipeline/themes";
 import { autoSelectTheme } from "./pipeline/themeSelector";
 import { classifyPresentation } from "./pipeline/presentationTypeClassifier";
@@ -44,6 +45,42 @@ import { analyzeContentDensity, generateAdaptiveStyles } from "./pipeline/adapti
 import { pickLayoutForPreview } from "./interactiveRoutes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+
+/** Deep merge two objects, recursively merging nested objects. */
+function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key]) &&
+      target[key] &&
+      typeof target[key] === "object" &&
+      !Array.isArray(target[key])
+    ) {
+      result[key] = deepMerge(target[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+/** Call LLM and return text content. */
+async function llmText(systemPrompt: string, userPrompt: string): Promise<string> {
+  const response = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  });
+  const content = response.choices?.[0]?.message?.content || "";
+  return typeof content === "string" ? content : JSON.stringify(content);
+}
 
 // ═══════════════════════════════════════════════════════
 // OUTLINE PARSING FROM FILES
@@ -1764,19 +1801,28 @@ async function handleSlideDesignFeedback(
   }
 
   try {
-    // Use LLM to decide on a different layout or adjust data based on feedback
+    // Step 1: Use LLM to analyze user feedback and decide on layout + data adjustments
     const feedbackPrompt = `Пользователь хочет изменить дизайн слайда.
 Текущий макет: ${currentDesign.layoutName}
+Текущие данные слайда: ${JSON.stringify(currentDesign.slideData, null, 2)}
 Контент слайда: "${content.title}" — ${content.key_message}
 Запрос пользователя: "${userMessage}"
 
-Если пользователь просит другой макет, предложи подходящий из списка доступных.
-Если просит изменить элементы — опиши, что нужно поменять.
-Ответь в JSON: { "new_layout": "layout_name_or_null", "adjustments": "описание изменений" }`;
+Проанализируй запрос и ответь в JSON:
+{
+  "new_layout": "layout_name или null если макет не меняется",
+  "data_patches": { "поле": "новое_значение" },
+  "adjustments": "описание изменений на русском"
+}
+
+Важно: data_patches должен содержать конкретные изменения к данным слайда.
+Например, если пользователь просит "поменяй автора на Кутузова", верни:
+{ "data_patches": { "presenterName": "Кутузова" }, "adjustments": "Имя автора изменено" }
+Если пользователь просит изменить текст, цвет кружка и т.д. — укажи соответствующие поля.`;
 
     const llmResult = await invokeLLM({
       messages: [
-        { role: "system", content: "You are a presentation design assistant. Respond with valid JSON." },
+        { role: "system", content: "You are a presentation design assistant. Respond with valid JSON only." },
         { role: "user", content: feedbackPrompt },
       ],
     });
@@ -1784,8 +1830,10 @@ async function handleSlideDesignFeedback(
     const rawContent = llmResult.choices?.[0]?.message?.content || "";
     const rawStr = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
 
-    // Try to parse the layout suggestion
+    // Parse the LLM response
     let newLayoutName = currentDesign.layoutName;
+    let dataPatches: Record<string, any> = {};
+    let adjustmentDescription = "";
     try {
       const jsonStart = rawStr.indexOf("{");
       const jsonEnd = rawStr.lastIndexOf("}");
@@ -1794,17 +1842,85 @@ async function handleSlideDesignFeedback(
         if (parsed.new_layout && parsed.new_layout !== "null" && parsed.new_layout !== "none") {
           newLayoutName = parsed.new_layout;
         }
+        if (parsed.data_patches && typeof parsed.data_patches === "object") {
+          dataPatches = parsed.data_patches;
+        }
+        if (parsed.adjustments) {
+          adjustmentDescription = parsed.adjustments;
+        }
       }
     } catch {
-      // Keep current layout
+      // Keep current layout and no patches
     }
 
-    // Re-compose with potentially new layout
+    // Step 2: Apply data patches to existing slide data if layout didn't change
     let slideData: Record<string, any>;
-    try {
-      slideData = await runHtmlComposerWithQA(content, newLayoutName, themeCss);
-    } catch {
-      slideData = buildFallbackData(content, newLayoutName);
+    const layoutChanged = newLayoutName !== currentDesign.layoutName;
+
+    if (layoutChanged) {
+      // Layout changed — re-compose from scratch with user feedback as review hint
+      const reviewHint = `User requested changes: "${userMessage}". ${adjustmentDescription}`;
+      try {
+        const layoutTemplate = getLayoutTemplate(newLayoutName);
+        const system = htmlComposerSystem(reviewHint);
+        const user = htmlComposerUser(
+          newLayoutName,
+          layoutTemplate || `Layout: ${newLayoutName}`,
+          content.title,
+          content.text,
+          content.notes,
+          content.key_message,
+          themeCss,
+          content.structured_content,
+          content.content_shape,
+          content.slide_category,
+          (content as any).transition_phrase,
+        );
+        const rawResponse = await llmText(system, user).catch(() => "");
+        let jsonStr = rawResponse;
+        const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) jsonStr = jsonMatch[1];
+        slideData = JSON.parse(jsonStr.trim());
+      } catch {
+        slideData = buildFallbackData(content, newLayoutName);
+      }
+    } else {
+      // Same layout — apply patches to existing data
+      slideData = { ...currentDesign.slideData };
+
+      // Apply direct data patches from LLM
+      if (Object.keys(dataPatches).length > 0) {
+        slideData = deepMerge(slideData, dataPatches);
+      }
+
+      // If no patches were extracted but user had feedback, re-compose with feedback hint
+      if (Object.keys(dataPatches).length === 0 && userMessage.trim()) {
+        const reviewHint = `User requested changes: "${userMessage}". Apply these changes to the slide data.`;
+        try {
+          const layoutTemplate = getLayoutTemplate(newLayoutName);
+          const system = htmlComposerSystem(reviewHint);
+          const user = htmlComposerUser(
+            newLayoutName,
+            layoutTemplate || `Layout: ${newLayoutName}`,
+            content.title,
+            content.text,
+            content.notes,
+            content.key_message,
+            themeCss,
+            content.structured_content,
+            content.content_shape,
+            content.slide_category,
+            (content as any).transition_phrase,
+          );
+          const rawResponse = await llmText(system, user).catch(() => "");
+          let jsonStr = rawResponse;
+          const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (jsonMatch) jsonStr = jsonMatch[1];
+          slideData = JSON.parse(jsonStr.trim());
+        } catch {
+          // Keep existing data if re-compose fails
+        }
+      }
     }
 
     const slideHtml = renderSlide(newLayoutName, slideData);

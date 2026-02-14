@@ -287,14 +287,16 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
-  .slide { width: 1280px; height: 720px; transform-origin: top left; transform: scale(${expanded ? 0.5 : 0.25}); }
+  .slide { width: 1280px; height: 720px; }
 </style>
 </head>
 <body><div class="slide">${preview.html}</div></body></html>`);
         doc.close();
       }
     }
-  }, [preview.html, expanded]);
+  }, [preview.html]);
+
+  const scale = expanded ? 0.5 : 0.25;
 
   return (
     <div
@@ -305,7 +307,14 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
     >
       <iframe
         ref={iframeRef}
-        className="w-full h-full pointer-events-none"
+        className="pointer-events-none"
+        style={{
+          width: "1280px",
+          height: "720px",
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          border: "none",
+        }}
         sandbox="allow-same-origin"
         title={`Slide ${preview.slideNumber}`}
       />

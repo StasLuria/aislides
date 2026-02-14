@@ -1367,3 +1367,10 @@
 - [x] Frontend: Show current phase label (Контент / Дизайн) alongside slide number
 - [x] Write 3 vitest tests for slide_progress events (all passing)
 - [x] All 1436 tests passing (3 new + 1433 existing), 0 TypeScript errors
+
+## Round 30: Bug fixes — slide preview clipping + design feedback not working
+- [x] Fix slide preview in chat: iframe scaled at element level (1280x720 → transform scale) instead of inside content
+- [x] Fix design feedback: LLM now receives current slideData, extracts data_patches, applies via deepMerge; layout changes re-compose with feedback hint
+- [x] Added deepMerge helper and local llmText wrapper to chatOrchestrator
+- [x] Added htmlComposerSystem/htmlComposerUser imports for feedback re-composition
+- [x] All 1436 tests passing, 0 TypeScript errors

@@ -7,14 +7,22 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 111 |
-| Total tasks | 1065 |
-| Completed | 1053 (99%) |
+| Total sections | 112 |
+| Total tasks | 1070 |
+| Completed | 1058 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🐛 Round 30: Bug fixes — slide preview clipping + design feedback not working ✅
+
+- [x] Fix slide preview in chat: iframe scaled at element level (1280x720 → transform scale) instead of inside content
+- [x] Fix design feedback: LLM now receives current slideData, extracts data_patches, applies via deepMerge; layout changes re-compose with feedback hint
+- [x] Added deepMerge helper and local llmText wrapper to chatOrchestrator
+- [x] Added htmlComposerSystem/htmlComposerUser imports for feedback re-composition
+- [x] All 1436 tests passing, 0 TypeScript errors
 
 ### 🚀 Round 29: Slide progress bar in chat UI ✅
 
@@ -1508,7 +1516,7 @@
 
 - **Auto-Theme Selection (AI-based)** — ✅
 
-### 🐛 Bug Fixes (22 sections, 116/116 tasks)
+### 🐛 Bug Fixes (23 sections, 121/121 tasks)
 
 - **Bug Fix: POST /presentations 500 error on deployed version** — ✅
 - **Bug Fixes: Viewer + Home Page** — ✅
@@ -1532,6 +1540,7 @@
 - **Bug Fix: Pressing Enter with attached file does nothing** — ✅
 - **Bug Fixes from CJM Testing** — ✅
 - **Bug Fix: Sidebar Scroll in Viewer** — ✅
+- **Round 30: Bug fixes — slide preview clipping + design feedback not working** — ✅
 
 ### 🏗️ Infrastructure (7 sections, 31/31 tasks)
 
