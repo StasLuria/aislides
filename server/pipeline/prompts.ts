@@ -411,7 +411,7 @@ NEW TEMPLATES PRIORITY: When the shape tag matches one of these, the correspondi
   * Slide with expert quote + supporting data/context → quote-highlight (ALWAYS prefer over quote-slide)
 </content_matching_rules>
 <diversity_rules>
-- Use at LEAST 6 unique layouts across the presentation (with 41 layouts available, aim for maximum variety).
+- Use at LEAST 6 unique layouts across the presentation (with 45 layouts available, aim for maximum variety).
 - No single layout may appear more than 2 times.
 - Slide 1 MUST be title-slide.
 - Last slide MUST be final-slide.

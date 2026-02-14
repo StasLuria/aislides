@@ -1026,3 +1026,27 @@
 - [x] Write comprehensive README.md — full project description, architecture diagram, pipeline flow, template list, theme list, API reference, tech stack, file structure, DB schema, dev guide
 - [x] All 1152 tests passing (40 test files)
 - [x] Save checkpoint
+
+## Round 12: README Audit & Corrections
+- [x] Audit README.md against actual codebase for factual accuracy
+- [x] Fix agent count: 10 → 15 (14 agents + Assembly) in all occurrences
+- [x] Fix PPTX export layout count: 15+ → 28 supported slide types
+- [x] Fix Nunjucks reference → Кастомный Jinja2-рендерер (no external dependency)
+- [x] Fix pipeline line count: ~13,500 → ~20,800
+- [x] Fix routes line count: ~4,800 → ~3,300
+- [x] Fix shared line count: ~500 → ~100
+- [x] Fix tests line count: ~11,000 → ~14,300
+- [x] Fix total line count: ~41,000 → ~49,700
+- [x] Fix API endpoint count: 37+ → 54 REST + 2 tRPC
+- [x] Remove non-existent GET /:id/progress endpoint
+- [x] Fix chat upload endpoint: /files → /upload
+- [x] Add missing chat endpoints: /action, /files (GET), /title (PATCH), /metadata (PATCH)
+- [x] Fix slide edit routes path: /api/v1/slides → /api/v1/presentations/:id/slides
+- [x] Add all 13 slide edit endpoints (was 5)
+- [x] Add missing interactive routes section (11 endpoints)
+- [x] Add missing template routes section (4 endpoints)
+- [x] Add missing shared routes: /slides, /html
+- [x] Add missing presentation routes: /html, /retry, GET /share
+- [x] Remove scenario_cards from content shapes (it's a layout, not a shape) — 16 shapes total
+- [x] Fix prompts.ts: "41 layouts available" → "45 layouts available"
+- [x] All 1152 tests passing (40 test files) — zero regressions
