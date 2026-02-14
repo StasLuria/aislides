@@ -1153,3 +1153,20 @@
 - [x] Inject transition_phrase from Storytelling Agent into SlideContent
 - [x] Update HTML Composer prompt + htmlComposerUser to use transition_phrase as subtitle/opening
 - [x] Write vitest tests for transition injection
+
+## Round 19: Phase 2 Evaluator-Optimizer Implementation
+
+### Step 2.1: Content Evaluator Agent
+- [x] Create contentEvaluator.ts with 4-criteria rubric (SPECIFICITY, DENSITY, NOVELTY, ACTIONABILITY)
+- [x] Score each slide 1-5 per criterion, threshold ≥ 3.5 to pass (2.5 for structural slides)
+- [x] Generate specific feedback for failing slides (not generic "improve it")
+- [x] Add evaluator loop in pipeline: Writer → Evaluator → [pass/retry with feedback] (max 2 retries)
+- [x] Evaluator feedback injected into Writer key_points for targeted rewrites
+- [x] Write vitest tests for scoring, feedback, retry logic (33 tests in phase2.test.ts)
+
+### Step 2.3: Hybrid Writer (Sequential + Parallel)
+- [x] Modify runWriterParallel: key slides (title, first 2 content, conclusion, final) → sequential
+- [x] Core slides → parallel batches of 3 with full key context
+- [x] Key context includes all 5 narrative anchor slides for coherence
+- [x] Core slides get rich context from all key slides (not just last 4)
+- [x] Write vitest tests for execution order and context passing (33 tests in phase2.test.ts)

@@ -25,6 +25,7 @@ import { analyzeContentDensity, generateAdaptiveStyles } from "./adaptiveSizing"
 import { enforceAllSlidesDensity } from "./contentDensityValidator";
 import { classifyPresentation, type TypeProfile } from "./presentationTypeClassifier";
 import { runStorytellingAgent } from "./storytellingAgent";
+import { evaluateSlides, runEvaluatorLoop, type SlideForEval } from "./contentEvaluator";
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 import { runDesignCritic, fixSlideDensity, type SlideDesignData } from "./designCriticAgent";
@@ -473,49 +474,74 @@ export async function runWriterParallel(
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
   const results: SlideContent[] = [];
+  const total = outline.slides.length;
 
-  // Semi-sequential: write in small batches of 2-3 slides,
-  // passing context from previous batches for coherence.
-  // This balances speed (some parallelism) with context awareness.
-  const batchSize = 2;
+  // Hybrid Writer: key slides sequential, core slides parallel with full context.
+  // Key slides: title (1st), first 2 content slides, last 2 (conclusion + final)
+  // This ensures narrative anchors are written first, then core slides can reference them.
 
-  for (let i = 0; i < outline.slides.length; i += batchSize) {
-    const batch = outline.slides.slice(i, i + batchSize);
+  const keyIndices = new Set<number>();
+  // Always include first slide (title)
+  if (total > 0) keyIndices.add(0);
+  // First 2 content slides (indices 1, 2)
+  if (total > 1) keyIndices.add(1);
+  if (total > 2) keyIndices.add(2);
+  // Last 2 slides (conclusion + final)
+  if (total > 3) keyIndices.add(total - 2);
+  if (total > 1) keyIndices.add(total - 1);
+
+  const keySlides = outline.slides.filter((_, i) => keyIndices.has(i));
+  const coreSlides = outline.slides.filter((_, i) => !keyIndices.has(i));
+
+  const writeSingle = (slide: OutlineResult["slides"][0], context: string) =>
+    runWriterSingle(
+      slide,
+      outline.presentation_title,
+      allTitles,
+      outline.target_audience,
+      language,
+      context,
+      researchContextFormatter?.(slide.slide_number),
+      writerTypeHint,
+    ).catch((err): SlideContent => {
+      console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
+      return {
+        slide_number: slide.slide_number,
+        title: slide.title,
+        text: slide.key_points.map((kp) => `• ${kp}`).join("\n"),
+        notes: "",
+        data_points: [],
+        key_message: slide.purpose,
+      };
+    });
+
+  // Phase 1: Write key slides sequentially (narrative anchors)
+  console.log(`[Writer] Hybrid mode: ${keySlides.length} key slides sequential, ${coreSlides.length} core slides parallel`);
+  for (const slide of keySlides) {
     const previousContext = buildWriterContext(results);
+    const result = await writeSingle(slide, previousContext);
+    results.push(result);
+    onSlideWritten?.(result.slide_number, total);
+  }
 
-    const batchResults = await Promise.all(
-      batch.map((slide) =>
-        runWriterSingle(
-          slide,
-          outline.presentation_title,
-          allTitles,
-          outline.target_audience,
-          language,
-          previousContext,
-          researchContextFormatter?.(slide.slide_number),
-          writerTypeHint,
-        ).catch(
-          (err): SlideContent => {
-            console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
-            return {
-              slide_number: slide.slide_number,
-              title: slide.title,
-              text: slide.key_points.map((kp) => `• ${kp}`).join("\n"),
-              notes: "",
-              data_points: [],
-              key_message: slide.purpose,
-            };
-          },
-        ),
-      ),
-    );
+  // Phase 2: Write core slides in parallel batches (with full key context)
+  if (coreSlides.length > 0) {
+    // Build rich context from all key slides
+    const keyContext = results
+      .map((s) => `Slide ${s.slide_number} "${s.title}": ${s.key_message}`)
+      .join("\n");
 
-    batchResults.sort((a, b) => a.slide_number - b.slide_number);
-    results.push(...batchResults);
-
-    // Report progress
-    for (const r of batchResults) {
-      onSlideWritten?.(r.slide_number, outline.slides.length);
+    const batchSize = 3;
+    for (let i = 0; i < coreSlides.length; i += batchSize) {
+      const batch = coreSlides.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map((slide) => writeSingle(slide, keyContext)),
+      );
+      batchResults.sort((a, b) => a.slide_number - b.slide_number);
+      results.push(...batchResults);
+      for (const r of batchResults) {
+        onSlideWritten?.(r.slide_number, total);
+      }
     }
   }
 
@@ -1484,6 +1510,92 @@ export async function generatePresentation(
   } catch (err) {
     console.error("[Pipeline] Storytelling agent failed, using original content:", err);
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
+  }
+
+  // 3.6. CONTENT EVALUATOR — Evaluator-Optimizer pattern
+  onProgress({ nodeName: "evaluator", currentStep: "evaluating", progressPercent: 43, message: "Оценка качества контента..." });
+  try {
+    const slidesForEval: SlideForEval[] = content.map((s) => ({
+      slide_number: s.slide_number,
+      title: s.title,
+      text: s.text,
+      key_message: s.key_message,
+      content_shape: s.content_shape,
+      structured_content: s.structured_content as Record<string, unknown> | undefined,
+    }));
+
+    const evalResult = await runEvaluatorLoop(
+      slidesForEval,
+      async (slideNum, feedback) => {
+        // Rewrite the slide with evaluator feedback
+        const slideInfo = outline.slides.find((s) => s.slide_number === slideNum);
+        if (!slideInfo) throw new Error(`Slide ${slideNum} not found in outline`);
+
+        const previousContext = content
+          .filter((s) => s.slide_number < slideNum)
+          .slice(-3)
+          .map((s) => `Slide ${s.slide_number} "${s.title}": ${s.key_message}`)
+          .join("\n");
+
+        // Add evaluator feedback to key_points for the rewrite
+        const enhancedSlideInfo = {
+          ...slideInfo,
+          key_points: [...slideInfo.key_points, `[EVALUATOR FEEDBACK: ${feedback}]`],
+        };
+
+        const rewritten = await runWriterSingle(
+          enhancedSlideInfo,
+          outline.presentation_title,
+          outline.slides.map((s) => s.title).join(", "),
+          outline.target_audience,
+          language,
+          previousContext,
+          researchFormatter?.(slideNum),
+          typeProfile.writerHint,
+        );
+
+        return {
+          slide_number: rewritten.slide_number,
+          title: rewritten.title,
+          text: rewritten.text,
+          key_message: rewritten.key_message,
+          content_shape: rewritten.content_shape,
+          structured_content: rewritten.structured_content as Record<string, unknown> | undefined,
+        };
+      },
+      (iteration, failedCount) => {
+        onProgress({
+          nodeName: "evaluator",
+          currentStep: "evaluating",
+          progressPercent: 43 + iteration,
+          message: `Оценка (итерация ${iteration + 1}): ${failedCount} слайдов на доработку`,
+        });
+      },
+    );
+
+    // Apply rewritten content back
+    for (const evalSlide of evalResult.finalSlides) {
+      const idx = content.findIndex((s) => s.slide_number === evalSlide.slide_number);
+      if (idx >= 0) {
+        content[idx] = {
+          ...content[idx],
+          title: evalSlide.title,
+          text: evalSlide.text,
+          key_message: evalSlide.key_message,
+          content_shape: evalSlide.content_shape,
+          structured_content: evalSlide.structured_content as any,
+        };
+      }
+    }
+
+    console.log(
+      `[Pipeline] Content Evaluator: overall=${evalResult.evaluations.overallScore}, ` +
+      `iterations=${evalResult.iterations}, failed=${evalResult.evaluations.failedSlides.length}`,
+    );
+    onProgress({ nodeName: "evaluator", currentStep: "evaluating", progressPercent: 46, message: `Оценка: ${evalResult.evaluations.overallScore}/5` });
+  } catch (err) {
+    console.error("[Pipeline] Content Evaluator failed, continuing:", err);
+    onProgress({ nodeName: "evaluator", currentStep: "evaluating", progressPercent: 46, message: "Пропуск оценки (ошибка)" });
   }
 
   // 3.7. CONTENT DENSITY ENFORCEMENT — 6×6 rule
