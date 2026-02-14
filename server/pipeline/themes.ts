@@ -55,7 +55,7 @@ const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string;
   right: 24px;
   width: 120px;
   height: 40px;
-  background-image: url('https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/mrevEKsYBpLxGPcu.png');
+  background-image: url('https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/SCJeOuRodLGBvIFn.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;

@@ -7,14 +7,21 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 114 |
-| Total tasks | 1086 |
-| Completed | 1074 (99%) |
+| Total sections | 115 |
+| Total tasks | 1090 |
+| Completed | 1078 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 32b: BSPB Logo Integration ✅
+
+- [x] Upload BSPB logo PNG to S3 (CDN: SCJeOuRodLGBvIFn.png)
+- [x] Update bspb_corporate theme CSS to use real logo URL
+- [x] Verify logo renders correctly on slides
+- [x] All 1436 tests passing
 
 ### 🚀 Round 32: BSPB Brand Template & Business Copywriter Skill ✅
 
@@ -1487,7 +1494,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (45 sections, 597/609 tasks)
+### 🚀 Improvements (46 sections, 601/613 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1534,6 +1541,7 @@
 - **Round 28: Implement true slide-by-slide step-by-step mode** — ✅
 - **Round 29: Slide progress bar in chat UI** — ✅
 - **Round 32: BSPB Brand Template & Business Copywriter Skill** — ✅
+- **Round 32b: BSPB Logo Integration** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

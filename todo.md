@@ -1394,3 +1394,9 @@
 - [x] Integrate copywriting guidelines into Storytelling agent prompt (no bureaucratic language, no foreign words, data-as-stories)
 - [x] Fix 6 failing tests: update theme count 12→13, default fallback corporate_blue→bspb_corporate, fintech/banking arctic_frost→bspb_corporate
 - [x] All 1436 tests passing, 0 TypeScript errors
+
+## Round 32b: BSPB Logo Integration
+- [x] Upload BSPB logo PNG to S3 (CDN: SCJeOuRodLGBvIFn.png)
+- [x] Update bspb_corporate theme CSS to use real logo URL
+- [x] Verify logo renders correctly on slides
+- [x] All 1436 tests passing
