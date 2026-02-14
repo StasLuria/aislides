@@ -13,6 +13,7 @@ import { registerSlideEditRoutes } from "../slideEditRoutes";
 import { registerChatRoutes } from "../chatRoutes";
 import { registerTemplateRoutes } from "../templateRoutes";
 import { wsManager } from "../wsManager";
+import { registerSwaggerDocs } from "../swagger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -58,6 +59,9 @@ async function startServer() {
 
   // Custom Templates API — /api/v1/templates/*
   registerTemplateRoutes(app);
+
+  // Swagger/OpenAPI docs — /api/docs
+  registerSwaggerDocs(app);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

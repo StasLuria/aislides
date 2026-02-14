@@ -1050,3 +1050,15 @@
 - [x] Remove scenario_cards from content shapes (it's a layout, not a shape) — 16 shapes total
 - [x] Fix prompts.ts: "41 layouts available" → "45 layouts available"
 - [x] All 1152 tests passing (40 test files) — zero regressions
+
+## Round 13: Developer Tools — Auto-README, Swagger, CHANGELOG
+- [x] Auto-README script: collect metrics (tests, lines, endpoints, layouts, themes, agents) from codebase
+- [x] Auto-README script: generate/update README.md sections with live data
+- [x] Auto-README script: add `pnpm readme` command to package.json
+- [x] Swagger/OpenAPI: install swagger-ui-express (no swagger-jsdoc — manual OpenAPI spec)
+- [x] Swagger/OpenAPI: define full OpenAPI 3.0 spec for all 54 REST endpoints in server/swagger.ts
+- [x] Swagger/OpenAPI: serve interactive docs at /api/docs
+- [x] CHANGELOG.md: parse todo.md rounds into versioned changelog entries
+- [x] CHANGELOG.md: auto-generate from todo.md structure
+- [x] CHANGELOG.md: add `pnpm changelog` command to package.json
+- [x] Write vitest tests for all three tools (18 tests)
