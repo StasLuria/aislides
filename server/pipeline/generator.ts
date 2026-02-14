@@ -47,6 +47,8 @@ export interface GenerationConfig {
   customFontsUrl?: string;
   /** Custom template ID for reference */
   customTemplateId?: string;
+  /** Pre-built outline from uploaded file (skips runOutline + runOutlineCritic when provided) */
+  preBuiltOutline?: OutlineResult;
 }
 
 export interface PipelineProgress {
@@ -1529,25 +1531,34 @@ export async function generatePresentation(
   const combinedOutlineHint = [typeProfile.outlineHint, referenceHint].filter(Boolean).join("\n\n");
 
   // 2. OUTLINE
-  onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
-  const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint);
+  let outline: OutlineResult;
+  if (config.preBuiltOutline) {
+    // Use pre-built outline from uploaded file (skip LLM generation)
+    outline = config.preBuiltOutline;
+    console.log(`[Pipeline] Using pre-built outline: ${outline.slides.length} slides, title: "${outline.presentation_title}"`);
+    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: `Структура из файла: ${outline.slides.length} слайдов` });
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск (структура из файла)" });
+  } else {
+    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
+    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint);
 
-  // 2.5. OUTLINE CRITIC — validate and improve outline structure
-  onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
-  let outline = rawOutline;
-  try {
-    const criticResult = await runOutlineCritic(rawOutline);
-    outline = criticResult.outline;
-    const { critique } = criticResult;
-    if (critique.improved_outline) {
-      console.log(`[Pipeline] Outline improved by critic (score: ${critique.score}/10, ${critique.issues.length} issues)`);
-    } else {
-      console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
+    // 2.5. OUTLINE CRITIC — validate and improve outline structure
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
+    outline = rawOutline;
+    try {
+      const criticResult = await runOutlineCritic(rawOutline);
+      outline = criticResult.outline;
+      const { critique } = criticResult;
+      if (critique.improved_outline) {
+        console.log(`[Pipeline] Outline improved by critic (score: ${critique.score}/10, ${critique.issues.length} issues)`);
+      } else {
+        console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
+      }
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: `Структура проверена (${critique.score}/10)` });
+    } catch (err) {
+      console.error("[Pipeline] Outline critic failed, using original outline:", err);
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
     }
-    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: `Структура проверена (${critique.score}/10)` });
-  } catch (err) {
-    console.error("[Pipeline] Outline critic failed, using original outline:", err);
-    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
   }
 
   // 2.6. OUTLINE SHAPE POST-PROCESSING — force specialized shapes based on user keywords

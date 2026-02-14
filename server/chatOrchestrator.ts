@@ -13,7 +13,7 @@ import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import type { ChatMessage, ChatAction } from "../drizzle/schema";
 import { getChatSession, updateChatSession, appendMessage, getSessionFiles } from "./chatDb";
-import { generatePresentation, type PipelineProgress, type GenerationConfig } from "./pipeline/generator";
+import { generatePresentation, type PipelineProgress, type GenerationConfig, type OutlineResult } from "./pipeline/generator";
 import {
   createPresentation,
   updatePresentationProgress,
@@ -23,6 +23,79 @@ import { getThemePreset } from "./pipeline/themes";
 import { pickLayoutForPreview } from "./interactiveRoutes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+
+// ═══════════════════════════════════════════════════════
+// OUTLINE PARSING FROM FILES
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Parse a pre-built presentation outline from uploaded file content.
+ * Recognizes the [PRESENTATION_OUTLINE] marker from Vision LLM extraction.
+ * Returns null if no outline structure is detected.
+ */
+function parseOutlineFromFiles(
+  readyFiles: Array<{ fileId: string; filename: string; mimeType: string; extractedText: string | null }>,
+): OutlineResult | null {
+  for (const f of readyFiles) {
+    const text = f.extractedText || "";
+    if (!text.includes("[PRESENTATION_OUTLINE]")) continue;
+
+    try {
+      // Parse the structured outline format
+      const slides: OutlineResult["slides"] = [];
+      const slideBlocks = text.split(/---/).filter(Boolean);
+
+      for (const block of slideBlocks) {
+        const slideMatch = block.match(/SLIDE\s+(\d+):\s*(.+)/i);
+        const purposeMatch = block.match(/PURPOSE:\s*(.+)/i);
+
+        if (slideMatch) {
+          const slideNum = parseInt(slideMatch[1]);
+          const title = slideMatch[2].trim();
+          const purpose = purposeMatch ? purposeMatch[1].trim() : title;
+
+          slides.push({
+            slide_number: slideNum,
+            title,
+            purpose,
+            key_points: [purpose],
+            speaker_notes_hint: `Слайд ${slideNum}: ${title}`,
+            content_shape: slideNum === 1 ? undefined : (slideNum === slides.length + 1 ? undefined : "bullet_points"),
+            slide_category: slideNum === 1 ? "TITLE" : "CONTENT",
+          });
+        }
+      }
+
+      if (slides.length < 2) continue; // Need at least 2 slides for a valid outline
+
+      // Extract presentation title from first slide
+      const presentationTitle = slides[0]?.title || "Презентация";
+
+      // Assign proper categories
+      if (slides.length > 0) {
+        slides[0].slide_category = "TITLE";
+        slides[0].content_shape = undefined; // TitleSlide
+      }
+      if (slides.length > 1) {
+        slides[slides.length - 1].slide_category = "FINAL";
+        slides[slides.length - 1].content_shape = undefined; // FinalSlide
+      }
+
+      console.log(`[parseOutlineFromFiles] Parsed ${slides.length} slides from file: ${f.filename}`);
+
+      return {
+        presentation_title: presentationTitle,
+        target_audience: "Широкая аудитория",
+        narrative_arc: "FRAMEWORK",
+        slides,
+      };
+    } catch (err) {
+      console.error(`[parseOutlineFromFiles] Failed to parse outline from ${f.filename}:`, err);
+    }
+  }
+
+  return null;
+}
 
 // ═══════════════════════════════════════════════════════
 // SSE EVENT TYPES
@@ -456,9 +529,13 @@ async function startQuickGeneration(
   }
   const enrichedTopic = topic + fileContextForPipeline;
 
+  // Check if files contain a pre-built outline (from image extraction)
+  const preBuiltOutline = parseOutlineFromFiles(readyFiles);
+
   // Send starting message
   const fileNote = readyFiles.length > 0 ? ` Использую данные из ${readyFiles.length} файл(ов). 📄` : "";
-  writer({ type: "token", data: `🚀 Запускаю быструю генерацию!${fileNote} Это займёт около 60 секунд.\n\n` });
+  const outlineNote = preBuiltOutline ? " 📎 Структура из файла будет использована." : "";
+  writer({ type: "token", data: `🚀 Запускаю быструю генерацию!${fileNote}${outlineNote} Это займёт около 60 секунд.\n\n` });
 
   // Create presentation record
   const presentation = await createPresentation({
@@ -490,6 +567,7 @@ async function startQuickGeneration(
       customCssVariables: sessionMeta.customCssVariables || undefined,
       customFontsUrl: sessionMeta.customFontsUrl || undefined,
       customTemplateId: sessionMeta.customTemplateId || undefined,
+      preBuiltOutline: preBuiltOutline || undefined,
     };
 
     // Run the pipeline with progress streaming + slide previews
@@ -648,9 +726,26 @@ async function startStepByStepGeneration(
 
   await updateChatSession(sessionId, { phase: "generating" });
 
+  // Gather file context for the pipeline prompt (same as quick mode)
+  const sessionFiles = await getSessionFiles(sessionId);
+  const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
+  let fileContextForPipeline = "";
+  if (readyFiles.length > 0) {
+    fileContextForPipeline = "\n\nМАТЕРИАЛЫ ИЗ ПРИКРЕПЛЁННЫХ ФАЙЛОВ:\n";
+    for (const f of readyFiles) {
+      fileContextForPipeline += `\n─── ${f.filename} ───\n${(f.extractedText || "").slice(0, 12000)}\n`;
+    }
+    fileContextForPipeline += "\nИспользуй данные из этих файлов как основу для содержимого и структуры презентации. Если файл содержит структуру презентации (список слайдов) — используй её ТОЧНО как основу для outline, сохраняя заголовки и описания.";
+  }
+  const topic = session.topic || "";
+  const enrichedTopic = topic + fileContextForPipeline;
+
+  // Check if files contain a pre-built outline (from image extraction)
+  const preBuiltOutline = parseOutlineFromFiles(readyFiles);
+
   // Create presentation record
   const presentation = await createPresentation({
-    prompt: session.topic || "",
+    prompt: enrichedTopic,
     mode: "interactive",
     config: { theme_preset: "auto" },
   });
@@ -664,10 +759,19 @@ async function startStepByStepGeneration(
     const { runPlanner, runOutline } = await import("./pipeline/generator");
 
     writer({ type: "progress", data: { percent: 10, message: "Анализ темы..." } });
-    const plannerResult = await runPlanner(session.topic || "");
+    const plannerResult = await runPlanner(enrichedTopic);
 
     writer({ type: "progress", data: { percent: 30, message: "Создание структуры..." } });
-    const outline = await runOutline(session.topic || "", plannerResult.branding, plannerResult.language || "ru");
+
+    let outline;
+    if (preBuiltOutline) {
+      // Use the pre-built outline from the uploaded image/file
+      console.log(`[ChatOrchestrator] Using pre-built outline from file: ${preBuiltOutline.slides.length} slides`);
+      outline = preBuiltOutline;
+      writer({ type: "token", data: "\n\n📎 Использую структуру из загруженного файла.\n" });
+    } else {
+      outline = await runOutline(enrichedTopic, plannerResult.branding, plannerResult.language || "ru");
+    }
 
     // Format outline for display
     const outlineText = outline.slides
@@ -744,6 +848,22 @@ async function handleStructureApproval(
     const metadata = session.metadata as any || {};
     const topic = session.topic || "";
 
+    // Gather file context for the pipeline prompt
+    const approvalSessionFiles = await getSessionFiles(sessionId);
+    const approvalReadyFiles = approvalSessionFiles.filter(f => f.status === "ready" && f.extractedText);
+    let approvalFileContext = "";
+    if (approvalReadyFiles.length > 0) {
+      approvalFileContext = "\n\nМАТЕРИАЛЫ ИЗ ПРИКРЕПЛЁННЫХ ФАЙЛОВ:\n";
+      for (const f of approvalReadyFiles) {
+        approvalFileContext += `\n─── ${f.filename} ───\n${(f.extractedText || "").slice(0, 12000)}\n`;
+      }
+      approvalFileContext += "\nИспользуй данные из этих файлов как основу для содержимого презентации.";
+    }
+    const enrichedTopicForApproval = topic + approvalFileContext;
+
+    // Check if files contain a pre-built outline (from image extraction)
+    const approvalPreBuiltOutline = parseOutlineFromFiles(approvalReadyFiles);
+
     try {
       // Build generation config — check for custom template in session metadata
       const stepMeta = (session.metadata as Record<string, any>) || {};
@@ -753,10 +873,11 @@ async function handleStructureApproval(
         customCssVariables: stepMeta.customCssVariables || undefined,
         customFontsUrl: stepMeta.customFontsUrl || undefined,
         customTemplateId: stepMeta.customTemplateId || undefined,
+        preBuiltOutline: approvalPreBuiltOutline || undefined,
       };
 
       const result = await generatePresentation(
-        topic,
+        enrichedTopicForApproval,
         stepGenConfig,
         (progress: PipelineProgress) => {
           writer({

@@ -7,14 +7,27 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 107 |
-| Total tasks | 1031 |
-| Completed | 1019 (99%) |
+| Total sections | 108 |
+| Total tasks | 1041 |
+| Completed | 1029 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 26: Image-based structure recognition from uploaded screenshots ✅
+
+- [x] Analyze how image attachments are currently handled in chat/generation flow
+- [x] Improve extractFromImage Vision LLM prompt to recognize presentation structure with [PRESENTATION_OUTLINE] marker
+- [x] Add parseOutlineFromFiles function to chatOrchestrator — parses structured outline from extracted text
+- [x] Fix startStepByStepGeneration — now passes file context to pipeline (was missing)
+- [x] Fix handleStructureApproval — now passes file context to generatePresentation (was missing)
+- [x] Add preBuiltOutline field to GenerationConfig — skips runOutline + runOutlineCritic when provided
+- [x] Update generatePresentation to use preBuiltOutline when available
+- [x] Support in both quick mode and step-by-step mode
+- [x] Write 9 vitest tests for parseOutlineFromFiles (all passing)
+- [x] All 1426 tests passing (9 new + 1417 existing), 0 TypeScript errors
 
 ### 🚀 Round 25: Fix card-grid layout issues ✅
 
@@ -1411,7 +1424,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (40 sections, 551/563 tasks)
+### 🚀 Improvements (41 sections, 561/573 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1453,6 +1466,7 @@
 - **Round 23: Fact-Checking in Final Review + Chart Label Fix** — ✅
 - **Round 24: Fix PPTX Export Quality** — ✅
 - **Round 25: Fix card-grid layout issues** — ✅
+- **Round 26: Image-based structure recognition from uploaded screenshots** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

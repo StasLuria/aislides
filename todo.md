@@ -1325,3 +1325,15 @@
 - [x] Fix card-grid card text overflow/clipping — restructured: icon+title+badge in header row, description below, auto-rows
 - [x] Verify fix visually — both 4-card and 5-card layouts render correctly with 3-column grid
 - [x] Run full test suite — 1417 tests passing, 0 regressions
+
+## Round 26: Image-based structure recognition from uploaded screenshots
+- [x] Analyze how image attachments are currently handled in chat/generation flow
+- [x] Improve extractFromImage Vision LLM prompt to recognize presentation structure with [PRESENTATION_OUTLINE] marker
+- [x] Add parseOutlineFromFiles function to chatOrchestrator — parses structured outline from extracted text
+- [x] Fix startStepByStepGeneration — now passes file context to pipeline (was missing)
+- [x] Fix handleStructureApproval — now passes file context to generatePresentation (was missing)
+- [x] Add preBuiltOutline field to GenerationConfig — skips runOutline + runOutlineCritic when provided
+- [x] Update generatePresentation to use preBuiltOutline when available
+- [x] Support in both quick mode and step-by-step mode
+- [x] Write 9 vitest tests for parseOutlineFromFiles (all passing)
+- [x] All 1426 tests passing (9 new + 1417 existing), 0 TypeScript errors
