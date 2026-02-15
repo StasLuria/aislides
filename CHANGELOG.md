@@ -7,14 +7,24 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 123 |
-| Total tasks | 1149 |
-| Completed | 1137 (99%) |
+| Total sections | 124 |
+| Total tasks | 1156 |
+| Completed | 1144 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied ✅
+
+- [x] Fix BSPB theme CSS: remove decorative circles/blobs, use pure white background
+- [x] Hide ALL inline decorative circles via CSS (div[style*="border-radius: 50%"] display:none)
+- [x] Make card backgrounds pure white, remove all gradient/colored backgrounds
+- [x] Fix design feedback: add requires_recompose flag to LLM prompt for visual/CSS changes
+- [x] Improve feedback prompt to explicitly handle background, colors, circles requests
+- [x] Write tests (4 new tests — 1498 total passing)
+- [x] Save checkpoint
 
 ### 🚀 Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection) ✅
 
@@ -1577,7 +1587,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (54 sections, 660/672 tasks)
+### 🚀 Improvements (55 sections, 667/679 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1633,6 +1643,7 @@
 - **Round 36: Advanced inline editor UX improvements** — ✅
 - **Round 37: BSPB Title Slide from Original Presentation** — ✅
 - **Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection)** — ✅
+- **Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

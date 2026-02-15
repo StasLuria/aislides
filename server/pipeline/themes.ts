@@ -29,7 +29,7 @@ const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string;
     fontsUrl: "",
     cssVariables: `:root {
   --card-background-color: #ffffff;
-  --card-background-gradient: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+  --card-background-gradient: #ffffff;
   --slide-bg-gradient: #ffffff;
   --slide-bg-accent-gradient: linear-gradient(135deg, #003d7a 0%, #0057AB 50%, #0070d4 100%);
   --text-heading-color: #0057AB;
@@ -39,7 +39,7 @@ const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string;
   --secondary-accent-color: #E9243A;
   --heading-font-family: 'Arial';
   --body-font-family: 'Arial';
-  --decorative-shape-color: rgba(0, 87, 171, 0.06);
+  --decorative-shape-color: transparent;
   --card-border-color: rgba(0, 87, 171, 0.15);
   --card-shadow: 0 2px 12px rgba(0, 87, 171, 0.08);
 }
@@ -71,8 +71,21 @@ const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string;
   border-radius: 0 !important;
 }
 
-/* BSPB Decorative circles — hide for clean corporate look */
+/* BSPB Decorative circles — hide ALL decorative shapes for clean corporate look */
 .slide-decor-circle {
+  display: none !important;
+}
+
+/* Hide inline decorative circles (absolute positioned, border-radius 50%, semi-transparent) */
+.slide > div > div[style*="border-radius: 50%"][style*="pointer-events: none"][style*="position: absolute"] {
+  display: none !important;
+}
+.slide > div > div > div[style*="border-radius: 50%"][style*="pointer-events: none"][style*="position: absolute"] {
+  display: none !important;
+}
+
+/* Also hide via color-mix circles */
+.slide div[style*="border-radius: 50%"][style*="color-mix"][style*="position: absolute"] {
   display: none !important;
 }
 

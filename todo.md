@@ -1475,3 +1475,12 @@
 - [x] Fix retry_step/retry_quick to also bypass processMessage
 - [x] Write tests for mode selection bug fixes (10 new tests — 1494 total passing)
 - [x] Save checkpoint
+
+## Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied
+- [x] Fix BSPB theme CSS: remove decorative circles/blobs, use pure white background
+- [x] Hide ALL inline decorative circles via CSS (div[style*="border-radius: 50%"] display:none)
+- [x] Make card backgrounds pure white, remove all gradient/colored backgrounds
+- [x] Fix design feedback: add requires_recompose flag to LLM prompt for visual/CSS changes
+- [x] Improve feedback prompt to explicitly handle background, colors, circles requests
+- [x] Write tests (4 new tests — 1498 total passing)
+- [x] Save checkpoint

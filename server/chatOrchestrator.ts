@@ -1854,13 +1854,20 @@ async function handleSlideDesignFeedback(
 {
   "new_layout": "layout_name или null если макет не меняется",
   "data_patches": { "поле": "новое_значение" },
-  "adjustments": "описание изменений на русском"
+  "adjustments": "описание изменений на русском",
+  "requires_recompose": true/false
 }
 
-Важно: data_patches должен содержать конкретные изменения к данным слайда.
-Например, если пользователь просит "поменяй автора на Кутузова", верни:
-{ "data_patches": { "presenterName": "Кутузова" }, "adjustments": "Имя автора изменено" }
-Если пользователь просит изменить текст, цвет кружка и т.д. — укажи соответствующие поля.`;
+Важно:
+- data_patches должен содержать конкретные изменения к данным слайда.
+- Например, если пользователь просит "поменяй автора на Кутузова", верни:
+  { "data_patches": { "presenterName": "Кутузова" }, "adjustments": "Имя автора изменено", "requires_recompose": false }
+- Если пользователь просит изменить текст, заголовок, подзаголовок — укажи соответствующие поля в data_patches.
+- Если запрос касается визуального стиля (фон, цвета, шрифты, декоративные элементы, круги, тени) — это управляется темой CSS и НЕ может быть изменено через data_patches. В этом случае:
+  - Установи "data_patches": {} (пустой объект)
+  - Установи "requires_recompose": true
+  - Подробно опиши в "adjustments" что нужно изменить визуально
+- Если пользователь просит сменить макет — укажи new_layout и установи requires_recompose: true.`;
 
     const llmResult = await invokeLLM({
       messages: [
@@ -1876,6 +1883,7 @@ async function handleSlideDesignFeedback(
     let newLayoutName = currentDesign.layoutName;
     let dataPatches: Record<string, any> = {};
     let adjustmentDescription = "";
+    let requiresRecompose = false;
     try {
       const jsonStart = rawStr.indexOf("{");
       const jsonEnd = rawStr.lastIndexOf("}");
@@ -1890,17 +1898,21 @@ async function handleSlideDesignFeedback(
         if (parsed.adjustments) {
           adjustmentDescription = parsed.adjustments;
         }
+        if (parsed.requires_recompose === true) {
+          requiresRecompose = true;
+        }
       }
     } catch {
       // Keep current layout and no patches
     }
 
-    // Step 2: Apply data patches to existing slide data if layout didn't change
+    // Step 2: Apply data patches or re-compose
     let slideData: Record<string, any>;
     const layoutChanged = newLayoutName !== currentDesign.layoutName;
+    const shouldRecompose = layoutChanged || requiresRecompose || (Object.keys(dataPatches).length === 0 && userMessage.trim());
 
-    if (layoutChanged) {
-      // Layout changed — re-compose from scratch with user feedback as review hint
+    if (shouldRecompose) {
+      // Re-compose from scratch with user feedback as review hint
       const reviewHint = `User requested changes: "${userMessage}". ${adjustmentDescription}`;
       try {
         const layoutTemplate = getLayoutTemplate(newLayoutName);
@@ -1924,44 +1936,17 @@ async function handleSlideDesignFeedback(
         if (jsonMatch) jsonStr = jsonMatch[1];
         slideData = JSON.parse(jsonStr.trim());
       } catch {
-        slideData = buildFallbackData(content, newLayoutName);
+        // Fallback: use existing data with patches applied
+        slideData = { ...currentDesign.slideData };
+        if (Object.keys(dataPatches).length > 0) {
+          slideData = deepMerge(slideData, dataPatches);
+        }
       }
     } else {
-      // Same layout — apply patches to existing data
+      // Same layout, direct patches — apply them to existing data
       slideData = { ...currentDesign.slideData };
-
-      // Apply direct data patches from LLM
       if (Object.keys(dataPatches).length > 0) {
         slideData = deepMerge(slideData, dataPatches);
-      }
-
-      // If no patches were extracted but user had feedback, re-compose with feedback hint
-      if (Object.keys(dataPatches).length === 0 && userMessage.trim()) {
-        const reviewHint = `User requested changes: "${userMessage}". Apply these changes to the slide data.`;
-        try {
-          const layoutTemplate = getLayoutTemplate(newLayoutName);
-          const system = htmlComposerSystem(reviewHint);
-          const user = htmlComposerUser(
-            newLayoutName,
-            layoutTemplate || `Layout: ${newLayoutName}`,
-            content.title,
-            content.text,
-            content.notes,
-            content.key_message,
-            themeCss,
-            content.structured_content,
-            content.content_shape,
-            content.slide_category,
-            (content as any).transition_phrase,
-          );
-          const rawResponse = await llmText(system, user).catch(() => "");
-          let jsonStr = rawResponse;
-          const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
-          if (jsonMatch) jsonStr = jsonMatch[1];
-          slideData = JSON.parse(jsonStr.trim());
-        } catch {
-          // Keep existing data if re-compose fails
-        }
       }
     }
 
