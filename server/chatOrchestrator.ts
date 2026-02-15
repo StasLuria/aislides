@@ -744,12 +744,24 @@ async function startQuickGeneration(
       },
     });
 
-    // Save completion message
+    // Build slide previews for persistence
+    const persistedPreviews = result.slides.map((s, i) => ({
+      slideNumber: i + 1,
+      title: `Слайд ${i + 1}`,
+      html: renderSlidePreview(
+        s.html,
+        result.themeCss || batchThemePreset.cssVariables,
+        batchThemePreset.fontsUrl,
+      ),
+    }));
+
+    // Save completion message with slide previews
     const doneMsg: ChatMessage = {
       role: "assistant",
       content: `✅ Презентация «${result.title}» готова! ${result.slides.length} слайдов создано.`,
       timestamp: Date.now(),
       presentationLink: `/view/${presentation.presentationId}`,
+      slidePreviews: persistedPreviews,
       actions: [
         { id: "view_presentation", label: "👁 Открыть презентацию", variant: "default" },
         { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
@@ -2283,11 +2295,23 @@ async function finalizeStepPresentation(
       },
     });
 
+    // Build persisted slide previews for chat history
+    const stepPersistedPreviews = sortedSlides.map(s => ({
+      slideNumber: s.slideNumber,
+      title: `Слайд ${s.slideNumber}`,
+      html: renderSlidePreview(
+        s.html,
+        themeCss || stepThemePreset.cssVariables,
+        stepThemePreset.fontsUrl,
+      ),
+    }));
+
     const doneMsg: ChatMessage = {
       role: "assistant",
       content: `✅ Презентация «${outline?.presentation_title}» готова! ${sortedSlides.length} слайдов создано.`,
       timestamp: Date.now(),
       presentationLink: `/view/${presentationId}`,
+      slidePreviews: stepPersistedPreviews,
       actions: [
         { id: "view_presentation", label: "👁 Открыть презентацию", variant: "default" },
         { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },

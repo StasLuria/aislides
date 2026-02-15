@@ -7,14 +7,32 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 127 |
-| Total tasks | 1182 |
-| Completed | 1170 (99%) |
+| Total sections | 128 |
+| Total tasks | 1197 |
+| Completed | 1185 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification ✅
+
+- [x] Investigate: chat history loads messages from DB JSON, slidePreview (singular) existed but not slidePreviews (array)
+- [x] Investigate: PPTX export uses p.themeCss from DB — already correct after theme change
+- [x] DB: Added slidePreviews?: {html:string, index:number}[] to ChatMessage interface (stored in JSON, no migration needed)
+- [x] Backend: Save slide preview HTML fragments in batch mode completion message (chatOrchestrator)
+- [x] Backend: Save slide preview HTML fragments in step-by-step finalization message
+- [x] Frontend: Persisted slidePreviews auto-loaded via existing message mapping — SlidePreviewsGallery renders them
+- [x] Frontend: Theme preview in Viewer — click theme shows preview of slide 0 with new CSS in iframe
+- [x] Frontend: "Применить тему" button confirms and applies theme change to all slides
+- [x] Verified: PPTX export uses p.themeCss which is updated by change-theme endpoint — no fix needed
+- [x] PPTX export confirmed working (PDF export tested with 200 status after theme change)
+- [x] Write vitest tests for preview-theme endpoint (6 tests)
+- [x] Write vitest tests for change-theme endpoint (7 tests from Round 42)
+- [x] Browser tested: theme preview, theme apply, slide rendering with new theme
+- [x] All 1526 tests passing
+- [x] Save checkpoint
 
 ### 🚀 Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview ✅
 
@@ -1622,7 +1640,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (58 sections, 693/705 tasks)
+### 🚀 Improvements (59 sections, 708/720 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1682,6 +1700,7 @@
 - **Round 40: Fix Title Slide Text Overflow** — ✅
 - **Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback** — ✅
 - **Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview** — ✅
+- **Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

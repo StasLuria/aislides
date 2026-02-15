@@ -1162,6 +1162,72 @@ router.get("/api/v1/themes", (_req: Request, res: Response) => {
 });
 
 // ═══════════════════════════════════════════════════════
+// POST preview-theme — render one slide with a new theme (no save)
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/presentations/:id/preview-theme", async (req: Request, res: Response) => {
+  try {
+    const { theme_preset_id, slide_index } = req.body;
+    if (!theme_preset_id || typeof theme_preset_id !== "string") {
+      res.status(400).json({ detail: "theme_preset_id is required" });
+      return;
+    }
+
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    let newTheme: ReturnType<typeof getThemePreset>;
+    try {
+      newTheme = getThemePreset(theme_preset_id);
+    } catch {
+      res.status(400).json({ detail: `Unknown theme: ${theme_preset_id}` });
+      return;
+    }
+
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides to preview" });
+      return;
+    }
+
+    // Pick the slide to preview (default: first slide, or title slide)
+    const idx = typeof slide_index === "number" && slide_index >= 0 && slide_index < slides.length
+      ? slide_index
+      : 0;
+    const slide = slides[idx];
+
+    // Re-render the single slide with the new theme
+    const slideHtml = renderSlide(slide.layoutId, slide.data);
+    const language = p.language || "ru";
+
+    const previewHtml = buildSlidePreviewHtml(
+      slideHtml,
+      newTheme.cssVariables,
+      newTheme.fontsUrl,
+      language,
+    );
+
+    res.json({
+      theme_preset_id,
+      theme_name: newTheme.name,
+      slide_index: idx,
+      preview_html: previewHtml,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Preview theme error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
 

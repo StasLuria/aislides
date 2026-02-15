@@ -106,8 +106,10 @@ export interface ChatMessage {
   timestamp: number;
   /** Optional: action buttons to show */
   actions?: ChatAction[];
-  /** Optional: slide preview HTML */
+  /** Optional: slide preview HTML (legacy single) */
   slidePreview?: string;
+  /** Optional: slide previews array (persisted for chat history) */
+  slidePreviews?: { slideNumber: number; title: string; html: string }[];
   /** Optional: progress info */
   progress?: { percent: number; message: string };
   /** Optional: presentation link */

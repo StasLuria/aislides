@@ -947,21 +947,43 @@ export default function Viewer() {
     }
   };
 
-  // Theme switching
+  // Theme switching with preview
   const [isChangingTheme, setIsChangingTheme] = useState(false);
   const [themePopoverOpen, setThemePopoverOpen] = useState(false);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+  const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const currentThemeId = useMemo(() => {
     const config = presentation?.config as Record<string, any> | undefined;
     return config?.theme_preset || "corporate_blue";
   }, [presentation]);
 
-  const handleChangeTheme = async (themeId: string) => {
-    if (themeId === currentThemeId || isChangingTheme) return;
+  const handlePreviewTheme = async (themeId: string) => {
+    if (themeId === currentThemeId) {
+      setPreviewThemeId(null);
+      setPreviewHtml(null);
+      return;
+    }
+    setPreviewThemeId(themeId);
+    setIsLoadingPreview(true);
+    try {
+      const result = await api.previewTheme(presentationId, themeId, currentSlide);
+      setPreviewHtml(result.preview_html);
+    } catch (error) {
+      console.error("Failed to preview theme:", error);
+      setPreviewHtml(null);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleApplyTheme = async () => {
+    if (!previewThemeId || isChangingTheme) return;
     setIsChangingTheme(true);
     setThemePopoverOpen(false);
     try {
-      const result = await api.changeTheme(presentationId, themeId);
+      const result = await api.changeTheme(presentationId, previewThemeId);
 
       // Fetch the new HTML
       const html = await api.fetchPresentationHtml(result.html_url);
@@ -972,7 +994,7 @@ export default function Viewer() {
       // Update presentation state
       setPresentation((prev) => prev ? {
         ...prev,
-        config: { ...(prev.config as any || {}), theme_preset: themeId },
+        config: { ...(prev.config as any || {}), theme_preset: previewThemeId },
         result_urls: { ...prev.result_urls, html_preview: result.html_url },
       } : prev);
 
@@ -982,8 +1004,18 @@ export default function Viewer() {
       toast.error("Не удалось сменить тему");
     } finally {
       setIsChangingTheme(false);
+      setPreviewThemeId(null);
+      setPreviewHtml(null);
     }
   };
+
+  // Reset preview when popover closes
+  useEffect(() => {
+    if (!themePopoverOpen) {
+      setPreviewThemeId(null);
+      setPreviewHtml(null);
+    }
+  }, [themePopoverOpen]);
 
   const filteredThemes = useMemo(() => {
     if (themeCategoryFilter === "all") return THEME_PRESETS;
@@ -1400,11 +1432,11 @@ export default function Viewer() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="end">
+                <PopoverContent className="w-[420px] p-0" align="end">
                   <div className="p-3 border-b border-border/50">
                     <h4 className="text-sm font-semibold">Сменить тему</h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Все слайды будут перерендерены
+                      Выберите тему для предпросмотра, затем нажмите «Применить»
                     </p>
                   </div>
                   {/* Category filter */}
@@ -1423,41 +1455,87 @@ export default function Viewer() {
                       </button>
                     ))}
                   </div>
-                  {/* Theme list */}
-                  <ScrollArea className="max-h-[280px]">
-                    <div className="p-2 space-y-1">
-                      {filteredThemes.map((theme: ThemePresetBase) => {
-                        const isActive = theme.id === currentThemeId;
-                        return (
-                          <button
-                            key={theme.id}
-                            onClick={() => handleChangeTheme(theme.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${
-                              isActive
-                                ? "bg-primary/10 border border-primary/30"
-                                : "hover:bg-secondary/60 border border-transparent"
-                            }`}
+                  <div className="flex">
+                    {/* Theme list */}
+                    <ScrollArea className="max-h-[320px] w-[200px] border-r border-border/30">
+                      <div className="p-2 space-y-1">
+                        {filteredThemes.map((theme: ThemePresetBase) => {
+                          const isActive = theme.id === currentThemeId;
+                          const isPreviewing = theme.id === previewThemeId;
+                          return (
+                            <button
+                              key={theme.id}
+                              onClick={() => handlePreviewTheme(theme.id)}
+                              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
+                                isPreviewing
+                                  ? "bg-primary/15 border border-primary/40"
+                                  : isActive
+                                    ? "bg-primary/10 border border-primary/30"
+                                    : "hover:bg-secondary/60 border border-transparent"
+                              }`}
+                            >
+                              <div
+                                className="w-5 h-5 rounded-full shrink-0 border border-white/20"
+                                style={{ background: theme.gradient }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[11px] font-medium truncate">
+                                  {theme.nameRu}
+                                </div>
+                              </div>
+                              {isActive && (
+                                <Check className="w-3 h-3 text-primary shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                    {/* Preview area */}
+                    <div className="flex-1 p-3 flex flex-col items-center justify-center">
+                      {previewThemeId && isLoadingPreview ? (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="text-[10px]">Загрузка превью...</span>
+                        </div>
+                      ) : previewHtml ? (
+                        <div className="w-full">
+                          <div
+                            className="relative w-full rounded-md overflow-hidden border border-border/30 bg-white"
+                            style={{ aspectRatio: "16/9" }}
                           >
-                            <div
-                              className="w-6 h-6 rounded-full shrink-0 border border-white/20"
-                              style={{ background: theme.gradient }}
+                            <iframe
+                              srcDoc={previewHtml}
+                              className="absolute inset-0 w-[1280px] h-[720px] border-0 pointer-events-none"
+                              style={{
+                                transform: `scale(${200 / 1280})`,
+                                transformOrigin: "top left",
+                              }}
+                              sandbox="allow-same-origin"
+                              title="Theme preview"
                             />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-medium truncate">
-                                {theme.nameRu}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground truncate">
-                                {theme.descRu}
-                              </div>
-                            </div>
-                            {isActive && (
-                              <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                          </div>
+                          <Button
+                            onClick={handleApplyTheme}
+                            disabled={isChangingTheme}
+                            size="sm"
+                            className="w-full mt-2 text-xs gap-1.5"
+                          >
+                            {isChangingTheme ? (
+                              <><Loader2 className="w-3 h-3 animate-spin" /> Применение...</>
+                            ) : (
+                              <><Check className="w-3 h-3" /> Применить тему</>
                             )}
-                          </button>
-                        );
-                      })}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-muted-foreground">
+                          <Palette className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                          <p className="text-[11px]">Выберите тему<br />для предпросмотра</p>
+                        </div>
+                      )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </PopoverContent>
               </Popover>
 

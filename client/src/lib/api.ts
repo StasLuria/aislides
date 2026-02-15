@@ -233,6 +233,13 @@ export interface ChangeThemeResponse {
   slide_count: number;
 }
 
+export interface PreviewThemeResponse {
+  theme_preset_id: string;
+  theme_name: string;
+  slide_index: number;
+  preview_html: string;
+}
+
 export interface ReorderResponse {
   presentation_id: string;
   html_url: string;
@@ -632,6 +639,14 @@ class ApiClient {
       `/presentations/${id}/change-theme`,
       { theme_preset_id: themePresetId },
       { timeout: 60000 }, // Re-rendering all slides can take time
+    );
+    return data;
+  }
+
+  async previewTheme(id: string, themePresetId: string, slideIndex?: number): Promise<PreviewThemeResponse> {
+    const { data } = await this.http.post<PreviewThemeResponse>(
+      `/presentations/${id}/preview-theme`,
+      { theme_preset_id: themePresetId, slide_index: slideIndex ?? 0 },
     );
     return data;
   }

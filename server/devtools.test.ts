@@ -86,7 +86,7 @@ describe("generate-readme.mjs", () => {
       const updated = fs.readFileSync(readmePath, "utf-8");
       expect(updated).toContain("18-этапный мультиагентный пайплайн");
       expect(updated).toContain("45 HTML-макетов");
-      expect(updated).toContain("57 REST API endpoints");
+      expect(updated).toContain("58 REST API endpoints");
     } finally {
       fs.writeFileSync(readmePath, original, "utf-8");
     }
