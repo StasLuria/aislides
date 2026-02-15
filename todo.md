@@ -1533,3 +1533,8 @@
 - [x] Browser tested: theme preview, theme apply, slide rendering with new theme
 - [x] All 1526 tests passing
 - [x] Save checkpoint
+
+## Round 44: Fix User Chat Bubble Text Color
+- [x] Fix black text on blue background in user chat bubbles — removed text-foreground from StreamingText component, now inherits text-primary-foreground (white) from parent bubble
+- [x] Browser verified: long user message "С вебсаммит из заметок..." now shows white text on blue background
+- [x] Save checkpoint

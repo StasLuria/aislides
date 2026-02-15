@@ -130,7 +130,7 @@ function StreamingText({ content, isStreaming }: { content: string; isStreaming?
   }
 
   return (
-    <div className="whitespace-pre-wrap leading-relaxed text-sm text-foreground">
+    <div className="whitespace-pre-wrap leading-relaxed text-sm">
       {content}
       {isStreaming && (
         <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse rounded-sm" />

@@ -7,14 +7,20 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 128 |
-| Total tasks | 1197 |
-| Completed | 1185 (99%) |
+| Total sections | 129 |
+| Total tasks | 1200 |
+| Completed | 1188 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 44: Fix User Chat Bubble Text Color ✅
+
+- [x] Fix black text on blue background in user chat bubbles — removed text-foreground from StreamingText component, now inherits text-primary-foreground (white) from parent bubble
+- [x] Browser verified: long user message "С вебсаммит из заметок..." now shows white text on blue background
+- [x] Save checkpoint
 
 ### 🚀 Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification ✅
 
@@ -1640,7 +1646,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (59 sections, 708/720 tasks)
+### 🚀 Improvements (60 sections, 711/723 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1701,6 +1707,7 @@
 - **Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback** — ✅
 - **Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview** — ✅
 - **Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification** — ✅
+- **Round 44: Fix User Chat Bubble Text Color** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
