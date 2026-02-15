@@ -7,14 +7,25 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 119 |
-| Total tasks | 1116 |
-| Completed | 1104 (99%) |
+| Total sections | 120 |
+| Total tasks | 1124 |
+| Completed | 1112 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 35: Advanced inline editing improvements ✅
+
+- [x] Task 1: Create test presentation with complex layouts (SWOT, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, kanban-board, org-chart, scenario-cards, vertical-timeline, comparison-table)
+- [x] Task 1: Test inline editing on each complex layout — verify all fields are editable
+- [x] Task 1: Fix any editing issues found on complex layouts
+- [x] Task 2: Add table cell editing for risk-matrix layout (risk names, probability, impact columns)
+- [x] Task 2: Test risk-matrix table cell editing in browser
+- [x] Task 3: Implement Undo/Redo in inline editor (Ctrl+Z / Ctrl+Shift+Z)
+- [x] Task 3: Test Undo/Redo in browser
+- [x] Run all tests and save checkpoint (1462/1462 passed)
 
 ### 🚀 Round 34: Fix slide editing mode — text not editable on click ✅
 
@@ -1532,7 +1543,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (50 sections, 627/639 tasks)
+### 🚀 Improvements (51 sections, 635/647 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1584,6 +1595,7 @@
 - **Round 32d: Full UI Flow Test** — ✅
 - **Round 33: Fix card/column blocks vertical centering on slides** — ✅
 - **Round 34: Fix slide editing mode — text not editable on click** — ✅
+- **Round 35: Advanced inline editing improvements** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

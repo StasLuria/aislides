@@ -382,11 +382,27 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
     }
 
     case "logo-grid":
-    case "video-embed":
+    case "video-embed": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      break;
+    }
+
     case "checklist": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
       if (data.description) {
         fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const checkItems = data.items || [];
+      for (let i = 0; i < checkItems.length; i++) {
+        if (checkItems[i].title) {
+          fields.push({ key: `items.${i}.title`, label: `Пункт ${i + 1}`, selector: "CHECKLIST_ITEM_TITLE", matchIndex: i, multiline: false });
+        }
+        if (checkItems[i].description) {
+          fields.push({ key: `items.${i}.description`, label: `Описание ${i + 1}`, selector: "CHECKLIST_ITEM_DESC", matchIndex: i, multiline: true });
+        }
       }
       break;
     }
@@ -412,9 +428,18 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
       const stages = data.stages || [];
       for (let i = 0; i < stages.length; i++) {
-        if (stages[i].label) {
+        if (stages[i].value) {
           fields.push({
-            key: `stages.${i}.label`,
+            key: `stages.${i}.value`,
+            label: `Значение ${i + 1}`,
+            selector: "FUNNEL_VALUE",
+            matchIndex: i,
+            multiline: false,
+          });
+        }
+        if (stages[i].title) {
+          fields.push({
+            key: `stages.${i}.title`,
             label: `Этап ${i + 1}`,
             selector: "FUNNEL_LABEL",
             matchIndex: i,
@@ -432,11 +457,14 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       }
       const milestones = data.milestones || [];
       for (let i = 0; i < milestones.length; i++) {
+        if (milestones[i].date) {
+          fields.push({ key: `milestones.${i}.date`, label: `Дата ${i + 1}`, selector: "ROADMAP_DATE", matchIndex: i, multiline: false });
+        }
         if (milestones[i].title) {
-          fields.push({ key: `milestones.${i}.title`, label: `Этап ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          fields.push({ key: `milestones.${i}.title`, label: `Этап ${i + 1}`, selector: "ROADMAP_TITLE", matchIndex: i, multiline: false });
         }
         if (milestones[i].description) {
-          fields.push({ key: `milestones.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+          fields.push({ key: `milestones.${i}.description`, label: `Описание ${i + 1}`, selector: "ROADMAP_DESC", matchIndex: i, multiline: true });
         }
       }
       break;
@@ -444,13 +472,16 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "pyramid": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
       const levels = data.levels || [];
       for (let i = 0; i < levels.length; i++) {
         if (levels[i].title) {
-          fields.push({ key: `levels.${i}.title`, label: `Уровень ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          fields.push({ key: `levels.${i}.title`, label: `Уровень ${i + 1}`, selector: "PYRAMID_TITLE", matchIndex: i, multiline: false });
         }
         if (levels[i].description) {
-          fields.push({ key: `levels.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+          fields.push({ key: `levels.${i}.description`, label: `Описание ${i + 1}`, selector: "PYRAMID_DESC", matchIndex: i, multiline: true });
         }
       }
       break;
@@ -504,6 +535,35 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       if (data.description) {
         fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
       }
+      // Matrix column headers
+      const rmCols = data.matrixColumns || [];
+      for (let i = 0; i < rmCols.length; i++) {
+        fields.push({ key: `matrixColumns.${i}`, label: `Столбец ${i + 1}`, selector: "RISK_COL_HEADER", matchIndex: i, multiline: false });
+      }
+      // Matrix row labels and cells
+      const rmRows = data.matrixRows || [];
+      for (let ri = 0; ri < rmRows.length; ri++) {
+        if (rmRows[ri].label) {
+          fields.push({ key: `matrixRows.${ri}.label`, label: `Строка ${ri + 1}`, selector: "RISK_ROW_LABEL", matchIndex: ri, multiline: false });
+        }
+        const rmCells = rmRows[ri].cells || [];
+        for (let ci = 0; ci < rmCells.length; ci++) {
+          if (!rmCells[ci]) continue; // skip null cells
+          if (rmCells[ci].label) {
+            fields.push({ key: `matrixRows.${ri}.cells.${ci}.label`, label: `Ячейка ${ri + 1}.${ci + 1}`, selector: "RISK_CELL_LABEL", matchIndex: ri * 100 + ci, multiline: false });
+          }
+          if (rmCells[ci].value) {
+            fields.push({ key: `matrixRows.${ri}.cells.${ci}.value`, label: `Знач. ${ri + 1}.${ci + 1}`, selector: "RISK_CELL_VALUE", matchIndex: ri * 100 + ci, multiline: false });
+          }
+        }
+      }
+      // Legend labels
+      const rmLegend = data.matrixLegend || [];
+      for (let i = 0; i < rmLegend.length; i++) {
+        if (rmLegend[i].label) {
+          fields.push({ key: `matrixLegend.${i}.label`, label: `Легенда ${i + 1}`, selector: "RISK_LEGEND_LABEL", matchIndex: i, multiline: false });
+        }
+      }
       if (data.mitigationTitle) {
         fields.push({ key: "mitigationTitle", label: "Заголовок мер", selector: "MITIGATION_TITLE", multiline: false });
       }
@@ -543,11 +603,14 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       }
       const vtEvents = data.events || [];
       for (let i = 0; i < vtEvents.length; i++) {
+        if (vtEvents[i].date) {
+          fields.push({ key: `events.${i}.date`, label: `Дата ${i + 1}`, selector: "VT_EVENT_DATE", matchIndex: i, multiline: false });
+        }
         if (vtEvents[i].title) {
-          fields.push({ key: `events.${i}.title`, label: `Событие ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          fields.push({ key: `events.${i}.title`, label: `Событие ${i + 1}`, selector: "VT_EVENT_TITLE", matchIndex: i, multiline: false });
         }
         if (vtEvents[i].description) {
-          fields.push({ key: `events.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+          fields.push({ key: `events.${i}.description`, label: `Описание ${i + 1}`, selector: "VT_EVENT_DESC", matchIndex: i, multiline: true });
         }
       }
       break;
@@ -557,6 +620,22 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
       if (data.description) {
         fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const ctColumns = data.columns || [];
+      for (let i = 0; i < ctColumns.length; i++) {
+        if (ctColumns[i].name) {
+          fields.push({ key: `columns.${i}.name`, label: `Колонка ${i + 1}`, selector: "CT_COL_NAME", matchIndex: i, multiline: false });
+        }
+      }
+      const ctFeatures = data.features || [];
+      for (let i = 0; i < ctFeatures.length; i++) {
+        if (ctFeatures[i].name) {
+          fields.push({ key: `features.${i}.name`, label: `Параметр ${i + 1}`, selector: "CT_FEATURE_NAME", matchIndex: i, multiline: false });
+        }
+        const vals = ctFeatures[i].values || [];
+        for (let j = 0; j < vals.length; j++) {
+          fields.push({ key: `features.${i}.values.${j}`, label: `Знач. ${i + 1}.${j + 1}`, selector: "CT_FEATURE_VALUE", matchIndex: i * 100 + j, multiline: false });
+        }
       }
       break;
     }
@@ -644,8 +723,21 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
       }
       const scenarios = data.scenarios || [];
       for (let i = 0; i < scenarios.length; i++) {
+        if (scenarios[i].label) {
+          fields.push({ key: `scenarios.${i}.label`, label: `Метка ${i + 1}`, selector: "SCENARIO_LABEL", matchIndex: i, multiline: false });
+        }
         if (scenarios[i].title) {
-          fields.push({ key: `scenarios.${i}.title`, label: `Сценарий ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          fields.push({ key: `scenarios.${i}.title`, label: `Сценарий ${i + 1}`, selector: "SCENARIO_TITLE", matchIndex: i, multiline: false });
+        }
+        if (scenarios[i].value) {
+          fields.push({ key: `scenarios.${i}.value`, label: `Значение ${i + 1}`, selector: "SCENARIO_VALUE", matchIndex: i, multiline: false });
+        }
+        if (scenarios[i].description) {
+          fields.push({ key: `scenarios.${i}.description`, label: `Описание ${i + 1}`, selector: "SCENARIO_DESC", matchIndex: i, multiline: true });
+        }
+        const scPoints = scenarios[i].points || [];
+        for (let j = 0; j < scPoints.length; j++) {
+          fields.push({ key: `scenarios.${i}.points.${j}`, label: `Пункт ${i + 1}.${j + 1}`, selector: "SCENARIO_POINT", matchIndex: i * 100 + j, multiline: false });
         }
       }
       break;
@@ -700,9 +792,24 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
     }
 
     case "kanban-board": {
-      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      fields.push({ key: "title", label: "Заголовок", selector: "h2", multiline: false });
       if (data.description) {
         fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const kbColumns = data.columns || [];
+      for (let ci = 0; ci < kbColumns.length; ci++) {
+        if (kbColumns[ci].title) {
+          fields.push({ key: `columns.${ci}.title`, label: `Колонка ${ci + 1}`, selector: "KANBAN_COL_TITLE", matchIndex: ci, multiline: false });
+        }
+        const kbCards = kbColumns[ci].cards || [];
+        for (let ki = 0; ki < kbCards.length; ki++) {
+          if (kbCards[ki].title) {
+            fields.push({ key: `columns.${ci}.cards.${ki}.title`, label: `Карточка ${ci + 1}.${ki + 1}`, selector: "KANBAN_CARD_TITLE", matchIndex: ci * 100 + ki, multiline: false });
+          }
+          if (kbCards[ki].description) {
+            fields.push({ key: `columns.${ci}.cards.${ki}.description`, label: `Описание ${ci + 1}.${ki + 1}`, selector: "KANBAN_CARD_DESC", matchIndex: ci * 100 + ki, multiline: true });
+          }
+        }
       }
       break;
     }
@@ -926,6 +1033,109 @@ export function generateInlineEditScript(
   \`;
   document.head.appendChild(style);
 
+  // ═══════════════════════════════════════════════════════
+  // UNDO / REDO SYSTEM
+  // ═══════════════════════════════════════════════════════
+  var undoStack = [];  // Array of { field, oldValue, newValue, element }
+  var redoStack = [];
+  var MAX_HISTORY = 50;
+
+  function pushUndo(entry) {
+    undoStack.push(entry);
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    // Any new edit clears the redo stack
+    redoStack.length = 0;
+    notifyUndoRedoState();
+  }
+
+  function performUndo() {
+    if (undoStack.length === 0) return;
+    var entry = undoStack.pop();
+    redoStack.push(entry);
+    // Restore old value in DOM
+    if (entry.element) {
+      entry.element.innerText = entry.oldValue;
+      entry.element._originalText = entry.oldValue;
+    }
+    // Notify parent to save the reverted value
+    window.parent.postMessage({
+      type: 'inline-edit-change',
+      field: entry.field,
+      value: entry.oldValue,
+      label: entry.label || entry.field,
+      isUndo: true
+    }, '*');
+    notifyUndoRedoState();
+  }
+
+  function performRedo() {
+    if (redoStack.length === 0) return;
+    var entry = redoStack.pop();
+    undoStack.push(entry);
+    // Restore new value in DOM
+    if (entry.element) {
+      entry.element.innerText = entry.newValue;
+      entry.element._originalText = entry.newValue;
+    }
+    // Notify parent to save the re-applied value
+    window.parent.postMessage({
+      type: 'inline-edit-change',
+      field: entry.field,
+      value: entry.newValue,
+      label: entry.label || entry.field,
+      isRedo: true
+    }, '*');
+    notifyUndoRedoState();
+  }
+
+  function notifyUndoRedoState() {
+    window.parent.postMessage({
+      type: 'inline-edit-undo-state',
+      canUndo: undoStack.length > 0,
+      canRedo: redoStack.length > 0,
+      undoCount: undoStack.length,
+      redoCount: redoStack.length
+    }, '*');
+  }
+
+  // Global keyboard handler for Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+  document.addEventListener('keydown', function(e) {
+    var isCtrl = e.ctrlKey || e.metaKey;
+    if (!isCtrl) return;
+
+    if (e.key === 'z' || e.key === 'Z' || e.key === 'я' || e.key === 'Я') {
+      if (e.shiftKey) {
+        // Ctrl+Shift+Z = Redo
+        e.preventDefault();
+        e.stopPropagation();
+        performRedo();
+      } else {
+        // Ctrl+Z = Undo
+        e.preventDefault();
+        e.stopPropagation();
+        performUndo();
+      }
+      return;
+    }
+    if (e.key === 'y' || e.key === 'Y' || e.key === 'н' || e.key === 'Н') {
+      // Ctrl+Y = Redo
+      e.preventDefault();
+      e.stopPropagation();
+      performRedo();
+      return;
+    }
+  }, true); // Use capture phase to intercept before contentEditable default
+
+  // Listen for undo/redo commands from parent
+  window.addEventListener('message', function(e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'inline-edit-undo') performUndo();
+    if (e.data.type === 'inline-edit-redo') performRedo();
+  });
+
+  // Report initial undo/redo state
+  notifyUndoRedoState();
+
   /**
    * Find the element for a field using its selector and matchIndex.
    * Handles special selectors for bullet items, metrics, etc.
@@ -1029,42 +1239,305 @@ export function generateInlineEditScript(
       return section.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
     }
 
-    if (sel === 'FUNNEL_LABEL') {
-      var funnelStages = slide.querySelectorAll('div[style*="border-radius"]');
-      var stage = funnelStages[idx];
-      if (!stage) return null;
-      return stage.querySelector('span, div[style*="font-weight"]');
+    if (sel === 'FUNNEL_VALUE' || sel === 'FUNNEL_LABEL') {
+      // Funnel stages: each stage is a div with border-radius+padding containing:
+      //   - A value div (font-weight: 700, font-size: 24px) — the number
+      //   - A label div (font-weight: 600, font-size: 14px) — the stage title
+      var funnelContent = slide.querySelectorAll('div[style*="border-radius"][style*="padding"]');
+      var funnelStages = [];
+      for (var fi = 0; fi < funnelContent.length; fi++) {
+        var fc = funnelContent[fi];
+        if (fc.closest('.slide-footer') || fc.closest('[data-field]')) continue;
+        // A funnel stage has both a value (700) and a label (600) element
+        var hasValue = fc.querySelector('div[style*="font-weight: 700"], div[style*="font-weight:700"]');
+        var hasLabel = fc.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+        if (hasValue || hasLabel) funnelStages.push(fc);
+      }
+      var fStage = funnelStages[idx];
+      if (!fStage) return null;
+      if (sel === 'FUNNEL_VALUE') {
+        return fStage.querySelector('div[style*="font-weight: 700"], div[style*="font-weight:700"]');
+      } else {
+        return fStage.querySelector('div[style*="font-weight: 600"], div[style*="font-weight:600"]');
+      }
+    }
+
+    // ═══ ROADMAP_DATE / ROADMAP_TITLE / ROADMAP_DESC ═══
+    if (sel === 'ROADMAP_DATE' || sel === 'ROADMAP_TITLE' || sel === 'ROADMAP_DESC') {
+      // Roadmap milestones are grid columns, each containing date/title/desc in a content div
+      var rmGrid = slide.querySelector('div[style*="grid-template-columns"]');
+      if (!rmGrid) return null;
+      var rmMilestones = rmGrid.children;
+      var rmMilestone = rmMilestones[idx];
+      if (!rmMilestone) return null;
+      // Each milestone has a content div with date, title, and description
+      // Date: font-size: 11px, font-weight: 600, text-transform: uppercase, primary accent color
+      // Title: font-size: 13px, font-weight: 600, heading color
+      // Description: font-size: 11px, text-body-color
+      if (sel === 'ROADMAP_DATE') {
+        return rmMilestone.querySelector('div[style*="text-transform: uppercase"][style*="font-weight: 600"]');
+      } else if (sel === 'ROADMAP_TITLE') {
+        return rmMilestone.querySelector('div[style*="font-size: 13px"][style*="font-weight: 600"]');
+      } else {
+        return rmMilestone.querySelector('div[style*="font-size: 11px"][style*="text-body-color"], div[style*="font-size: 11px"][style*="#4b5563"]');
+      }
+    }
+
+    // ═══ PYRAMID_TITLE / PYRAMID_DESC ═══
+    if (sel === 'PYRAMID_TITLE' || sel === 'PYRAMID_DESC') {
+      // Pyramid has two columns: left = shapes, right = descriptions
+      // Right column has bullet rows with title (font-weight: 600) and description
+      var pyContainer = slide.querySelector('div[style*="max-width: 1000px"]');
+      if (!pyContainer) return null;
+      // Right column is the second child
+      var pyRight = pyContainer.children[1];
+      if (!pyRight) return null;
+      var pyRows = pyRight.children;
+      var pyRow = pyRows[idx];
+      if (!pyRow) return null;
+      if (sel === 'PYRAMID_TITLE') {
+        return pyRow.querySelector('div[style*="font-weight: 600"][style*="font-size: 14px"], div[style*="font-weight: 600"]');
+      } else {
+        return pyRow.querySelector('div[style*="font-size: 12px"][style*="text-body-color"], div[style*="font-size: 12px"][style*="#4b5563"]');
+      }
+    }
+
+    // ═══ CHECKLIST_TITLE / CHECKLIST_DESC ═══
+    if (sel === 'CHECKLIST_ITEM_TITLE' || sel === 'CHECKLIST_ITEM_DESC') {
+      // Checklist items are in a 2-column grid
+      var clGrid = slide.querySelector('div[style*="grid-template-columns: repeat(2"]');
+      if (!clGrid) return null;
+      var clItem = clGrid.children[idx];
+      if (!clItem) return null;
+      // Title and description are inside div[style*="flex: 1"]
+      var clContent = clItem.querySelector('div[style*="flex: 1"]');
+      if (!clContent) return null;
+      if (sel === 'CHECKLIST_ITEM_TITLE') {
+        return clContent.querySelector('div[style*="font-weight: 600"]');
+      } else {
+        return clContent.querySelector('div[style*="font-size: 12px"]');
+      }
+    }
+
+    // ═══ KANBAN_COL_TITLE / KANBAN_CARD_TITLE / KANBAN_CARD_DESC ═══
+    if (sel === 'KANBAN_COL_TITLE' || sel === 'KANBAN_CARD_TITLE' || sel === 'KANBAN_CARD_DESC') {
+      // Kanban columns are flex children of the main flex container
+      var kbFlex = slide.querySelector('div[style*="display: flex"][style*="gap: 16px"][style*="flex: 1"]');
+      if (!kbFlex) return null;
+      if (sel === 'KANBAN_COL_TITLE') {
+        var kbCol = kbFlex.children[idx];
+        if (!kbCol) return null;
+        return kbCol.querySelector('span[style*="font-weight: 700"][style*="text-transform: uppercase"]');
+      }
+      // For cards: matchIndex = colIdx * 100 + cardIdx
+      var kbColIdx = Math.floor(idx / 100);
+      var kbCardIdx = idx % 100;
+      var kbColumn = kbFlex.children[kbColIdx];
+      if (!kbColumn) return null;
+      // Cards container is the second child (after header)
+      var kbCardsContainer = kbColumn.querySelector('div[style*="flex: 1"][style*="padding: 10px"]');
+      if (!kbCardsContainer) return null;
+      var kbCards = kbCardsContainer.children;
+      var kbCard = kbCards[kbCardIdx];
+      if (!kbCard) return null;
+      if (sel === 'KANBAN_CARD_TITLE') {
+        return kbCard.querySelector('div[style*="font-weight: 600"]');
+      } else {
+        return kbCard.querySelector('div[style*="font-size: 11px"][style*="text-body-color"], div[style*="font-size: 11px"][style*="#6b7280"]');
+      }
+    }
+
+    // ═══ VT_EVENT_DATE / VT_EVENT_TITLE / VT_EVENT_DESC ═══
+    if (sel === 'VT_EVENT_DATE' || sel === 'VT_EVENT_TITLE' || sel === 'VT_EVENT_DESC') {
+      // Vertical timeline events are .card elements
+      var vtCards = slide.querySelectorAll('.card');
+      var vtCard = vtCards[idx];
+      if (!vtCard) return null;
+      if (sel === 'VT_EVENT_DATE') {
+        return vtCard.querySelector('span[style*="text-transform: uppercase"][style*="font-weight: 600"]');
+      } else if (sel === 'VT_EVENT_TITLE') {
+        return vtCard.querySelector('div[style*="font-weight: 600"][style*="line-height: 1.3"]');
+      } else {
+        return vtCard.querySelector('div[style*="text-body-color"][style*="margin-top: 4px"], div[style*="#4b5563"][style*="margin-top: 4px"]');
+      }
+    }
+
+    // ═══ CT_COL_NAME / CT_FEATURE_NAME / CT_FEATURE_VALUE ═══
+    if (sel === 'CT_COL_NAME' || sel === 'CT_FEATURE_NAME' || sel === 'CT_FEATURE_VALUE') {
+      var ctTable = slide.querySelector('table');
+      if (!ctTable) return null;
+      if (sel === 'CT_COL_NAME') {
+        // Column headers are th elements in thead, skip first (feature label)
+        var ctHeaders = ctTable.querySelectorAll('thead th');
+        // idx 0 = first column (skip the feature label th at position 0)
+        return ctHeaders[idx + 1] || null;
+      }
+      if (sel === 'CT_FEATURE_NAME') {
+        // Feature names are first td in each tbody tr
+        var ctRows = ctTable.querySelectorAll('tbody tr');
+        var ctRow = ctRows[idx];
+        if (!ctRow) return null;
+        return ctRow.querySelector('td');
+      }
+      if (sel === 'CT_FEATURE_VALUE') {
+        // matchIndex = featureIdx * 100 + colIdx
+        var ctFeatIdx = Math.floor(idx / 100);
+        var ctColIdx = idx % 100;
+        var ctBodyRows = ctTable.querySelectorAll('tbody tr');
+        var ctFeatRow = ctBodyRows[ctFeatIdx];
+        if (!ctFeatRow) return null;
+        // Skip first td (feature name), so value column is at index colIdx + 1
+        var ctCells = ctFeatRow.querySelectorAll('td');
+        var ctCell = ctCells[ctColIdx + 1];
+        if (!ctCell) return null;
+        // If cell contains a span with text, return that span; otherwise return the td itself
+        var ctSpan = ctCell.querySelector('span[style*="font-weight: 500"]');
+        return ctSpan || ctCell;
+      }
+    }
+
+    // ═══ SCENARIO_LABEL / SCENARIO_TITLE / SCENARIO_VALUE / SCENARIO_DESC / SCENARIO_POINT ═══
+    if (sel === 'SCENARIO_LABEL' || sel === 'SCENARIO_TITLE' || sel === 'SCENARIO_VALUE' || sel === 'SCENARIO_DESC' || sel === 'SCENARIO_POINT') {
+      var scCards = slide.querySelectorAll('.card');
+      if (sel === 'SCENARIO_POINT') {
+        // matchIndex = scenarioIdx * 100 + pointIdx
+        var scIdx = Math.floor(idx / 100);
+        var scPtIdx = idx % 100;
+        var scCard = scCards[scIdx];
+        if (!scCard) return null;
+        var scPointSpans = scCard.querySelectorAll('span[style*="text-body-color"], span[style*="#4b5563"]');
+        return scPointSpans[scPtIdx] || null;
+      }
+      var scCard2 = scCards[idx];
+      if (!scCard2) return null;
+      if (sel === 'SCENARIO_LABEL') {
+        return scCard2.querySelector('div[style*="text-transform: uppercase"][style*="font-weight: 700"]');
+      } else if (sel === 'SCENARIO_TITLE') {
+        return scCard2.querySelector('div[style*="font-weight: 700"]:not([style*="text-transform"])');
+      } else if (sel === 'SCENARIO_VALUE') {
+        return scCard2.querySelector('div[style*="font-size: 28px"][style*="font-weight: 800"]');
+      } else {
+        // SCENARIO_DESC - description after value
+        return scCard2.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+      }
+    }
+
+    // ═══ RISK_COL_HEADER / RISK_ROW_LABEL / RISK_CELL_LABEL / RISK_CELL_VALUE / RISK_LEGEND_LABEL ═══
+    if (sel === 'RISK_COL_HEADER' || sel === 'RISK_ROW_LABEL' || sel === 'RISK_CELL_LABEL' || sel === 'RISK_CELL_VALUE' || sel === 'RISK_LEGEND_LABEL') {
+      // Risk matrix has a left panel (matrix) and right panel (mitigations)
+      // The matrix is in the first child of the main grid
+      var rmMainGrid = slide.querySelector('div[style*="grid-template-columns: 1.2fr 0.8fr"]');
+      if (!rmMainGrid) return null;
+      var rmMatrixPanel = rmMainGrid.children[0];
+      if (!rmMatrixPanel) return null;
+
+      if (sel === 'RISK_COL_HEADER') {
+        // Column headers are in the first row (display: flex; margin-bottom: 4px)
+        var rmHeaderRow = rmMatrixPanel.querySelector('div[style*="margin-bottom: 4px"]');
+        if (!rmHeaderRow) return null;
+        // Skip the first child (spacer div width: 28px)
+        var rmHeaders = [];
+        for (var rhi = 0; rhi < rmHeaderRow.children.length; rhi++) {
+          var rhChild = rmHeaderRow.children[rhi];
+          var rhStyle = rhChild.getAttribute('style') || '';
+          if (rhStyle.indexOf('flex: 1') !== -1) rmHeaders.push(rhChild);
+        }
+        return rmHeaders[idx] || null;
+      }
+
+      if (sel === 'RISK_ROW_LABEL') {
+        // Row labels are div[style*="writing-mode: vertical-lr"] inside each row
+        var rmRowLabels = rmMatrixPanel.querySelectorAll('div[style*="writing-mode: vertical-lr"]');
+        return rmRowLabels[idx] || null;
+      }
+
+      if (sel === 'RISK_CELL_LABEL' || sel === 'RISK_CELL_VALUE') {
+        // matchIndex = rowIdx * 100 + cellIdx
+        var rmRowIdx = Math.floor(idx / 100);
+        var rmCellIdx = idx % 100;
+        // Find matrix rows (display: flex; flex: 1; min-height: 0)
+        var rmAllRows = rmMatrixPanel.querySelectorAll('div[style*="display: flex"][style*="flex: 1"][style*="min-height: 0"]');
+        var rmRow = rmAllRows[rmRowIdx];
+        if (!rmRow) return null;
+        // Cells are children with border-radius: 8px
+        var rmCells = rmRow.querySelectorAll('div[style*="border-radius: 8px"]');
+        var rmCell = rmCells[rmCellIdx];
+        if (!rmCell) return null;
+        if (sel === 'RISK_CELL_LABEL') {
+          return rmCell.querySelector('div[style*="font-weight: 700"]');
+        } else {
+          return rmCell.querySelector('div[style*="opacity: 0.8"]');
+        }
+      }
+
+      if (sel === 'RISK_LEGEND_LABEL') {
+        // Legend items are at the bottom of the matrix panel
+        var rmLegendSpans = rmMatrixPanel.querySelectorAll('span[style*="font-size: 10px"]');
+        return rmLegendSpans[idx] || null;
+      }
     }
 
     // ═══ GENERIC_CARD_TITLE / GENERIC_CARD_DESC ═══
     // Universal selectors for cards in any layout (risk-matrix mitigations, card-grid, roadmap, etc.)
     if (sel === 'GENERIC_CARD_TITLE' || sel === 'GENERIC_CARD_DESC') {
-      // Find all .card elements, or fallback to grid/flex children with padding
+      // Strategy: find card-like containers in order of specificity
       var allCards = slide.querySelectorAll('.card');
+
       if (allCards.length === 0) {
-        // Fallback: look for styled containers that look like cards
-        var gridEl = slide.querySelector('div[style*="grid"], div[style*="gap"]');
+        // Fallback 1: grid children with background/padding (matrix-2x2, checklist, etc.)
+        var gridEl = slide.querySelector('div[style*="grid-template"]');
         if (gridEl) {
           allCards = [];
           var kids = gridEl.children;
           for (var ci = 0; ci < kids.length; ci++) {
             var kidStyle = kids[ci].getAttribute('style') || '';
-            if (kidStyle.indexOf('padding') !== -1 || kidStyle.indexOf('border') !== -1) {
+            if (kidStyle.indexOf('padding') !== -1 || kidStyle.indexOf('border-radius') !== -1 || kidStyle.indexOf('background') !== -1) {
               allCards.push(kids[ci]);
             }
           }
         }
       }
-      // Also check for border-left styled cards (mitigation cards in risk-matrix)
+
       if (allCards.length === 0) {
+        // Fallback 2: flex children with titles (pyramid levels, funnel stages)
+        // Look for repeated flex items that each contain a title-like element
+        var flexContainers = slide.querySelectorAll('div[style*="flex-direction: column"], div[style*="flex-direction:column"]');
+        for (var fci = 0; fci < flexContainers.length; fci++) {
+          var fc = flexContainers[fci];
+          if (fc.closest('.slide-footer')) continue;
+          var flexKids = fc.children;
+          var cardCandidates = [];
+          for (var fki = 0; fki < flexKids.length; fki++) {
+            var fk = flexKids[fki];
+            var fkStyle = fk.getAttribute('style') || '';
+            // Each card candidate should have a title element inside
+            var hasTitle = fk.querySelector('div[style*="font-weight: 6"], div[style*="font-weight:6"]');
+            if (hasTitle && (fkStyle.indexOf('flex') !== -1 || fkStyle.indexOf('gap') !== -1 || fkStyle.indexOf('align') !== -1)) {
+              cardCandidates.push(fk);
+            }
+          }
+          if (cardCandidates.length >= 2) {
+            allCards = cardCandidates;
+            break;
+          }
+        }
+      }
+
+      if (allCards.length === 0) {
+        // Fallback 3: border-left styled cards (mitigation cards in risk-matrix)
         allCards = slide.querySelectorAll('div[style*="border-left"][style*="padding"]');
       }
+
       var targetCard = allCards[idx];
       if (!targetCard) return null;
       if (sel === 'GENERIC_CARD_TITLE') {
-        return targetCard.querySelector('div[style*="font-weight: 6"], div[style*="font-weight:6"], span[style*="font-weight: 6"], span[style*="font-weight:6"], h3');
+        return targetCard.querySelector('div[style*="font-weight: 7"], div[style*="font-weight:7"], div[style*="font-weight: 6"], div[style*="font-weight:6"], span[style*="font-weight: 6"], span[style*="font-weight:6"], h3');
       } else {
         var descEl = targetCard.querySelector('div[style*="text-body-color"], div[style*="#4b5563"], div[style*="#9ca3af"]');
+        if (!descEl) {
+          // Fallback: look for font-size: 12 element (common for descriptions)
+          descEl = targetCard.querySelector('div[style*="font-size: 12"], div[style*="font-size:12"]');
+        }
         if (!descEl) {
           // Fallback: second text element in the card
           var textEls = targetCard.querySelectorAll('div[style*="font-size"]');
@@ -1147,23 +1620,27 @@ export function generateInlineEditScript(
 
     // ═══ SWOT_SECTION_TITLE / SWOT_ITEM ═══
     if (sel === 'SWOT_SECTION_TITLE') {
-      var swotCards = slide.querySelectorAll('.card');
-      var swotCard = swotCards[idx];
-      if (!swotCard) return null;
-      return swotCard.querySelector('div[style*="font-weight: 7"], div[style*="font-weight:7"], h3');
+      // SWOT uses a 2x2 grid — find grid container, then its direct children as quadrants
+      var swotGrid = slide.querySelector('div[style*="grid-template-columns"][style*="grid-template-rows"]');
+      var swotQuadrants = swotGrid ? swotGrid.children : slide.querySelectorAll('.card');
+      var swotQuadrant = swotQuadrants[idx];
+      if (!swotQuadrant) return null;
+      return swotQuadrant.querySelector('h2, h3, div[style*="font-weight: 7"], div[style*="font-weight:7"]');
     }
     if (sel === 'SWOT_ITEM') {
       // matchIndex encodes section*100 + itemIndex
       var sectionIdx = Math.floor(idx / 100);
       var itemIdx = idx % 100;
-      var swotCards2 = slide.querySelectorAll('.card');
-      var swotCard2 = swotCards2[sectionIdx];
-      if (!swotCard2) return null;
-      var swotItems = swotCard2.querySelectorAll('span[style*="text-body-color"], span[style*="#4b5563"], span');
+      var swotGrid2 = slide.querySelector('div[style*="grid-template-columns"][style*="grid-template-rows"]');
+      var swotQuadrants2 = swotGrid2 ? swotGrid2.children : slide.querySelectorAll('.card');
+      var swotQuadrant2 = swotQuadrants2[sectionIdx];
+      if (!swotQuadrant2) return null;
+      // Items are span elements inside the quadrant (not in the header area)
+      var allSpans = swotQuadrant2.querySelectorAll('span');
       var filteredSwotItems = [];
-      for (var si = 0; si < swotItems.length; si++) {
-        if (swotItems[si].textContent.trim().length > 0 && !swotItems[si].closest('[data-field]')) {
-          filteredSwotItems.push(swotItems[si]);
+      for (var si = 0; si < allSpans.length; si++) {
+        if (allSpans[si].textContent.trim().length > 0 && !allSpans[si].closest('[data-field]')) {
+          filteredSwotItems.push(allSpans[si]);
         }
       }
       return filteredSwotItems[itemIdx] || null;
@@ -1225,9 +1702,21 @@ export function generateInlineEditScript(
 
     // ═══ MATRIX_AXIS_X / MATRIX_AXIS_Y ═══
     if (sel === 'MATRIX_AXIS_X' || sel === 'MATRIX_AXIS_Y') {
-      var axisLabels = slide.querySelectorAll('div[style*="text-align: center"][style*="font-weight"]');
-      if (sel === 'MATRIX_AXIS_X') return axisLabels[0] || null;
-      return axisLabels[1] || null;
+      // Axis labels are div[style*="font-weight: 600"][style*="font-size: 13"] positioned outside the grid
+      var axisLabels = slide.querySelectorAll('div[style*="font-weight: 600"][style*="font-size: 13"], div[style*="font-weight:600"][style*="font-size:13"]');
+      if (axisLabels.length === 0) {
+        // Fallback: look for text-align center with font-weight
+        axisLabels = slide.querySelectorAll('div[style*="text-align: center"][style*="font-weight"]');
+      }
+      // Filter out elements inside cards or footer
+      var filteredAxis = [];
+      for (var ai = 0; ai < axisLabels.length; ai++) {
+        if (!axisLabels[ai].closest('.card') && !axisLabels[ai].closest('.slide-footer') && !axisLabels[ai].closest('[data-field]')) {
+          filteredAxis.push(axisLabels[ai]);
+        }
+      }
+      if (sel === 'MATRIX_AXIS_X') return filteredAxis[0] || null;
+      return filteredAxis[1] || null;
     }
 
     // For .bullet-row selector (text-slide with matchIndex)
@@ -1294,6 +1783,14 @@ export function generateInlineEditScript(
     el.addEventListener('blur', function() {
       var newText = el.innerText.trim();
       if (newText !== el._originalText) {
+        // Push to undo stack before updating _originalText
+        pushUndo({
+          field: field.key,
+          label: field.label,
+          oldValue: el._originalText,
+          newValue: newText,
+          element: el
+        });
         el._originalText = newText;
         window.parent.postMessage({
           type: 'inline-edit-change',

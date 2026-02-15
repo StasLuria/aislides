@@ -1434,3 +1434,13 @@
 - [x] Fix critical syntax error: comment with \n in template literal broke entire inline edit script
 - [x] Test editing in browser on multiple slide types (slide 3 image-text, slide 9 risk-matrix)
 - [x] Run tests and save checkpoint (1436/1436 passed)
+
+## Round 35: Advanced inline editing improvements
+- [x] Task 1: Create test presentation with complex layouts (SWOT, funnel, roadmap, pyramid, matrix-2x2, pros-cons, checklist, kanban-board, org-chart, scenario-cards, vertical-timeline, comparison-table)
+- [x] Task 1: Test inline editing on each complex layout — verify all fields are editable
+- [x] Task 1: Fix any editing issues found on complex layouts
+- [x] Task 2: Add table cell editing for risk-matrix layout (risk names, probability, impact columns)
+- [x] Task 2: Test risk-matrix table cell editing in browser
+- [x] Task 3: Implement Undo/Redo in inline editor (Ctrl+Z / Ctrl+Shift+Z)
+- [x] Task 3: Test Undo/Redo in browser
+- [x] Run all tests and save checkpoint (1462/1462 passed)

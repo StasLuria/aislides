@@ -371,24 +371,45 @@ describe("getEditableFields", () => {
   });
 
   describe("funnel", () => {
-    it("returns title + stage labels", () => {
+    it("returns title + stage titles and values", () => {
       const data = {
         title: "Sales Funnel",
         stages: [
-          { label: "Awareness" },
-          { label: "Interest" },
-          { label: "Decision" },
+          { title: "Awareness", value: "10,000" },
+          { title: "Interest", value: "3,500" },
+          { title: "Decision", value: "1,200" },
         ],
       };
       const fields = getEditableFields("funnel", data);
 
-      // title + 3 stages = 4
-      expect(fields.length).toBe(4);
+      // title + 3 values + 3 titles = 7
+      expect(fields.length).toBe(7);
 
       const keys = fields.map((f) => f.key);
-      expect(keys).toContain("stages.0.label");
-      expect(keys).toContain("stages.1.label");
-      expect(keys).toContain("stages.2.label");
+      expect(keys).toContain("stages.0.title");
+      expect(keys).toContain("stages.1.title");
+      expect(keys).toContain("stages.2.title");
+      expect(keys).toContain("stages.0.value");
+      expect(keys).toContain("stages.1.value");
+      expect(keys).toContain("stages.2.value");
+    });
+
+    it("returns title + stage titles only when no values", () => {
+      const data = {
+        title: "Sales Funnel",
+        stages: [
+          { title: "Awareness" },
+          { title: "Interest" },
+        ],
+      };
+      const fields = getEditableFields("funnel", data);
+
+      // title + 2 titles = 3
+      expect(fields.length).toBe(3);
+
+      const keys = fields.map((f) => f.key);
+      expect(keys).toContain("stages.0.title");
+      expect(keys).toContain("stages.1.title");
     });
   });
 
@@ -1015,5 +1036,404 @@ describe("buildEditableSlideHtml — auto-expand support", () => {
     // Should contain the inline edit script with auto-expand CSS
     expect(result).toContain("inline-slide-resize");
     expect(result).toContain("visible");
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════
+// Undo / Redo system — inline edit script
+// ═══════════════════════════════════════════════════════
+
+describe("generateInlineEditScript — Undo/Redo system", () => {
+  it("includes undo/redo stack initialization", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+      description: "Desc",
+    });
+    expect(script).toContain("undoStack");
+    expect(script).toContain("redoStack");
+    expect(script).toContain("MAX_HISTORY");
+  });
+
+  it("includes pushUndo function", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("function pushUndo");
+  });
+
+  it("includes performUndo function that restores old value", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("function performUndo");
+    expect(script).toContain("entry.oldValue");
+  });
+
+  it("includes performRedo function that restores new value", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("function performRedo");
+    expect(script).toContain("entry.newValue");
+  });
+
+  it("includes Ctrl+Z keyboard handler for undo", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // Should handle both English and Russian keyboard layouts
+    expect(script).toContain("e.key === 'z'");
+    expect(script).toContain("e.key === 'я'");
+    expect(script).toContain("performUndo()");
+  });
+
+  it("includes Ctrl+Shift+Z keyboard handler for redo", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("e.shiftKey");
+    expect(script).toContain("performRedo()");
+  });
+
+  it("includes Ctrl+Y keyboard handler for redo", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("e.key === 'y'");
+    expect(script).toContain("e.key === 'н'");
+  });
+
+  it("sends undo state notification via postMessage", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("inline-edit-undo-state");
+    expect(script).toContain("canUndo");
+    expect(script).toContain("canRedo");
+    expect(script).toContain("undoCount");
+    expect(script).toContain("redoCount");
+  });
+
+  it("listens for undo/redo commands from parent via postMessage", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("inline-edit-undo");
+    expect(script).toContain("inline-edit-redo");
+  });
+
+  it("pushes to undo stack on blur when text changes", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // The blur handler should call pushUndo before sending inline-edit-change
+    expect(script).toContain("pushUndo");
+    expect(script).toContain("oldValue");
+    expect(script).toContain("newValue");
+  });
+
+  it("clears redo stack when new edit is made", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // pushUndo should clear redo stack
+    expect(script).toContain("redoStack.length = 0");
+  });
+
+  it("uses capture phase for keyboard handler to intercept before contentEditable", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // The addEventListener should use capture: true
+    expect(script).toContain("}, true)");
+  });
+
+  it("limits undo stack to MAX_HISTORY entries", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("MAX_HISTORY");
+    expect(script).toContain("undoStack.shift()");
+  });
+
+  it("sends inline-edit-change with isUndo flag during undo", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("isUndo: true");
+  });
+
+  it("sends inline-edit-change with isRedo flag during redo", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    expect(script).toContain("isRedo: true");
+  });
+
+  it("updates _originalText on undo to keep DOM state consistent", () => {
+    const script = generateInlineEditScript("title-slide", {
+      title: "Test",
+    });
+    // Both performUndo and performRedo should update _originalText
+    expect(script).toContain("element._originalText = entry.oldValue");
+    expect(script).toContain("element._originalText = entry.newValue");
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// New layout-specific editable fields tests
+// ═══════════════════════════════════════════════════════
+
+describe("getEditableFields — complex layouts", () => {
+  describe("roadmap", () => {
+    it("returns title, description, and milestone fields", () => {
+      const data = {
+        title: "Roadmap",
+        description: "Project timeline",
+        milestones: [
+          { title: "Phase 1", date: "Q1 2026", description: "Planning" },
+          { title: "Phase 2", date: "Q2 2026", description: "Development" },
+        ],
+      };
+      const fields = getEditableFields("roadmap", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("milestones.0.title");
+      expect(keys).toContain("milestones.0.date");
+      expect(keys).toContain("milestones.0.description");
+      expect(keys).toContain("milestones.1.title");
+      expect(keys).toContain("milestones.1.date");
+      expect(keys).toContain("milestones.1.description");
+    });
+  });
+
+  describe("pyramid", () => {
+    it("returns title, description, and level fields", () => {
+      const data = {
+        title: "Pyramid",
+        description: "Hierarchy",
+        levels: [
+          { title: "Top", description: "Leadership" },
+          { title: "Middle", description: "Management" },
+        ],
+      };
+      const fields = getEditableFields("pyramid", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("levels.0.title");
+      expect(keys).toContain("levels.0.description");
+      expect(keys).toContain("levels.1.title");
+      expect(keys).toContain("levels.1.description");
+    });
+  });
+
+  describe("checklist", () => {
+    it("returns title, description, and item fields", () => {
+      const data = {
+        title: "Checklist",
+        description: "Tasks",
+        items: [
+          { title: "Task 1", description: "Do this", done: true },
+          { title: "Task 2", description: "Do that", done: false },
+        ],
+      };
+      const fields = getEditableFields("checklist", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("items.0.title");
+      expect(keys).toContain("items.0.description");
+      expect(keys).toContain("items.1.title");
+      expect(keys).toContain("items.1.description");
+    });
+  });
+
+  describe("kanban-board", () => {
+    it("returns title, description, column titles, and card fields", () => {
+      const data = {
+        title: "Board",
+        description: "Kanban",
+        columns: [
+          {
+            title: "Todo",
+            cards: [
+              { title: "Card 1", description: "Desc 1" },
+            ],
+          },
+          {
+            title: "Done",
+            cards: [
+              { title: "Card 2", description: "Desc 2" },
+            ],
+          },
+        ],
+      };
+      const fields = getEditableFields("kanban-board", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("columns.0.title");
+      expect(keys).toContain("columns.0.cards.0.title");
+      expect(keys).toContain("columns.0.cards.0.description");
+      expect(keys).toContain("columns.1.title");
+      expect(keys).toContain("columns.1.cards.0.title");
+      expect(keys).toContain("columns.1.cards.0.description");
+    });
+  });
+
+  describe("comparison-table", () => {
+    it("returns title, description, column names, and feature cells", () => {
+      const data = {
+        title: "Comparison",
+        description: "Products",
+        columns: [
+          { name: "Product A" },
+          { name: "Product B" },
+        ],
+        features: [
+          { name: "Price", values: ["$10", "$20"] },
+          { name: "Speed", values: ["Fast", "Slow"] },
+        ],
+      };
+      const fields = getEditableFields("comparison-table", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("columns.0.name");
+      expect(keys).toContain("columns.1.name");
+      expect(keys).toContain("features.0.name");
+      expect(keys).toContain("features.0.values.0");
+      expect(keys).toContain("features.0.values.1");
+      expect(keys).toContain("features.1.name");
+      expect(keys).toContain("features.1.values.0");
+      expect(keys).toContain("features.1.values.1");
+    });
+  });
+
+  describe("scenario-cards", () => {
+    it("returns title, description, and scenario fields", () => {
+      const data = {
+        title: "Scenarios",
+        description: "Analysis",
+        scenarios: [
+          {
+            label: "Best",
+            title: "Optimistic",
+            value: "+30%",
+            description: "Growth",
+            points: ["Point 1", "Point 2"],
+          },
+        ],
+      };
+      const fields = getEditableFields("scenario-cards", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("scenarios.0.label");
+      expect(keys).toContain("scenarios.0.title");
+      expect(keys).toContain("scenarios.0.value");
+      expect(keys).toContain("scenarios.0.description");
+      expect(keys).toContain("scenarios.0.points.0");
+      expect(keys).toContain("scenarios.0.points.1");
+    });
+  });
+
+  describe("risk-matrix", () => {
+    it("returns title, description, matrix cells, legend, and mitigation fields", () => {
+      const data = {
+        title: "Risk Matrix",
+        description: "Assessment",
+        matrixColumns: ["Low", "Medium", "High"],
+        matrixRows: [
+          {
+            label: "High Prob",
+            cells: [
+              { label: "Risk A", value: "30%" },
+              null,
+              { label: "Risk B", value: "50%" },
+            ],
+          },
+        ],
+        matrixLegend: [
+          { label: "Low", color: "#green" },
+          { label: "High", color: "#red" },
+        ],
+        mitigations: [
+          { title: "Mitigation 1" },
+          { title: "Mitigation 2" },
+        ],
+      };
+      const fields = getEditableFields("risk-matrix", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("matrixColumns.0");
+      expect(keys).toContain("matrixColumns.1");
+      expect(keys).toContain("matrixColumns.2");
+      expect(keys).toContain("matrixRows.0.label");
+      expect(keys).toContain("matrixRows.0.cells.0.label");
+      expect(keys).toContain("matrixRows.0.cells.0.value");
+      expect(keys).toContain("matrixRows.0.cells.2.label");
+      expect(keys).toContain("matrixRows.0.cells.2.value");
+      expect(keys).toContain("matrixLegend.0.label");
+      expect(keys).toContain("matrixLegend.1.label");
+      expect(keys).toContain("mitigations.0.title");
+      expect(keys).toContain("mitigations.1.title");
+    });
+
+    it("skips null cells in matrix rows", () => {
+      const data = {
+        title: "Risk Matrix",
+        matrixRows: [
+          {
+            label: "Row 1",
+            cells: [null, { label: "Risk", value: "10%" }, null],
+          },
+        ],
+      };
+      const fields = getEditableFields("risk-matrix", data);
+      const keys = fields.map((f) => f.key);
+
+      // Should NOT contain keys for null cells
+      expect(keys).not.toContain("matrixRows.0.cells.0.label");
+      expect(keys).not.toContain("matrixRows.0.cells.2.label");
+      // Should contain key for non-null cell
+      expect(keys).toContain("matrixRows.0.cells.1.label");
+      expect(keys).toContain("matrixRows.0.cells.1.value");
+    });
+  });
+
+  describe("vertical-timeline", () => {
+    it("returns title, description, and event fields including date", () => {
+      const data = {
+        title: "Timeline",
+        description: "Events",
+        events: [
+          { date: "2020", title: "Event 1", description: "Desc 1" },
+          { date: "2021", title: "Event 2", description: "Desc 2" },
+        ],
+      };
+      const fields = getEditableFields("vertical-timeline", data);
+      const keys = fields.map((f) => f.key);
+
+      expect(keys).toContain("title");
+      expect(keys).toContain("description");
+      expect(keys).toContain("events.0.date");
+      expect(keys).toContain("events.0.title");
+      expect(keys).toContain("events.0.description");
+      expect(keys).toContain("events.1.date");
+      expect(keys).toContain("events.1.title");
+      expect(keys).toContain("events.1.description");
+    });
   });
 });

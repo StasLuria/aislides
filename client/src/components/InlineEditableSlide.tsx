@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Check, Loader2, MousePointerClick, Upload } from "lucide-react";
+import { Check, Loader2, MousePointerClick, Upload, Undo2, Redo2 } from "lucide-react";
 import api from "@/lib/api";
 import type { EditableSlideResponse, InlineFieldPatchResponse, SlideEditResponse } from "@/lib/api";
 
@@ -61,6 +61,9 @@ export default function InlineEditableSlide({
   const [uploadProgress, setUploadProgress] = useState(0);
   // Dynamic height from iframe content
   const [contentHeight, setContentHeight] = useState(SLIDE_H);
+  // Undo/Redo state
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   // Debounce timer for auto-save
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -275,6 +278,12 @@ export default function InlineEditableSlide({
           toast.error(msg.message || "Ошибка при работе с изображением");
           break;
         }
+
+        case "inline-edit-undo-state": {
+          setCanUndo(!!msg.canUndo);
+          setCanRedo(!!msg.canRedo);
+          break;
+        }
       }
     },
     [presentationId, slideIndex, onFieldSaved, onReady, uploadImage, dataUrlToFile],
@@ -290,6 +299,34 @@ export default function InlineEditableSlide({
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
+  }, []);
+
+  // Parent-level keyboard handler: forward Ctrl+Z / Ctrl+Shift+Z to iframe
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      if (!isCtrl) return;
+
+      const key = e.key.toLowerCase();
+      // Handle Ctrl+Z (undo) and Ctrl+Shift+Z (redo) and Ctrl+Y (redo)
+      // Also handle Russian keyboard layout: я = z, н = y
+      if (key === 'z' || key === 'я') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.shiftKey) {
+          iframeRef.current?.contentWindow?.postMessage({ type: 'inline-edit-redo' }, '*');
+        } else {
+          iframeRef.current?.contentWindow?.postMessage({ type: 'inline-edit-undo' }, '*');
+        }
+      } else if (key === 'y' || key === 'н') {
+        e.preventDefault();
+        e.stopPropagation();
+        iframeRef.current?.contentWindow?.postMessage({ type: 'inline-edit-redo' }, '*');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   if (isLoading) {
@@ -356,6 +393,46 @@ export default function InlineEditableSlide({
           </>
         )}
       </div>
+
+      {/* Undo/Redo buttons — shown when there's history */}
+      {(canUndo || canRedo) && (
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-1">
+          <button
+            onClick={() => {
+              iframeRef.current?.contentWindow?.postMessage({ type: 'inline-edit-undo' }, '*');
+            }}
+            disabled={!canUndo}
+            className={`
+              flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium
+              transition-all duration-200 backdrop-blur-sm
+              ${canUndo
+                ? "bg-black/60 text-white hover:bg-black/80 cursor-pointer"
+                : "bg-black/20 text-white/40 cursor-not-allowed"
+              }
+            `}
+            title="Отменить (Ctrl+Z)"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              iframeRef.current?.contentWindow?.postMessage({ type: 'inline-edit-redo' }, '*');
+            }}
+            disabled={!canRedo}
+            className={`
+              flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium
+              transition-all duration-200 backdrop-blur-sm
+              ${canRedo
+                ? "bg-black/60 text-white hover:bg-black/80 cursor-pointer"
+                : "bg-black/20 text-white/40 cursor-not-allowed"
+              }
+            `}
+            title="Повторить (Ctrl+Shift+Z)"
+          >
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Hint badge — shown when no field is active */}
       {!activeField && saveStatus === "idle" && (fieldCount > 0 || imageCount > 0) && (
