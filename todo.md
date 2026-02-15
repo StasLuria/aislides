@@ -1424,3 +1424,13 @@
 - [x] Fix card-grid template: replaced grid-auto-rows:1fr with flex centering wrapper
 - [x] Visual test confirmed: cards now centered and sized to content
 - [x] All 1436 tests passing
+
+## Round 34: Fix slide editing mode — text not editable on click
+- [x] Bug 1: Table/complex layout elements not editable in inline edit mode (e.g., slide 9 risk-matrix, table cells)
+- [x] Bug 2: Bullet structure lost after editing — textContent flattens HTML list items into plain text (e.g., slide 3 image-text)
+- [x] Investigate inlineFieldInjector.ts — how data-field attributes are injected and how findElement works
+- [x] Fix findElement to handle table cells and complex nested layouts (added 18 missing layout cases + virtual selectors GENERIC_CARD_TITLE/DESC, MITIGATION_TITLE/DESC, etc.)
+- [x] Fix text save mechanism to preserve HTML structure (innerText instead of textContent + \n→<br> in parseInlineMarkdown)
+- [x] Fix critical syntax error: comment with \n in template literal broke entire inline edit script
+- [x] Test editing in browser on multiple slide types (slide 3 image-text, slide 9 risk-matrix)
+- [x] Run tests and save checkpoint (1436/1436 passed)

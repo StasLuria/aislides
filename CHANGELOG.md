@@ -7,14 +7,25 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 118 |
-| Total tasks | 1108 |
-| Completed | 1096 (99%) |
+| Total sections | 119 |
+| Total tasks | 1116 |
+| Completed | 1104 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 34: Fix slide editing mode — text not editable on click ✅
+
+- [x] Bug 1: Table/complex layout elements not editable in inline edit mode (e.g., slide 9 risk-matrix, table cells)
+- [x] Bug 2: Bullet structure lost after editing — textContent flattens HTML list items into plain text (e.g., slide 3 image-text)
+- [x] Investigate inlineFieldInjector.ts — how data-field attributes are injected and how findElement works
+- [x] Fix findElement to handle table cells and complex nested layouts (added 18 missing layout cases + virtual selectors GENERIC_CARD_TITLE/DESC, MITIGATION_TITLE/DESC, etc.)
+- [x] Fix text save mechanism to preserve HTML structure (innerText instead of textContent + \n→<br> in parseInlineMarkdown)
+- [x] Fix critical syntax error: comment with \n in template literal broke entire inline edit script
+- [x] Test editing in browser on multiple slide types (slide 3 image-text, slide 9 risk-matrix)
+- [x] Run tests and save checkpoint (1436/1436 passed)
 
 ### 🚀 Round 33: Fix card/column blocks vertical centering on slides ✅
 
@@ -1521,7 +1532,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (49 sections, 619/631 tasks)
+### 🚀 Improvements (50 sections, 627/639 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1572,6 +1583,7 @@
 - **Round 32c: Visual Test of BSPB Theme** — ✅
 - **Round 32d: Full UI Flow Test** — ✅
 - **Round 33: Fix card/column blocks vertical centering on slides** — ✅
+- **Round 34: Fix slide editing mode — text not editable on click** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

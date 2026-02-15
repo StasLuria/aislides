@@ -88,6 +88,7 @@ export function setFieldValue(data: Record<string, any>, path: string, value: st
  */
 function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>): EditableFieldDef[] {
   const fields: EditableFieldDef[] = [];
+  if (!data) data = {};
 
   switch (layoutId) {
     case "title-slide": {
@@ -326,6 +327,20 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "comparison": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.optionA?.title) {
+        fields.push({ key: "optionA.title", label: "Вариант A", selector: "COMPARISON_OPTION_TITLE", matchIndex: 0, multiline: false });
+      }
+      if (data.optionB?.title) {
+        fields.push({ key: "optionB.title", label: "Вариант B", selector: "COMPARISON_OPTION_TITLE", matchIndex: 1, multiline: false });
+      }
+      const compPoints = data.optionA?.points || [];
+      for (let i = 0; i < compPoints.length; i++) {
+        fields.push({ key: `optionA.points.${i}`, label: `A пункт ${i + 1}`, selector: "COMPARISON_POINT_A", matchIndex: i, multiline: false });
+      }
+      const compPointsB = data.optionB?.points || [];
+      for (let i = 0; i < compPointsB.length; i++) {
+        fields.push({ key: `optionB.points.${i}`, label: `B пункт ${i + 1}`, selector: "COMPARISON_POINT_B", matchIndex: i, multiline: false });
+      }
       break;
     }
 
@@ -348,6 +363,21 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "team-profiles": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.companyDescription) {
+        fields.push({ key: "companyDescription", label: "Описание", selector: "p", multiline: true });
+      }
+      const members = data.members || [];
+      for (let i = 0; i < members.length; i++) {
+        if (members[i].name) {
+          fields.push({ key: `members.${i}.name`, label: `Имя ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (members[i].role) {
+          fields.push({ key: `members.${i}.role`, label: `Роль ${i + 1}`, selector: "TEAM_ROLE", matchIndex: i, multiline: false });
+        }
+        if (members[i].description) {
+          fields.push({ key: `members.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
       break;
     }
 
@@ -363,6 +393,18 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "swot-analysis": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const swotSections = ["strengths", "weaknesses", "opportunities", "threats"] as const;
+      const swotLabels = ["Сильные стороны", "Слабые стороны", "Возможности", "Угрозы"];
+      for (let s = 0; s < swotSections.length; s++) {
+        const section = data[swotSections[s]];
+        if (section?.title) {
+          fields.push({ key: `${swotSections[s]}.title`, label: swotLabels[s], selector: "SWOT_SECTION_TITLE", matchIndex: s, multiline: false });
+        }
+        const items = section?.items || [];
+        for (let i = 0; i < items.length; i++) {
+          fields.push({ key: `${swotSections[s]}.items.${i}`, label: `${swotLabels[s]} ${i + 1}`, selector: "SWOT_ITEM", matchIndex: s * 100 + i, multiline: false });
+        }
+      }
       break;
     }
 
@@ -385,26 +427,310 @@ function buildEditableFieldsFromData(layoutId: string, data: Record<string, any>
 
     case "roadmap": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const milestones = data.milestones || [];
+      for (let i = 0; i < milestones.length; i++) {
+        if (milestones[i].title) {
+          fields.push({ key: `milestones.${i}.title`, label: `Этап ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (milestones[i].description) {
+          fields.push({ key: `milestones.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
       break;
     }
 
     case "pyramid": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const levels = data.levels || [];
+      for (let i = 0; i < levels.length; i++) {
+        if (levels[i].title) {
+          fields.push({ key: `levels.${i}.title`, label: `Уровень ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (levels[i].description) {
+          fields.push({ key: `levels.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
       break;
     }
 
     case "matrix-2x2": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.axisX) {
+        fields.push({ key: "axisX", label: "Ось X", selector: "MATRIX_AXIS_X", multiline: false });
+      }
+      if (data.axisY) {
+        fields.push({ key: "axisY", label: "Ось Y", selector: "MATRIX_AXIS_Y", multiline: false });
+      }
+      const quadrants = data.quadrants || [];
+      for (let i = 0; i < quadrants.length; i++) {
+        if (quadrants[i].title) {
+          fields.push({ key: `quadrants.${i}.title`, label: `Квадрант ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (quadrants[i].description) {
+          fields.push({ key: `quadrants.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
       break;
     }
 
     case "pros-cons": {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.pros?.title) {
+        fields.push({ key: "pros.title", label: "Заголовок плюсов", selector: "PROS_CONS_TITLE", matchIndex: 0, multiline: false });
+      }
+      if (data.cons?.title) {
+        fields.push({ key: "cons.title", label: "Заголовок минусов", selector: "PROS_CONS_TITLE", matchIndex: 1, multiline: false });
+      }
+      const prosItems = data.pros?.items || [];
+      for (let i = 0; i < prosItems.length; i++) {
+        fields.push({ key: `pros.items.${i}`, label: `Плюс ${i + 1}`, selector: "PROS_ITEM", matchIndex: i, multiline: false });
+      }
+      const consItems = data.cons?.items || [];
+      for (let i = 0; i < consItems.length; i++) {
+        fields.push({ key: `cons.items.${i}`, label: `Минус ${i + 1}`, selector: "CONS_ITEM", matchIndex: i, multiline: false });
+      }
+      break;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // MISSING LAYOUTS — added for full inline editing support
+    // ═══════════════════════════════════════════════════════
+
+    case "risk-matrix": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      if (data.mitigationTitle) {
+        fields.push({ key: "mitigationTitle", label: "Заголовок мер", selector: "MITIGATION_TITLE", multiline: false });
+      }
+      const mitigations = data.mitigations || [];
+      for (let i = 0; i < mitigations.length; i++) {
+        if (mitigations[i].title) {
+          fields.push({ key: `mitigations.${i}.title`, label: `Мера ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (mitigations[i].description) {
+          fields.push({ key: `mitigations.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
+      break;
+    }
+
+    case "card-grid": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const cards = data.cards || [];
+      for (let i = 0; i < cards.length; i++) {
+        if (cards[i].title) {
+          fields.push({ key: `cards.${i}.title`, label: `Карточка ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (cards[i].description) {
+          fields.push({ key: `cards.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
+      break;
+    }
+
+    case "vertical-timeline": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const vtEvents = data.events || [];
+      for (let i = 0; i < vtEvents.length; i++) {
+        if (vtEvents[i].title) {
+          fields.push({ key: `events.${i}.title`, label: `Событие ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (vtEvents[i].description) {
+          fields.push({ key: `events.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
+      break;
+    }
+
+    case "comparison-table": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      break;
+    }
+
+    case "big-statement": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.subtitle) {
+        fields.push({ key: "subtitle", label: "Подзаголовок", selector: "p", multiline: true });
+      }
+      if (data.bigNumber) {
+        fields.push({ key: "bigNumber", label: "Число", selector: "BIG_NUMBER", multiline: false });
+      }
+      if (data.label) {
+        fields.push({ key: "label", label: "Метка", selector: "BIG_LABEL", multiline: false });
+      }
+      break;
+    }
+
+    case "verdict-analysis": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.verdictTitle) {
+        fields.push({ key: "verdictTitle", label: "Заголовок вердикта", selector: "VERDICT_TITLE", multiline: false });
+      }
+      if (data.verdictText) {
+        fields.push({ key: "verdictText", label: "Текст вердикта", selector: "VERDICT_TEXT", multiline: true });
+      }
+      const criteria = data.criteria || [];
+      for (let i = 0; i < criteria.length; i++) {
+        if (criteria[i].label) {
+          fields.push({ key: `criteria.${i}.label`, label: `Критерий ${i + 1}`, selector: "CRITERIA_LABEL", matchIndex: i, multiline: false });
+        }
+        if (criteria[i].value) {
+          fields.push({ key: `criteria.${i}.value`, label: `Значение ${i + 1}`, selector: "CRITERIA_VALUE", matchIndex: i, multiline: false });
+        }
+      }
+      break;
+    }
+
+    case "quote-highlight": {
+      fields.push({ key: "quote", label: "Цитата", selector: "blockquote", multiline: true });
+      if (data.author) {
+        fields.push({ key: "author", label: "Автор", selector: "QUOTE_AUTHOR", multiline: false });
+      }
+      if (data.role) {
+        fields.push({ key: "role", label: "Роль", selector: "QUOTE_ROLE", multiline: false });
+      }
+      if (data.context) {
+        fields.push({ key: "context", label: "Контекст", selector: "QUOTE_CONTEXT", multiline: true });
+      }
+      break;
+    }
+
+    case "financial-formula": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      break;
+    }
+
+    case "chart-text": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const ctBullets = data.bullets || [];
+      for (let i = 0; i < ctBullets.length; i++) {
+        if (typeof ctBullets[i] === "object" && ctBullets[i].title) {
+          fields.push({ key: `bullets.${i}.title`, label: `Пункт ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          if (ctBullets[i].description) {
+            fields.push({ key: `bullets.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+          }
+        }
+      }
+      break;
+    }
+
+    case "stats-chart":
+    case "hero-stat": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      break;
+    }
+
+    case "scenario-cards": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const scenarios = data.scenarios || [];
+      for (let i = 0; i < scenarios.length; i++) {
+        if (scenarios[i].title) {
+          fields.push({ key: `scenarios.${i}.title`, label: `Сценарий ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+      }
+      break;
+    }
+
+    case "numbered-steps-v2": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      const nsSteps = data.steps || [];
+      for (let i = 0; i < nsSteps.length; i++) {
+        if (nsSteps[i].title) {
+          fields.push({ key: `steps.${i}.title`, label: `Шаг ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (nsSteps[i].description) {
+          fields.push({ key: `steps.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
+      break;
+    }
+
+    case "timeline-horizontal": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      const thEvents = data.events || [];
+      for (let i = 0; i < thEvents.length; i++) {
+        if (thEvents[i].title) {
+          fields.push({ key: `events.${i}.title`, label: `Событие ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+        }
+        if (thEvents[i].description) {
+          fields.push({ key: `events.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+        }
+      }
+      break;
+    }
+
+    case "text-with-callout": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.callout) {
+        fields.push({ key: "callout", label: "Выноска", selector: "CALLOUT_TEXT", multiline: true });
+      }
+      const twcBullets = data.bullets || [];
+      for (let i = 0; i < twcBullets.length; i++) {
+        if (typeof twcBullets[i] === "object" && twcBullets[i].title) {
+          fields.push({ key: `bullets.${i}.title`, label: `Пункт ${i + 1}`, selector: "GENERIC_CARD_TITLE", matchIndex: i, multiline: false });
+          if (twcBullets[i].description) {
+            fields.push({ key: `bullets.${i}.description`, label: `Описание ${i + 1}`, selector: "GENERIC_CARD_DESC", matchIndex: i, multiline: true });
+          }
+        }
+      }
+      break;
+    }
+
+    case "kanban-board": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      break;
+    }
+
+    case "org-chart": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      break;
+    }
+
+    case "dual-chart": {
+      fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
       break;
     }
 
     default: {
       fields.push({ key: "title", label: "Заголовок", selector: "h1", multiline: false });
+      if (data.description) {
+        fields.push({ key: "description", label: "Описание", selector: "p", multiline: true });
+      }
+      if (data.subtitle) {
+        fields.push({ key: "subtitle", label: "Подзаголовок", selector: "p", multiline: false });
+      }
       break;
     }
   }
@@ -710,6 +1036,200 @@ export function generateInlineEditScript(
       return stage.querySelector('span, div[style*="font-weight"]');
     }
 
+    // ═══ GENERIC_CARD_TITLE / GENERIC_CARD_DESC ═══
+    // Universal selectors for cards in any layout (risk-matrix mitigations, card-grid, roadmap, etc.)
+    if (sel === 'GENERIC_CARD_TITLE' || sel === 'GENERIC_CARD_DESC') {
+      // Find all .card elements, or fallback to grid/flex children with padding
+      var allCards = slide.querySelectorAll('.card');
+      if (allCards.length === 0) {
+        // Fallback: look for styled containers that look like cards
+        var gridEl = slide.querySelector('div[style*="grid"], div[style*="gap"]');
+        if (gridEl) {
+          allCards = [];
+          var kids = gridEl.children;
+          for (var ci = 0; ci < kids.length; ci++) {
+            var kidStyle = kids[ci].getAttribute('style') || '';
+            if (kidStyle.indexOf('padding') !== -1 || kidStyle.indexOf('border') !== -1) {
+              allCards.push(kids[ci]);
+            }
+          }
+        }
+      }
+      // Also check for border-left styled cards (mitigation cards in risk-matrix)
+      if (allCards.length === 0) {
+        allCards = slide.querySelectorAll('div[style*="border-left"][style*="padding"]');
+      }
+      var targetCard = allCards[idx];
+      if (!targetCard) return null;
+      if (sel === 'GENERIC_CARD_TITLE') {
+        return targetCard.querySelector('div[style*="font-weight: 6"], div[style*="font-weight:6"], span[style*="font-weight: 6"], span[style*="font-weight:6"], h3');
+      } else {
+        var descEl = targetCard.querySelector('div[style*="text-body-color"], div[style*="#4b5563"], div[style*="#9ca3af"]');
+        if (!descEl) {
+          // Fallback: second text element in the card
+          var textEls = targetCard.querySelectorAll('div[style*="font-size"]');
+          if (textEls.length > 1) descEl = textEls[1];
+        }
+        return descEl;
+      }
+    }
+
+    // ═══ MITIGATION_TITLE ═══
+    if (sel === 'MITIGATION_TITLE') {
+      // The mitigation section title in risk-matrix
+      var mitTitles = slide.querySelectorAll('div[style*="font-weight: 700"][style*="font-size"]');
+      for (var mi = 0; mi < mitTitles.length; mi++) {
+        var mt = mitTitles[mi];
+        if (!mt.closest('.card') && !mt.closest('.slide-footer') && mt.textContent.trim().length > 0) {
+          return mt;
+        }
+      }
+      return null;
+    }
+
+    // ═══ BIG_NUMBER / BIG_LABEL ═══
+    if (sel === 'BIG_NUMBER') {
+      return slide.querySelector('div[style*="font-size: 6"], div[style*="font-size: 7"], div[style*="font-size: 8"], div[style*="font-size:6"], div[style*="font-size:7"], div[style*="font-size:8"]');
+    }
+    if (sel === 'BIG_LABEL') {
+      var bigNum = slide.querySelector('div[style*="font-size: 6"], div[style*="font-size: 7"], div[style*="font-size: 8"]');
+      if (bigNum && bigNum.nextElementSibling) return bigNum.nextElementSibling;
+      return null;
+    }
+
+    // ═══ VERDICT_TITLE / VERDICT_TEXT ═══
+    if (sel === 'VERDICT_TITLE') {
+      var verdictCard = slide.querySelector('div[style*="border-radius"][style*="background"]');
+      if (verdictCard) return verdictCard.querySelector('div[style*="font-weight: 7"], div[style*="font-weight:7"], div[style*="font-size: 2"]');
+      return null;
+    }
+    if (sel === 'VERDICT_TEXT') {
+      var verdictCard2 = slide.querySelector('div[style*="border-radius"][style*="background"]');
+      if (verdictCard2) return verdictCard2.querySelector('div[style*="text-body-color"], div[style*="#4b5563"]');
+      return null;
+    }
+
+    // ═══ CRITERIA_LABEL / CRITERIA_VALUE ═══
+    if (sel === 'CRITERIA_LABEL' || sel === 'CRITERIA_VALUE') {
+      var criteriaRows = slide.querySelectorAll('div[style*="display: flex"][style*="justify-content"]');
+      var filteredCriteria = [];
+      for (var cri = 0; cri < criteriaRows.length; cri++) {
+        var cr = criteriaRows[cri];
+        if (cr.children.length >= 2 && !cr.closest('.slide-footer')) {
+          filteredCriteria.push(cr);
+        }
+      }
+      var criteriaRow = filteredCriteria[idx];
+      if (!criteriaRow) return null;
+      if (sel === 'CRITERIA_LABEL') return criteriaRow.children[0];
+      return criteriaRow.children[criteriaRow.children.length - 1];
+    }
+
+    // ═══ QUOTE_AUTHOR / QUOTE_ROLE / QUOTE_CONTEXT ═══
+    if (sel === 'QUOTE_AUTHOR') {
+      return slide.querySelector('div[style*="font-weight: 6"], div[style*="font-weight:6"], p[style*="font-weight: 6"]');
+    }
+    if (sel === 'QUOTE_ROLE') {
+      var authorEl = slide.querySelector('div[style*="font-weight: 6"], p[style*="font-weight: 6"]');
+      if (authorEl && authorEl.nextElementSibling) return authorEl.nextElementSibling;
+      return null;
+    }
+    if (sel === 'QUOTE_CONTEXT') {
+      return slide.querySelector('div[style*="font-style: italic"], p[style*="font-style"]');
+    }
+
+    // ═══ CALLOUT_TEXT ═══
+    if (sel === 'CALLOUT_TEXT') {
+      var calloutBox = slide.querySelector('div[style*="border-left"][style*="padding"]');
+      if (calloutBox) return calloutBox;
+      return null;
+    }
+
+    // ═══ SWOT_SECTION_TITLE / SWOT_ITEM ═══
+    if (sel === 'SWOT_SECTION_TITLE') {
+      var swotCards = slide.querySelectorAll('.card');
+      var swotCard = swotCards[idx];
+      if (!swotCard) return null;
+      return swotCard.querySelector('div[style*="font-weight: 7"], div[style*="font-weight:7"], h3');
+    }
+    if (sel === 'SWOT_ITEM') {
+      // matchIndex encodes section*100 + itemIndex
+      var sectionIdx = Math.floor(idx / 100);
+      var itemIdx = idx % 100;
+      var swotCards2 = slide.querySelectorAll('.card');
+      var swotCard2 = swotCards2[sectionIdx];
+      if (!swotCard2) return null;
+      var swotItems = swotCard2.querySelectorAll('span[style*="text-body-color"], span[style*="#4b5563"], span');
+      var filteredSwotItems = [];
+      for (var si = 0; si < swotItems.length; si++) {
+        if (swotItems[si].textContent.trim().length > 0 && !swotItems[si].closest('[data-field]')) {
+          filteredSwotItems.push(swotItems[si]);
+        }
+      }
+      return filteredSwotItems[itemIdx] || null;
+    }
+
+    // ═══ COMPARISON_OPTION_TITLE ═══
+    if (sel === 'COMPARISON_OPTION_TITLE') {
+      var optionHeaders = slide.querySelectorAll('h2, div[style*="font-size: 2"][style*="font-weight"]');
+      var filtered2 = [];
+      for (var oi = 0; oi < optionHeaders.length; oi++) {
+        if (!optionHeaders[oi].closest('.slide-footer')) filtered2.push(optionHeaders[oi]);
+      }
+      return filtered2[idx] || null;
+    }
+
+    // ═══ COMPARISON_POINT_A / COMPARISON_POINT_B ═══
+    if (sel === 'COMPARISON_POINT_A' || sel === 'COMPARISON_POINT_B') {
+      var compCards = slide.querySelectorAll('.card');
+      var compCardIdx = (sel === 'COMPARISON_POINT_A') ? 0 : 1;
+      var compCard = compCards[compCardIdx];
+      if (!compCard) return null;
+      var compSpans = compCard.querySelectorAll('span[style*="text-body-color"], span[style*="#4b5563"], span');
+      var filteredSpans = [];
+      for (var csi = 0; csi < compSpans.length; csi++) {
+        if (compSpans[csi].textContent.trim().length > 0) filteredSpans.push(compSpans[csi]);
+      }
+      return filteredSpans[idx] || null;
+    }
+
+    // ═══ PROS_CONS_TITLE / PROS_ITEM / CONS_ITEM ═══
+    if (sel === 'PROS_CONS_TITLE') {
+      var pcCards = slide.querySelectorAll('.card');
+      var pcCard = pcCards[idx];
+      if (!pcCard) return null;
+      return pcCard.querySelector('h2, div[style*="font-weight: 7"], div[style*="font-weight:7"]');
+    }
+    if (sel === 'PROS_ITEM' || sel === 'CONS_ITEM') {
+      var pcCards2 = slide.querySelectorAll('.card');
+      var pcCardIdx = (sel === 'PROS_ITEM') ? 0 : 1;
+      var pcCard2 = pcCards2[pcCardIdx];
+      if (!pcCard2) return null;
+      var pcSpans = pcCard2.querySelectorAll('span[style*="text-body-color"], span[style*="#4b5563"], span');
+      var filteredPcSpans = [];
+      for (var psi = 0; psi < pcSpans.length; psi++) {
+        if (pcSpans[psi].textContent.trim().length > 0) filteredPcSpans.push(pcSpans[psi]);
+      }
+      return filteredPcSpans[idx] || null;
+    }
+
+    // ═══ TEAM_ROLE ═══
+    if (sel === 'TEAM_ROLE') {
+      var teamCards = slide.querySelectorAll('.card');
+      var teamCard = teamCards[idx];
+      if (!teamCard) return null;
+      // Role is typically a smaller text after the name
+      var roleEls = teamCard.querySelectorAll('div[style*="text-body-color"], div[style*="#4b5563"]');
+      return roleEls[0] || null;
+    }
+
+    // ═══ MATRIX_AXIS_X / MATRIX_AXIS_Y ═══
+    if (sel === 'MATRIX_AXIS_X' || sel === 'MATRIX_AXIS_Y') {
+      var axisLabels = slide.querySelectorAll('div[style*="text-align: center"][style*="font-weight"]');
+      if (sel === 'MATRIX_AXIS_X') return axisLabels[0] || null;
+      return axisLabels[1] || null;
+    }
+
     // For .bullet-row selector (text-slide with matchIndex)
     if (sel === '.bullet-row') {
       var rows = slide.querySelectorAll('.bullet-row');
@@ -758,8 +1278,8 @@ export function generateInlineEditScript(
     el.setAttribute('contenteditable', 'true');
     el.setAttribute('spellcheck', 'false');
 
-    // Store original text
-    el._originalText = el.textContent;
+    // Store original text — use innerText to preserve line breaks
+    el._originalText = el.innerText;
 
     // On focus
     el.addEventListener('focus', function() {
@@ -770,9 +1290,9 @@ export function generateInlineEditScript(
       }, '*');
     });
 
-    // On blur — send updated text to parent
+    // On blur — send updated text to parent (innerText preserves line breaks)
     el.addEventListener('blur', function() {
-      var newText = el.textContent.trim();
+      var newText = el.innerText.trim();
       if (newText !== el._originalText) {
         el._originalText = newText;
         window.parent.postMessage({
@@ -795,7 +1315,7 @@ export function generateInlineEditScript(
         el.blur();
       }
       if (e.key === 'Escape') {
-        el.textContent = el._originalText;
+        el.innerText = el._originalText;
         el.blur();
       }
       e.stopPropagation();

@@ -12,8 +12,10 @@
  * Supports:
  *   - **text** → <strong>text</strong>
  *   - *text*   → <em>text</em>
+ *   - \n       → <br> (preserves line breaks from inline editing)
  *
  * Order matters: bold (**) is processed before italic (*) to avoid conflicts.
+ * Newline conversion is done last to avoid interfering with markdown parsing.
  */
 export function parseInlineMarkdown(text: string): string {
   if (!text || typeof text !== "string") return text || "";
@@ -25,6 +27,12 @@ export function parseInlineMarkdown(text: string): string {
 
   // 2. Italic: *text* → <em>text</em> (but not inside <strong> tags)
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+
+  // 3. Newlines: \n → <br> (preserves line breaks from contentEditable editing)
+  // Only convert if the text actually contains newlines (from user editing)
+  if (result.includes("\n")) {
+    result = result.replace(/\n/g, "<br>");
+  }
 
   return result;
 }
