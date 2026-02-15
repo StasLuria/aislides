@@ -28,13 +28,13 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
   <!-- Content on blue panel -->
   <div style="position: absolute; left: 56px; top: 44%; bottom: 0; width: calc(49% - 56px); z-index: 5; display: flex; flex-direction: column; justify-content: center; padding-right: 40px;">
-    <h1 style="color: #ffffff; font-family: Arial, sans-serif; font-size: 44px; font-weight: 700; line-height: 1.1; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <h1 style="color: #ffffff; font-family: Arial, sans-serif; font-size: 38px; font-weight: 700; line-height: 1.15; margin: 0 0 14px 0;">{{ title }}</h1>
     <!-- Red underline brush stroke -->
     <div style="margin-bottom: 24px;">
       <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/xPDYGlxYLgYvmYKL.png" alt="" style="width: 200px; height: auto;" />
     </div>
     {% if description %}
-    <p style="color: rgba(255,255,255,0.9); font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
+    <p style="color: rgba(255,255,255,0.9); font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;">{{ description }}</p>
     {% endif %}
     {% if presentationDate %}
     <p style="color: rgba(255,255,255,0.7); font-family: Arial, sans-serif; font-size: 11px; margin: 0; position: absolute; bottom: 20px; left: 0;">{{ presentationDate | default('') }}</p>

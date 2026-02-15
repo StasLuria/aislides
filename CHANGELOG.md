@@ -7,14 +7,21 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 124 |
-| Total tasks | 1156 |
-| Completed | 1144 (99%) |
+| Total sections | 125 |
+| Total tasks | 1160 |
+| Completed | 1148 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 40: Fix Title Slide Text Overflow ✅
+
+- [x] Fix description text truncation on title slide (text cut off with "…")
+- [x] Removed -webkit-line-clamp from title and description, reduced font sizes (title 38px, desc 14px)
+- [x] Ensure title and description both fit within the blue panel
+- [x] Save checkpoint
 
 ### 🚀 Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied ✅
 
@@ -1587,7 +1594,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (55 sections, 667/679 tasks)
+### 🚀 Improvements (56 sections, 671/683 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1644,6 +1651,7 @@
 - **Round 37: BSPB Title Slide from Original Presentation** — ✅
 - **Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection)** — ✅
 - **Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied** — ✅
+- **Round 40: Fix Title Slide Text Overflow** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

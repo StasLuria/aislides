@@ -1484,3 +1484,9 @@
 - [x] Improve feedback prompt to explicitly handle background, colors, circles requests
 - [x] Write tests (4 new tests — 1498 total passing)
 - [x] Save checkpoint
+
+## Round 40: Fix Title Slide Text Overflow
+- [x] Fix description text truncation on title slide (text cut off with "…")
+- [x] Removed -webkit-line-clamp from title and description, reduced font sizes (title 38px, desc 14px)
+- [x] Ensure title and description both fit within the blue panel
+- [x] Save checkpoint
