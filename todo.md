@@ -1490,3 +1490,14 @@
 - [x] Removed -webkit-line-clamp from title and description, reduced font sizes (title 38px, desc 14px)
 - [x] Ensure title and description both fit within the blue panel
 - [x] Save checkpoint
+
+## Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback
+- [x] Investigate why BSPB theme CSS is not applied to generated slides (purple/lavender instead of white)
+- [x] Fix theme CSS injection: added renderSlidePreview() helper that wraps slide HTML with BASE_CSS + theme CSS
+- [x] Fix batch mode: slide previews now wrapped with full theme CSS at completion
+- [x] Fix step-by-step finalization: slide previews now wrapped with full theme CSS
+- [x] Fix slide preview overflow (container uses explicit width/height with overflow:hidden)
+- [x] Design feedback already works correctly (requires_recompose triggers full re-compose)
+- [x] Write renderSlidePreview tests (8 new tests — 1506 total passing)
+- [x] Update all test mocks to include renderSlidePreview
+- [x] Save checkpoint

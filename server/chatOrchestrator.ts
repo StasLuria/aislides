@@ -36,7 +36,7 @@ import {
   createPresentation,
   updatePresentationProgress,
 } from "./presentationDb";
-import { renderPresentation, renderSlide, BASE_CSS, getLayoutTemplate } from "./pipeline/templateEngine";
+import { renderPresentation, renderSlide, renderSlidePreview, BASE_CSS, getLayoutTemplate } from "./pipeline/templateEngine";
 import { htmlComposerSystem, htmlComposerUser } from "./pipeline/prompts";
 import { getThemePreset, type ThemePreset } from "./pipeline/themes";
 import { autoSelectTheme } from "./pipeline/themeSelector";
@@ -661,14 +661,8 @@ async function startQuickGeneration(
           const slideMatch = progress.message?.match(/(\d+)\s+из\s+(\d+)/);
           const slideNum = slideMatch ? parseInt(slideMatch[1]) : 0;
           console.log(`[ChatOrchestrator] Sending slide_preview for slide ${slideNum}`);
-          writer({
-            type: "slide_preview",
-            data: {
-              slideNumber: slideNum,
-              title: `Слайд ${slideNum}`,
-              html: progress.slidePreview,
-            },
-          });
+          // Note: theme CSS is not available yet during composing (result not returned yet).
+          // We'll send full previews at completion instead. Skip partial previews.
         }
       },
     );
@@ -715,15 +709,23 @@ async function startQuickGeneration(
       ...(htmlUrl ? { resultUrls: { html_preview: htmlUrl } } : {}),
     });
 
-    // Send all slide previews at completion (ensures user sees them)
+    // Send all slide previews at completion — wrap each with full CSS + theme
+    const batchThemePreset = getThemePreset(
+      (session.metadata as Record<string, any>)?.theme_preset || "auto"
+    );
     for (let si = 0; si < result.slides.length; si++) {
       if (result.slides[si].html) {
+        const wrappedHtml = renderSlidePreview(
+          result.slides[si].html,
+          result.themeCss || batchThemePreset.cssVariables,
+          batchThemePreset.fontsUrl,
+        );
         writer({
           type: "slide_preview",
           data: {
             slideNumber: si + 1,
             title: `Слайд ${si + 1}`,
-            html: result.slides[si].html,
+            html: wrappedHtml,
           },
         });
       }
@@ -2252,14 +2254,20 @@ async function finalizeStepPresentation(
       ...(htmlUrl ? { resultUrls: { html_preview: htmlUrl } } : {}),
     });
 
-    // Send all slide previews
+    // Send all slide previews — wrap each with full CSS + theme
+    const stepThemePreset = getThemePreset(themePresetId);
     for (const slide of sortedSlides) {
+      const wrappedHtml = renderSlidePreview(
+        slide.html,
+        themeCss || stepThemePreset.cssVariables,
+        stepThemePreset.fontsUrl,
+      );
       writer({
         type: "slide_preview",
         data: {
           slideNumber: slide.slideNumber,
           title: `Слайд ${slide.slideNumber}`,
-          html: slide.html,
+          html: wrappedHtml,
         },
       });
     }

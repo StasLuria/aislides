@@ -278,7 +278,7 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
       const doc = iframeRef.current.contentDocument;
       if (doc) {
         doc.open();
-        // If the HTML is a full document (from renderPresentation), write it directly.
+        // If the HTML is a full document (from renderSlidePreview/renderPresentation), write it directly.
         // Otherwise wrap the fragment with minimal styles.
         const isFullDoc = preview.html.trimStart().startsWith('<!DOCTYPE') || preview.html.trimStart().startsWith('<html');
         if (isFullDoc) {
@@ -296,7 +296,7 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
-  .slide { width: 1280px; height: 720px; }
+  .slide { width: 1280px; height: 720px; overflow: hidden; }
 </style>
 </head>
 <body><div class="slide">${preview.html}</div></body></html>`);
@@ -307,12 +307,13 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
   }, [preview.html]);
 
   const scale = expanded ? 0.5 : 0.25;
+  const containerW = expanded ? 640 : 320;
+  const containerH = expanded ? 360 : 180;
 
   return (
     <div
-      className={`group relative rounded-lg overflow-hidden border border-border bg-white cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/30 ${
-        expanded ? "w-[640px] h-[360px]" : "w-[320px] h-[180px]"
-      }`}
+      className="group relative rounded-lg border border-border bg-white cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/30 shrink-0"
+      style={{ width: containerW, height: containerH, overflow: "hidden" }}
       onClick={() => setExpanded(!expanded)}
     >
       <iframe
@@ -324,6 +325,7 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
           transform: `scale(${scale})`,
           transformOrigin: "top left",
           border: "none",
+          display: "block",
         }}
         sandbox="allow-same-origin"
         title={`Slide ${preview.slideNumber}`}

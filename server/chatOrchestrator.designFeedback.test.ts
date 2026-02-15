@@ -24,6 +24,7 @@ vi.mock("./pipeline/generator", () => ({
 vi.mock("./pipeline/templateEngine", () => ({
   renderSlide: vi.fn().mockReturnValue("<div>slide</div>"),
   renderPresentation: vi.fn().mockReturnValue("<html>presentation</html>"),
+  renderSlidePreview: vi.fn().mockImplementation((html: string) => `<!DOCTYPE html><html><body>${html}</body></html>`),
   getLayoutTemplate: vi.fn().mockReturnValue("<div>template</div>"),
 }));
 

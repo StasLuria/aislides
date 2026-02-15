@@ -2692,6 +2692,37 @@ export function renderPresentation(
 </html>`;
 }
 
+/**
+ * Render a single slide as a standalone HTML document with full CSS (BASE_CSS + theme).
+ * Used for slide preview thumbnails in chat — ensures theme variables are applied.
+ */
+export function renderSlidePreview(
+  slideHtml: string,
+  themeCss: string,
+  fontsUrl?: string,
+): string {
+  return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="${fontsUrl || 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'}" rel="stylesheet" />
+  <style>${BASE_CSS}</style>
+  <style>${themeCss}</style>
+  <style>
+    body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="slide" style="width:1280px; height:720px; overflow:hidden;">
+    ${slideHtml}
+  </div>
+</body>
+</html>`;
+}
+
 export function getLayoutTemplate(layoutId: string): string {
   return LAYOUT_TEMPLATES[layoutId] || "";
 }

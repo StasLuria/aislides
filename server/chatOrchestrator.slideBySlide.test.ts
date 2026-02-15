@@ -78,6 +78,7 @@ vi.mock("./pipeline/generator", () => ({
 vi.mock("./pipeline/templateEngine", () => ({
   renderSlide: vi.fn(() => "<div class='slide'>Rendered slide</div>"),
   renderPresentation: vi.fn(() => "<html><body>Full presentation</body></html>"),
+  renderSlidePreview: vi.fn((html: string) => `<!DOCTYPE html><html><body>${html}</body></html>`),
   BASE_CSS: ":root {}",
   getLayoutTemplate: vi.fn(() => "<div>{{title}}</div>"),
 }));

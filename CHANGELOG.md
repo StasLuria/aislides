@@ -7,14 +7,26 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 125 |
-| Total tasks | 1160 |
-| Completed | 1148 (99%) |
+| Total sections | 126 |
+| Total tasks | 1169 |
+| Completed | 1157 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback ✅
+
+- [x] Investigate why BSPB theme CSS is not applied to generated slides (purple/lavender instead of white)
+- [x] Fix theme CSS injection: added renderSlidePreview() helper that wraps slide HTML with BASE_CSS + theme CSS
+- [x] Fix batch mode: slide previews now wrapped with full theme CSS at completion
+- [x] Fix step-by-step finalization: slide previews now wrapped with full theme CSS
+- [x] Fix slide preview overflow (container uses explicit width/height with overflow:hidden)
+- [x] Design feedback already works correctly (requires_recompose triggers full re-compose)
+- [x] Write renderSlidePreview tests (8 new tests — 1506 total passing)
+- [x] Update all test mocks to include renderSlidePreview
+- [x] Save checkpoint
 
 ### 🚀 Round 40: Fix Title Slide Text Overflow ✅
 
@@ -1594,7 +1606,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (56 sections, 671/683 tasks)
+### 🚀 Improvements (57 sections, 680/692 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1652,6 +1664,7 @@
 - **Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection)** — ✅
 - **Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied** — ✅
 - **Round 40: Fix Title Slide Text Overflow** — ✅
+- **Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
