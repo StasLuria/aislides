@@ -373,11 +373,11 @@ presentation-frontend/
 | Pipeline (агенты) | ~18 100 | 25 |
 | Routes (API) | ~10 700 | 22 |
 | Server (прочее) | ~3 500 | 13 |
-| Client (страницы) | ~7 000 | 9 |
+| Client (страницы) | ~7 300 | 9 |
 | Client (компоненты) | ~7 100 | 52 |
 | Shared | ~100 | 4 |
-| Тесты | ~20 100 | 56 |
-| **Итого** | **~63 000** | **168** |
+| Тесты | ~20 300 | 57 |
+| **Итого** | **~63 600** | **169** |
 
 ---
 
@@ -398,7 +398,7 @@ presentation-frontend/
 
 ## API
 
-Приложение использует **62 REST API endpoints** через Express + 2 tRPC-процедуры для аутентификации. Основные группы:
+Приложение использует **64 REST API endpoints** через Express + 2 tRPC-процедуры для аутентификации. Основные группы:
 
 ### Презентации (`/api/v1/presentations`)
 
@@ -515,7 +515,7 @@ pnpm build             # Production build (Vite + esbuild)
 
 ### Архитектурные решения
 
-**REST vs tRPC.** Приложение использует Express REST API для основной функциональности (SSE streaming, бинарные экспорты, file uploads, публичные endpoints) и tRPC для аутентификации. Решение обосновано тем, что большинство из 62 endpoints требуют Express-специфичные возможности (SSE, multipart uploads, бинарные ответы). Новые endpoints рекомендуется добавлять через tRPC.
+**REST vs tRPC.** Приложение использует Express REST API для основной функциональности (SSE streaming, бинарные экспорты, file uploads, публичные endpoints) и tRPC для аутентификации. Решение обосновано тем, что большинство из 64 endpoints требуют Express-специфичные возможности (SSE, multipart uploads, бинарные ответы). Новые endpoints рекомендуется добавлять через tRPC.
 
 **Два уровня auto-fix.** `fixSlideStructure` (QA Agent) нормализует структуру данных после HTML Composer, `fixSlideDensity` (Design Critic) контролирует плотность контента перед визуальной оценкой. Функции работают последовательно на разных этапах пайплайна и не дублируют друг друга.
 

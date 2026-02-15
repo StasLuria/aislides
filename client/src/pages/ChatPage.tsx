@@ -39,8 +39,11 @@ import {
   ClipboardCheck,
   MessageSquare,
   MessageSquarePlus,
+  Quote,
+  Highlighter,
+  StickyNote,
 } from "lucide-react";
-import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress, type MessageComment } from "@/hooks/useSSEChat";
+import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress, type MessageComment, type MessageAnnotation } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
 import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@/components/FileUploadButton";
 import api, { type CustomTemplateListItem } from "@/lib/api";
@@ -742,12 +745,16 @@ function MessageBubble({
   sessionId,
   onCommentsUpdate,
   onSlideCommentsUpdate,
+  onAnnotationsUpdate,
+  onQuoteReply,
 }: {
   message: ChatMessage;
   messageIndex: number;
   sessionId: string | null;
   onCommentsUpdate: (messageIndex: number, comments: MessageComment[]) => void;
   onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
+  onAnnotationsUpdate: (messageIndex: number, annotations: MessageAnnotation[]) => void;
+  onQuoteReply: (text: string) => void;
 }) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -755,6 +762,19 @@ function MessageBubble({
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  // Text selection popup state
+  const [selectionPopup, setSelectionPopup] = useState<{
+    x: number; y: number; text: string;
+  } | null>(null);
+  // Annotation input state
+  const [showAnnotationInput, setShowAnnotationInput] = useState(false);
+  const [annotationNote, setAnnotationNote] = useState("");
+  const [annotationSelectedText, setAnnotationSelectedText] = useState("");
+  const annotationInputRef = useRef<HTMLInputElement>(null);
+  // Active annotation tooltip
+  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -798,8 +818,106 @@ function MessageBubble({
     }
   }, [showCommentInput]);
 
+  useEffect(() => {
+    if (showAnnotationInput && annotationInputRef.current) {
+      annotationInputRef.current.focus();
+    }
+  }, [showAnnotationInput]);
+
+  // Handle text selection within the bubble
+  const handleMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !bubbleRef.current) {
+      return;
+    }
+    const selectedText = selection.toString().trim();
+    if (!selectedText || selectedText.length < 2) return;
+
+    // Check if selection is within this bubble
+    const range = selection.getRangeAt(0);
+    if (!bubbleRef.current.contains(range.commonAncestorContainer)) return;
+
+    // Get position for popup
+    const rect = range.getBoundingClientRect();
+    const bubbleRect = bubbleRef.current.getBoundingClientRect();
+    setSelectionPopup({
+      x: rect.left - bubbleRect.left + rect.width / 2,
+      y: rect.top - bubbleRect.top - 8,
+      text: selectedText,
+    });
+  }, []);
+
+  // Close selection popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      // Small delay to allow button clicks to register
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) {
+          setSelectionPopup(null);
+        }
+      }, 200);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle quote reply
+  const handleQuote = useCallback(() => {
+    if (!selectionPopup) return;
+    onQuoteReply(selectionPopup.text);
+    setSelectionPopup(null);
+    window.getSelection()?.removeAllRanges();
+  }, [selectionPopup, onQuoteReply]);
+
+  // Handle start annotation
+  const handleStartAnnotation = useCallback(() => {
+    if (!selectionPopup) return;
+    setAnnotationSelectedText(selectionPopup.text);
+    setShowAnnotationInput(true);
+    setAnnotationNote("");
+    setSelectionPopup(null);
+    window.getSelection()?.removeAllRanges();
+  }, [selectionPopup]);
+
+  // Handle add annotation
+  const handleAddAnnotation = useCallback(async () => {
+    if (!annotationNote.trim() || !sessionId || isSubmitting || !annotationSelectedText) return;
+    setIsSubmitting(true);
+    try {
+      // Find offset in content
+      const startOffset = message.content.indexOf(annotationSelectedText);
+      const endOffset = startOffset >= 0 ? startOffset + annotationSelectedText.length : 0;
+      const result = await api.addAnnotation(
+        sessionId, messageIndex, annotationSelectedText, annotationNote.trim(), startOffset, endOffset
+      );
+      onAnnotationsUpdate(messageIndex, result.annotations);
+      setAnnotationNote("");
+      setAnnotationSelectedText("");
+      setShowAnnotationInput(false);
+    } catch {
+      toast.error("Не удалось добавить аннотацию");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [annotationNote, sessionId, messageIndex, isSubmitting, annotationSelectedText, message.content, onAnnotationsUpdate]);
+
+  // Handle delete annotation
+  const handleDeleteAnnotation = useCallback(async (annotationId: string) => {
+    if (!sessionId) return;
+    try {
+      await api.deleteAnnotation(sessionId, messageIndex, annotationId);
+      const updated = (message.annotations || []).filter(a => a.id !== annotationId);
+      onAnnotationsUpdate(messageIndex, updated);
+    } catch {
+      toast.error("Не удалось удалить аннотацию");
+    }
+  }, [sessionId, messageIndex, message.annotations, onAnnotationsUpdate]);
+
   const comments = message.comments || [];
   const hasComments = comments.length > 0;
+  const annotations = message.annotations || [];
+  const hasAnnotations = annotations.length > 0;
 
   return (
     <div className={`group/msg flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -836,7 +954,7 @@ function MessageBubble({
           </div>
         )}
 
-        <div className="relative">
+        <div className="relative" ref={bubbleRef} onMouseUp={handleMouseUp}>
           <div
             className={`rounded-2xl px-4 py-2.5 ${
               isUser
@@ -847,13 +965,55 @@ function MessageBubble({
             <StreamingText content={message.content} isStreaming={message.isStreaming} isUser={isUser} />
           </div>
 
+          {/* Text selection popup */}
+          {selectionPopup && !message.isStreaming && (
+            <div
+              className="absolute z-50 flex items-center gap-0.5 bg-background border border-border rounded-lg shadow-lg px-1 py-0.5 -translate-x-1/2"
+              style={{ left: selectionPopup.x, top: selectionPopup.y }}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <button
+                onClick={handleQuote}
+                className="flex items-center gap-1 px-2 py-1 text-xs rounded-md hover:bg-primary/10 text-foreground transition-colors"
+                title="Цитировать"
+              >
+                <Quote className="w-3 h-3 text-primary" />
+                <span>Цитата</span>
+              </button>
+              {sessionId && (
+                <button
+                  onClick={handleStartAnnotation}
+                  className="flex items-center gap-1 px-2 py-1 text-xs rounded-md hover:bg-amber-50 text-foreground transition-colors"
+                  title="Добавить аннотацию"
+                >
+                  <Highlighter className="w-3 h-3 text-amber-500" />
+                  <span>Заметка</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (selectionPopup) {
+                    navigator.clipboard.writeText(selectionPopup.text);
+                    toast.success("Скопировано");
+                    setSelectionPopup(null);
+                    window.getSelection()?.removeAllRanges();
+                  }
+                }}
+                className="flex items-center gap-1 px-2 py-1 text-xs rounded-md hover:bg-secondary text-foreground transition-colors"
+                title="Скопировать фрагмент"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* Action buttons — appear on hover */}
           {!message.isStreaming && message.content && (
             <div
               className={`absolute flex gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 ${
                 isUser
-                  ? "-left-16 top-1"
-                  : "-right-16 top-1"
+                  ? "-left-20 top-1"
+                  : "-right-20 top-1"
               }`}
             >
               <button
@@ -866,6 +1026,13 @@ function MessageBubble({
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
+              </button>
+              <button
+                onClick={() => onQuoteReply(message.content)}
+                className="p-1 rounded-md hover:bg-black/5 text-muted-foreground hover:text-foreground"
+                title="Цитировать всё сообщение"
+              >
+                <Quote className="w-3.5 h-3.5" />
               </button>
               {sessionId && (
                 <button
@@ -944,6 +1111,96 @@ function MessageBubble({
                 >
                   <X className="w-3 h-3" />
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Annotations section */}
+        {(hasAnnotations || showAnnotationInput) && (
+          <div className={`mt-1.5 w-full ${isUser ? "pl-4" : "pr-4"}`}>
+            {/* Existing annotations */}
+            {annotations.map((a) => (
+              <div
+                key={a.id}
+                className="group/annotation mb-1 rounded-lg border border-amber-300/60 bg-amber-50/80 overflow-hidden"
+                onMouseEnter={() => setActiveAnnotation(a.id)}
+                onMouseLeave={() => setActiveAnnotation(null)}
+              >
+                {/* Highlighted text */}
+                <div className="px-2.5 pt-1.5 pb-1">
+                  <div className="flex items-start gap-1.5">
+                    <Highlighter className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                    <span className="text-xs text-foreground/60 italic line-clamp-2 leading-relaxed">
+                      «{a.selectedText}»
+                    </span>
+                  </div>
+                </div>
+                {/* Note */}
+                <div className="flex items-start gap-2 px-2.5 pb-1.5">
+                  <StickyNote className="w-3 h-3 text-amber-600 mt-0.5 shrink-0" />
+                  <span className="text-xs text-foreground/80 flex-1 leading-relaxed">{a.note}</span>
+                  <button
+                    onClick={() => handleDeleteAnnotation(a.id)}
+                    className="opacity-0 group-hover/annotation:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-100 text-muted-foreground hover:text-red-500 shrink-0"
+                    title="Удалить аннотацию"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Annotation input */}
+            {showAnnotationInput && (
+              <div className="mb-1 rounded-lg border border-amber-300/60 bg-amber-50/80 p-2.5">
+                <div className="flex items-start gap-1.5 mb-2">
+                  <Highlighter className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                  <span className="text-xs text-foreground/60 italic line-clamp-2">
+                    «{annotationSelectedText}»
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    ref={annotationInputRef}
+                    type="text"
+                    value={annotationNote}
+                    onChange={(e) => setAnnotationNote(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddAnnotation();
+                      }
+                      if (e.key === "Escape") {
+                        setShowAnnotationInput(false);
+                        setAnnotationNote("");
+                        setAnnotationSelectedText("");
+                      }
+                    }}
+                    placeholder="Ваша заметка..."
+                    className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-300 placeholder:text-muted-foreground/50"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    onClick={handleAddAnnotation}
+                    disabled={!annotationNote.trim() || isSubmitting}
+                    className="p-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
+                    title="Сохранить"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Check className="w-3 h-3" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setShowAnnotationInput(false); setAnnotationNote(""); setAnnotationSelectedText(""); }}
+                    className="p-1.5 rounded-lg hover:bg-amber-100 text-muted-foreground transition-colors"
+                    title="Отмена"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1388,7 +1645,11 @@ export default function ChatPage() {
     cancelStream,
     updateMessageComments,
     updateSlideComments,
+    updateAnnotations,
   } = useSSEChat();
+
+  // Quote-reply state
+  const [quoteReply, setQuoteReply] = useState<{ text: string; messageIndex: number } | null>(null);
 
   // Initialize session — only load if URL has an ID, otherwise reset to empty state
   // IMPORTANT: Skip loadSession when we just created the session (to avoid race condition
@@ -1447,7 +1708,12 @@ export default function ChatPage() {
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming || isUploading) return;
+    // Prepend quote context if replying to a quote
+    const messageToSend = quoteReply
+      ? `> ${quoteReply.text.split('\n').join('\n> ')}\n\n${trimmed}`
+      : trimmed;
     setInput("");
+    setQuoteReply(null);
     setShowSettings(false);
     const filesToUpload = [...attachedFiles];
 
@@ -1480,11 +1746,11 @@ export default function ChatPage() {
         // After file upload completes, send message directly
         // (pendingMessageRef useEffect already fired when sessionId changed,
         //  so we can't rely on it — it ran before files were uploaded)
-        await sendMessage(trimmed, newId);
+        await sendMessage(messageToSend, newId);
         setRefreshTrigger((p) => p + 1);
         return;
       }
-      pendingMessageRef.current = trimmed;
+      pendingMessageRef.current = messageToSend;
       return;
     }
 
@@ -1495,9 +1761,9 @@ export default function ChatPage() {
       await new Promise(r => setTimeout(r, 1500));
     }
 
-    await sendMessage(trimmed, sessionId);
+    await sendMessage(messageToSend, sessionId);
     setRefreshTrigger((p) => p + 1);
-  }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession, settings]);
+  }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession, settings, quoteReply]);
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1612,6 +1878,11 @@ export default function ChatPage() {
                   sessionId={sessionId}
                   onCommentsUpdate={updateMessageComments}
                   onSlideCommentsUpdate={updateSlideComments}
+                  onAnnotationsUpdate={updateAnnotations}
+                  onQuoteReply={(text) => {
+                    setQuoteReply({ text, messageIndex: i });
+                    textareaRef.current?.focus();
+                  }}
                 />
               ))}
 
@@ -1682,6 +1953,24 @@ export default function ChatPage() {
                   onChange={setSettings}
                   onClose={() => setShowSettings(false)}
                 />
+              )}
+
+              {/* Quote reply preview */}
+              {quoteReply && (
+                <div className="mb-2 flex items-start gap-2 px-2 py-2 rounded-lg bg-primary/5 border border-primary/20">
+                  <Quote className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-primary font-medium uppercase tracking-wider mb-0.5">Цитата</p>
+                    <p className="text-xs text-foreground/70 line-clamp-3 leading-relaxed">{quoteReply.text}</p>
+                  </div>
+                  <button
+                    onClick={() => setQuoteReply(null)}
+                    className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground shrink-0"
+                    title="Убрать цитату"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
 
               {/* Settings chips (shown when non-default settings are active) */}

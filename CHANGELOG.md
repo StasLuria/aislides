@@ -7,16 +7,31 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 130 |
-| Total tasks | 1215 |
-| Completed | 1202 (99%) |
-| Pending | 13 |
+| Total sections | 131 |
+| Total tasks | 1227 |
+| Completed | 1215 (99%) |
+| Pending | 12 |
 
 ---
 
 ## Detailed Changelog
 
-### 🚀 Round 45: Comments on Messages + Comments on Slides + Copy Any Message 🔴 14/15
+### 🚀 Round 46: Quote-Reply + Inline Annotations ✅
+
+- [x] Feature 1: Quote-reply — select text in message, popup with "Цитировать" button, quote inserted into input field as context
+- [x] Feature 2: Inline annotations — select text in message, popup with "Аннотация" button, leave a note attached to that fragment
+- [x] Backend: Store annotations in message data (annotations field with text range, note, id)
+- [x] Backend: API endpoints for adding/deleting annotations
+- [x] Frontend: Text selection detection in message bubbles
+- [x] Frontend: Selection popup with "Цитировать" and "Аннотация" options
+- [x] Frontend: Quote block in input area with selected text and close button
+- [x] Frontend: Highlighted annotated text in messages with tooltip/popover for annotation notes
+- [x] Frontend: Annotation input dialog
+- [x] Write vitest tests
+- [x] Browser test all features
+- [x] Save checkpoint
+
+### 🚀 Round 45: Comments on Messages + Comments on Slides + Copy Any Message ✅
 
 - [x] Feature 1: Comments on chat messages — button on hover, inline comment input, comments displayed under message
 - [x] Feature 2: Comments on slide previews — comment button on slide thumbnails, comment displayed under slide
@@ -32,7 +47,7 @@
 - [x] Frontend: Verify copy button works for all message types
 - [x] Write vitest tests for comment endpoints
 - [x] Browser test all features
-- [ ] Save checkpoint (pending)
+- [x] Save checkpoint
 
 ### 🚀 Round 44: Fix User Chat Bubble Text Color ✅
 
@@ -1664,7 +1679,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (61 sections, 725/738 tasks)
+### 🚀 Improvements (62 sections, 738/750 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1726,7 +1741,8 @@
 - **Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview** — ✅
 - **Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification** — ✅
 - **Round 44: Fix User Chat Bubble Text Color** — ✅
-- **Round 45: Comments on Messages + Comments on Slides + Copy Any Message** — 14/15
+- **Round 45: Comments on Messages + Comments on Slides + Copy Any Message** — ✅
+- **Round 46: Quote-Reply + Inline Annotations** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

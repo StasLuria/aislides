@@ -510,6 +510,60 @@ router.delete("/api/v1/chat/sessions/:id/messages/:msgIndex/slides/:slideNumber/
   }
 });
 
+// ── Annotations on messages ────────────────────────────
+
+/** Add annotation to a message */
+router.post("/api/v1/chat/sessions/:id/messages/:msgIndex/annotations", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex } = req.params;
+    const { selectedText, note, startOffset, endOffset } = req.body;
+    if (!selectedText || !note) return res.status(400).json({ detail: "selectedText and note are required" });
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+    const messages = (session.messages || []) as any[];
+    const idx = parseInt(msgIndex, 10);
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) return res.status(400).json({ detail: "Invalid message index" });
+    const msg = { ...messages[idx] };
+    const annotation = {
+      id: nanoid(12),
+      selectedText: selectedText.trim(),
+      note: note.trim(),
+      startOffset: typeof startOffset === "number" ? startOffset : 0,
+      endOffset: typeof endOffset === "number" ? endOffset : 0,
+      createdAt: Date.now(),
+    };
+    msg.annotations = [...(msg.annotations || []), annotation];
+    messages[idx] = msg;
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+    res.json({ annotations: msg.annotations });
+  } catch (error: any) {
+    console.error("[Chat API] Add annotation error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+/** Delete annotation from a message */
+router.delete("/api/v1/chat/sessions/:id/messages/:msgIndex/annotations/:annotationId", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex, annotationId } = req.params;
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+    const messages = (session.messages || []) as any[];
+    const idx = parseInt(msgIndex, 10);
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) return res.status(400).json({ detail: "Invalid message index" });
+    const msg = { ...messages[idx] };
+    msg.annotations = (msg.annotations || []).filter((a: any) => a.id !== annotationId);
+    messages[idx] = msg;
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+    res.json({ ok: true });
+  } catch (error: any) {
+    console.error("[Chat API] Delete annotation error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
 export function registerChatRoutes(app: import("express").Express) {
   app.use(router);
 }

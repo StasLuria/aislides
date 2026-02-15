@@ -1554,4 +1554,18 @@
 - [x] Frontend: Verify copy button works for all message types
 - [x] Write vitest tests for comment endpoints
 - [x] Browser test all features
-- [ ] Save checkpoint (pending)
+- [x] Save checkpoint
+
+## Round 46: Quote-Reply + Inline Annotations
+- [x] Feature 1: Quote-reply — select text in message, popup with "Цитировать" button, quote inserted into input field as context
+- [x] Feature 2: Inline annotations — select text in message, popup with "Аннотация" button, leave a note attached to that fragment
+- [x] Backend: Store annotations in message data (annotations field with text range, note, id)
+- [x] Backend: API endpoints for adding/deleting annotations
+- [x] Frontend: Text selection detection in message bubbles
+- [x] Frontend: Selection popup with "Цитировать" and "Аннотация" options
+- [x] Frontend: Quote block in input area with selected text and close button
+- [x] Frontend: Highlighted annotated text in messages with tooltip/popover for annotation notes
+- [x] Frontend: Annotation input dialog
+- [x] Write vitest tests
+- [x] Browser test all features
+- [x] Save checkpoint

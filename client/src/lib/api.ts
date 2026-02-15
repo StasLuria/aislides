@@ -962,6 +962,32 @@ class ApiClient {
     );
   }
 
+  // — Annotations —
+  async addAnnotation(
+    sessionId: string,
+    messageIndex: number,
+    selectedText: string,
+    note: string,
+    startOffset: number,
+    endOffset: number,
+  ): Promise<{ annotations: Array<{ id: string; selectedText: string; note: string; startOffset: number; endOffset: number; createdAt: number }> }> {
+    const { data } = await axios.post(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/annotations`,
+      { selectedText, note, startOffset, endOffset },
+    );
+    return data;
+  }
+
+  async deleteAnnotation(
+    sessionId: string,
+    messageIndex: number,
+    annotationId: string,
+  ): Promise<void> {
+    await axios.delete(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/annotations/${annotationId}`,
+    );
+  }
+
   // — Health —
   async checkHealth(): Promise<{ status: string; version?: string }> {
     try {

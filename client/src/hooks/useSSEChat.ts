@@ -35,6 +35,15 @@ export interface MessageComment {
   createdAt: number;
 }
 
+export interface MessageAnnotation {
+  id: string;
+  selectedText: string;
+  note: string;
+  startOffset: number;
+  endOffset: number;
+  createdAt: number;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -47,6 +56,7 @@ export interface ChatMessage {
   files?: ChatFileRef[];
   comments?: MessageComment[];
   slideComments?: Record<number, MessageComment[]>;
+  annotations?: MessageAnnotation[];
 }
 
 export interface PresentationLink {
@@ -616,6 +626,20 @@ export function useSSEChat() {
     [],
   );
 
+  /** Update annotations on a specific message (by index) */
+  const updateAnnotations = useCallback(
+    (messageIndex: number, annotations: MessageAnnotation[]) => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (messageIndex >= 0 && messageIndex < updated.length) {
+          updated[messageIndex] = { ...updated[messageIndex], annotations };
+        }
+        return updated;
+      });
+    },
+    [],
+  );
+
   return {
     // State
     messages,
@@ -640,5 +664,6 @@ export function useSSEChat() {
     deleteSession,
     updateMessageComments,
     updateSlideComments,
+    updateAnnotations,
   };
 }

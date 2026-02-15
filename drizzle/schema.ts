@@ -120,11 +120,26 @@ export interface ChatMessage {
   comments?: MessageComment[];
   /** Optional: user comments on individual slide previews (keyed by slideNumber) */
   slideComments?: Record<number, MessageComment[]>;
+  /** Optional: inline annotations on text fragments */
+  annotations?: MessageAnnotation[];
 }
 
 export interface MessageComment {
   id: string;
   text: string;
+  createdAt: number;
+}
+
+export interface MessageAnnotation {
+  id: string;
+  /** The exact text that was highlighted */
+  selectedText: string;
+  /** The annotation/note text */
+  note: string;
+  /** Character offset start in the message content */
+  startOffset: number;
+  /** Character offset end in the message content */
+  endOffset: number;
   createdAt: number;
 }
 
