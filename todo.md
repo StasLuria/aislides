@@ -1579,3 +1579,15 @@
 - [x] Write tests (11 tests passed)
 - [x] Browser test
 - [x] Save checkpoint
+
+## Round 48: Annotation Highlights, Apply Changes, Slide Quoting
+- [x] Feature 1: Highlight annotated text fragments in messages with colored background and tooltip on hover
+- [x] Feature 2: "Apply Changes" button — when AI suggests edits to a quoted fragment, show button to auto-apply
+- [x] Feature 3: Quote specific slide — ability to quote a slide thumbnail for design corrections
+- [x] Frontend: Parse annotations and wrap matching text in highlighted spans with tooltip
+- [x] Frontend: Detect AI response patterns with suggested edits and show "Apply" button
+- [x] Frontend: Add "Quote slide" button on slide preview thumbnails
+- [x] Backend: Slide quote context injection into AI prompt (similar to text quote)
+- [x] Write tests (15 tests passed)
+- [x] Browser test (all features confirmed)
+- [x] Save checkpoint

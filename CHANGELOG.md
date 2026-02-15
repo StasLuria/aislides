@@ -7,14 +7,27 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 132 |
-| Total tasks | 1235 |
-| Completed | 1223 (99%) |
+| Total sections | 133 |
+| Total tasks | 1245 |
+| Completed | 1233 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 48: Annotation Highlights, Apply Changes, Slide Quoting ✅
+
+- [x] Feature 1: Highlight annotated text fragments in messages with colored background and tooltip on hover
+- [x] Feature 2: "Apply Changes" button — when AI suggests edits to a quoted fragment, show button to auto-apply
+- [x] Feature 3: Quote specific slide — ability to quote a slide thumbnail for design corrections
+- [x] Frontend: Parse annotations and wrap matching text in highlighted spans with tooltip
+- [x] Frontend: Detect AI response patterns with suggested edits and show "Apply" button
+- [x] Frontend: Add "Quote slide" button on slide preview thumbnails
+- [x] Backend: Slide quote context injection into AI prompt (similar to text quote)
+- [x] Write tests (15 tests passed)
+- [x] Browser test (all features confirmed)
+- [x] Save checkpoint
 
 ### 🚀 Round 47: Quote Context in AI Prompts ✅
 
@@ -1690,7 +1703,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (63 sections, 746/758 tasks)
+### 🚀 Improvements (64 sections, 756/768 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1755,6 +1768,7 @@
 - **Round 45: Comments on Messages + Comments on Slides + Copy Any Message** — ✅
 - **Round 46: Quote-Reply + Inline Annotations** — ✅
 - **Round 47: Quote Context in AI Prompts** — ✅
+- **Round 48: Annotation Highlights, Apply Changes, Slide Quoting** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

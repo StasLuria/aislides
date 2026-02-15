@@ -131,10 +131,19 @@ function TypingIndicator() {
 // STREAMING TEXT
 // ═══════════════════════════════════════════════════════
 
-function StreamingText({ content, isStreaming, isUser }: { content: string; isStreaming?: boolean; isUser?: boolean }) {
+function StreamingText({ content, isStreaming, isUser, annotations }: { content: string; isStreaming?: boolean; isUser?: boolean; annotations?: MessageAnnotation[] }) {
   // Show typing indicator when streaming but no content yet
   if (isStreaming && !content) {
     return <TypingIndicator />;
+  }
+
+  // If there are annotations and not streaming, render with highlights
+  if (annotations && annotations.length > 0 && !isStreaming) {
+    return (
+      <div className={`leading-relaxed text-sm ${isUser ? 'chat-md-user' : 'chat-md-ai'}`}>
+        <AnnotatedContent content={content} annotations={annotations} isUser={isUser} />
+      </div>
+    );
   }
 
   return (
@@ -143,6 +152,96 @@ function StreamingText({ content, isStreaming, isUser }: { content: string; isSt
       {isStreaming && (
         <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse rounded-sm" />
       )}
+    </div>
+  );
+}
+
+/**
+ * AnnotatedContent — renders message content with highlighted annotation fragments.
+ * Each annotated fragment gets a colored background and a tooltip on hover.
+ */
+function AnnotatedContent({ content, annotations, isUser }: { content: string; annotations: MessageAnnotation[]; isUser?: boolean }) {
+  const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Build segments: split content into annotated and non-annotated parts
+  const segments = useMemo(() => {
+    if (!annotations.length) return [{ text: content, annotation: null }];
+
+    // Sort annotations by their position in the text (find by text match)
+    const positioned = annotations.map(a => {
+      const idx = content.indexOf(a.selectedText);
+      return { ...a, foundAt: idx };
+    }).filter(a => a.foundAt >= 0).sort((a, b) => a.foundAt - b.foundAt);
+
+    if (!positioned.length) return [{ text: content, annotation: null }];
+
+    const result: { text: string; annotation: MessageAnnotation | null }[] = [];
+    let cursor = 0;
+
+    for (const ann of positioned) {
+      // Skip overlapping annotations
+      if (ann.foundAt < cursor) continue;
+
+      // Add non-annotated text before this annotation
+      if (ann.foundAt > cursor) {
+        result.push({ text: content.slice(cursor, ann.foundAt), annotation: null });
+      }
+
+      // Add annotated segment
+      result.push({ text: ann.selectedText, annotation: ann });
+      cursor = ann.foundAt + ann.selectedText.length;
+    }
+
+    // Add remaining text
+    if (cursor < content.length) {
+      result.push({ text: content.slice(cursor), annotation: null });
+    }
+
+    return result;
+  }, [content, annotations]);
+
+  return (
+    <div className="relative">
+      {segments.map((seg, i) => {
+        if (!seg.annotation) {
+          // Render non-annotated text with Streamdown
+          return <Streamdown key={i}>{seg.text}</Streamdown>;
+        }
+
+        const ann = seg.annotation;
+        const isHovered = hoveredAnnotation === ann.id;
+
+        return (
+          <span
+            key={ann.id}
+            className={`relative inline annotation-highlight cursor-help transition-colors duration-150 ${
+              isUser
+                ? "bg-amber-300/40 hover:bg-amber-300/60 border-b border-amber-300/80"
+                : "bg-amber-200/50 hover:bg-amber-200/80 border-b border-amber-400/60"
+            } rounded-sm px-0.5 -mx-0.5`}
+            onMouseEnter={() => setHoveredAnnotation(ann.id)}
+            onMouseLeave={() => setHoveredAnnotation(null)}
+          >
+            <Streamdown>{seg.text}</Streamdown>
+            {/* Tooltip */}
+            {isHovered && (
+              <div
+                ref={tooltipRef}
+                className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-foreground text-background text-xs shadow-lg max-w-[280px] whitespace-normal pointer-events-none"
+                style={{ minWidth: 120 }}
+              >
+                <div className="flex items-start gap-1.5">
+                  <StickyNote className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{ann.note}</span>
+                </div>
+                {/* Arrow */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-foreground" />
+              </div>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -563,12 +662,14 @@ function SlidePreviewsGalleryWithComments({
   sessionId,
   messageIndex,
   onSlideCommentsUpdate,
+  onQuoteSlide,
 }: {
   previews: SlidePreview[];
   slideComments?: Record<number, MessageComment[]>;
   sessionId: string | null;
   messageIndex: number;
   onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
+  onQuoteSlide: (slideNumber: number, slideTitle: string, slideHtml: string) => void;
 }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [commentingSlide, setCommentingSlide] = useState<number | null>(null);
@@ -629,28 +730,42 @@ function SlidePreviewsGalleryWithComments({
                   preview={preview}
                   onClick={() => setLightboxIndex(i)}
                 />
-                {/* Comment button on slide */}
+                {/* Slide action buttons */}
                 {sessionId && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCommentingSlide(commentingSlide === slideNum ? null : slideNum);
-                      setSlideCommentText("");
-                    }}
-                    className={`absolute top-2 left-2 z-10 p-1 rounded-md transition-all ${
-                      hasComments
-                        ? "opacity-100 bg-amber-500 text-white shadow-sm"
-                        : "opacity-0 group-hover/slide:opacity-100 bg-black/50 text-white hover:bg-black/70"
-                    }`}
-                    title="Комментировать слайд"
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    {hasComments && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-600 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
-                        {comments.length}
-                      </span>
-                    )}
-                  </button>
+                  <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                    {/* Comment button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCommentingSlide(commentingSlide === slideNum ? null : slideNum);
+                        setSlideCommentText("");
+                      }}
+                      className={`p-1 rounded-md transition-all ${
+                        hasComments
+                          ? "opacity-100 bg-amber-500 text-white shadow-sm"
+                          : "opacity-0 group-hover/slide:opacity-100 bg-black/50 text-white hover:bg-black/70"
+                      }`}
+                      title="Комментировать слайд"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      {hasComments && (
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-600 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
+                          {comments.length}
+                        </span>
+                      )}
+                    </button>
+                    {/* Quote slide button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuoteSlide(slideNum, preview.title, preview.html);
+                      }}
+                      className="opacity-0 group-hover/slide:opacity-100 p-1 rounded-md bg-black/50 text-white hover:bg-primary/80 transition-all"
+                      title="Цитировать слайд"
+                    >
+                      <Quote className="w-3 h-3" />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -747,6 +862,8 @@ function MessageBubble({
   onSlideCommentsUpdate,
   onAnnotationsUpdate,
   onQuoteReply,
+  onQuoteSlide,
+  previousMessage,
 }: {
   message: ChatMessage;
   messageIndex: number;
@@ -755,6 +872,8 @@ function MessageBubble({
   onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
   onAnnotationsUpdate: (messageIndex: number, annotations: MessageAnnotation[]) => void;
   onQuoteReply: (text: string) => void;
+  onQuoteSlide: (slideNumber: number, slideTitle: string, slideHtml: string) => void;
+  previousMessage?: ChatMessage;
 }) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -962,7 +1081,7 @@ function MessageBubble({
                 : "bg-secondary/60 text-foreground rounded-bl-md"
             }`}
           >
-            <StreamingText content={message.content} isStreaming={message.isStreaming} isUser={isUser} />
+            <StreamingText content={message.content} isStreaming={message.isStreaming} isUser={isUser} annotations={message.annotations} />
           </div>
 
           {/* Text selection popup */}
@@ -1048,6 +1167,27 @@ function MessageBubble({
             </div>
           )}
         </div>
+
+        {/* Apply Changes button — shown on AI messages that respond to a user quote */}
+        {!isUser && !message.isStreaming && previousMessage?.role === "user" && previousMessage.content.startsWith(">") && message.content && (
+          <div className="mt-1.5">
+            <button
+              onClick={() => {
+                // Extract the original quote from previous user message
+                const lines = previousMessage.content.split("\n");
+                const quoteLines = lines.filter(l => l.startsWith("> ")).map(l => l.slice(2));
+                const quote = quoteLines.join("\n");
+                const userRequest = lines.filter(l => !l.startsWith("> ") && l.trim()).join("\n");
+                // Send as a new message to apply the AI's suggestion
+                onQuoteReply(`Примени изменения, которые ты предложил в предыдущем сообщении`);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Применить изменения
+            </button>
+          </div>
+        )}
 
         {/* Comments section */}
         {(hasComments || showCommentInput) && (
@@ -1214,6 +1354,7 @@ function MessageBubble({
             sessionId={sessionId}
             messageIndex={messageIndex}
             onSlideCommentsUpdate={onSlideCommentsUpdate}
+            onQuoteSlide={onQuoteSlide}
           />
         )}
       </div>
@@ -1881,6 +2022,12 @@ export default function ChatPage() {
                     setQuoteReply({ text, messageIndex: i });
                     textareaRef.current?.focus();
                   }}
+                  onQuoteSlide={(slideNumber, slideTitle, slideHtml) => {
+                    const slideRef = `[Слайд ${slideNumber}: ${slideTitle}]`;
+                    setQuoteReply({ text: slideRef, messageIndex: i });
+                    textareaRef.current?.focus();
+                  }}
+                  previousMessage={i > 0 ? messages[i - 1] : undefined}
                 />
               ))}
 

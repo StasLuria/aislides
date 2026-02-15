@@ -411,7 +411,15 @@ export async function processMessage(
   // understands the user is referencing a specific fragment for correction/discussion.
   let effectiveMessage = userMessage;
   if (quoteContext && quoteContext.text) {
-    effectiveMessage = `[Пользователь цитирует фрагмент из предыдущего сообщения]\nЦитата: «${quoteContext.text}»\n\nКомментарий пользователя: ${userMessage}`;
+    // Detect if this is a slide reference (format: [Слайд N: Title])
+    const slideMatch = quoteContext.text.match(/^\[Слайд (\d+):\s*(.+?)\]$/);
+    if (slideMatch) {
+      const slideNum = slideMatch[1];
+      const slideTitle = slideMatch[2];
+      effectiveMessage = `[Пользователь ссылается на конкретный слайд презентации]\nСлайд №${slideNum}: «${slideTitle}»\n\nЗапрос пользователя: ${userMessage}\n\nПожалуйста, внеси изменения именно в этот слайд.`;
+    } else {
+      effectiveMessage = `[Пользователь цитирует фрагмент из предыдущего сообщения]\nЦитата: «${quoteContext.text}»\n\nКомментарий пользователя: ${userMessage}`;
+    }
   }
 
   // Save user message (with quote context displayed as markdown blockquote)
