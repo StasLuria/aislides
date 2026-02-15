@@ -24,6 +24,8 @@ import {
   Zap,
   Target,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   Check,
   Upload,
@@ -32,6 +34,7 @@ import {
   FileUp,
   LayoutTemplate,
   Layers,
+  Maximize2,
 } from "lucide-react";
 import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
@@ -269,25 +272,17 @@ function ActionButtons({
 // SLIDE PREVIEW CARD
 // ═══════════════════════════════════════════════════════
 
-function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    if (iframeRef.current && preview.html) {
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        // If the HTML is a full document (from renderSlidePreview/renderPresentation), write it directly.
-        // Otherwise wrap the fragment with minimal styles.
-        const isFullDoc = preview.html.trimStart().startsWith('<!DOCTYPE') || preview.html.trimStart().startsWith('<html');
-        if (isFullDoc) {
-          // Inject overrides to show only the first slide without dark background/padding
-          const overrideCss = `<style>body{margin:0!important;padding:0!important;background:transparent!important;overflow:hidden!important;display:block!important;gap:0!important;}.slide-container{margin:0!important;}.slide-number{display:none!important;}</style>`;
-          const injected = preview.html.replace('</head>', `${overrideCss}</head>`);
-          doc.write(injected);
-        } else {
-          doc.write(`<!DOCTYPE html>
+/**
+ * Prepare slide HTML for iframe rendering.
+ * Handles both full documents and fragments.
+ */
+function prepareSlideHtml(html: string): string {
+  const isFullDoc = html.trimStart().startsWith('<!DOCTYPE') || html.trimStart().startsWith('<html');
+  if (isFullDoc) {
+    const overrideCss = `<style>body{margin:0!important;padding:0!important;background:transparent!important;overflow:hidden!important;display:block!important;gap:0!important;}.slide-container{margin:0!important;}.slide-number{display:none!important;}</style>`;
+    return html.replace('</head>', `${overrideCss}</head>`);
+  }
+  return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=1280" />
@@ -299,22 +294,28 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
   .slide { width: 1280px; height: 720px; overflow: hidden; }
 </style>
 </head>
-<body><div class="slide">${preview.html}</div></body></html>`);
-        }
+<body><div class="slide">${html}</div></body></html>`;
+}
+
+function SlidePreviewCard({ preview, onClick }: { preview: SlidePreview; onClick?: () => void }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (iframeRef.current && preview.html) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(prepareSlideHtml(preview.html));
         doc.close();
       }
     }
   }, [preview.html]);
 
-  const scale = expanded ? 0.5 : 0.25;
-  const containerW = expanded ? 640 : 320;
-  const containerH = expanded ? 360 : 180;
-
   return (
     <div
       className="group relative rounded-lg border border-border bg-white cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/30 shrink-0"
-      style={{ width: containerW, height: containerH, overflow: "hidden" }}
-      onClick={() => setExpanded(!expanded)}
+      style={{ width: 320, height: 180, overflow: "hidden" }}
+      onClick={onClick}
     >
       <iframe
         ref={iframeRef}
@@ -322,7 +323,7 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
         style={{
           width: "1280px",
           height: "720px",
-          transform: `scale(${scale})`,
+          transform: "scale(0.25)",
           transformOrigin: "top left",
           border: "none",
           display: "block",
@@ -335,6 +336,175 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
           Слайд {preview.slideNumber}{preview.title && preview.title !== `Слайд ${preview.slideNumber}` ? ` — ${preview.title}` : ""}
         </span>
       </div>
+      {/* Expand icon on hover */}
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="bg-black/50 rounded-md p-1">
+          <Maximize2 className="w-3 h-3 text-white" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// FULLSCREEN SLIDE LIGHTBOX
+// ═══════════════════════════════════════════════════════
+
+function FullscreenSlideLightbox({
+  previews,
+  initialIndex,
+  onClose,
+}: {
+  previews: SlidePreview[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const current = previews[currentIndex];
+  const total = previews.length;
+
+  // Write HTML to iframe when slide changes
+  useEffect(() => {
+    if (iframeRef.current && current?.html) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(prepareSlideHtml(current.html));
+        doc.close();
+      }
+    }
+  }, [currentIndex, current?.html]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        setCurrentIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        setCurrentIndex((prev) => Math.min(prev + 1, total - 1));
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, total]);
+
+  // Calculate scale to fit viewport
+  const viewW = typeof window !== "undefined" ? window.innerWidth - 120 : 1280;
+  const viewH = typeof window !== "undefined" ? window.innerHeight - 120 : 720;
+  const scale = Math.min(viewW / 1280, viewH / 720);
+  const displayW = 1280 * scale;
+  const displayH = 720 * scale;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+      >
+        <X className="w-5 h-5 text-white" />
+      </button>
+
+      {/* Slide counter */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <div className="bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 flex items-center gap-3">
+          <span className="text-sm text-white font-mono">
+            <span className="text-white font-semibold">{currentIndex + 1}</span>
+            <span className="text-white/50"> / {total}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Slide title */}
+      {current?.title && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2 max-w-lg">
+            <span className="text-sm text-white/90">
+              Слайд {current.slideNumber}{current.title !== `Слайд ${current.slideNumber}` ? ` — ${current.title}` : ""}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation arrows */}
+      {currentIndex > 0 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setCurrentIndex((prev) => prev - 1);
+          }}
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+        >
+          <ChevronLeft className="w-6 h-6 text-white/80" />
+        </button>
+      )}
+      {currentIndex < total - 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setCurrentIndex((prev) => prev + 1);
+          }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+        >
+          <ChevronRight className="w-6 h-6 text-white/80" />
+        </button>
+      )}
+
+      {/* Slide iframe */}
+      <div
+        className="rounded-lg overflow-hidden shadow-2xl bg-white"
+        style={{ width: displayW, height: displayH }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <iframe
+          ref={iframeRef}
+          className="pointer-events-none"
+          style={{
+            width: "1280px",
+            height: "720px",
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            border: "none",
+            display: "block",
+          }}
+          sandbox="allow-same-origin allow-scripts"
+          title={`Slide ${current?.slideNumber || currentIndex + 1}`}
+        />
+      </div>
+
+      {/* Bottom thumbnail strip */}
+      {total > 1 && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 flex gap-2 max-w-[80vw] overflow-x-auto">
+            {previews.map((p, i) => (
+              <button
+                key={`thumb-${p.slideNumber}-${i}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(i);
+                }}
+                className={`w-16 h-9 rounded border-2 transition-all shrink-0 ${
+                  i === currentIndex
+                    ? "border-primary shadow-md shadow-primary/30"
+                    : "border-white/20 hover:border-white/40 opacity-60 hover:opacity-100"
+                }`}
+                style={{
+                  background: `linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))`,
+                }}
+              >
+                <span className="text-[9px] text-white font-mono">{i + 1}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -344,6 +514,8 @@ function SlidePreviewCard({ preview }: { preview: SlidePreview }) {
 // ═══════════════════════════════════════════════════════
 
 function SlidePreviewsGallery({ previews }: { previews: SlidePreview[] }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   if (!previews || previews.length === 0) return null;
 
   return (
@@ -353,9 +525,22 @@ function SlidePreviewsGallery({ previews }: { previews: SlidePreview[] }) {
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {previews.map((preview, i) => (
-          <SlidePreviewCard key={`${preview.slideNumber}-${i}`} preview={preview} />
+          <SlidePreviewCard
+            key={`${preview.slideNumber}-${i}`}
+            preview={preview}
+            onClick={() => setLightboxIndex(i)}
+          />
         ))}
       </div>
+
+      {/* Fullscreen lightbox */}
+      {lightboxIndex !== null && (
+        <FullscreenSlideLightbox
+          previews={previews}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }

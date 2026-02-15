@@ -225,6 +225,14 @@ export interface ReassembleResponse {
   slide_count: number;
 }
 
+export interface ChangeThemeResponse {
+  presentation_id: string;
+  theme_preset_id: string;
+  theme_name: string;
+  html_url: string;
+  slide_count: number;
+}
+
 export interface ReorderResponse {
   presentation_id: string;
   html_url: string;
@@ -615,6 +623,15 @@ class ApiClient {
   async reassemblePresentation(id: string): Promise<ReassembleResponse> {
     const { data } = await this.http.post<ReassembleResponse>(
       `/presentations/${id}/reassemble`,
+    );
+    return data;
+  }
+
+  async changeTheme(id: string, themePresetId: string): Promise<ChangeThemeResponse> {
+    const { data } = await this.http.post<ChangeThemeResponse>(
+      `/presentations/${id}/change-theme`,
+      { theme_preset_id: themePresetId },
+      { timeout: 60000 }, // Re-rendering all slides can take time
     );
     return data;
   }

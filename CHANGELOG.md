@@ -7,14 +7,30 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 126 |
-| Total tasks | 1169 |
-| Completed | 1157 (99%) |
+| Total sections | 127 |
+| Total tasks | 1182 |
+| Completed | 1170 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview ✅
+
+- [x] Test BSPB theme in quick mode via browser — verified white background, blue accents, БСПБ logo, no purple default
+- [x] Backend: POST /api/v1/presentations/:id/change-theme — re-renders all slides with new theme CSS
+- [x] Backend: Returns updated slide HTML + full presentation HTML after theme change
+- [x] Frontend: Theme switcher popover in Viewer toolbar with all 12 themes + color swatches
+- [x] Frontend: Apply new theme to all slide iframes after theme change (re-fetches full HTML)
+- [x] Frontend: Fullscreen slide lightbox in chat (click thumbnail → fullscreen with dark overlay)
+- [x] Frontend: Left/right navigation arrows in fullscreen modal
+- [x] Frontend: Keyboard navigation (ArrowLeft/Right, Escape to close)
+- [x] Frontend: Slide counter indicator ("3 / 15") + bottom thumbnail strip
+- [x] Write vitest tests for theme change endpoint (7 tests)
+- [x] Write vitest tests for renderSlidePreview with different themes (8 tests)
+- [x] All 1519 tests passing
+- [x] Save checkpoint
 
 ### 🚀 Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback ✅
 
@@ -1606,7 +1622,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (57 sections, 680/692 tasks)
+### 🚀 Improvements (58 sections, 693/705 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1665,6 +1681,7 @@
 - **Round 39: Fix BSPB Theme (white bg, no circles) + Design Feedback Not Applied** — ✅
 - **Round 40: Fix Title Slide Text Overflow** — ✅
 - **Round 41: Fix BSPB Theme Not Applied + Preview Overflow + Design Feedback** — ✅
+- **Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

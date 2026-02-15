@@ -1070,6 +1070,98 @@ router.post("/api/v1/presentations/:id/slides/:index/versions/:versionId/restore
 });
 
 // ═══════════════════════════════════════════════════════
+// POST change-theme — switch theme and re-render all slides
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/presentations/:id/change-theme", async (req: Request, res: Response) => {
+  try {
+    const { theme_preset_id } = req.body;
+    if (!theme_preset_id || typeof theme_preset_id !== "string") {
+      res.status(400).json({ detail: "theme_preset_id is required" });
+      return;
+    }
+
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    // Get the new theme
+    let newTheme: ReturnType<typeof getThemePreset>;
+    try {
+      newTheme = getThemePreset(theme_preset_id);
+    } catch {
+      res.status(400).json({ detail: `Unknown theme: ${theme_preset_id}` });
+      return;
+    }
+
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
+    if (slides.length === 0) {
+      res.status(400).json({ detail: "No slides to re-render" });
+      return;
+    }
+
+    const language = p.language || "ru";
+
+    // Re-render all slides with the new theme
+    const renderedSlides = slides.map((s: any) => ({
+      layoutId: s.layoutId,
+      data: s.data,
+      html: renderSlide(s.layoutId, s.data),
+    }));
+
+    const fullHtml = renderPresentation(
+      renderedSlides,
+      newTheme.cssVariables,
+      p.title || "Presentation",
+      language,
+      newTheme.fontsUrl,
+    );
+
+    // Upload new HTML to S3
+    const fileKey = `presentations/${req.params.id}/presentation-theme-${theme_preset_id}-${nanoid(8)}.html`;
+    const { url: htmlUrl } = await storagePut(fileKey, fullHtml, "text/html");
+
+    // Update config with new theme and save new CSS + result URLs
+    const config = { ...((p.config as Record<string, any>) || {}), theme_preset: theme_preset_id };
+    const resultUrls = { ...((p.resultUrls as Record<string, any>) || {}), html_preview: htmlUrl };
+
+    await updatePresentationProgress(req.params.id, {
+      config,
+      themeCss: newTheme.cssVariables,
+      resultUrls,
+    });
+
+    res.json({
+      presentation_id: p.presentationId,
+      theme_preset_id: theme_preset_id,
+      theme_name: newTheme.name,
+      html_url: htmlUrl,
+      slide_count: slides.length,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Change theme error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// GET available themes — returns list of theme presets
+// ═══════════════════════════════════════════════════════
+
+router.get("/api/v1/themes", (_req: Request, res: Response) => {
+  // Import from shared to get the base list
+  const { THEME_PRESETS_BASE } = require("../shared/themes");
+  res.json(THEME_PRESETS_BASE);
+});
+
+// ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
 

@@ -1501,3 +1501,18 @@
 - [x] Write renderSlidePreview tests (8 new tests — 1506 total passing)
 - [x] Update all test mocks to include renderSlidePreview
 - [x] Save checkpoint
+
+## Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview
+- [x] Test BSPB theme in quick mode via browser — verified white background, blue accents, БСПБ logo, no purple default
+- [x] Backend: POST /api/v1/presentations/:id/change-theme — re-renders all slides with new theme CSS
+- [x] Backend: Returns updated slide HTML + full presentation HTML after theme change
+- [x] Frontend: Theme switcher popover in Viewer toolbar with all 12 themes + color swatches
+- [x] Frontend: Apply new theme to all slide iframes after theme change (re-fetches full HTML)
+- [x] Frontend: Fullscreen slide lightbox in chat (click thumbnail → fullscreen with dark overlay)
+- [x] Frontend: Left/right navigation arrows in fullscreen modal
+- [x] Frontend: Keyboard navigation (ArrowLeft/Right, Escape to close)
+- [x] Frontend: Slide counter indicator ("3 / 15") + bottom thumbnail strip
+- [x] Write vitest tests for theme change endpoint (7 tests)
+- [x] Write vitest tests for renderSlidePreview with different themes (8 tests)
+- [x] All 1519 tests passing
+- [x] Save checkpoint

@@ -40,6 +40,7 @@ import {
   Link,
   History,
   RotateCcw,
+  Palette,
 } from "lucide-react";
 import {
   Dialog,
@@ -67,6 +68,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import api from "@/lib/api";
 import type { PresentationDetail, SlideData, SlideEditResponse, InlineFieldPatchResponse, ReorderResponse } from "@/lib/api";
+import { THEME_PRESETS, THEME_CATEGORIES } from "@/lib/constants";
+import type { ThemePresetBase } from "@shared/themes";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import SlideEditor from "@/components/SlideEditor";
 import InlineEditableSlide from "@/components/InlineEditableSlide";
 
@@ -939,6 +947,49 @@ export default function Viewer() {
     }
   };
 
+  // Theme switching
+  const [isChangingTheme, setIsChangingTheme] = useState(false);
+  const [themePopoverOpen, setThemePopoverOpen] = useState(false);
+  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+  const currentThemeId = useMemo(() => {
+    const config = presentation?.config as Record<string, any> | undefined;
+    return config?.theme_preset || "corporate_blue";
+  }, [presentation]);
+
+  const handleChangeTheme = async (themeId: string) => {
+    if (themeId === currentThemeId || isChangingTheme) return;
+    setIsChangingTheme(true);
+    setThemePopoverOpen(false);
+    try {
+      const result = await api.changeTheme(presentationId, themeId);
+
+      // Fetch the new HTML
+      const html = await api.fetchPresentationHtml(result.html_url);
+      setFullHtml(html);
+      const slides = parseSlides(html);
+      setSlideHtmls(slides);
+
+      // Update presentation state
+      setPresentation((prev) => prev ? {
+        ...prev,
+        config: { ...(prev.config as any || {}), theme_preset: themeId },
+        result_urls: { ...prev.result_urls, html_preview: result.html_url },
+      } : prev);
+
+      toast.success(`Тема изменена: ${result.theme_name}`);
+    } catch (error) {
+      console.error("Failed to change theme:", error);
+      toast.error("Не удалось сменить тему");
+    } finally {
+      setIsChangingTheme(false);
+    }
+  };
+
+  const filteredThemes = useMemo(() => {
+    if (themeCategoryFilter === "all") return THEME_PRESETS;
+    return THEME_PRESETS.filter((t: ThemePresetBase) => t.category === themeCategoryFilter);
+  }, [themeCategoryFilter]);
+
   // Version History
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [versionList, setVersionList] = useState<Array<{
@@ -1331,6 +1382,84 @@ export default function Viewer() {
               >
                 <History className="w-4 h-4" />
               </Button>
+
+              {/* Theme switcher */}
+              <Popover open={themePopoverOpen} onOpenChange={setThemePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    title="Сменить тему"
+                    disabled={isChangingTheme || presentation?.status !== "completed"}
+                    className="relative"
+                  >
+                    {isChangingTheme ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Palette className="w-4 h-4" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="end">
+                  <div className="p-3 border-b border-border/50">
+                    <h4 className="text-sm font-semibold">Сменить тему</h4>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Все слайды будут перерендерены
+                    </p>
+                  </div>
+                  {/* Category filter */}
+                  <div className="flex gap-1 px-3 pt-2 pb-1 flex-wrap">
+                    {THEME_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setThemeCategoryFilter(cat.id)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                          themeCategoryFilter === cat.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {cat.nameRu}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Theme list */}
+                  <ScrollArea className="max-h-[280px]">
+                    <div className="p-2 space-y-1">
+                      {filteredThemes.map((theme: ThemePresetBase) => {
+                        const isActive = theme.id === currentThemeId;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={() => handleChangeTheme(theme.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${
+                              isActive
+                                ? "bg-primary/10 border border-primary/30"
+                                : "hover:bg-secondary/60 border border-transparent"
+                            }`}
+                          >
+                            <div
+                              className="w-6 h-6 rounded-full shrink-0 border border-white/20"
+                              style={{ background: theme.gradient }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate">
+                                {theme.nameRu}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground truncate">
+                                {theme.descRu}
+                              </div>
+                            </div>
+                            {isActive && (
+                              <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
 
               {/* Share button */}
               <Button

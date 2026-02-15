@@ -83,6 +83,7 @@ export async function updatePresentationProgress(
     title?: string;
     language?: string;
     themeCss?: string;
+    config?: Record<string, any>;
     pipelineState?: Record<string, any>;
     finalHtmlSlides?: any[];
     resultUrls?: Record<string, any>;
@@ -100,6 +101,7 @@ export async function updatePresentationProgress(
   if (data.title !== undefined) updateSet.title = data.title;
   if (data.language !== undefined) updateSet.language = data.language;
   if (data.themeCss !== undefined) updateSet.themeCss = data.themeCss;
+  if (data.config !== undefined) updateSet.config = data.config;
   if (data.pipelineState !== undefined) updateSet.pipelineState = data.pipelineState;
   if (data.finalHtmlSlides !== undefined) updateSet.finalHtmlSlides = data.finalHtmlSlides;
   if (data.resultUrls !== undefined) updateSet.resultUrls = data.resultUrls;
