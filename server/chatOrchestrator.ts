@@ -166,6 +166,11 @@ export interface SSEEvent {
 
 export type SSEWriter = (event: SSEEvent) => void;
 
+export interface QuoteContext {
+  text: string;
+  messageIndex: number;
+}
+
 // ═══════════════════════════════════════════════════════
 // STREAMING LLM CALL
 // ═══════════════════════════════════════════════════════
@@ -292,6 +297,12 @@ const CHAT_SYSTEM_PROMPT = `Ты — AI-ассистент для создани
 4. Не используй markdown-заголовки (# ## ###) — пиши обычным текстом
 5. Используй эмодзи умеренно для дружелюбности
 
+ЦИТИРОВАНИЕ И КОНТЕКСТ:
+- Когда сообщение начинается с "[Пользователь цитирует фрагмент...]", это значит пользователь выделил конкретный фрагмент текста из предыдущего сообщения и хочет обсудить/изменить именно его
+- В таких случаях сосредоточься на цитируемом фрагменте и комментарии пользователя
+- Если пользователь просит изменить цитируемый фрагмент (например, структуру слайда, текст, дизайн), примени изменения именно к этому фрагменту
+- Подтверди, что ты понял контекст цитаты, и ответь по существу
+
 КОНТЕКСТ ДИАЛОГА:
 - Когда пользователь впервые пишет тему, подтверди её и предложи выбрать режим
 - Быстрый режим: полная генерация за ~60 секунд без остановок
@@ -375,6 +386,7 @@ export async function processMessage(
   sessionId: string,
   userMessage: string,
   writer: SSEWriter,
+  quoteContext?: QuoteContext,
 ): Promise<void> {
   const session = await getChatSession(sessionId);
   if (!session) {
@@ -394,10 +406,21 @@ export async function processMessage(
     s3Url: f.s3Url,
   })) : undefined;
 
-  // Save user message
+  // Build the effective message for the AI model:
+  // If quoteContext is provided, wrap the user message with context so the model
+  // understands the user is referencing a specific fragment for correction/discussion.
+  let effectiveMessage = userMessage;
+  if (quoteContext && quoteContext.text) {
+    effectiveMessage = `[Пользователь цитирует фрагмент из предыдущего сообщения]\nЦитата: «${quoteContext.text}»\n\nКомментарий пользователя: ${userMessage}`;
+  }
+
+  // Save user message (with quote context displayed as markdown blockquote)
+  const displayContent = quoteContext && quoteContext.text
+    ? `> ${quoteContext.text.split('\n').join('\n> ')}\n\n${userMessage}`
+    : userMessage;
   const userMsg: ChatMessage = {
     role: "user",
-    content: userMessage,
+    content: displayContent,
     timestamp: Date.now(),
     ...(fileRefs ? { files: fileRefs } : {}),
   };
@@ -409,10 +432,10 @@ export async function processMessage(
   try {
     switch (phase) {
       case "idle":
-        await handleTopicInput(sessionId, userMessage, messages, writer);
+        await handleTopicInput(sessionId, effectiveMessage, messages, writer);
         break;
       case "mode_selection":
-        await handleModeSelection(sessionId, userMessage, messages, writer);
+        await handleModeSelection(sessionId, effectiveMessage, messages, writer);
         break;
       case "generating":
         // Pipeline is running, inform user
@@ -420,16 +443,16 @@ export async function processMessage(
         writer({ type: "done", data: null });
         break;
       case "completed":
-        await handlePostCompletion(sessionId, userMessage, messages, writer);
+        await handlePostCompletion(sessionId, effectiveMessage, messages, writer);
         break;
       case "step_slide_content":
-        await handleSlideContentFeedback(sessionId, userMessage, writer);
+        await handleSlideContentFeedback(sessionId, effectiveMessage, writer);
         break;
       case "step_slide_design":
-        await handleSlideDesignFeedback(sessionId, userMessage, writer);
+        await handleSlideDesignFeedback(sessionId, effectiveMessage, writer);
         break;
       case "step_structure":
-        await handleStructureApproval(sessionId, userMessage, writer);
+        await handleStructureApproval(sessionId, effectiveMessage, writer);
         break;
       default:
         await handleGenericMessage(sessionId, messages, writer);

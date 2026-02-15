@@ -7,14 +7,25 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 131 |
-| Total tasks | 1227 |
-| Completed | 1215 (99%) |
+| Total sections | 132 |
+| Total tasks | 1235 |
+| Completed | 1223 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 47: Quote Context in AI Prompts ✅
+
+- [x] Feature: Pass quote context to AI model when user sends message with a quote
+- [x] Feature: Pass annotation context to AI model when user references an annotation
+- [x] Frontend: Include quote data in the message payload sent to backend
+- [x] Backend: Inject quote context into the AI prompt so model understands the reference
+- [x] Backend: Format quote as clear instruction (e.g., "User is referencing this fragment: «...» and asks: ...")
+- [x] Write tests (11 tests passed)
+- [x] Browser test
+- [x] Save checkpoint
 
 ### 🚀 Round 46: Quote-Reply + Inline Annotations ✅
 
@@ -1679,7 +1690,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (62 sections, 738/750 tasks)
+### 🚀 Improvements (63 sections, 746/758 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1743,6 +1754,7 @@
 - **Round 44: Fix User Chat Bubble Text Color** — ✅
 - **Round 45: Comments on Messages + Comments on Slides + Copy Any Message** — ✅
 - **Round 46: Quote-Reply + Inline Annotations** — ✅
+- **Round 47: Quote Context in AI Prompts** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

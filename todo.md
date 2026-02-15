@@ -1569,3 +1569,13 @@
 - [x] Write vitest tests
 - [x] Browser test all features
 - [x] Save checkpoint
+
+## Round 47: Quote Context in AI Prompts
+- [x] Feature: Pass quote context to AI model when user sends message with a quote
+- [x] Feature: Pass annotation context to AI model when user references an annotation
+- [x] Frontend: Include quote data in the message payload sent to backend
+- [x] Backend: Inject quote context into the AI prompt so model understands the reference
+- [x] Backend: Format quote as clear instruction (e.g., "User is referencing this fragment: «...» and asks: ...")
+- [x] Write tests (11 tests passed)
+- [x] Browser test
+- [x] Save checkpoint

@@ -185,7 +185,7 @@ router.delete("/api/v1/chat/sessions/:id", async (req: Request, res: Response) =
 
 // ── Send Message (SSE Streaming) ───────────────────────
 router.post("/api/v1/chat/sessions/:id/message", async (req: Request, res: Response) => {
-  const { message } = req.body;
+  const { message, quoteContext } = req.body;
 
   if (!message || typeof message !== "string") {
     res.status(422).json({ detail: "message is required" });
@@ -206,7 +206,11 @@ router.post("/api/v1/chat/sessions/:id/message", async (req: Request, res: Respo
   });
 
   try {
-    await processMessage(req.params.id, message, writer);
+    // Pass quoteContext to processMessage so the AI model understands the reference
+    const parsedQuote = quoteContext && typeof quoteContext === "object" && typeof quoteContext.text === "string"
+      ? { text: quoteContext.text, messageIndex: typeof quoteContext.messageIndex === "number" ? quoteContext.messageIndex : -1 }
+      : undefined;
+    await processMessage(req.params.id, message, writer, parsedQuote);
   } catch (error: any) {
     console.error("[Chat API] Message processing error:", error);
     writer({ type: "error", data: error.message || "Processing failed" });

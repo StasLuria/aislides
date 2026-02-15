@@ -403,7 +403,7 @@ export function useSSEChat() {
    *   (needed when sending right after createSession, before React state updates)
    */
   const sendMessage = useCallback(
-    async (message: string, overrideSessionId?: string): Promise<void> => {
+    async (message: string, overrideSessionId?: string, quoteContext?: { text: string; messageIndex: number }): Promise<void> => {
       const sid = overrideSessionId || sessionId;
       if (!sid || isStreaming) return;
 
@@ -415,10 +415,13 @@ export function useSSEChat() {
       lastProgressRef.current = null;
       receivedDoneRef.current = false;
 
-      // Add user message immediately
+      // Add user message immediately — include quote context visually in the displayed message
+      const displayContent = quoteContext
+        ? `> ${quoteContext.text.split('\n').join('\n> ')}\n\n${message}`
+        : message;
       const userMsg: ChatMessage = {
         role: "user",
-        content: message,
+        content: displayContent,
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, userMsg]);
@@ -439,7 +442,10 @@ export function useSSEChat() {
         const res = await fetch(`${API_BASE}/sessions/${sid}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({
+            message,
+            ...(quoteContext ? { quoteContext: { text: quoteContext.text, messageIndex: quoteContext.messageIndex } } : {}),
+          }),
           signal: controller.signal,
         });
 

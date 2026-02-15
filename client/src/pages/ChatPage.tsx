@@ -1708,10 +1708,8 @@ export default function ChatPage() {
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming || isUploading) return;
-    // Prepend quote context if replying to a quote
-    const messageToSend = quoteReply
-      ? `> ${quoteReply.text.split('\n').join('\n> ')}\n\n${trimmed}`
-      : trimmed;
+    const messageToSend = trimmed;
+    const currentQuote = quoteReply;
     setInput("");
     setQuoteReply(null);
     setShowSettings(false);
@@ -1746,7 +1744,7 @@ export default function ChatPage() {
         // After file upload completes, send message directly
         // (pendingMessageRef useEffect already fired when sessionId changed,
         //  so we can't rely on it — it ran before files were uploaded)
-        await sendMessage(messageToSend, newId);
+        await sendMessage(messageToSend, newId, currentQuote || undefined);
         setRefreshTrigger((p) => p + 1);
         return;
       }
@@ -1761,7 +1759,7 @@ export default function ChatPage() {
       await new Promise(r => setTimeout(r, 1500));
     }
 
-    await sendMessage(messageToSend, sessionId);
+    await sendMessage(messageToSend, sessionId, currentQuote || undefined);
     setRefreshTrigger((p) => p + 1);
   }, [input, isStreaming, isUploading, sendMessage, sessionId, createSession, navigate, attachedFiles, uploadFilesToSession, settings, quoteReply]);
 
