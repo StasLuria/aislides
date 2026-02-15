@@ -7,14 +7,25 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 122 |
-| Total tasks | 1141 |
-| Completed | 1129 (99%) |
+| Total sections | 123 |
+| Total tasks | 1149 |
+| Completed | 1137 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection) ✅
+
+- [x] Fix SQL error: topic column too short (varchar 512) → changed to text in schema + migration
+- [x] Fix mode selection: processAction mode_step/mode_quick now directly call handleModeSelection (bypass processMessage)
+- [x] Fix error handling: sanitize SQL errors, don't show raw DB errors to users
+- [x] Fix handleTopicInput: update phase BEFORE streaming to prevent race condition
+- [x] Add step_structure to processMessage switch statement
+- [x] Fix retry_step/retry_quick to also bypass processMessage
+- [x] Write tests for mode selection bug fixes (10 new tests — 1494 total passing)
+- [x] Save checkpoint
 
 ### 🚀 Round 37: BSPB Title Slide from Original Presentation ✅
 
@@ -1566,7 +1577,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (53 sections, 652/664 tasks)
+### 🚀 Improvements (54 sections, 660/672 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1621,6 +1632,7 @@
 - **Round 35: Advanced inline editing improvements** — ✅
 - **Round 36: Advanced inline editor UX improvements** — ✅
 - **Round 37: BSPB Title Slide from Original Presentation** — ✅
+- **Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection)** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

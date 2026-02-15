@@ -84,8 +84,8 @@ export const chatSessions = mysqlTable("chat_sessions", {
   sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
   /** Owner user ID (nullable for anonymous) */
   userId: int("userId"),
-  /** Chat topic / presentation title */
-  topic: varchar("topic", { length: 512 }).default(""),
+  /** Chat topic / presentation title (text for long prompts) */
+  topic: text("topic").default(""),
   /** Messages array as JSON */
   messages: json("messages").$type<ChatMessage[]>(),
   /** Current phase: idle, topic_received, mode_selection, generating, step_structure, step_content, step_design, completed */

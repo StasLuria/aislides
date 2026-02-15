@@ -1465,3 +1465,13 @@
 - [x] Update the title-slide template in BSPB theme to match original design
 - [x] Test the new title slide in browser
 - [x] Save checkpoint
+
+## Round 38: Fix Interactive Mode Bugs (SQL error + repeated mode selection)
+- [x] Fix SQL error: topic column too short (varchar 512) → changed to text in schema + migration
+- [x] Fix mode selection: processAction mode_step/mode_quick now directly call handleModeSelection (bypass processMessage)
+- [x] Fix error handling: sanitize SQL errors, don't show raw DB errors to users
+- [x] Fix handleTopicInput: update phase BEFORE streaming to prevent race condition
+- [x] Add step_structure to processMessage switch statement
+- [x] Fix retry_step/retry_quick to also bypass processMessage
+- [x] Write tests for mode selection bug fixes (10 new tests — 1494 total passing)
+- [x] Save checkpoint

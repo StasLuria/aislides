@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `chat_sessions` MODIFY COLUMN `topic` text;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute ALTER TABLE `chat_sessions` MODIFY COLUMN `topic` text;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 419
+}

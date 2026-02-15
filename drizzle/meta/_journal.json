@@ -64,6 +64,13 @@
       "when": 1771059272492,
       "tag": "0008_early_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1771152323879,
+      "tag": "0009_daffy_wiccan",
+      "breakpoints": true
     }
   ]
 }

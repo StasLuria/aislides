@@ -1,0 +1,65 @@
+{
+  "query": "SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chat_sessions' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT COLUMN_NAME, COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chat_sessions' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "COLUMN_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    },
+    {
+      "COLUMN_NAME": "sessionId",
+      "COLUMN_TYPE": "varchar(64)",
+      "CHARACTER_MAXIMUM_LENGTH": "64"
+    },
+    {
+      "COLUMN_NAME": "userId",
+      "COLUMN_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    },
+    {
+      "COLUMN_NAME": "presentationId",
+      "COLUMN_TYPE": "varchar(64)",
+      "CHARACTER_MAXIMUM_LENGTH": "64"
+    },
+    {
+      "COLUMN_NAME": "phase",
+      "COLUMN_TYPE": "varchar(64)",
+      "CHARACTER_MAXIMUM_LENGTH": "64"
+    },
+    {
+      "COLUMN_NAME": "messages",
+      "COLUMN_TYPE": "json",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    },
+    {
+      "COLUMN_NAME": "topic",
+      "COLUMN_TYPE": "varchar(512)",
+      "CHARACTER_MAXIMUM_LENGTH": "512"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "COLUMN_TYPE": "timestamp",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "COLUMN_TYPE": "timestamp",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    },
+    {
+      "COLUMN_NAME": "mode",
+      "COLUMN_TYPE": "varchar(32)",
+      "CHARACTER_MAXIMUM_LENGTH": "32"
+    },
+    {
+      "COLUMN_NAME": "metadata",
+      "COLUMN_TYPE": "json",
+      "CHARACTER_MAXIMUM_LENGTH": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_MAXIMUM_LENGTH\nid\tint\tNULL\nsessionId\tvarchar(64)\t64\nuserId\tint\tNULL\npresentationId\tvarchar(64)\t64\nphase\tvarchar(64)\t64\nmessages\tjson\tNULL\ntopic\tvarchar(512)\t512\ncreatedAt\ttimestamp\tNULL\nupdatedAt\ttimestamp\tNULL\nmode\tvarchar(32)\t32\nmetadata\tjson\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

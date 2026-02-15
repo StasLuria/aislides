@@ -428,15 +428,23 @@ export async function processMessage(
       case "step_slide_design":
         await handleSlideDesignFeedback(sessionId, userMessage, writer);
         break;
+      case "step_structure":
+        await handleStructureApproval(sessionId, userMessage, writer);
+        break;
       default:
         await handleGenericMessage(sessionId, messages, writer);
         break;
     }
   } catch (err: any) {
     console.error(`[ChatOrchestrator] Error in session ${sessionId}:`, err);
+    // Sanitize error message — don't show raw SQL errors to users
+    const isDbError = err.message?.includes("Failed query") || err.message?.includes("ER_");
+    const userFriendlyMessage = isDbError
+      ? "Произошла внутренняя ошибка. Попробуйте ещё раз."
+      : `Произошла ошибка: ${err.message}. Попробуйте ещё раз.`;
     const errorMsg: ChatMessage = {
       role: "assistant",
-      content: `Произошла ошибка: ${err.message}. Попробуйте ещё раз.`,
+      content: userFriendlyMessage,
       timestamp: Date.now(),
     };
     await appendMessage(sessionId, errorMsg);
@@ -454,6 +462,14 @@ async function handleTopicInput(
   messages: ChatMessage[],
   writer: SSEWriter,
 ): Promise<void> {
+  // IMPORTANT: Update phase and topic FIRST to prevent race conditions.
+  // If the user clicks a mode button before the update completes,
+  // processMessage would see phase="idle" and treat the button text as a new topic.
+  await updateChatSession(sessionId, {
+    topic: userMessage,
+    phase: "mode_selection",
+  });
+
   // Check for attached files
   const sessionFiles = await getSessionFiles(sessionId);
   const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
@@ -494,12 +510,6 @@ async function handleTopicInput(
   writer({
     type: "actions",
     data: assistantMsg.actions,
-  });
-
-  // Update phase
-  await updateChatSession(sessionId, {
-    topic: userMessage,
-    phase: "mode_selection",
   });
 
   // Auto-generate a short title from the user's topic
@@ -1260,10 +1270,34 @@ export async function processAction(
   writer: SSEWriter,
 ): Promise<void> {
   switch (actionId) {
-    case "mode_quick":
-      return processMessage(sessionId, "⚡ Быстрый режим", writer);
-    case "mode_step":
-      return processMessage(sessionId, "🎯 Пошаговый режим", writer);
+    case "mode_quick": {
+      // Directly call handleModeSelection to avoid processMessage treating this as a new topic
+      const quickUserMsg: ChatMessage = {
+        role: "user",
+        content: "⚡ Быстрый режим",
+        timestamp: Date.now(),
+      };
+      await appendMessage(sessionId, quickUserMsg);
+      // Ensure phase is mode_selection before calling handler
+      await updateChatSession(sessionId, { phase: "mode_selection" });
+      const quickSession = await getChatSession(sessionId);
+      const quickMessages = [...(quickSession?.messages || []), quickUserMsg];
+      return handleModeSelection(sessionId, "⚡ Быстрый режим", quickMessages, writer);
+    }
+    case "mode_step": {
+      // Directly call handleModeSelection to avoid processMessage treating this as a new topic
+      const stepUserMsg: ChatMessage = {
+        role: "user",
+        content: "🎯 Пошаговый режим",
+        timestamp: Date.now(),
+      };
+      await appendMessage(sessionId, stepUserMsg);
+      // Ensure phase is mode_selection before calling handler
+      await updateChatSession(sessionId, { phase: "mode_selection" });
+      const stepSession = await getChatSession(sessionId);
+      const stepMessages = [...(stepSession?.messages || []), stepUserMsg];
+      return handleModeSelection(sessionId, "🎯 Пошаговый режим", stepMessages, writer);
+    }
     case "approve_structure": {
       // Explicit approval via button — pass isExplicitApproval=true
       const approveUserMsg: ChatMessage = {
@@ -1304,12 +1338,20 @@ export async function processAction(
       return handleSlideDesignApproval(sessionId, writer);
     }
     case "retry_quick":
-    case "retry_step":
+    case "retry_step": {
       // Reset to mode selection and retry
       await updateChatSession(sessionId, { phase: "mode_selection" });
-      const session = await getChatSession(sessionId);
-      const mode = actionId === "retry_quick" ? "⚡ Быстрый режим" : "🎯 Пошаговый режим";
-      return processMessage(sessionId, mode, writer);
+      const retrySession = await getChatSession(sessionId);
+      const retryMode = actionId === "retry_quick" ? "⚡ Быстрый режим" : "🎯 Пошаговый режим";
+      const retryUserMsg: ChatMessage = {
+        role: "user",
+        content: retryMode,
+        timestamp: Date.now(),
+      };
+      await appendMessage(sessionId, retryUserMsg);
+      const retryMessages = [...(retrySession?.messages || []), retryUserMsg];
+      return handleModeSelection(sessionId, retryMode, retryMessages, writer);
+    }
     case "view_presentation":
       return processMessage(sessionId, "👁 Открыть презентацию", writer);
     case "new_presentation":
