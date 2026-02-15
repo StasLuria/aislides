@@ -1400,3 +1400,27 @@
 - [x] Update bspb_corporate theme CSS to use real logo URL
 - [x] Verify logo renders correctly on slides
 - [x] All 1436 tests passing
+
+## Round 32c: Visual Test of BSPB Theme
+- [x] Generate test presentation on banking topic via API (VrDg7Pfg9OyUGqfa, 11 slides, score 8.0/10)
+- [x] Visually inspect all slides for BSPB branding — ALL PASS: logo top-right on every slide, red accent lines, red bottom stripe, blue headings, Arial font, charts use brand colors
+- [x] No visual issues found — theme is production-ready
+
+## Round 32d: Full UI Flow Test
+- [x] Open app UI, start new chat
+- [x] Enter banking topic "Стратегия развития розничного кредитования Банка Санкт-Петербург на 2026 год" and select fast mode
+- [x] Monitor generation progress (5% → 81% → 95% → 100%, slide previews appeared during generation)
+- [x] Preview generated slides in chat (14 thumbnails: 3 preview + 11 final)
+- [x] Test full presentation view — inspected slides 1, 2, 5, 6, 11 in detail, all BSPB branded
+- [x] Test export/download — PDF download confirmed ("PDF файл скачан" toast)
+- [x] No issues found — full UI flow works correctly end-to-end
+
+## Round 33: Fix card/column blocks vertical centering on slides
+- [x] Fix two-column template: changed flex:1 stretch to auto-height centered
+- [x] Fix icons-numbers template: replaced grid-template-rows:1fr with auto rows
+- [x] Fix comparison template: added justify-content:center and align-items:start
+- [x] Fix process-steps template: added centering wrapper
+- [x] Fix pros-cons template: changed align-items:stretch to align-items:start
+- [x] Fix card-grid template: replaced grid-auto-rows:1fr with flex centering wrapper
+- [x] Visual test confirmed: cards now centered and sized to content
+- [x] All 1436 tests passing

@@ -91,9 +91,9 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--at-gap, 24px); width: 100%;">
-      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; max-height: 100%; padding: var(--at-card-padding, 24px);">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--at-gap, 24px); width: 100%; align-items: start;">
+      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: var(--at-card-padding, 24px);">
         <h2 style="color: var(--text-heading-color, #111827); font-size: var(--at-subtitle-size, 20px); font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ leftColumn.title | default('') }}</h2>
         <div style="display: flex; flex-direction: column; gap: var(--at-gap-sm, 10px); overflow: hidden;">
           {% for bullet in leftColumn.bullets | default([]) %}
@@ -104,7 +104,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
           {% endfor %}
         </div>
       </div>
-      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; max-height: 100%; padding: var(--at-card-padding, 24px);">
+      <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: var(--at-card-padding, 24px);">
         <h2 style="color: var(--text-heading-color, #111827); font-size: var(--at-subtitle-size, 20px); font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ rightColumn.title | default('') }}</h2>
         <div style="display: flex; flex-direction: column; gap: var(--at-gap-sm, 10px); overflow: hidden;">
           {% for bullet in rightColumn.bullets | default([]) %}
@@ -241,7 +241,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <div class="accent-line-center" style="margin-top: 10px;"></div>
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-    <div style="display: grid; grid-template-columns: repeat({{ cols }}, 1fr); grid-template-rows: repeat({{ rows }}, 1fr); gap: var(--at-gap, 14px); width: 100%; max-width: 1000px; max-height: 100%; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat({{ cols }}, 1fr); gap: var(--at-gap, 14px); width: 100%; max-width: 1000px; max-height: 100%; overflow: hidden;">
       {% for metric in metrics | default([]) %}
       <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--at-gap-sm, 6px); min-width: 0; min-height: 0; overflow: hidden; background: var(--card-background-color, #ffffff); border: 1px solid var(--card-border-color, rgba(0,0,0,0.08)); border-radius: 12px; padding: var(--at-card-padding, 14px) 10px; box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,0.06));">
         {% if metric.icon and metric.icon.url %}
@@ -319,8 +319,8 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--at-gap, 24px); width: 100%;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--at-gap, 24px); width: 100%; align-items: start;">
       <div class="card" style="border-left: 4px solid {{ optionA.color | default('#22c55e') }}; display: flex; flex-direction: column; overflow: hidden; padding: var(--at-card-padding, 24px);">
         <h2 style="color: var(--text-heading-color, #111827); font-size: var(--at-subtitle-size, 20px); font-weight: 600; margin: 0 0 12px 0; flex-shrink: 0;">{{ optionA.title | default('Option A') }}</h2>
         <div style="display: flex; flex-direction: column; gap: var(--at-gap-sm, 10px); overflow: hidden;">
@@ -717,7 +717,8 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
     <div class="accent-line-center" style="margin-top: 12px;"></div>
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--at-gap, 24px); align-items: stretch; overflow: hidden;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--at-gap, 24px); align-items: start; width: 100%;">
     <div class="card" style="border-top: 4px solid #22c55e; display: flex; flex-direction: column; overflow: hidden; padding: var(--at-card-padding, 24px);">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-shrink: 0;">
         <div style="width: 32px; height: 32px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -754,6 +755,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
         {% endfor %}
       </div>
     </div>
+   </div>
   </div>
 </div>`,
 
@@ -1224,7 +1226,8 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
     <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.4; margin: 6px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
-  <div style="flex: 1 1 0%; min-height: 0; display: grid; grid-template-columns: repeat({{ c_cols }}, 1fr); grid-auto-rows: 1fr; gap: var(--at-gap, 14px); overflow: hidden;">
+  <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+   <div style="display: grid; grid-template-columns: repeat({{ c_cols }}, 1fr); gap: var(--at-gap, 14px); width: 100%;">
     {% for card in cards | default([]) %}
     <div class="card" style="display: flex; flex-direction: column; padding: var(--at-card-padding, 16px); overflow: hidden; position: relative; min-height: 0;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0;">
@@ -1250,6 +1253,7 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
       {% endif %}
     </div>
     {% endfor %}
+   </div>
   </div>
 </div>`,
 
