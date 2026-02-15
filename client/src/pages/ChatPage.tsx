@@ -35,12 +35,17 @@ import {
   LayoutTemplate,
   Layers,
   Maximize2,
+  Copy,
+  ClipboardCheck,
+  MessageSquare,
+  MessageSquarePlus,
 } from "lucide-react";
-import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress } from "@/hooks/useSSEChat";
+import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress, type MessageComment } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
 import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@/components/FileUploadButton";
 import api, { type CustomTemplateListItem } from "@/lib/api";
 import { THEME_PRESETS, THEME_CATEGORIES } from "@/lib/constants";
+import { Streamdown } from 'streamdown';
 
 // ═══════════════════════════════════════════════════════
 // SETTINGS TYPES
@@ -123,15 +128,15 @@ function TypingIndicator() {
 // STREAMING TEXT
 // ═══════════════════════════════════════════════════════
 
-function StreamingText({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+function StreamingText({ content, isStreaming, isUser }: { content: string; isStreaming?: boolean; isUser?: boolean }) {
   // Show typing indicator when streaming but no content yet
   if (isStreaming && !content) {
     return <TypingIndicator />;
   }
 
   return (
-    <div className="whitespace-pre-wrap leading-relaxed text-sm">
-      {content}
+    <div className={`leading-relaxed text-sm ${isUser ? 'chat-md-user' : 'chat-md-ai'}`}>
+      <Streamdown>{content}</Streamdown>
       {isStreaming && (
         <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse rounded-sm" />
       )}
@@ -546,21 +551,265 @@ function SlidePreviewsGallery({ previews }: { previews: SlidePreview[] }) {
 }
 
 // ═══════════════════════════════════════════════════════
+// SLIDE PREVIEWS GALLERY WITH COMMENTS
+// ═══════════════════════════════════════════════════════
+
+function SlidePreviewsGalleryWithComments({
+  previews,
+  slideComments,
+  sessionId,
+  messageIndex,
+  onSlideCommentsUpdate,
+}: {
+  previews: SlidePreview[];
+  slideComments?: Record<number, MessageComment[]>;
+  sessionId: string | null;
+  messageIndex: number;
+  onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
+}) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [commentingSlide, setCommentingSlide] = useState<number | null>(null);
+  const [slideCommentText, setSlideCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const slideCommentInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (commentingSlide !== null && slideCommentInputRef.current) {
+      slideCommentInputRef.current.focus();
+    }
+  }, [commentingSlide]);
+
+  const handleAddSlideComment = useCallback(async (slideNumber: number) => {
+    if (!slideCommentText.trim() || !sessionId || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const result = await api.addSlideComment(sessionId, messageIndex, slideNumber, slideCommentText.trim());
+      onSlideCommentsUpdate(messageIndex, slideNumber, result.comments);
+      setSlideCommentText("");
+      setCommentingSlide(null);
+    } catch {
+      toast.error("Не удалось добавить комментарий");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [slideCommentText, sessionId, messageIndex, isSubmitting, onSlideCommentsUpdate]);
+
+  const handleDeleteSlideComment = useCallback(async (slideNumber: number, commentId: string) => {
+    if (!sessionId) return;
+    try {
+      await api.deleteSlideComment(sessionId, messageIndex, slideNumber, commentId);
+      const current = (slideComments || {})[slideNumber] || [];
+      const updated = current.filter(c => c.id !== commentId);
+      onSlideCommentsUpdate(messageIndex, slideNumber, updated);
+    } catch {
+      toast.error("Не удалось удалить комментарий");
+    }
+  }, [sessionId, messageIndex, slideComments, onSlideCommentsUpdate]);
+
+  if (!previews || previews.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <div className="text-xs text-muted-foreground mb-2">
+        Превью слайдов ({previews.length})
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {previews.map((preview, i) => {
+          const slideNum = preview.slideNumber;
+          const comments = (slideComments || {})[slideNum] || [];
+          const hasComments = comments.length > 0;
+
+          return (
+            <div key={`${slideNum}-${i}`} className="shrink-0">
+              <div className="relative group/slide">
+                <SlidePreviewCard
+                  preview={preview}
+                  onClick={() => setLightboxIndex(i)}
+                />
+                {/* Comment button on slide */}
+                {sessionId && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCommentingSlide(commentingSlide === slideNum ? null : slideNum);
+                      setSlideCommentText("");
+                    }}
+                    className={`absolute top-2 left-2 z-10 p-1 rounded-md transition-all ${
+                      hasComments
+                        ? "opacity-100 bg-amber-500 text-white shadow-sm"
+                        : "opacity-0 group-hover/slide:opacity-100 bg-black/50 text-white hover:bg-black/70"
+                    }`}
+                    title="Комментировать слайд"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    {hasComments && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-600 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
+                        {comments.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Slide comments */}
+              {(hasComments || commentingSlide === slideNum) && (
+                <div className="mt-1.5" style={{ width: 320 }}>
+                  {comments.map((c) => (
+                    <div
+                      key={c.id}
+                      className="group/sc flex items-start gap-1.5 py-1 px-2 rounded-md bg-amber-50 border border-amber-200/60 mb-1 text-[11px]"
+                    >
+                      <MessageSquare className="w-2.5 h-2.5 text-amber-500 mt-0.5 shrink-0" />
+                      <span className="text-foreground/80 flex-1 leading-relaxed">{c.text}</span>
+                      <button
+                        onClick={() => handleDeleteSlideComment(slideNum, c.id)}
+                        className="opacity-0 group-hover/sc:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-100 text-muted-foreground hover:text-red-500 shrink-0"
+                        title="Удалить"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {commentingSlide === slideNum && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <input
+                        ref={slideCommentInputRef}
+                        type="text"
+                        value={slideCommentText}
+                        onChange={(e) => setSlideCommentText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddSlideComment(slideNum);
+                          }
+                          if (e.key === "Escape") {
+                            setCommentingSlide(null);
+                            setSlideCommentText("");
+                          }
+                        }}
+                        placeholder="Комментарий к слайду..."
+                        className="flex-1 text-[11px] px-2 py-1 rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+                        disabled={isSubmitting}
+                      />
+                      <button
+                        onClick={() => handleAddSlideComment(slideNum)}
+                        disabled={!slideCommentText.trim() || isSubmitting}
+                        className="p-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                        title="Отправить"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        ) : (
+                          <Send className="w-2.5 h-2.5" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => { setCommentingSlide(null); setSlideCommentText(""); }}
+                        className="p-1 rounded-md hover:bg-secondary text-muted-foreground transition-colors"
+                        title="Отмена"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Fullscreen lightbox */}
+      {lightboxIndex !== null && (
+        <FullscreenSlideLightbox
+          previews={previews}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
 // MESSAGE BUBBLE
 // ═══════════════════════════════════════════════════════
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  messageIndex,
+  sessionId,
+  onCommentsUpdate,
+  onSlideCommentsUpdate,
+}: {
+  message: ChatMessage;
+  messageIndex: number;
+  sessionId: string | null;
+  onCommentsUpdate: (messageIndex: number, comments: MessageComment[]) => void;
+  onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
+}) {
   const isUser = message.role === "user";
+  const [copied, setCopied] = useState(false);
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Не удалось скопировать");
+    }
+  }, [message.content]);
+
+  const handleAddComment = useCallback(async () => {
+    if (!commentText.trim() || !sessionId || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const result = await api.addMessageComment(sessionId, messageIndex, commentText.trim());
+      onCommentsUpdate(messageIndex, result.comments);
+      setCommentText("");
+      setShowCommentInput(false);
+    } catch {
+      toast.error("Не удалось добавить комментарий");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [commentText, sessionId, messageIndex, isSubmitting, onCommentsUpdate]);
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    if (!sessionId) return;
+    try {
+      await api.deleteMessageComment(sessionId, messageIndex, commentId);
+      const updated = (message.comments || []).filter(c => c.id !== commentId);
+      onCommentsUpdate(messageIndex, updated);
+    } catch {
+      toast.error("Не удалось удалить комментарий");
+    }
+  }, [sessionId, messageIndex, message.comments, onCommentsUpdate]);
+
+  useEffect(() => {
+    if (showCommentInput && commentInputRef.current) {
+      commentInputRef.current.focus();
+    }
+  }, [showCommentInput]);
+
+  const comments = message.comments || [];
+  const hasComments = comments.length > 0;
 
   return (
-    <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
+    <div className={`group/msg flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
         </div>
       )}
 
-      <div className={`max-w-[80%] ${isUser ? "items-end" : "items-start"}`}>
+      <div className={`max-w-[80%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
         {/* Attached files */}
         {message.files && message.files.length > 0 && (
           <div className={`flex flex-wrap gap-1.5 mb-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -587,19 +836,128 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
 
-        <div
-          className={`rounded-2xl px-4 py-2.5 ${
-            isUser
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-secondary/60 text-foreground rounded-bl-md"
-          }`}
-        >
-          <StreamingText content={message.content} isStreaming={message.isStreaming} />
+        <div className="relative">
+          <div
+            className={`rounded-2xl px-4 py-2.5 ${
+              isUser
+                ? "bg-primary text-primary-foreground rounded-br-md"
+                : "bg-secondary/60 text-foreground rounded-bl-md"
+            }`}
+          >
+            <StreamingText content={message.content} isStreaming={message.isStreaming} isUser={isUser} />
+          </div>
+
+          {/* Action buttons — appear on hover */}
+          {!message.isStreaming && message.content && (
+            <div
+              className={`absolute flex gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 ${
+                isUser
+                  ? "-left-16 top-1"
+                  : "-right-16 top-1"
+              }`}
+            >
+              <button
+                onClick={handleCopy}
+                className="p-1 rounded-md hover:bg-black/5 text-muted-foreground hover:text-foreground"
+                title="Скопировать текст"
+              >
+                {copied ? (
+                  <ClipboardCheck className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+              {sessionId && (
+                <button
+                  onClick={() => setShowCommentInput(!showCommentInput)}
+                  className={`p-1 rounded-md hover:bg-black/5 text-muted-foreground hover:text-foreground ${
+                    hasComments ? "text-primary" : ""
+                  }`}
+                  title="Комментировать"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Comments section */}
+        {(hasComments || showCommentInput) && (
+          <div className={`mt-1.5 w-full ${isUser ? "pl-4" : "pr-4"}`}>
+            {/* Existing comments */}
+            {comments.map((c) => (
+              <div
+                key={c.id}
+                className="group/comment flex items-start gap-2 py-1 px-2.5 rounded-lg bg-amber-50 border border-amber-200/60 mb-1 text-xs"
+              >
+                <MessageSquare className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                <span className="text-foreground/80 flex-1 leading-relaxed">{c.text}</span>
+                <button
+                  onClick={() => handleDeleteComment(c.id)}
+                  className="opacity-0 group-hover/comment:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-100 text-muted-foreground hover:text-red-500 shrink-0"
+                  title="Удалить комментарий"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+
+            {/* Comment input */}
+            {showCommentInput && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <input
+                  ref={commentInputRef}
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddComment();
+                    }
+                    if (e.key === "Escape") {
+                      setShowCommentInput(false);
+                      setCommentText("");
+                    }
+                  }}
+                  placeholder="Добавить комментарий..."
+                  className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+                  disabled={isSubmitting}
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={!commentText.trim() || isSubmitting}
+                  className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                  title="Отправить"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Send className="w-3 h-3" />
+                  )}
+                </button>
+                <button
+                  onClick={() => { setShowCommentInput(false); setCommentText(""); }}
+                  className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                  title="Отмена"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Slide previews gallery */}
         {!isUser && message.slidePreviews && message.slidePreviews.length > 0 && (
-          <SlidePreviewsGallery previews={message.slidePreviews} />
+          <SlidePreviewsGalleryWithComments
+            previews={message.slidePreviews}
+            slideComments={message.slideComments}
+            sessionId={sessionId}
+            messageIndex={messageIndex}
+            onSlideCommentsUpdate={onSlideCommentsUpdate}
+          />
         )}
       </div>
 
@@ -1028,6 +1386,8 @@ export default function ChatPage() {
     sendMessage,
     triggerAction,
     cancelStream,
+    updateMessageComments,
+    updateSlideComments,
   } = useSSEChat();
 
   // Initialize session — only load if URL has an ID, otherwise reset to empty state
@@ -1245,7 +1605,14 @@ export default function ChatPage() {
             /* Messages list */
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
               {messages.map((msg, i) => (
-                <MessageBubble key={`${msg.timestamp}-${i}`} message={msg} />
+                <MessageBubble
+                  key={`${msg.timestamp}-${i}`}
+                  message={msg}
+                  messageIndex={i}
+                  sessionId={sessionId}
+                  onCommentsUpdate={updateMessageComments}
+                  onSlideCommentsUpdate={updateSlideComments}
+                />
               ))}
 
               {/* Slide progress indicator */}

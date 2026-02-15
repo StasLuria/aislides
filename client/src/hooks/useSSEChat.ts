@@ -29,6 +29,12 @@ export interface ChatFileRef {
   s3Url: string;
 }
 
+export interface MessageComment {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -39,6 +45,8 @@ export interface ChatMessage {
   slidePreviews?: SlidePreview[];
   isStreaming?: boolean;
   files?: ChatFileRef[];
+  comments?: MessageComment[];
+  slideComments?: Record<number, MessageComment[]>;
 }
 
 export interface PresentationLink {
@@ -572,6 +580,42 @@ export function useSSEChat() {
     await fetch(`${API_BASE}/sessions/${id}`, { method: "DELETE" });
   }, []);
 
+  /** Update comments on a specific message (by index) */
+  const updateMessageComments = useCallback(
+    (messageIndex: number, comments: MessageComment[]) => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (messageIndex >= 0 && messageIndex < updated.length) {
+          updated[messageIndex] = { ...updated[messageIndex], comments };
+        }
+        return updated;
+      });
+    },
+    [],
+  );
+
+  /** Update slide comments on a specific message (by index and slide number) */
+  const updateSlideComments = useCallback(
+    (messageIndex: number, slideNumber: number, comments: MessageComment[]) => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (messageIndex >= 0 && messageIndex < updated.length) {
+          const msg = { ...updated[messageIndex] };
+          const sc = { ...(msg.slideComments || {}) };
+          if (comments.length > 0) {
+            sc[slideNumber] = comments;
+          } else {
+            delete sc[slideNumber];
+          }
+          msg.slideComments = sc;
+          updated[messageIndex] = msg;
+        }
+        return updated;
+      });
+    },
+    [],
+  );
+
   return {
     // State
     messages,
@@ -594,5 +638,7 @@ export function useSSEChat() {
     cancelStream,
     listSessions,
     deleteSession,
+    updateMessageComments,
+    updateSlideComments,
   };
 }

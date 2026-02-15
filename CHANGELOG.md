@@ -7,14 +7,32 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 129 |
-| Total tasks | 1200 |
-| Completed | 1188 (99%) |
-| Pending | 12 |
+| Total sections | 130 |
+| Total tasks | 1215 |
+| Completed | 1202 (99%) |
+| Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 45: Comments on Messages + Comments on Slides + Copy Any Message 🔴 14/15
+
+- [x] Feature 1: Comments on chat messages — button on hover, inline comment input, comments displayed under message
+- [x] Feature 2: Comments on slide previews — comment button on slide thumbnails, comment displayed under slide
+- [x] Feature 3: Copy any message — verify copy button works for all message types (user, AI, system)
+- [x] Backend: Add comments storage to chat messages (messageComments in session JSON or separate structure)
+- [x] Backend: API endpoints for adding/deleting comments on messages
+- [x] Backend: API endpoints for adding/deleting comments on slides
+- [x] Frontend: Comment button on hover for message bubbles
+- [x] Frontend: Inline comment input form (appears on click)
+- [x] Frontend: Display comments under messages with timestamp and delete option
+- [x] Frontend: Comment button on slide preview thumbnails
+- [x] Frontend: Slide comment input and display
+- [x] Frontend: Verify copy button works for all message types
+- [x] Write vitest tests for comment endpoints
+- [x] Browser test all features
+- [ ] Save checkpoint (pending)
 
 ### 🚀 Round 44: Fix User Chat Bubble Text Color ✅
 
@@ -1646,7 +1664,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (60 sections, 711/723 tasks)
+### 🚀 Improvements (61 sections, 725/738 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1708,6 +1726,7 @@
 - **Round 42: BSPB Theme Test + Post-Generation Theme Switching + Fullscreen Preview** — ✅
 - **Round 43: Persist Slide Previews + Theme Preview + PPTX Export Verification** — ✅
 - **Round 44: Fix User Chat Bubble Text Color** — ✅
+- **Round 45: Comments on Messages + Comments on Slides + Copy Any Message** — 14/15
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

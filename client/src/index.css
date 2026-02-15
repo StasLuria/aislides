@@ -237,3 +237,90 @@
 .slide-transition.slide-right {
   animation: slide-right-in 0.2s ease-out;
 }
+
+/* ═══════════════════════════════════════════════════════
+   CHAT MARKDOWN STYLES
+   ═══════════════════════════════════════════════════════ */
+
+/* Shared markdown base for both user and AI messages */
+.chat-md-user,
+.chat-md-ai {
+  & p { margin: 0; }
+  & p + p { margin-top: 0.5em; }
+  & ul, & ol { margin: 0.35em 0; padding-left: 1.4em; }
+  & li { margin: 0.15em 0; }
+  & li::marker { font-size: 0.85em; }
+  & code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
+  }
+  & pre {
+    margin: 0.5em 0;
+    padding: 0.6em 0.8em;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85em;
+  }
+  & pre code {
+    padding: 0;
+    background: transparent;
+  }
+  & strong { font-weight: 600; }
+  & a { text-decoration: underline; text-underline-offset: 2px; }
+  & blockquote {
+    margin: 0.35em 0;
+    padding-left: 0.75em;
+    border-left: 2px solid currentColor;
+    opacity: 0.85;
+  }
+  & h1, & h2, & h3, & h4, & h5, & h6 {
+    font-weight: 600;
+    margin: 0.5em 0 0.25em;
+  }
+  & h1 { font-size: 1.15em; }
+  & h2 { font-size: 1.1em; }
+  & h3 { font-size: 1.05em; }
+  & table {
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.9em;
+  }
+  & th, & td {
+    padding: 0.3em 0.6em;
+    border: 1px solid;
+  }
+}
+
+/* User messages: white text on blue background */
+.chat-md-user {
+  color: var(--primary-foreground);
+  & code {
+    background: rgba(255, 255, 255, 0.15);
+    color: inherit;
+  }
+  & pre {
+    background: rgba(255, 255, 255, 0.1);
+    color: inherit;
+  }
+  & a { color: inherit; }
+  & th, & td { border-color: rgba(255, 255, 255, 0.25); }
+  & th { background: rgba(255, 255, 255, 0.1); }
+}
+
+/* AI messages: dark text on light background */
+.chat-md-ai {
+  color: var(--foreground);
+  & code {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+  & pre {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+  & a { color: var(--primary); }
+  & th, & td { border-color: var(--border); }
+  & th { background: var(--secondary); }
+}

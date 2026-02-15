@@ -1538,3 +1538,20 @@
 - [x] Fix black text on blue background in user chat bubbles — removed text-foreground from StreamingText component, now inherits text-primary-foreground (white) from parent bubble
 - [x] Browser verified: long user message "С вебсаммит из заметок..." now shows white text on blue background
 - [x] Save checkpoint
+
+## Round 45: Comments on Messages + Comments on Slides + Copy Any Message
+- [x] Feature 1: Comments on chat messages — button on hover, inline comment input, comments displayed under message
+- [x] Feature 2: Comments on slide previews — comment button on slide thumbnails, comment displayed under slide
+- [x] Feature 3: Copy any message — verify copy button works for all message types (user, AI, system)
+- [x] Backend: Add comments storage to chat messages (messageComments in session JSON or separate structure)
+- [x] Backend: API endpoints for adding/deleting comments on messages
+- [x] Backend: API endpoints for adding/deleting comments on slides
+- [x] Frontend: Comment button on hover for message bubbles
+- [x] Frontend: Inline comment input form (appears on click)
+- [x] Frontend: Display comments under messages with timestamp and delete option
+- [x] Frontend: Comment button on slide preview thumbnails
+- [x] Frontend: Slide comment input and display
+- [x] Frontend: Verify copy button works for all message types
+- [x] Write vitest tests for comment endpoints
+- [x] Browser test all features
+- [ ] Save checkpoint (pending)

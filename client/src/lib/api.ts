@@ -912,6 +912,56 @@ class ApiClient {
     return response.data;
   }
 
+  // — Message Comments —
+
+  async addMessageComment(
+    sessionId: string,
+    messageIndex: number,
+    text: string,
+  ): Promise<{ comments: Array<{ id: string; text: string; createdAt: number }> }> {
+    const { data } = await axios.post(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/comments`,
+      { text },
+    );
+    return data;
+  }
+
+  async deleteMessageComment(
+    sessionId: string,
+    messageIndex: number,
+    commentId: string,
+  ): Promise<void> {
+    await axios.delete(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/comments/${commentId}`,
+    );
+  }
+
+  // — Slide Comments —
+
+  async addSlideComment(
+    sessionId: string,
+    messageIndex: number,
+    slideNumber: number,
+    text: string,
+  ): Promise<{ comments: Array<{ id: string; text: string; createdAt: number }> }> {
+    const { data } = await axios.post(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/slides/${slideNumber}/comments`,
+      { text },
+    );
+    return data;
+  }
+
+  async deleteSlideComment(
+    sessionId: string,
+    messageIndex: number,
+    slideNumber: number,
+    commentId: string,
+  ): Promise<void> {
+    await axios.delete(
+      `/api/v1/chat/sessions/${sessionId}/messages/${messageIndex}/slides/${slideNumber}/comments/${commentId}`,
+    );
+  }
+
   // — Health —
   async checkHealth(): Promise<{ status: string; version?: string }> {
     try {

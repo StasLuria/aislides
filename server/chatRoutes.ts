@@ -375,6 +375,141 @@ router.get("/api/v1/chat/sessions/:id/files", async (req: Request, res: Response
   }
 });
 
+// ── Add Comment to Message ────────────────────────────
+router.post("/api/v1/chat/sessions/:id/messages/:msgIndex/comments", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex } = req.params;
+    const { text } = req.body;
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ detail: "Comment text is required" });
+    }
+
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+
+    const idx = parseInt(msgIndex, 10);
+    const messages = [...(session.messages || [])];
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) {
+      return res.status(400).json({ detail: "Invalid message index" });
+    }
+
+    const msg = { ...messages[idx] };
+    const comment = {
+      id: nanoid(12),
+      text: text.trim(),
+      createdAt: Date.now(),
+    };
+    msg.comments = [...(msg.comments || []), comment];
+    messages[idx] = msg;
+
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+
+    res.json({ comments: msg.comments });
+  } catch (error: any) {
+    console.error("[Chat API] Add comment error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ── Delete Comment from Message ──────────────────────────
+router.delete("/api/v1/chat/sessions/:id/messages/:msgIndex/comments/:commentId", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex, commentId } = req.params;
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+
+    const idx = parseInt(msgIndex, 10);
+    const messages = [...(session.messages || [])];
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) {
+      return res.status(400).json({ detail: "Invalid message index" });
+    }
+
+    const msg = { ...messages[idx] };
+    msg.comments = (msg.comments || []).filter((c: any) => c.id !== commentId);
+    messages[idx] = msg;
+
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+
+    res.json({ ok: true });
+  } catch (error: any) {
+    console.error("[Chat API] Delete comment error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ── Add Comment to Slide Preview ─────────────────────────
+router.post("/api/v1/chat/sessions/:id/messages/:msgIndex/slides/:slideNumber/comments", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex, slideNumber } = req.params;
+    const { text } = req.body;
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ detail: "Comment text is required" });
+    }
+
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+
+    const idx = parseInt(msgIndex, 10);
+    const slideNum = parseInt(slideNumber, 10);
+    const messages = [...(session.messages || [])];
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) {
+      return res.status(400).json({ detail: "Invalid message index" });
+    }
+
+    const msg = { ...messages[idx] };
+    const comment = {
+      id: nanoid(12),
+      text: text.trim(),
+      createdAt: Date.now(),
+    };
+    const slideComments = { ...(msg.slideComments || {}) };
+    slideComments[slideNum] = [...(slideComments[slideNum] || []), comment];
+    msg.slideComments = slideComments;
+    messages[idx] = msg;
+
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+
+    res.json({ comments: slideComments[slideNum] });
+  } catch (error: any) {
+    console.error("[Chat API] Add slide comment error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ── Delete Comment from Slide Preview ────────────────────
+router.delete("/api/v1/chat/sessions/:id/messages/:msgIndex/slides/:slideNumber/comments/:commentId", async (req: Request, res: Response) => {
+  try {
+    const { id, msgIndex, slideNumber, commentId } = req.params;
+    const session = await getChatSession(id);
+    if (!session) return res.status(404).json({ detail: "Session not found" });
+
+    const idx = parseInt(msgIndex, 10);
+    const slideNum = parseInt(slideNumber, 10);
+    const messages = [...(session.messages || [])];
+    if (isNaN(idx) || idx < 0 || idx >= messages.length) {
+      return res.status(400).json({ detail: "Invalid message index" });
+    }
+
+    const msg = { ...messages[idx] };
+    const slideComments = { ...(msg.slideComments || {}) };
+    slideComments[slideNum] = (slideComments[slideNum] || []).filter((c: any) => c.id !== commentId);
+    if (slideComments[slideNum].length === 0) delete slideComments[slideNum];
+    msg.slideComments = slideComments;
+    messages[idx] = msg;
+
+    const { updateChatSession } = await import("./chatDb");
+    await updateChatSession(id, { messages });
+
+    res.json({ ok: true });
+  } catch (error: any) {
+    console.error("[Chat API] Delete slide comment error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
 export function registerChatRoutes(app: import("express").Express) {
   app.use(router);
 }

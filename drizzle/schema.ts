@@ -116,6 +116,16 @@ export interface ChatMessage {
   presentationLink?: string;
   /** Optional: attached files */
   files?: ChatFileRef[];
+  /** Optional: user comments on this message */
+  comments?: MessageComment[];
+  /** Optional: user comments on individual slide previews (keyed by slideNumber) */
+  slideComments?: Record<number, MessageComment[]>;
+}
+
+export interface MessageComment {
+  id: string;
+  text: string;
+  createdAt: number;
 }
 
 export interface ChatFileRef {
