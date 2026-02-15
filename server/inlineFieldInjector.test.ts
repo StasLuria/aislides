@@ -1436,4 +1436,189 @@ describe("getEditableFields — complex layouts", () => {
       expect(keys).toContain("events.1.description");
     });
   });
+
+  // ═══════════════════════════════════════════════════════
+  // DRAG-AND-DROP TESTS
+  // ═══════════════════════════════════════════════════════
+  describe("Drag-and-Drop reordering", () => {
+    it("includes drag-and-drop initialization code", () => {
+      const script = generateInlineEditScript("text-slide", {
+        title: "Test",
+        bullets: ["A", "B", "C"],
+      });
+      expect(script).toContain("initDragAndDrop");
+      expect(script).toContain("drag-handle");
+    });
+
+    it("includes drag-and-drop CSS styles", () => {
+      const script = generateInlineEditScript("text-slide", {
+        title: "Test",
+        bullets: ["A"],
+      });
+      expect(script).toContain(".drag-handle");
+      expect(script).toContain(".drag-drop-indicator");
+      expect(script).toContain(".dragging");
+    });
+
+    it("sends inline-reorder-items postMessage on drop", () => {
+      const script = generateInlineEditScript("text-slide", {
+        title: "Test",
+        bullets: ["A", "B"],
+      });
+      expect(script).toContain("inline-reorder-items");
+      expect(script).toContain("arrayPath");
+    });
+
+    it("groups elements by array path for drag groups", () => {
+      const script = generateInlineEditScript("text-slide", {
+        title: "Test",
+        bullets: ["A", "B"],
+      });
+      // Should detect array groups from data-field attributes
+      expect(script).toContain("arrayGroups");
+    });
+
+    it("handles dragstart, dragover, and drop events", () => {
+      const script = generateInlineEditScript("text-slide", {
+        title: "Test",
+        bullets: ["A"],
+      });
+      expect(script).toContain("dragstart");
+      expect(script).toContain("dragover");
+      expect(script).toContain("drop");
+      expect(script).toContain("dragend");
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // FORMAT PAINTER TESTS
+  // ═══════════════════════════════════════════════════════
+  describe("Format Painter", () => {
+    it("includes format painter state and activation logic", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("fpState");
+      expect(script).toContain("format-painter-activate");
+      expect(script).toContain("format-painter-cancel");
+    });
+
+    it("includes format painter CSS styles", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain(".format-painter-source");
+      expect(script).toContain(".format-painter-target-hover");
+      expect(script).toContain(".format-painter-active");
+      expect(script).toContain("format-painter-flash");
+    });
+
+    it("copies computed styles from source element", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("fpCopyStyles");
+      expect(script).toContain("fontSize");
+      expect(script).toContain("fontWeight");
+      expect(script).toContain("color");
+      expect(script).toContain("textAlign");
+    });
+
+    it("applies copied styles to target element", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("fpApplyStyles");
+    });
+
+    it("sends inline-format-painter-state postMessage", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("inline-format-painter-state");
+      expect(script).toContain("pick-source");
+      expect(script).toContain("pick-target");
+    });
+
+    it("sends inline-style-change postMessage when style is applied", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("inline-style-change");
+    });
+
+    it("integrates with undo stack for style changes", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("isStyleChange");
+      expect(script).toContain("oldStyles");
+      expect(script).toContain("newStyles");
+    });
+
+    it("cancels format painter on Escape key", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("Escape");
+      expect(script).toContain("fpCleanup");
+    });
+
+    it("uses capture phase for click handler to intercept before contenteditable", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      // Format painter click handler should use capture phase
+      expect(script).toContain("}, true)");
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // AUTOSAVE TESTS
+  // ═══════════════════════════════════════════════════════
+  describe("Debounced Autosave", () => {
+    it("includes autosave debounce timer", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("autosaveTimer");
+      expect(script).toContain("clearTimeout");
+    });
+
+    it("sends inline-edit-autosave postMessage during typing", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("inline-edit-autosave");
+    });
+
+    it("sends inline-edit-typing postMessage on input", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("inline-edit-typing");
+    });
+
+    it("uses 1500ms debounce delay for autosave", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("1500");
+    });
+
+    it("still sends inline-edit-change on blur for immediate save", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      expect(script).toContain("inline-edit-change");
+    });
+
+    it("cancels pending autosave on blur to avoid double save", () => {
+      const script = generateInlineEditScript("title-slide", {
+        title: "Test",
+      });
+      // Blur handler should clear autosave timer
+      expect(script).toContain("autosaveTimer");
+    });
+  });
 });

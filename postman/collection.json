@@ -895,6 +895,55 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Изменить порядок элементов внутри слайда",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/presentations/:id/slides/:index/reorder-items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "presentations",
+                ":id",
+                "slides",
+                ":index",
+                "reorder-items"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                },
+                {
+                  "key": "index",
+                  "value": "{{index}}",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arrayPath\": \"string\",\n  \"order\": [\n    0\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },

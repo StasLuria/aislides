@@ -86,7 +86,7 @@ describe("generate-readme.mjs", () => {
       const updated = fs.readFileSync(readmePath, "utf-8");
       expect(updated).toContain("18-этапный мультиагентный пайплайн");
       expect(updated).toContain("45 HTML-макетов");
-      expect(updated).toContain("54 REST API endpoints");
+      expect(updated).toContain("55 REST API endpoints");
     } finally {
       fs.writeFileSync(readmePath, original, "utf-8");
     }
@@ -248,7 +248,7 @@ describe("generate-postman.mjs", () => {
 
     expect(output).toContain("Generating Postman collection");
     expect(output).toContain("Folders: 9");
-    expect(output).toContain("Endpoints: 54");
+    expect(output).toContain("Endpoints: 55");
     expect(output).toContain("Dry run");
 
     // Check all folder names appear

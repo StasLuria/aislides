@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 120 |
-| Total tasks | 1124 |
-| Completed | 1112 (99%) |
+| Total sections | 121 |
+| Total tasks | 1136 |
+| Completed | 1124 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 36: Advanced inline editor UX improvements ✅
+
+- [x] Task 1: Drag-and-drop reordering of elements within slides (cards, bullet points, list items)
+- [x] Task 1: Visual drag handles and drop indicators
+- [x] Task 1: Update data model after reorder and re-render slide
+- [x] Task 2: Format painter — copy style from one element and apply to another
+- [x] Task 2: Visual indicator for "style copied" state
+- [x] Task 2: Support copying font size, color, weight, alignment
+- [x] Task 3: Debounced autosave — save changes automatically after typing stops (1.5s delay)
+- [x] Task 3: Visual autosave indicator (saving... / saved)
+- [x] Task 3: Remove blur-only save dependency, keep blur as immediate save trigger
+- [x] Write tests for all three features (1482/1482 passed)
+- [x] Test all features in browser
+- [x] Save checkpoint
 
 ### 🚀 Round 35: Advanced inline editing improvements ✅
 
@@ -1543,7 +1558,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (51 sections, 635/647 tasks)
+### 🚀 Improvements (52 sections, 647/659 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1596,6 +1611,7 @@
 - **Round 33: Fix card/column blocks vertical centering on slides** — ✅
 - **Round 34: Fix slide editing mode — text not editable on click** — ✅
 - **Round 35: Advanced inline editing improvements** — ✅
+- **Round 36: Advanced inline editor UX improvements** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

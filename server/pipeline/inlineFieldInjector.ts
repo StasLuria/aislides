@@ -1030,6 +1030,96 @@ export function generateInlineEditScript(
       color: white;
       font-family: 'Inter', sans-serif;
     }
+
+    /* ═══ Drag-and-drop reordering styles ═══ */
+    .drag-handle {
+      position: absolute;
+      left: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.08);
+      z-index: 200;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .drag-handle:hover {
+      opacity: 1 !important;
+      background: rgba(99, 102, 241, 0.15);
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    .drag-handle svg {
+      width: 14px;
+      height: 14px;
+      color: #6366f1;
+    }
+    .drag-group-item {
+      position: relative;
+    }
+    .drag-group-item:hover .drag-handle {
+      opacity: 0.6;
+    }
+    .drag-group-item.dragging {
+      opacity: 0.4;
+      outline: 2px dashed rgba(99, 102, 241, 0.4) !important;
+      background: rgba(99, 102, 241, 0.03) !important;
+    }
+    .drag-drop-indicator {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #6366f1;
+      border-radius: 2px;
+      z-index: 300;
+      pointer-events: none;
+      box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
+    }
+    .drag-drop-indicator::before,
+    .drag-drop-indicator::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #6366f1;
+    }
+    .drag-drop-indicator::before { left: -4px; }
+    .drag-drop-indicator::after { right: -4px; }
+
+    /* ═══ Format Painter styles ═══ */
+    .format-painter-source {
+      outline: 2.5px solid #f59e0b !important;
+      outline-offset: 2px;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+    }
+    .format-painter-target-hover {
+      outline: 2.5px dashed #f59e0b !important;
+      outline-offset: 2px;
+      background: rgba(245, 158, 11, 0.05) !important;
+    }
+    .format-painter-active [contenteditable] {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23f59e0b' stroke='%23000' stroke-width='1'%3E%3Cpath d='M19 3H5c0 0 0 2 7 2s7-2 7-2zM12 5v6M7 11l-2 8c0 1 1 2 2 2h10c1 0 2-1 2-2l-2-8H7z'/%3E%3C/svg%3E") 4 16, crosshair !important;
+    }
+    .format-painter-flash {
+      animation: fp-flash 0.4s ease;
+    }
+    @keyframes fp-flash {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+      50% { box-shadow: 0 0 16px 4px rgba(245, 158, 11, 0.4); }
+      100% { box-shadow: none; }
+    }
   \`;
   document.head.appendChild(style);
 
@@ -1779,8 +1869,49 @@ export function generateInlineEditScript(
       }, '*');
     });
 
-    // On blur — send updated text to parent (innerText preserves line breaks)
+    // ═══ DEBOUNCED AUTOSAVE on input ═══
+    // Saves automatically 1.5s after the user stops typing
+    el._autosaveTimer = null;
+    el._lastSavedText = el._originalText;
+
+    el.addEventListener('input', function() {
+      var currentText = el.innerText.trim();
+      // Clear any pending autosave
+      if (el._autosaveTimer) {
+        clearTimeout(el._autosaveTimer);
+        el._autosaveTimer = null;
+      }
+      // Only schedule if text actually changed from last saved
+      if (currentText !== el._lastSavedText) {
+        // Notify parent that we're in "typing" state
+        window.parent.postMessage({
+          type: 'inline-edit-typing',
+          field: field.key,
+          label: field.label
+        }, '*');
+        // Schedule autosave after 1.5 seconds of inactivity
+        el._autosaveTimer = setTimeout(function() {
+          var textToSave = el.innerText.trim();
+          if (textToSave !== el._lastSavedText) {
+            el._lastSavedText = textToSave;
+            window.parent.postMessage({
+              type: 'inline-edit-autosave',
+              field: field.key,
+              value: textToSave,
+              label: field.label
+            }, '*');
+          }
+        }, 1500);
+      }
+    });
+
+    // On blur — immediate save (flush any pending autosave)
     el.addEventListener('blur', function() {
+      // Cancel pending autosave timer
+      if (el._autosaveTimer) {
+        clearTimeout(el._autosaveTimer);
+        el._autosaveTimer = null;
+      }
       var newText = el.innerText.trim();
       if (newText !== el._originalText) {
         // Push to undo stack before updating _originalText
@@ -1792,6 +1923,7 @@ export function generateInlineEditScript(
           element: el
         });
         el._originalText = newText;
+        el._lastSavedText = newText;
         window.parent.postMessage({
           type: 'inline-edit-change',
           field: field.key,
@@ -1987,6 +2119,367 @@ export function generateInlineEditScript(
   // Also handle drag events on the whole slide body to prevent browser defaults
   document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
   document.body.addEventListener('drop', function(e) { e.preventDefault(); });
+
+  // ═══════════════════════════════════════════════════════
+  // DRAG-AND-DROP REORDERING — reorder array items within a slide
+  // ═══════════════════════════════════════════════════════
+  (function initDragAndDrop() {
+    var dragHandleSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg>';
+
+    // 1) Group editable fields by their array path
+    //    e.g. "bullets.0.title" -> arrayPath="bullets", index=0
+    //    e.g. "leftColumn.bullets.0" -> arrayPath="leftColumn.bullets", index=0
+    var editableEls = slide.querySelectorAll('[data-field]');
+    var arrayGroups = {};  // { arrayPath: [{ index, elements: [el, ...] }] }
+
+    editableEls.forEach(function(el) {
+      var fieldKey = el.getAttribute('data-field');
+      if (!fieldKey) return;
+
+      // Parse the field key to extract array path and index
+      // Patterns: "bullets.0.title", "bullets.0", "leftColumn.bullets.0", "stages.0.title"
+      var parts = fieldKey.split('.');
+      var arrayPath = null;
+      var itemIndex = -1;
+
+      for (var i = 0; i < parts.length; i++) {
+        var num = parseInt(parts[i]);
+        if (!isNaN(num)) {
+          arrayPath = parts.slice(0, i).join('.');
+          itemIndex = num;
+          break;
+        }
+      }
+
+      if (arrayPath === null || itemIndex < 0) return;
+
+      if (!arrayGroups[arrayPath]) arrayGroups[arrayPath] = {};
+      if (!arrayGroups[arrayPath][itemIndex]) arrayGroups[arrayPath][itemIndex] = [];
+      arrayGroups[arrayPath][itemIndex].push(el);
+    });
+
+    // 2) For each array group, find the common parent container for each item
+    Object.keys(arrayGroups).forEach(function(arrayPath) {
+      var indexMap = arrayGroups[arrayPath];
+      var indices = Object.keys(indexMap).map(Number).sort(function(a, b) { return a - b; });
+
+      // Need at least 2 items to enable reordering
+      if (indices.length < 2) return;
+
+      // Find the draggable container for each item
+      // Strategy: for each item's elements, find the nearest common ancestor
+      // that is a direct child of a shared parent with all other items
+      var itemContainers = [];  // [{ index, container }]
+      var sharedParent = null;
+
+      // Get the container element for an item (the element that should be dragged)
+      // We look for the nearest ancestor that is a sibling of other items' ancestors
+      indices.forEach(function(idx) {
+        var elements = indexMap[idx];
+        if (!elements || elements.length === 0) return;
+
+        // Use the first element to find the container
+        var el = elements[0];
+        itemContainers.push({ index: idx, element: el });
+      });
+
+      if (itemContainers.length < 2) return;
+
+      // Find the shared parent: walk up from each item's first element
+      // and find the common ancestor container
+      function findDraggableContainer(el1, el2) {
+        // Walk up from el1, for each ancestor check if el2 is also a descendant
+        var ancestor = el1.parentElement;
+        while (ancestor && ancestor !== slide) {
+          if (ancestor.contains(el2)) return ancestor;
+          ancestor = ancestor.parentElement;
+        }
+        return null;
+      }
+
+      var commonAncestor = findDraggableContainer(
+        itemContainers[0].element,
+        itemContainers[itemContainers.length - 1].element
+      );
+
+      if (!commonAncestor) return;
+
+      // Now find the direct children of commonAncestor that contain each item
+      var dragItems = [];  // [{ index, container (direct child of commonAncestor) }]
+
+      itemContainers.forEach(function(item) {
+        var el = item.element;
+        var container = el;
+        while (container && container.parentElement !== commonAncestor) {
+          container = container.parentElement;
+        }
+        if (container && container.parentElement === commonAncestor) {
+          // Avoid duplicates (multiple fields in same container)
+          var existing = dragItems.find(function(d) { return d.container === container; });
+          if (!existing) {
+            dragItems.push({ index: item.index, container: container });
+          }
+        }
+      });
+
+      if (dragItems.length < 2) return;
+
+      // 3) Add drag handles and set up drag-and-drop
+      var dragState = {
+        dragging: null,  // { index, container }
+        indicator: null,
+        dropTarget: -1   // index to insert before (-1 = none)
+      };
+
+      // Create drop indicator element
+      var indicator = document.createElement('div');
+      indicator.className = 'drag-drop-indicator';
+      indicator.style.display = 'none';
+      commonAncestor.style.position = 'relative';
+      commonAncestor.appendChild(indicator);
+      dragState.indicator = indicator;
+
+      dragItems.forEach(function(item) {
+        var container = item.container;
+        container.classList.add('drag-group-item');
+        container.setAttribute('data-drag-index', item.index);
+        container.style.position = 'relative';
+
+        // Add drag handle
+        var handle = document.createElement('div');
+        handle.className = 'drag-handle';
+        handle.innerHTML = dragHandleSvg;
+        handle.setAttribute('draggable', 'true');
+        handle.setAttribute('title', 'Перетащите для изменения порядка');
+        container.insertBefore(handle, container.firstChild);
+
+        // Make the handle the drag source
+        handle.addEventListener('dragstart', function(e) {
+          e.stopPropagation();
+          dragState.dragging = item;
+          container.classList.add('dragging');
+          // Set minimal drag data
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', String(item.index));
+          // Use the container as drag image
+          try {
+            var rect = container.getBoundingClientRect();
+            e.dataTransfer.setDragImage(container, rect.width / 2, rect.height / 2);
+          } catch(ex) {}
+        });
+
+        handle.addEventListener('dragend', function(e) {
+          e.stopPropagation();
+          container.classList.remove('dragging');
+          indicator.style.display = 'none';
+
+          if (dragState.dragging && dragState.dropTarget >= 0 && dragState.dropTarget !== dragState.dragging.index) {
+            // Calculate new order
+            var fromIdx = dragState.dragging.index;
+            var toIdx = dragState.dropTarget;
+
+            // Build the new order array
+            var currentOrder = dragItems.map(function(d) { return d.index; });
+            // Remove fromIdx from its position
+            var fromPos = currentOrder.indexOf(fromIdx);
+            if (fromPos >= 0) {
+              currentOrder.splice(fromPos, 1);
+              // Insert at new position
+              var toPos = currentOrder.indexOf(toIdx);
+              if (toPos < 0) toPos = currentOrder.length;
+              currentOrder.splice(toPos, 0, fromIdx);
+            }
+
+            // Send reorder message to parent
+            window.parent.postMessage({
+              type: 'inline-reorder-items',
+              arrayPath: arrayPath,
+              order: currentOrder
+            }, '*');
+          }
+
+          dragState.dragging = null;
+          dragState.dropTarget = -1;
+        });
+
+        // Drag over handler for the container
+        container.addEventListener('dragover', function(e) {
+          if (!dragState.dragging) return;
+          if (dragState.dragging.container === container) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+
+          // Determine if we should show indicator above or below
+          var rect = container.getBoundingClientRect();
+          var midY = rect.top + rect.height / 2;
+          var parentRect = commonAncestor.getBoundingClientRect();
+
+          if (e.clientY < midY) {
+            // Show indicator above this item
+            indicator.style.display = 'block';
+            indicator.style.top = (rect.top - parentRect.top - 2) + 'px';
+            dragState.dropTarget = item.index;
+          } else {
+            // Show indicator below this item
+            indicator.style.display = 'block';
+            indicator.style.top = (rect.bottom - parentRect.top - 1) + 'px';
+            // Find the next item's index
+            var nextItem = dragItems.find(function(d) { return d.index === item.index + 1; });
+            dragState.dropTarget = nextItem ? nextItem.index : item.index;
+          }
+        });
+
+        container.addEventListener('dragleave', function(e) {
+          if (!container.contains(e.relatedTarget)) {
+            // Only hide if leaving the container entirely
+          }
+        });
+
+        container.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    });
+  })();
+
+  // ═══════════════════════════════════════════════════════
+  // FORMAT PAINTER — copy style from one element to another
+  // ═══════════════════════════════════════════════════════
+  var fpState = { active: false, phase: 'idle', copiedStyles: null, sourceEl: null };
+  // phase: 'idle' | 'pick-source' | 'pick-target'
+
+  var FORMAT_PROPS = [
+    'fontSize', 'fontWeight', 'fontStyle', 'fontFamily',
+    'color', 'textAlign', 'letterSpacing', 'lineHeight',
+    'textTransform', 'textDecoration'
+  ];
+
+  function fpCopyStyles(el) {
+    var computed = window.getComputedStyle(el);
+    var styles = {};
+    for (var i = 0; i < FORMAT_PROPS.length; i++) {
+      styles[FORMAT_PROPS[i]] = computed[FORMAT_PROPS[i]];
+    }
+    return styles;
+  }
+
+  function fpApplyStyles(el, styles) {
+    for (var key in styles) {
+      el.style[key] = styles[key];
+    }
+  }
+
+  function fpCleanup() {
+    var slide = document.querySelector('.slide');
+    if (slide) slide.classList.remove('format-painter-active');
+    var oldSource = document.querySelector('.format-painter-source');
+    if (oldSource) oldSource.classList.remove('format-painter-source');
+    var oldHover = document.querySelectorAll('.format-painter-target-hover');
+    for (var i = 0; i < oldHover.length; i++) oldHover[i].classList.remove('format-painter-target-hover');
+    fpState.active = false;
+    fpState.phase = 'idle';
+    fpState.copiedStyles = null;
+    fpState.sourceEl = null;
+    window.parent.postMessage({ type: 'inline-format-painter-state', active: false, phase: 'idle' }, '*');
+  }
+
+  // Listen for format painter activation from parent
+  window.addEventListener('message', function(e) {
+    if (!e.data) return;
+    if (e.data.type === 'format-painter-activate') {
+      if (fpState.active) {
+        fpCleanup();
+        return;
+      }
+      fpState.active = true;
+      fpState.phase = 'pick-source';
+      var slide = document.querySelector('.slide');
+      if (slide) slide.classList.add('format-painter-active');
+      window.parent.postMessage({ type: 'inline-format-painter-state', active: true, phase: 'pick-source' }, '*');
+    }
+    if (e.data.type === 'format-painter-cancel') {
+      fpCleanup();
+    }
+  });
+
+  // Intercept clicks on contenteditable elements during format painter mode
+  document.addEventListener('click', function(e) {
+    if (!fpState.active) return;
+    var target = e.target.closest('[contenteditable]');
+    if (!target) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if (fpState.phase === 'pick-source') {
+      // Copy styles from source
+      fpState.copiedStyles = fpCopyStyles(target);
+      fpState.sourceEl = target;
+      target.classList.add('format-painter-source');
+      fpState.phase = 'pick-target';
+      window.parent.postMessage({
+        type: 'inline-format-painter-state',
+        active: true,
+        phase: 'pick-target',
+        sourceField: target.getAttribute('data-field') || 'unknown'
+      }, '*');
+    } else if (fpState.phase === 'pick-target') {
+      if (target === fpState.sourceEl) return; // can't apply to self
+      // Save for undo
+      var oldStyles = fpCopyStyles(target);
+      var fieldPath = target.getAttribute('data-field');
+      undoStack.push({
+        fieldPath: fieldPath,
+        oldValue: target.textContent,
+        newValue: target.textContent,
+        oldStyles: oldStyles,
+        newStyles: fpState.copiedStyles,
+        isStyleChange: true
+      });
+      redoStack = [];
+      window.parent.postMessage({ type: 'inline-edit-undo-state', canUndo: true, canRedo: false }, '*');
+
+      // Apply styles
+      fpApplyStyles(target, fpState.copiedStyles);
+      target.classList.add('format-painter-flash');
+      setTimeout(function() { target.classList.remove('format-painter-flash'); }, 500);
+
+      // Notify parent about style change
+      window.parent.postMessage({
+        type: 'inline-style-change',
+        fieldPath: fieldPath,
+        styles: fpState.copiedStyles
+      }, '*');
+
+      // Cleanup
+      fpCleanup();
+    }
+  }, true); // capture phase to intercept before contenteditable focus
+
+  // Hover effect during format painter
+  document.addEventListener('mouseover', function(e) {
+    if (!fpState.active) return;
+    var target = e.target.closest('[contenteditable]');
+    if (!target || target === fpState.sourceEl) return;
+    target.classList.add('format-painter-target-hover');
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (!fpState.active) return;
+    var target = e.target.closest('[contenteditable]');
+    if (!target) return;
+    target.classList.remove('format-painter-target-hover');
+  });
+
+  // Escape key cancels format painter
+  document.addEventListener('keydown', function(e) {
+    if (fpState.active && e.key === 'Escape') {
+      e.preventDefault();
+      fpCleanup();
+    }
+  });
 
   // ═══════════════════════════════════════════════════════
   // HEIGHT REPORTING — notify parent when content height changes

@@ -370,10 +370,24 @@ const swaggerSpec = {
         responses: { 200: { description: "Порядок изменён" } },
       },
     },
+    "/api/v1/presentations/{id}/slides/{index}/reorder-items": {
+      post: {
+        tags: ["Slide Editing"],
+        summary: "Изменить порядок элементов внутри слайда",
+        operationId: "reorderSlideItems",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          { name: "index", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        requestBody: {
+          content: { "application/json": { schema: { type: "object", properties: { arrayPath: { type: "string", description: "Путь к массиву в данных слайда (e.g. bullets, stages)" }, order: { type: "array", items: { type: "integer" }, description: "Новый порядок индексов" } }, required: ["arrayPath", "order"] } } },
+        },
+        responses: { 200: { description: "Порядок элементов изменён" } },
+      },
+    },
 
-    // ─── Slide Versions ──────────────────────────────────────
-    "/api/v1/presentations/{id}/slides/{index}/versions": {
-      get: {
+    // ─── Slide Versions ────────────────────────────────────────
+    "/api/v1/presentations/{id}/slides/{index}/versions": {      get: {
         tags: ["Slide Versions"],
         summary: "Получить историю версий слайда",
         operationId: "getSlideVersions",

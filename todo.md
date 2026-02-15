@@ -1444,3 +1444,17 @@
 - [x] Task 3: Implement Undo/Redo in inline editor (Ctrl+Z / Ctrl+Shift+Z)
 - [x] Task 3: Test Undo/Redo in browser
 - [x] Run all tests and save checkpoint (1462/1462 passed)
+
+## Round 36: Advanced inline editor UX improvements
+- [x] Task 1: Drag-and-drop reordering of elements within slides (cards, bullet points, list items)
+- [x] Task 1: Visual drag handles and drop indicators
+- [x] Task 1: Update data model after reorder and re-render slide
+- [x] Task 2: Format painter — copy style from one element and apply to another
+- [x] Task 2: Visual indicator for "style copied" state
+- [x] Task 2: Support copying font size, color, weight, alignment
+- [x] Task 3: Debounced autosave — save changes automatically after typing stops (1.5s delay)
+- [x] Task 3: Visual autosave indicator (saving... / saved)
+- [x] Task 3: Remove blur-only save dependency, keep blur as immediate save trigger
+- [x] Write tests for all three features (1482/1482 passed)
+- [x] Test all features in browser
+- [x] Save checkpoint

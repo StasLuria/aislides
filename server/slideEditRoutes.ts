@@ -13,6 +13,7 @@
  *   POST   /api/v1/presentations/:id/slides/:index/layout     — change slide layout
  *   POST   /api/v1/presentations/:id/reassemble               — re-render full HTML from edited slides
  *   POST   /api/v1/presentations/:id/reorder                  — rearrange slides in a new order
+ *   POST   /api/v1/presentations/:id/slides/:index/reorder-items — reorder items within a slide array
  */
 import { Router, Request, Response } from "express";
 import multer from "multer";
@@ -763,6 +764,131 @@ router.post("/api/v1/presentations/:id/reorder", async (req: Request, res: Respo
     });
   } catch (error: any) {
     console.error("[SlideEdit] Reorder error:", error);
+    res.status(500).json({ detail: error.message || "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// POST reorder items — reorder elements within a slide array
+// ═══════════════════════════════════════════════════════
+
+router.post("/api/v1/presentations/:id/slides/:index/reorder-items", async (req: Request, res: Response) => {
+  try {
+    const p = await getPresentation(req.params.id);
+    if (!p) {
+      res.status(404).json({ detail: "Presentation not found" });
+      return;
+    }
+
+    if (p.status !== "completed") {
+      res.status(400).json({ detail: "Presentation is not completed yet" });
+      return;
+    }
+
+    const slides = normalizeSlides((p.finalHtmlSlides as any[]) || []);
+    const index = parseInt(req.params.index);
+
+    if (isNaN(index) || index < 0 || index >= slides.length) {
+      res.status(404).json({ detail: `Slide index ${req.params.index} out of range` });
+      return;
+    }
+
+    const { arrayPath, order } = req.body;
+
+    if (!arrayPath || typeof arrayPath !== "string") {
+      res.status(422).json({ detail: "arrayPath is required (e.g. 'bullets', 'stages', 'milestones')" });
+      return;
+    }
+
+    if (!Array.isArray(order)) {
+      res.status(422).json({ detail: "order must be an array of indices" });
+      return;
+    }
+
+    // Navigate to the array using dot-notation path
+    const slideData = slides[index].data;
+    const pathParts = arrayPath.split(".");
+    let target: any = slideData;
+    for (const part of pathParts) {
+      if (target == null || typeof target !== "object") {
+        res.status(422).json({ detail: `Invalid arrayPath: '${arrayPath}' - '${part}' not found` });
+        return;
+      }
+      target = target[part];
+    }
+
+    if (!Array.isArray(target)) {
+      res.status(422).json({ detail: `'${arrayPath}' is not an array in slide data` });
+      return;
+    }
+
+    // Validate order indices
+    if (order.length !== target.length) {
+      res.status(422).json({ detail: `order length (${order.length}) must match array length (${target.length})` });
+      return;
+    }
+
+    const sorted = [...order].sort((a, b) => a - b);
+    const expected = Array.from({ length: target.length }, (_, i) => i);
+    if (JSON.stringify(sorted) !== JSON.stringify(expected)) {
+      res.status(422).json({ detail: "order must contain each index from 0 to " + (target.length - 1) + " exactly once" });
+      return;
+    }
+
+    // Save version snapshot BEFORE modifying
+    const oldSlideHtml = renderSlide(slides[index].layoutId, slides[index].data);
+    await saveSlideVersion({
+      presentationId: req.params.id,
+      slideIndex: index,
+      slideHtml: oldSlideHtml,
+      slideData: slides[index].data,
+      changeType: "edit",
+      changeDescription: `Reordered '${arrayPath}' items`,
+    });
+
+    // Apply reorder
+    const reordered = order.map((idx: number) => target[idx]);
+
+    // Set the reordered array back into the data
+    let parentObj: any = slideData;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      parentObj = parentObj[pathParts[i]];
+    }
+    parentObj[pathParts[pathParts.length - 1]] = reordered;
+
+    // Re-render the slide HTML
+    const slideHtml = renderSlide(slides[index].layoutId, slideData);
+
+    // Save updated slides to DB
+    await updatePresentationProgress(req.params.id, {
+      finalHtmlSlides: slides,
+    });
+
+    const config = (p.config as Record<string, any>) || {};
+    const themePreset = getThemePreset(config.theme_preset || "corporate_blue");
+
+    // Return editable HTML for the updated slide
+    const html = buildEditableSlideHtml(
+      slideHtml,
+      p.themeCss || themePreset.cssVariables,
+      themePreset.fontsUrl,
+      p.language || "ru",
+      slides[index].layoutId,
+      slides[index].data,
+      BASE_CSS,
+    );
+
+    res.json({
+      presentation_id: p.presentationId,
+      index,
+      layoutId: slides[index].layoutId,
+      data: slideData,
+      html,
+      arrayPath,
+      order,
+    });
+  } catch (error: any) {
+    console.error("[SlideEdit] Reorder items error:", error);
     res.status(500).json({ detail: error.message || "Internal server error" });
   }
 });

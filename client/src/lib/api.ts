@@ -649,6 +649,19 @@ class ApiClient {
     return data;
   }
 
+  async reorderSlideItems(
+    id: string,
+    index: number,
+    arrayPath: string,
+    order: number[],
+  ): Promise<{ presentation_id: string; index: number; layoutId: string; data: any; html: string; arrayPath: string; order: number[] }> {
+    const { data } = await this.http.post(
+      `/presentations/${id}/slides/${index}/reorder-items`,
+      { arrayPath, order },
+    );
+    return data;
+  }
+
   // — Chat File Upload —
 
   async uploadChatFiles(
