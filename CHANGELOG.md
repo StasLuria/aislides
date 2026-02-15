@@ -7,14 +7,22 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 121 |
-| Total tasks | 1136 |
-| Completed | 1124 (99%) |
+| Total sections | 122 |
+| Total tasks | 1141 |
+| Completed | 1129 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 37: BSPB Title Slide from Original Presentation ✅
+
+- [x] Extract/study the original BSPB title slide design (Kazan Cathedral photo, blue overlay, logo, red accent)
+- [x] Upload the Kazan Cathedral building photo to S3 CDN
+- [x] Update the title-slide template in BSPB theme to match original design
+- [x] Test the new title slide in browser
+- [x] Save checkpoint
 
 ### 🚀 Round 36: Advanced inline editor UX improvements ✅
 
@@ -1558,7 +1566,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (52 sections, 647/659 tasks)
+### 🚀 Improvements (53 sections, 652/664 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1612,6 +1620,7 @@
 - **Round 34: Fix slide editing mode — text not editable on click** — ✅
 - **Round 35: Advanced inline editing improvements** — ✅
 - **Round 36: Advanced inline editor UX improvements** — ✅
+- **Round 37: BSPB Title Slide from Original Presentation** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

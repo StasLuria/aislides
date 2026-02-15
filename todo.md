@@ -1458,3 +1458,10 @@
 - [x] Write tests for all three features (1482/1482 passed)
 - [x] Test all features in browser
 - [x] Save checkpoint
+
+## Round 37: BSPB Title Slide from Original Presentation
+- [x] Extract/study the original BSPB title slide design (Kazan Cathedral photo, blue overlay, logo, red accent)
+- [x] Upload the Kazan Cathedral building photo to S3 CDN
+- [x] Update the title-slide template in BSPB theme to match original design
+- [x] Test the new title slide in browser
+- [x] Save checkpoint

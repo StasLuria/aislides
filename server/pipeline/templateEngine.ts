@@ -11,41 +11,34 @@ import { autoDensity } from "./autoDensity";
 // ═══════════════════════════════════════════════════════
 
 const LAYOUT_TEMPLATES: Record<string, string> = {
-  "title-slide": `<div style="position: relative; z-index: 10; display: flex; height: 100%; padding: 48px 64px 32px;">
-  <div class="slide-decor-circle slide-decor-top-right"></div>
-  <div class="slide-decor-circle slide-decor-bottom-left"></div>
-  {% if image and image.url %}
-  <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; padding-right: 32px; min-width: 0;">
-    <div style="width: 100%; max-width: 512px; height: 320px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-      <img src="{{ image.url }}" alt="{{ image.alt | default('') }}" style="width: 100%; height: 100%; object-fit: cover;" />
-    </div>
+  "title-slide": `<div class="bspb-title-slide" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
+  <!-- Full-bleed background photo -->
+  <div style="position: absolute; inset: 0; z-index: 1;">
+    <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/axBJgpxbruLZDqPX.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover;" />
   </div>
-  {% else %}
-  <div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; padding-right: 32px; min-width: 0;">
-    <div style="width: 100%; max-width: 512px; height: 320px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: linear-gradient(135deg, color-mix(in srgb, var(--primary-accent-color, #9333ea) 20%, white), color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 15%, white)); position: relative;">
-      <div style="position: absolute; top: -30px; right: -30px; width: 180px; height: 180px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 12%, transparent);"></div>
-      <div style="position: absolute; bottom: -20px; left: -20px; width: 120px; height: 120px; border-radius: 50%; background: color-mix(in srgb, var(--secondary-accent-color, #3b82f6) 10%, transparent);"></div>
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: color-mix(in srgb, var(--primary-accent-color, #9333ea) 15%, transparent);"></div>
-    </div>
+  <!-- Blue panel (bottom-left) -->
+  <div style="position: absolute; left: 0; top: 44%; bottom: 0; width: 49%; background: rgba(0,87,171,0.9); z-index: 2;"></div>
+  <!-- BSPB Logo (top-left) -->
+  <div style="position: absolute; top: 55px; left: 56px; z-index: 10;">
+    <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/YgWUGGIfCqwHIQEd.png" alt="БСПБ" style="height: 53px; width: auto;" />
   </div>
-  {% endif %}
-  <div style="flex: 1 1 0%; display: flex; flex-direction: column; justify-content: center; padding-left: 32px; min-width: 0;">
-    <h1 style="color: var(--text-heading-color, #111827); font-size: 42px; font-weight: 700; line-height: 1.1; margin: 0 0 20px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
-    <div class="accent-line" style="margin-bottom: 20px;"></div>
+  <!-- Red decorative line (top-right) -->
+  <div style="position: absolute; top: 100px; right: 100px; z-index: 10;">
+    <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/xPDYGlxYLgYvmYKL.png" alt="" style="width: 220px; height: auto;" />
+  </div>
+  <!-- Content on blue panel -->
+  <div style="position: absolute; left: 56px; top: 44%; bottom: 0; width: calc(49% - 56px); z-index: 5; display: flex; flex-direction: column; justify-content: center; padding-right: 40px;">
+    <h1 style="color: #ffffff; font-family: Arial, sans-serif; font-size: 44px; font-weight: 700; line-height: 1.1; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ title }}</h1>
+    <!-- Red underline brush stroke -->
+    <div style="margin-bottom: 24px;">
+      <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663124868360/xPDYGlxYLgYvmYKL.png" alt="" style="width: 200px; height: auto;" />
+    </div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: 16px; line-height: 1.5; margin: 0 0 24px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
+    <p style="color: rgba(255,255,255,0.9); font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; margin: 0 0 16px 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
-    <div style="border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px);">
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--primary-accent-color, #9333ea);">
-          <span style="font-weight: 700; font-size: 14px; color: white;">{{ initials | default('') }}</span>
-        </div>
-        <div style="display: flex; flex-direction: column;">
-          <span style="color: var(--text-heading-color, #111827); font-size: 18px; font-weight: 700;">{{ presenterName | default('') }}</span>
-          <span style="color: var(--text-body-color, #4b5563); font-size: 14px; font-weight: 500;">{{ presentationDate | default('') }}</span>
-        </div>
-      </div>
-    </div>
+    {% if presentationDate %}
+    <p style="color: rgba(255,255,255,0.7); font-family: Arial, sans-serif; font-size: 11px; margin: 0; position: absolute; bottom: 20px; left: 0;">{{ presentationDate | default('') }}</p>
+    {% endif %}
   </div>
 </div>`,
 

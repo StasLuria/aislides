@@ -76,6 +76,17 @@ const THEME_EXTENSIONS: Record<string, { cssVariables: string; fontsUrl: string;
   display: none !important;
 }
 
+/* BSPB Title slide — hide theme logo and bottom bar (title has its own) */
+.slide:has(.bspb-title-slide)::after {
+  display: none !important;
+}
+.slide:has(.bspb-title-slide)::before {
+  display: none !important;
+}
+.slide:has(.bspb-title-slide) {
+  background: transparent !important;
+}
+
 /* BSPB Bottom bar — red stripe at bottom of each slide */
 .slide::before {
   content: '';

@@ -176,6 +176,48 @@ describe("Template Engine - Layout Templates", () => {
     expect(html).toContain("Introduction");
   });
 
+  it("should render BSPB title-slide with cathedral background and blue panel", () => {
+    const data = {
+      title: "Стратегия развития банка",
+      description: "Подразделение IT",
+      presentationDate: "15.02.2026",
+      presenterName: "Иванов И.И.",
+      initials: "ИИ",
+    };
+
+    const html = renderSlide("title-slide", data, "");
+    // Should have BSPB-specific class
+    expect(html).toContain("bspb-title-slide");
+    // Should have Kazan Cathedral background photo
+    expect(html).toContain("axBJgpxbruLZDqPX.jpg");
+    // Should have BSPB logo
+    expect(html).toContain("YgWUGGIfCqwHIQEd.png");
+    // Should have red accent brush stroke
+    expect(html).toContain("xPDYGlxYLgYvmYKL.png");
+    // Should have blue panel
+    expect(html).toContain("rgba(0,87,171,0.9)");
+    // Should have white title text
+    expect(html).toContain("color: #ffffff");
+    // Should render title
+    expect(html).toContain("Стратегия развития банка");
+    // Should render description
+    expect(html).toContain("Подразделение IT");
+    // Should render date
+    expect(html).toContain("15.02.2026");
+  });
+
+  it("should render BSPB title-slide without description when not provided", () => {
+    const data = {
+      title: "Только заголовок",
+    };
+
+    const html = renderSlide("title-slide", data, "");
+    expect(html).toContain("bspb-title-slide");
+    expect(html).toContain("Только заголовок");
+    // Should not have description paragraph
+    expect(html).not.toContain("rgba(255,255,255,0.9); font-family: Arial");
+  });
+
   it("renderPresentation should wrap slides in proper containers with 1280x720", () => {
     const slides = [
       { layoutId: "text-slide", data: { title: "Slide 1", bullets: [{ title: "A", description: "B" }] }, html: "<div>Slide 1</div>" },
