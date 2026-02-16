@@ -996,9 +996,12 @@ async function handleStructureApproval(
           fontsUrl: metadata.customFontsUrl || "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
           mood: "Custom user template",
         } as any;
+      } else if (metadata.themePreset && metadata.themePreset !== "auto") {
+        themePreset = getThemePreset(metadata.themePreset);
       } else {
-        const themeSelection = await autoSelectTheme(topic);
-        themePreset = getThemePreset(themeSelection.themeId);
+        // Default: always use BSPB corporate theme (100% default)
+        themePreset = getThemePreset("bspb_corporate");
+        console.log(`[ChatOrchestrator] Using default theme: bspb_corporate`);
       }
 
       const themeResult = await runTheme(

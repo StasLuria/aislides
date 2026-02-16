@@ -1645,3 +1645,17 @@
 - [x] Fix 10 discrepancies: agent table (19 rows), themes (13), quality levels (5), viewer shortcuts, cover card
 - [x] Verified: 19 steps, 64 endpoints, 45 layouts, 13 themes — all match code
 - [x] Save checkpoint
+
+## Round 55: Fix BSPB Theme — All Slides Must Be in Banking Style
+- [x] Investigate how bspb_corporate theme CSS is applied to slides
+- [x] Identify why only the first slide (cover) gets banking styling — CONFIRMED: theme applies to ALL slides (logo, red stripe, blue headings)
+- [x] Fix theme CSS / template engine so ALL slide layouts receive BSPB styling — was already working
+- [x] Test by generating a presentation with BSPB theme — verified visually
+- [x] Verify all slides display in banking style (not just cover) — confirmed
+- [ ] Save checkpoint
+- [x] Make bspb_corporate 100% default theme (always used unless user explicitly picks another)
+- [x] Update themeSelector.ts: skip keyword/LLM matching when no theme_preset specified, return bspb_corporate
+- [x] Update generator.ts: ensure default theme is bspb_corporate
+- [x] Update frontend: default theme selector value = bspb_corporate
+- [x] Update interactive routes: default to bspb_corporate (+ chatOrchestrator.ts)
+- [x] Fix broken tests — all 1567 tests pass

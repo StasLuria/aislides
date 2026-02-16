@@ -745,13 +745,10 @@ router.post("/api/v1/interactive/:id/assemble", async (req: Request, res: Respon
 
       let themePreset;
       if (config.theme_preset === "auto" || !config.theme_preset) {
-        // Use presentation title + branding as the prompt for theme selection
-        const themePrompt = `${plannerResult.presentation_title} — ${plannerResult.branding.industry} ${plannerResult.branding.style_preference}`;
-        const autoResult = await autoSelectTheme(themePrompt);
-        themePreset = getThemePreset(autoResult.themeId);
-        console.log(`[Interactive] Auto-selected theme: ${autoResult.themeId} (${autoResult.method})`);
-        // Save the resolved theme back to config for subsequent operations
-        config.theme_preset = autoResult.themeId;
+        // Default: always use BSPB corporate theme (100% default)
+        themePreset = getThemePreset("bspb_corporate");
+        console.log(`[Interactive] Using default theme: bspb_corporate`);
+        config.theme_preset = "bspb_corporate";
       } else {
         themePreset = getThemePreset(config.theme_preset);
       }

@@ -1770,10 +1770,9 @@ export async function generatePresentation(
     console.log(`[Pipeline] Using custom template: ${config.customTemplateId || 'inline'}`);
     onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 49, message: "Тема: Пользовательский шаблон" });
   } else if (config.themePreset === "auto" || !config.themePreset) {
-    // Auto-select theme based on content
-    themeSelectionInfo = await autoSelectTheme(prompt);
-    themePreset = getThemePreset(themeSelectionInfo.themeId);
-    console.log(`[Pipeline] Auto-selected theme: ${themeSelectionInfo.themeId} (${themeSelectionInfo.method}, ${themeSelectionInfo.confidence}) — ${themeSelectionInfo.reason}`);
+    // Default: always use BSPB corporate theme (100% default)
+    themePreset = getThemePreset("bspb_corporate");
+    console.log(`[Pipeline] Using default theme: bspb_corporate`);
     onProgress({ nodeName: "theme", currentStep: "designing", progressPercent: 49, message: `Тема: ${themePreset.nameRu}` });
   } else {
     themePreset = getThemePreset(config.themePreset);

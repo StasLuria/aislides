@@ -67,7 +67,7 @@ interface ChatSettings {
 
 const DEFAULT_SETTINGS: ChatSettings = {
   mode: "quick",
-  themePreset: "auto",
+  themePreset: "bspb_corporate",
   slideCount: 10,
   customTemplateId: null,
   customTemplateName: null,
