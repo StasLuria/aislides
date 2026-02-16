@@ -1507,21 +1507,32 @@ async function handlePostCompletion(
   }
 
   // Generic post-completion chat
+  const postSession = await getChatSession(sessionId);
   const response = await streamLLMResponse(
-    `${CHAT_SYSTEM_PROMPT}\n\nПрезентация уже создана. Пользователь может попросить создать новую или задать вопрос.`,
+    `${CHAT_SYSTEM_PROMPT}\n\nПрезентация уже создана. Пользователь может попросить создать новую или задать вопрос. Не говори что ты не можешь создавать файлы — ты уже создал презентацию, она доступна по кнопке "Открыть".`,
     messages.map(m => ({ role: m.role, content: m.content })).slice(-6),
     writer,
   );
+
+  const postActions: ChatAction[] = [
+    { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
+  ];
+  if (postSession?.presentationId) {
+    postActions.unshift({ id: "view_presentation", label: "👁 Открыть презентацию", variant: "default" });
+  }
 
   const msg: ChatMessage = {
     role: "assistant",
     content: response,
     timestamp: Date.now(),
-    actions: [
-      { id: "new_presentation", label: "➕ Создать новую", variant: "outline" },
-    ],
+    actions: postActions,
   };
   await appendMessage(sessionId, msg);
+
+  // Always re-send presentation_link so frontend keeps the button visible
+  if (postSession?.presentationId) {
+    writer({ type: "presentation_link", data: { presentationId: postSession.presentationId } });
+  }
   writer({ type: "actions", data: msg.actions });
   writer({ type: "done", data: null });
 }

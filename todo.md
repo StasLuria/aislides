@@ -1722,3 +1722,13 @@
 - [x] Fix the root cause — replaced pendingMessageRef pattern with direct sendMessage(msg, newId) call after session creation
 - [x] Test end-to-end — browser test confirmed: first message now shows response immediately
 - [x] Save checkpoint — all 1612 tests passing
+
+## Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification
+- [x] Diagnose why "Open Presentation" button doesn't appear after generation completes — CONFIRMED FIXED: backend sends presentation_link in handlePostCompletion, frontend preserves it
+- [x] Check if the issue is in SSE streaming (actions not sent) or frontend rendering (actions not rendered) — SSE correctly sends presentation_link + actions events
+- [x] Check if buttons disappear on page reload (history loading issue) — loadSession correctly restores presentationLink from server data
+- [x] Fix completion button rendering to be reliable — useSSEChat.ts no longer resets presentationLink on sendMessage; chatOrchestrator.ts re-sends presentation_link in post-completion
+- [x] Reduce unnecessary clarification questions — topics like "космос" should be clear enough to proceed — CONFIRMED FIXED: prompt updated with clear examples, "космос" and "Макароны" proceed without clarification
+- [x] Raise confidence threshold or adjust topicIsClear logic in intentExtractor — prompt examples show clear topics (космос, макароны) as topicIsClear: true with high confidence
+- [x] Test end-to-end with quick mode generation and verify buttons appear — E2E confirmed: generation → follow-up message → presentation_link + actions returned correctly
+- [x] Save checkpoint — all 1612 tests passing

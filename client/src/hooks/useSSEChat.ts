@@ -409,7 +409,8 @@ export function useSSEChat() {
 
       setError(null);
       setCurrentActions([]);
-      setPresentationLink(null);
+      // Don't reset presentationLink — keep it visible even after new messages
+      // setPresentationLink(null);
       setIsStreaming(true);
       streamingContentRef.current = "";
       lastProgressRef.current = null;

@@ -7,14 +7,25 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 146 |
-| Total tasks | 1343 |
-| Completed | 1330 (99%) |
+| Total sections | 147 |
+| Total tasks | 1351 |
+| Completed | 1338 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification ✅
+
+- [x] Diagnose why "Open Presentation" button doesn't appear after generation completes — CONFIRMED FIXED: backend sends presentation_link in handlePostCompletion, frontend preserves it
+- [x] Check if the issue is in SSE streaming (actions not sent) or frontend rendering (actions not rendered) — SSE correctly sends presentation_link + actions events
+- [x] Check if buttons disappear on page reload (history loading issue) — loadSession correctly restores presentationLink from server data
+- [x] Fix completion button rendering to be reliable — useSSEChat.ts no longer resets presentationLink on sendMessage; chatOrchestrator.ts re-sends presentation_link in post-completion
+- [x] Reduce unnecessary clarification questions — topics like "космос" should be clear enough to proceed — CONFIRMED FIXED: prompt updated with clear examples, "космос" and "Макароны" proceed without clarification
+- [x] Raise confidence threshold or adjust topicIsClear logic in intentExtractor — prompt examples show clear topics (космос, макароны) as topicIsClear: true with high confidence
+- [x] Test end-to-end with quick mode generation and verify buttons appear — E2E confirmed: generation → follow-up message → presentation_link + actions returned correctly
+- [x] Save checkpoint — all 1612 tests passing
 
 ### 🚀 Round 61: Fix First Message Not Showing Response ✅
 
@@ -1840,7 +1851,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (77 sections, 853/866 tasks)
+### 🚀 Improvements (78 sections, 861/874 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1919,6 +1930,7 @@
 - **Round 59: Mid-Conversation Requirement Editing** — ✅
 - **Round 60: Fix Quick Mode Not Generating HTML Slides** — ✅
 - **Round 61: Fix First Message Not Showing Response** — ✅
+- **Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
