@@ -7,16 +7,23 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 136 |
-| Total tasks | 1269 |
-| Completed | 1256 (99%) |
-| Pending | 13 |
+| Total sections | 137 |
+| Total tasks | 1273 |
+| Completed | 1261 (99%) |
+| Pending | 12 |
 
 ---
 
 ## Detailed Changelog
 
-### 🚀 Round 51: Chat Slide Preview Redesign — Cover Card Only 🔴 7/8
+### 🚀 Round 52: Remove "Применить изменения" Button ✅
+
+- [x] Remove "Применить изменения" button from chat messages
+- [x] Remove related handler/logic (quote-based onQuoteReply call)
+- [x] Test: 1567/1567 tests passing, 0 TS errors
+- [x] Save checkpoint
+
+### 🚀 Round 51: Chat Slide Preview Redesign — Cover Card Only ✅
 
 - [x] Remove horizontal slide preview strip ("колбаса") from chat messages
 - [x] Show only first slide (cover) as 420x236 card with gradient overlay
@@ -25,7 +32,7 @@
 - [x] Pass presentationId through MessageBubble → SlidePreviewsGalleryWithComments
 - [x] CoverSlideIframe component for scaled iframe rendering
 - [x] Test visually and verify navigation works (all 1567 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ### 🚀 Round 50: Test Generation — Research-First Pipeline Comparison ✅
 
@@ -1736,7 +1743,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (67 sections, 779/792 tasks)
+### 🚀 Improvements (68 sections, 784/796 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1804,7 +1811,8 @@
 - **Round 48: Annotation Highlights, Apply Changes, Slide Quoting** — ✅
 - **Round 49: Research-First Pipeline Refactoring** — ✅
 - **Round 50: Test Generation — Research-First Pipeline Comparison** — ✅
-- **Round 51: Chat Slide Preview Redesign — Cover Card Only** — 7/8
+- **Round 51: Chat Slide Preview Redesign — Cover Card Only** — ✅
+- **Round 52: Remove "Применить изменения" Button** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

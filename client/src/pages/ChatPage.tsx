@@ -1102,26 +1102,6 @@ function MessageBubble({
           )}
         </div>
 
-        {/* Apply Changes button — shown on AI messages that respond to a user quote */}
-        {!isUser && !message.isStreaming && previousMessage?.role === "user" && previousMessage.content.startsWith(">") && message.content && (
-          <div className="mt-1.5">
-            <button
-              onClick={() => {
-                // Extract the original quote from previous user message
-                const lines = previousMessage.content.split("\n");
-                const quoteLines = lines.filter(l => l.startsWith("> ")).map(l => l.slice(2));
-                const quote = quoteLines.join("\n");
-                const userRequest = lines.filter(l => !l.startsWith("> ") && l.trim()).join("\n");
-                // Send as a new message to apply the AI's suggestion
-                onQuoteReply(`Примени изменения, которые ты предложил в предыдущем сообщении`);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Применить изменения
-            </button>
-          </div>
-        )}
 
         {/* Comments section */}
         {(hasComments || showCommentInput) && (

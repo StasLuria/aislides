@@ -1620,4 +1620,10 @@
 - [x] Pass presentationId through MessageBubble → SlidePreviewsGalleryWithComments
 - [x] CoverSlideIframe component for scaled iframe rendering
 - [x] Test visually and verify navigation works (all 1567 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint
+
+## Round 52: Remove "Применить изменения" Button
+- [x] Remove "Применить изменения" button from chat messages
+- [x] Remove related handler/logic (quote-based onQuoteReply call)
+- [x] Test: 1567/1567 tests passing, 0 TS errors
+- [x] Save checkpoint
