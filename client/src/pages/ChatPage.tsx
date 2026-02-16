@@ -663,6 +663,7 @@ function SlidePreviewsGalleryWithComments({
   messageIndex,
   onSlideCommentsUpdate,
   onQuoteSlide,
+  presentationId,
 }: {
   previews: SlidePreview[];
   slideComments?: Record<number, MessageComment[]>;
@@ -670,175 +671,73 @@ function SlidePreviewsGalleryWithComments({
   messageIndex: number;
   onSlideCommentsUpdate: (messageIndex: number, slideNumber: number, comments: MessageComment[]) => void;
   onQuoteSlide: (slideNumber: number, slideTitle: string, slideHtml: string) => void;
+  presentationId?: string;
 }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [commentingSlide, setCommentingSlide] = useState<number | null>(null);
-  const [slideCommentText, setSlideCommentText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const slideCommentInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (commentingSlide !== null && slideCommentInputRef.current) {
-      slideCommentInputRef.current.focus();
-    }
-  }, [commentingSlide]);
-
-  const handleAddSlideComment = useCallback(async (slideNumber: number) => {
-    if (!slideCommentText.trim() || !sessionId || isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const result = await api.addSlideComment(sessionId, messageIndex, slideNumber, slideCommentText.trim());
-      onSlideCommentsUpdate(messageIndex, slideNumber, result.comments);
-      setSlideCommentText("");
-      setCommentingSlide(null);
-    } catch {
-      toast.error("Не удалось добавить комментарий");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [slideCommentText, sessionId, messageIndex, isSubmitting, onSlideCommentsUpdate]);
-
-  const handleDeleteSlideComment = useCallback(async (slideNumber: number, commentId: string) => {
-    if (!sessionId) return;
-    try {
-      await api.deleteSlideComment(sessionId, messageIndex, slideNumber, commentId);
-      const current = (slideComments || {})[slideNumber] || [];
-      const updated = current.filter(c => c.id !== commentId);
-      onSlideCommentsUpdate(messageIndex, slideNumber, updated);
-    } catch {
-      toast.error("Не удалось удалить комментарий");
-    }
-  }, [sessionId, messageIndex, slideComments, onSlideCommentsUpdate]);
+  const [, navigate] = useLocation();
 
   if (!previews || previews.length === 0) return null;
 
+  const coverSlide = previews[0];
+  const totalSlides = previews.length;
+
+  const handleOpenViewer = () => {
+    if (presentationId) {
+      navigate(`/view/${presentationId}?from=chat/${sessionId}`);
+    } else {
+      // Fallback: open lightbox if no presentationId
+      setLightboxIndex(0);
+    }
+  };
+
   return (
     <div className="mt-3">
-      <div className="text-xs text-muted-foreground mb-2">
-        Превью слайдов ({previews.length})
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {previews.map((preview, i) => {
-          const slideNum = preview.slideNumber;
-          const comments = (slideComments || {})[slideNum] || [];
-          const hasComments = comments.length > 0;
+      {/* Cover slide card — only the first slide */}
+      <div
+        className="group relative rounded-xl border border-border bg-white cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-primary/30 overflow-hidden"
+        style={{ width: 420, height: 236 }}
+        onClick={handleOpenViewer}
+      >
+        {/* Iframe preview of first slide */}
+        <CoverSlideIframe html={coverSlide.html} />
 
-          return (
-            <div key={`${slideNum}-${i}`} className="shrink-0">
-              <div className="relative group/slide">
-                <SlidePreviewCard
-                  preview={preview}
-                  onClick={() => setLightboxIndex(i)}
-                />
-                {/* Slide action buttons */}
-                {sessionId && (
-                  <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-                    {/* Comment button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCommentingSlide(commentingSlide === slideNum ? null : slideNum);
-                        setSlideCommentText("");
-                      }}
-                      className={`p-1 rounded-md transition-all ${
-                        hasComments
-                          ? "opacity-100 bg-amber-500 text-white shadow-sm"
-                          : "opacity-0 group-hover/slide:opacity-100 bg-black/50 text-white hover:bg-black/70"
-                      }`}
-                      title="Комментировать слайд"
-                    >
-                      <MessageSquare className="w-3 h-3" />
-                      {hasComments && (
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-600 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
-                          {comments.length}
-                        </span>
-                      )}
-                    </button>
-                    {/* Quote slide button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onQuoteSlide(slideNum, preview.title, preview.html);
-                      }}
-                      className="opacity-0 group-hover/slide:opacity-100 p-1 rounded-md bg-black/50 text-white hover:bg-primary/80 transition-all"
-                      title="Цитировать слайд"
-                    >
-                      <Quote className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Slide comments */}
-              {(hasComments || commentingSlide === slideNum) && (
-                <div className="mt-1.5" style={{ width: 320 }}>
-                  {comments.map((c) => (
-                    <div
-                      key={c.id}
-                      className="group/sc flex items-start gap-1.5 py-1 px-2 rounded-md bg-amber-50 border border-amber-200/60 mb-1 text-[11px]"
-                    >
-                      <MessageSquare className="w-2.5 h-2.5 text-amber-500 mt-0.5 shrink-0" />
-                      <span className="text-foreground/80 flex-1 leading-relaxed">{c.text}</span>
-                      <button
-                        onClick={() => handleDeleteSlideComment(slideNum, c.id)}
-                        className="opacity-0 group-hover/sc:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-100 text-muted-foreground hover:text-red-500 shrink-0"
-                        title="Удалить"
-                      >
-                        <Trash2 className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {commentingSlide === slideNum && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <input
-                        ref={slideCommentInputRef}
-                        type="text"
-                        value={slideCommentText}
-                        onChange={(e) => setSlideCommentText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddSlideComment(slideNum);
-                          }
-                          if (e.key === "Escape") {
-                            setCommentingSlide(null);
-                            setSlideCommentText("");
-                          }
-                        }}
-                        placeholder="Комментарий к слайду..."
-                        className="flex-1 text-[11px] px-2 py-1 rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/50"
-                        disabled={isSubmitting}
-                      />
-                      <button
-                        onClick={() => handleAddSlideComment(slideNum)}
-                        disabled={!slideCommentText.trim() || isSubmitting}
-                        className="p-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
-                        title="Отправить"
-                      >
-                        {isSubmitting ? (
-                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        ) : (
-                          <Send className="w-2.5 h-2.5" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => { setCommentingSlide(null); setSlideCommentText(""); }}
-                        className="p-1 rounded-md hover:bg-secondary text-muted-foreground transition-colors"
-                        title="Отмена"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  )}
+        {/* Gradient overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 py-3">
+          <div className="flex items-end justify-between">
+            <div>
+              {coverSlide.title && coverSlide.title !== `Слайд 1` && (
+                <div className="text-xs text-white/90 font-medium mb-0.5 line-clamp-1">
+                  {coverSlide.title}
                 </div>
               )}
+              <div className="text-[10px] text-white/60 font-mono">
+                {totalSlides} {totalSlides === 1 ? 'слайд' : totalSlides < 5 ? 'слайда' : 'слайдов'}
+              </div>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-1.5 text-white/80 group-hover:text-white transition-colors">
+              <span className="text-[11px] font-medium">Открыть</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Hover expand icon */}
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="bg-black/50 backdrop-blur-sm rounded-lg p-1.5">
+            <Maximize2 className="w-4 h-4 text-white" />
+          </div>
+        </div>
+
+        {/* Slide count badge */}
+        <div className="absolute top-3 left-3">
+          <div className="bg-black/50 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+            <Layers className="w-3 h-3 text-white/80" />
+            <span className="text-[11px] text-white font-medium">{totalSlides}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Fullscreen lightbox */}
+      {/* Fullscreen lightbox — still available for browsing all slides */}
       {lightboxIndex !== null && (
         <FullscreenSlideLightbox
           previews={previews}
@@ -847,6 +746,39 @@ function SlidePreviewsGalleryWithComments({
         />
       )}
     </div>
+  );
+}
+
+/** Renders the first slide HTML in an iframe for the cover card */
+function CoverSlideIframe({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (iframeRef.current && html) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(prepareSlideHtml(html));
+        doc.close();
+      }
+    }
+  }, [html]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      className="pointer-events-none"
+      style={{
+        width: "1280px",
+        height: "720px",
+        transform: "scale(0.328125)",
+        transformOrigin: "top left",
+        border: "none",
+        display: "block",
+      }}
+      sandbox="allow-same-origin"
+      title="Cover slide"
+    />
   );
 }
 
@@ -864,6 +796,7 @@ function MessageBubble({
   onQuoteReply,
   onQuoteSlide,
   previousMessage,
+  presentationId,
 }: {
   message: ChatMessage;
   messageIndex: number;
@@ -874,6 +807,7 @@ function MessageBubble({
   onQuoteReply: (text: string) => void;
   onQuoteSlide: (slideNumber: number, slideTitle: string, slideHtml: string) => void;
   previousMessage?: ChatMessage;
+  presentationId?: string;
 }) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -1355,6 +1289,7 @@ function MessageBubble({
             messageIndex={messageIndex}
             onSlideCommentsUpdate={onSlideCommentsUpdate}
             onQuoteSlide={onQuoteSlide}
+            presentationId={presentationId}
           />
         )}
       </div>
@@ -2028,6 +1963,7 @@ export default function ChatPage() {
                     textareaRef.current?.focus();
                   }}
                   previousMessage={i > 0 ? messages[i - 1] : undefined}
+                  presentationId={presentationLink?.presentationId}
                 />
               ))}
 

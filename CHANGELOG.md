@@ -7,14 +7,33 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 134 |
-| Total tasks | 1256 |
-| Completed | 1244 (99%) |
-| Pending | 12 |
+| Total sections | 136 |
+| Total tasks | 1269 |
+| Completed | 1256 (99%) |
+| Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 51: Chat Slide Preview Redesign — Cover Card Only 🔴 7/8
+
+- [x] Remove horizontal slide preview strip ("колбаса") from chat messages
+- [x] Show only first slide (cover) as 420x236 card with gradient overlay
+- [x] Clicking card navigates to Viewer via presentationId
+- [x] Card design: slide count badge, title, "Open" link, hover effects
+- [x] Pass presentationId through MessageBubble → SlidePreviewsGalleryWithComments
+- [x] CoverSlideIframe component for scaled iframe rendering
+- [x] Test visually and verify navigation works (all 1567 tests passing)
+- [ ] Save checkpoint
+
+### 🚀 Round 50: Test Generation — Research-First Pipeline Comparison ✅
+
+- [x] Create test script for programmatic presentation generation
+- [x] Run 3 test generations: AI Trends, EV Strategy Russia, Remote Work Impact
+- [x] Collect quality metrics (research coverage, narrative coherence, content depth)
+- [x] Visual review of all 3 presentations in browser
+- [x] Create comparison report with detailed findings (pipeline_test_report.md)
 
 ### 🚀 Round 49: Research-First Pipeline Refactoring ✅
 
@@ -1717,7 +1736,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (65 sections, 767/779 tasks)
+### 🚀 Improvements (67 sections, 779/792 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1784,6 +1803,8 @@
 - **Round 47: Quote Context in AI Prompts** — ✅
 - **Round 48: Annotation Highlights, Apply Changes, Slide Quoting** — ✅
 - **Round 49: Research-First Pipeline Refactoring** — ✅
+- **Round 50: Test Generation — Research-First Pipeline Comparison** — ✅
+- **Round 51: Chat Slide Preview Redesign — Cover Card Only** — 7/8
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

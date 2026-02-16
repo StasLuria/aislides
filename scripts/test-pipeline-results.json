@@ -1,0 +1,20 @@
+[
+  {
+    "topic_id": "topic_1",
+    "prompt": "Тренды искусственного интеллекта в 2026 году: от генеративных моделей до автономных агентов",
+    "status": "error",
+    "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  },
+  {
+    "topic_id": "topic_2",
+    "prompt": "Стратегия выхода на рынок электромобилей в России: анализ конкурентов, барьеры и возможности",
+    "status": "error",
+    "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  },
+  {
+    "topic_id": "topic_3",
+    "prompt": "Влияние удалённой работы на продуктивность и корпоративную культуру: данные исследований 2024-2026",
+    "status": "error",
+    "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  }
+]

@@ -1604,3 +1604,20 @@
 - [x] Verify TypeScript compilation (0 errors)
 - [x] Run tests and fix failures (1567/1567 passed, fixed devtools test: 18→19 steps, 58→64 endpoints)
 - [x] Save checkpoint
+
+## Round 50: Test Generation — Research-First Pipeline Comparison
+- [x] Create test script for programmatic presentation generation
+- [x] Run 3 test generations: AI Trends, EV Strategy Russia, Remote Work Impact
+- [x] Collect quality metrics (research coverage, narrative coherence, content depth)
+- [x] Visual review of all 3 presentations in browser
+- [x] Create comparison report with detailed findings (pipeline_test_report.md)
+
+## Round 51: Chat Slide Preview Redesign — Cover Card Only
+- [x] Remove horizontal slide preview strip ("колбаса") from chat messages
+- [x] Show only first slide (cover) as 420x236 card with gradient overlay
+- [x] Clicking card navigates to Viewer via presentationId
+- [x] Card design: slide count badge, title, "Open" link, hover effects
+- [x] Pass presentationId through MessageBubble → SlidePreviewsGalleryWithComments
+- [x] CoverSlideIframe component for scaled iframe rendering
+- [x] Test visually and verify navigation works (all 1567 tests passing)
+- [ ] Save checkpoint

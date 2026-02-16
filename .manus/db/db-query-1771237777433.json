@@ -1,0 +1,31 @@
+{
+  "query": "SELECT presentationId, title, slideCount, JSON_LENGTH(finalHtmlSlides) as json_slides_count, LENGTH(finalHtmlSlides) as data_size FROM presentations WHERE presentationId IN ('sNvTq2RvprTY1AzZ', 'Rnk1Yz0HjfU2RNSr', '3-8e9QjUPlm7PsJs')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mYfLk323U3DU3o.a211c2f19edd --database beXrKFV66UQLVsECzVvhH4 --execute SELECT presentationId, title, slideCount, JSON_LENGTH(finalHtmlSlides) as json_slides_count, LENGTH(finalHtmlSlides) as data_size FROM presentations WHERE presentationId IN ('sNvTq2RvprTY1AzZ', 'Rnk1Yz0HjfU2RNSr', '3-8e9QjUPlm7PsJs')",
+  "rows": [
+    {
+      "presentationId": "3-8e9QjUPlm7PsJs",
+      "title": "Удаленная работа 2024-2026: от вызовов к конкурентному преимуществу через технологии и гибкие модели",
+      "slideCount": "11",
+      "json_slides_count": "11",
+      "data_size": "19030"
+    },
+    {
+      "presentationId": "Rnk1Yz0HjfU2RNSr",
+      "title": "Рынок электромобилей в России: взрывной рост на 250% и доминирование Китая – стратегия выхода через локализацию и господдержку",
+      "slideCount": "10",
+      "json_slides_count": "10",
+      "data_size": "27721"
+    },
+    {
+      "presentationId": "sNvTq2RvprTY1AzZ",
+      "title": "ИИ к 2026 году: Генеративный ИИ охватит 80% предприятий, рынок достигнет $738 млрд, но вызовы остаются",
+      "slideCount": "11",
+      "json_slides_count": "11",
+      "data_size": "16391"
+    }
+  ],
+  "messages": [],
+  "stdout": "presentationId\ttitle\tslideCount\tjson_slides_count\tdata_size\n3-8e9QjUPlm7PsJs\tУдаленная работа 2024-2026: от вызовов к конкурентному преимуществу через технологии и гибкие модели\t11\t11\t19030\nRnk1Yz0HjfU2RNSr\tРынок электромобилей в России: взрывной рост на 250% и доминирование Китая – стратегия выхода через локализацию и господдержку\t10\t10\t27721\nsNvTq2RvprTY1AzZ\tИИ к 2026 году: Генеративный ИИ охватит 80% предприятий, рынок достигнет $738 млрд, но вызовы остаются\t11\t11\t16391\n",
+  "stderr": "",
+  "execution_time_ms": 113
+}
