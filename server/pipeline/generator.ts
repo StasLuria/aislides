@@ -1,6 +1,6 @@
 /**
  * Presentation Generator Pipeline — orchestrates LLM agents to create presentations.
- * Pipeline: Planner → Outline → Writer (parallel) → Theme → Layout → HTML Composer → Assembly
+ * Pipeline: Research → Analysis → Planner → Type → Outline → Critic → Writer → Storytelling → Theme → Layout → HTML Composer → Assembly
  */
 import { invokeLLM } from "../_core/llm";
 import {
@@ -30,7 +30,8 @@ import { evaluateSlides, runEvaluatorLoop, type SlideForEval } from "./contentEv
 import { runOutlineCritic } from "./outlineCritic";
 import { runSpeakerCoach, applySpeakerNotes } from "./speakerCoachAgent";
 import { runDesignCritic, runLlmDesignCritique, fixSlideDensity, type SlideDesignData } from "./designCriticAgent";
-import { runResearchAgent, formatResearchForWriter, type ResearchContext } from "./researchAgent";
+import { runResearchAgent, runResearchByTopic, formatResearchForWriter, type ResearchContext } from "./researchAgent";
+import { runAnalysisAgent, formatAnalysisForDownstream, formatAnalysisForWriter, type AnalysisResult, type AnalysisAgentResult } from "./analysisAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 
@@ -200,10 +201,10 @@ async function llmText(systemPrompt: string, userPrompt: string): Promise<string
 // AGENT FUNCTIONS
 // ═══════════════════════════════════════════════════════
 
-export async function runPlanner(prompt: string): Promise<PlannerResult> {
+export async function runPlanner(prompt: string, analysisContext?: string): Promise<PlannerResult> {
   return llmStructured<PlannerResult>(
     MASTER_PLANNER_SYSTEM,
-    masterPlannerUser(prompt),
+    masterPlannerUser(prompt, analysisContext),
     "MasterPlannerOutput",
     {
       type: "object",
@@ -234,10 +235,11 @@ export async function runOutline(
   branding: PlannerResult["branding"],
   language: string,
   typeHint?: string,
+  analysisContext?: string,
 ): Promise<OutlineResult> {
   const system = outlineSystem(language);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr, typeHint);
+  const user = outlineUser(prompt, brandingStr, typeHint, analysisContext);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -387,6 +389,7 @@ export async function runWriterSingle(
   previousContext?: string,
   researchContext?: string,
   writerTypeHint?: string,
+  analysisHighlights?: string,
 ): Promise<SlideContent> {
   const system = writerSystem(language, presentationTitle, allTitles, targetAudience, writerTypeHint);
   const user = writerUser(
@@ -398,6 +401,7 @@ export async function runWriterSingle(
     researchContext,
     slideInfo.content_shape,
     slideInfo.slide_category,
+    analysisHighlights,
   );
 
   // Use llmText instead of llmStructured because structured_content is free-form
@@ -474,6 +478,7 @@ export async function runWriterParallel(
   onSlideWritten?: (slideNum: number, total: number) => void,
   researchContextFormatter?: (slideNumber: number) => string,
   writerTypeHint?: string,
+  analysisHighlights?: string,
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
   const results: SlideContent[] = [];
@@ -506,6 +511,7 @@ export async function runWriterParallel(
       context,
       researchContextFormatter?.(slide.slide_number),
       writerTypeHint,
+      analysisHighlights,
     ).catch((err): SlideContent => {
       console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
       return {
@@ -1508,16 +1514,62 @@ export async function generatePresentation(
 }> {
   const enableImages = config.enableImages !== false; // enabled by default
 
-  // 1. PLANNER
-  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 5, message: "Анализ темы и планирование..." });
-  const plannerResult = await runPlanner(prompt);
+  // ═══════════════════════════════════════════════════════
+  // PHASE 1: RESEARCH — gather facts BEFORE any planning
+  // ═══════════════════════════════════════════════════════
+  onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 3, message: "Исследование фактов и статистики..." });
+  let researchContext: ResearchContext | null = null;
+  try {
+    // Use topic-first research — no outline dependency
+    const researchResult = await runResearchByTopic(prompt, "ru", (msg) => {
+      onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 5, message: msg });
+    });
+    researchContext = researchResult.context;
+    console.log(`[Pipeline] Research (topic-first): ${researchResult.totalFacts} facts for ${researchResult.slidesResearched} categories`);
+    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 10, message: `Найдено ${researchResult.totalFacts} фактов` });
+  } catch (err) {
+    console.error("[Pipeline] Research agent failed, proceeding without research:", err);
+    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 10, message: "Пропуск исследования (ошибка)" });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // PHASE 2: ANALYSIS — rank insights and build narrative arc
+  // ═══════════════════════════════════════════════════════
+  let analysisResult: AnalysisResult | null = null;
+  let analysisContextStr = "";
+  let analysisHighlightsStr = "";
+  if (researchContext && researchContext.total_facts_found > 0) {
+    onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 12, message: "Анализ и ранжирование инсайтов..." });
+    try {
+      const analysisAgentResult = await runAnalysisAgent(prompt, researchContext, "ru", (msg) => {
+        onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 14, message: msg });
+      });
+      analysisResult = analysisAgentResult.analysis;
+      analysisContextStr = formatAnalysisForDownstream(analysisResult);
+      analysisHighlightsStr = formatAnalysisForWriter(analysisResult);
+      console.log(`[Pipeline] Analysis: ${analysisAgentResult.clusterCount} clusters, ${analysisAgentResult.anchorCount} anchors, arc: ${analysisResult.narrative_arc}`);
+      onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 16, message: `${analysisAgentResult.clusterCount} кластеров, ${analysisAgentResult.anchorCount} якорных инсайтов` });
+    } catch (err) {
+      console.error("[Pipeline] Analysis agent failed, proceeding without analysis:", err);
+      onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 16, message: "Пропуск анализа (ошибка)" });
+    }
+  } else {
+    console.log("[Pipeline] Skipping analysis — no research data available");
+    onProgress({ nodeName: "analysis", currentStep: "skipped", progressPercent: 16, message: "Анализ пропущен (нет данных)" });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // PHASE 3: PLANNER — now informed by research + analysis
+  // ═══════════════════════════════════════════════════════
+  onProgress({ nodeName: "planner", currentStep: "planning", progressPercent: 18, message: "Анализ темы и планирование..." });
+  const plannerResult = await runPlanner(prompt, analysisContextStr || undefined);
   const language = plannerResult.language || "ru";
 
-  // 1.5. PRESENTATION TYPE CLASSIFICATION
+  // 3.5. PRESENTATION TYPE CLASSIFICATION
   const typeProfile = classifyPresentation(prompt);
   console.log(`[Pipeline] Presentation type: ${typeProfile.type} (${typeProfile.label})`);
 
-  // 1.6. REFERENCE MATCHING — find best exemplar structure for this type
+  // 3.6. REFERENCE MATCHING — find best exemplar structure for this type
   const reference = matchReference(prompt, typeProfile.type);
   let referenceHint = "";
   if (reference) {
@@ -1530,23 +1582,25 @@ export async function generatePresentation(
   // Combine type hint with reference hint for the Outline Agent
   const combinedOutlineHint = [typeProfile.outlineHint, referenceHint].filter(Boolean).join("\n\n");
 
-  // 2. OUTLINE
+  // ═══════════════════════════════════════════════════════
+  // PHASE 4: OUTLINE — grounded in research data
+  // ═══════════════════════════════════════════════════════
   let outline: OutlineResult;
   if (config.preBuiltOutline) {
     // Use pre-built outline from uploaded file (skip LLM generation)
     outline = config.preBuiltOutline;
     console.log(`[Pipeline] Using pre-built outline: ${outline.slides.length} slides, title: "${outline.presentation_title}"`);
-    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: `Структура из файла: ${outline.slides.length} слайдов` });
-    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск (структура из файла)" });
+    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 22, message: `Структура из файла: ${outline.slides.length} слайдов` });
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск (структура из файла)" });
   } else {
-    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 12, message: "Создание структуры презентации..." });
-    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint);
+    onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 22, message: "Создание структуры презентации..." });
+    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint, analysisContextStr || undefined);
 
-    // 2.5. OUTLINE CRITIC — validate and improve outline structure
-    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 18, message: "Проверка структуры презентации..." });
+    // 4.5. OUTLINE CRITIC — validate and improve outline structure (now with research coverage)
+    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 26, message: "Проверка структуры презентации..." });
     outline = rawOutline;
     try {
-      const criticResult = await runOutlineCritic(rawOutline);
+      const criticResult = await runOutlineCritic(rawOutline, analysisResult || undefined, analysisContextStr || undefined);
       outline = criticResult.outline;
       const { critique } = criticResult;
       if (critique.improved_outline) {
@@ -1554,44 +1608,38 @@ export async function generatePresentation(
       } else {
         console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
       }
-      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: `Структура проверена (${critique.score}/10)` });
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: `Структура проверена (${critique.score}/10)` });
     } catch (err) {
       console.error("[Pipeline] Outline critic failed, using original outline:", err);
-      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 22, message: "Пропуск проверки (ошибка)" });
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск проверки (ошибка)" });
     }
   }
 
-  // 2.6. OUTLINE SHAPE POST-PROCESSING — force specialized shapes based on user keywords
+  // 4.6. OUTLINE SHAPE POST-PROCESSING — force specialized shapes based on user keywords
   outline = postProcessOutlineShapes(outline, prompt);
 
-  // 2.7. RESEARCH AGENT — gather facts and statistics for content enrichment
-  onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 23, message: "Исследование фактов и статистики..." });
-  let researchContext: ResearchContext | null = null;
-  try {
-    const researchResult = await runResearchAgent(outline, (msg) => {
-      onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 24, message: msg });
-    });
-    researchContext = researchResult.context;
-    console.log(`[Pipeline] Research: ${researchResult.totalFacts} facts for ${researchResult.slidesResearched} slides`);
-    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 28, message: `Найдено ${researchResult.totalFacts} фактов` });
-  } catch (err) {
-    console.error("[Pipeline] Research agent failed, proceeding without research:", err);
-    onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 28, message: "Пропуск исследования (ошибка)" });
-  }
-
-  // 3. WRITER (parallel) — with research context injection
+  // ═══════════════════════════════════════════════════════
+  // PHASE 5: WRITER — enriched with research + analysis context
+  // ═══════════════════════════════════════════════════════
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 30, message: `Написание контента для ${outline.slides.length} слайдов...` });
   const researchFormatter = researchContext
     ? (slideNumber: number) => formatResearchForWriter(slideNumber, researchContext!)
     : undefined;
-  const rawContent = await runWriterParallel(outline, language, undefined, researchFormatter, typeProfile.writerHint);
+  const rawContent = await runWriterParallel(
+    outline,
+    language,
+    undefined,
+    researchFormatter,
+    typeProfile.writerHint,
+    analysisHighlightsStr || undefined,
+  );
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
 
-  // 3.5. STORYTELLING AGENT — transform titles to action titles + narrative coherence
+  // 5.5. STORYTELLING AGENT — transform titles to action titles + narrative coherence
   onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 40, message: "Улучшение нарратива и заголовков..." });
   let content = rawContent;
   try {
-    const storytellingResult = await runStorytellingAgent(rawContent, outline);
+    const storytellingResult = await runStorytellingAgent(rawContent, outline, analysisResult || undefined);
     content = storytellingResult.enhancedContent;
     if (storytellingResult.narrativeThread) {
       console.log(`[Pipeline] Narrative thread: ${storytellingResult.narrativeThread}`);

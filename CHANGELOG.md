@@ -1,20 +1,34 @@
 # CHANGELOG
 
 > Auto-generated from `todo.md` by `pnpm changelog`
-> Last updated: 2026-02-15
+> Last updated: 2026-02-16
 
 ## Summary
 
 | Metric | Value |
 |---|---|
-| Total sections | 133 |
-| Total tasks | 1245 |
-| Completed | 1233 (99%) |
+| Total sections | 134 |
+| Total tasks | 1256 |
+| Completed | 1244 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 49: Research-First Pipeline Refactoring ✅
+
+- [x] Refactor pipeline order: Research → Analysis → Planner → Outline → Critic → Writer
+- [x] Update prompts.ts: inject analysis_context into Master Planner, Outline, Writer prompts
+- [x] Update outlineCritic.ts: add research coverage validation + accept AnalysisResult
+- [x] Update storytellingAgent.ts: accept AnalysisResult, use narrative arc from analysis
+- [x] Refactor generator.ts: move Research+Analysis before Planner, pass context downstream
+- [x] Update runPlanner to accept analysisContext parameter
+- [x] Update runOutline to accept analysisContext parameter
+- [x] Update runWriterSingle/runWriterParallel to accept analysisHighlights
+- [x] Verify TypeScript compilation (0 errors)
+- [x] Run tests and fix failures (1567/1567 passed, fixed devtools test: 18→19 steps, 58→64 endpoints)
+- [x] Save checkpoint
 
 ### 🚀 Round 48: Annotation Highlights, Apply Changes, Slide Quoting ✅
 
@@ -1703,7 +1717,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (64 sections, 756/768 tasks)
+### 🚀 Improvements (65 sections, 767/779 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1769,6 +1783,7 @@
 - **Round 46: Quote-Reply + Inline Annotations** — ✅
 - **Round 47: Quote Context in AI Prompts** — ✅
 - **Round 48: Annotation Highlights, Apply Changes, Slide Quoting** — ✅
+- **Round 49: Research-First Pipeline Refactoring** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

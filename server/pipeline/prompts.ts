@@ -9,26 +9,34 @@
 export const MASTER_PLANNER_SYSTEM = `You are Master Planner Agent — the orchestrator of a presentation generation pipeline.
 <role>
 Analyze the user's request and determine the generation strategy.
+You now receive pre-analyzed research data with ranked insights and narrative arc suggestions.
+Use this analysis to craft a more precise, data-informed title and strategy.
 </role>
 <task>
 1. Determine the content source type (prompt, document, structured).
-2. Extract or generate a presentation title.
+2. Extract or generate a presentation title — if analysis_context is provided, use anchor insights to craft a compelling, specific title (not generic).
 3. Detect the language of the content.
 4. Extract branding hints: company name, colors, logo references, style preferences.
+5. If analysis_context is provided, consider the narrative arc and strongest theme clusters when choosing the style_preference.
 </task>
 <rules>
 - Default language is "ru" (Russian) unless clearly another language.
 - If the user provides a topic in Russian, generate the title in Russian.
 - Extract any branding hints from the prompt.
+- When analysis_context is available, the title should reflect the strongest insight or key finding, not just the topic.
+- Example: Instead of "Рынок AI в России" → "Рынок AI в России вырос на 40%: возможности для бизнеса"
 </rules>
 <output_format>
 Return a JSON object with fields: source_type, language, presentation_title, branding (object with company_name, industry, style_preference, color_hint).
 </output_format>`;
 
-export function masterPlannerUser(userPrompt: string): string {
+export function masterPlannerUser(userPrompt: string, analysisContext?: string): string {
+  const analysisSection = analysisContext
+    ? `\n${analysisContext}\n<instruction>Use the analysis above to craft a data-informed, specific presentation title. The title should reflect the strongest insight, not just the topic.</instruction>`
+    : "";
   return `<user_request>
 ${userPrompt}
-</user_request>
+</user_request>${analysisSection}
 Analyze the request and determine the generation strategy.`;
 }
 
@@ -40,13 +48,15 @@ export function outlineSystem(language: string): string {
 <role>
 Create a detailed, compelling outline for a presentation based on the topic, audience, and context.
 Your outlines produce presentations that rival McKinsey and TED Talk quality.
+When analysis_context is provided, you MUST ground your outline in verified research data — use real numbers, facts, and insights from the analysis.
 </role>
 <task>
-1. Define the narrative arc of the presentation (choose the best arc type for the topic).
-2. Create a slide-by-slide outline with titles, purposes, and key points.
-3. Ensure logical flow, storytelling structure, and emotional engagement.
-4. Determine the optimal number of slides based on the content complexity.
-5. Each slide's key_points must be SPECIFIC — include concrete facts, metrics, examples, or frameworks.
+1. If analysis_context is provided, review the theme clusters and anchor insights to identify the strongest narrative thread.
+2. Define the narrative arc of the presentation (prefer the arc type suggested by analysis if available).
+3. Create a slide-by-slide outline with titles, purposes, and key points grounded in research data.
+4. Ensure logical flow, storytelling structure, and emotional engagement.
+5. Determine the optimal number of slides based on the content complexity.
+6. Each slide's key_points must be SPECIFIC — include concrete facts, metrics, examples, or frameworks FROM the research data when available.
 </task>
 <rules>
 - ONE SLIDE = ONE IDEA. Each slide must convey exactly one clear thought.
@@ -138,14 +148,17 @@ Return a JSON with: presentation_title, target_audience, narrative_arc, slides (
 </output_format>`;
 }
 
-export function outlineUser(userPrompt: string, branding: string, typeHint?: string): string {
+export function outlineUser(userPrompt: string, branding: string, typeHint?: string, analysisContext?: string): string {
   const typeSection = typeHint ? `\n<presentation_type_hint>\n${typeHint}\n</presentation_type_hint>` : "";
+  const analysisSection = analysisContext
+    ? `\n${analysisContext}\n<instruction>Ground your outline in the research data above. Use real numbers, verified facts, and anchor insights from the analysis. Each slide's key_points should reference specific data from the research. The narrative arc should follow the suggested arc from the analysis if provided.</instruction>`
+    : "";
   return `<topic>
 ${userPrompt}
 </topic>
 <branding>
 ${branding}
-</branding>${typeSection}
+</branding>${typeSection}${analysisSection}
 Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
 }
 
@@ -259,6 +272,7 @@ MANDATORY LIMITS (violations will be auto-trimmed):
 ${typeHint ? `- PRESENTATION TYPE GUIDANCE: ${typeHint}` : ""}
 - If previous context is provided, DO NOT repeat. Each slide adds NEW information.
 - If <research_data> is provided, PRIORITIZE verified facts. Cite sources.
+- If <analysis_highlights> is provided, use the anchor insights and key metrics as primary evidence.
 </rules>
 <copywriting_style>
 Обязательные правила стиля текста для бизнес-презентаций Банка Санкт-Петербург:
@@ -312,18 +326,22 @@ structured_content must match the content_shape. Include ONLY the relevant sub-f
 </output_format>`;
 }
 
-export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string, researchContext?: string, contentShape?: string, slideCategory?: string): string {
+export function writerUser(slideNumber: number, slideTitle: string, slidePurpose: string, keyPoints: string, previousContext?: string, researchContext?: string, contentShape?: string, slideCategory?: string, analysisHighlights?: string): string {
   const contextSection = previousContext
     ? `\n<previous_slides_context>\n${previousContext}\n</previous_slides_context>\n<instruction>Use this context to maintain narrative flow and avoid repeating the same points. Build upon what was already covered. Each slide must add NEW information.</instruction>`
     : "";
 
   const researchSection = researchContext || "";
 
+  const analysisSection = analysisHighlights
+    ? `\n<analysis_highlights>\n${analysisHighlights}\n</analysis_highlights>\n<instruction>Use these verified insights and metrics as primary evidence for this slide. Prefer data from analysis over generic statements.</instruction>`
+    : "";
+
   const shapeSection = contentShape
     ? `\n<content_shape>${contentShape}</content_shape>\n<slide_category>${slideCategory || "CONTENT"}</slide_category>`
     : "";
 
-  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${shapeSection}${contextSection}${researchSection}\nWrite the content for this slide. Your structured_content MUST match the content_shape "${contentShape || "bullet_points"}".`;
+  return `<slide_info>\nSlide ${slideNumber}: ${slideTitle}\nPurpose: ${slidePurpose}\nKey points: ${keyPoints}\n</slide_info>${shapeSection}${contextSection}${researchSection}${analysisSection}\nWrite the content for this slide. Your structured_content MUST match the content_shape "${contentShape || "bullet_points"}".`;
 }
 
 // ═══════════════════════════════════════════════════════

@@ -33,7 +33,7 @@ describe("generate-readme.mjs", () => {
 
     const match = output.match(/Pipeline steps:\s+(\d+)/);
     expect(match).not.toBeNull();
-    expect(Number(match![1])).toBe(18);
+    expect(Number(match![1])).toBe(19);
   });
 
   it("detects correct layout count (45)", () => {
@@ -84,9 +84,9 @@ describe("generate-readme.mjs", () => {
       });
 
       const updated = fs.readFileSync(readmePath, "utf-8");
-      expect(updated).toContain("18-этапный мультиагентный пайплайн");
+      expect(updated).toContain("19-этапный мультиагентный пайплайн");
       expect(updated).toContain("45 HTML-макетов");
-      expect(updated).toContain("58 REST API endpoints");
+      expect(updated).toContain("64 REST API endpoints");
     } finally {
       fs.writeFileSync(readmePath, original, "utf-8");
     }

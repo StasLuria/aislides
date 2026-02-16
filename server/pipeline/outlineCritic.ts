@@ -6,15 +6,17 @@
  * 2. Verify MECE structure (Mutually Exclusive, Collectively Exhaustive)
  * 3. Ensure slide type balance and variety
  * 4. Validate narrative arc completeness
- * 5. Suggest improvements and optionally rewrite the outline
+ * 5. Validate research data coverage (when analysis context is available)
+ * 6. Suggest improvements and optionally rewrite the outline
  *
  * Runs AFTER Outline Agent, BEFORE Writer.
- * Input: OutlineResult from Outline Agent
+ * Input: OutlineResult from Outline Agent + optional AnalysisResult
  * Output: Validated OutlineResult (potentially improved)
  */
 
 import { invokeLLM } from "../_core/llm";
 import type { OutlineResult, OutlineSlide } from "./generator";
+import type { AnalysisResult } from "./analysisAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -212,7 +214,7 @@ export function validateOutlineStructure(outline: OutlineResult): CritiqueIssue[
     });
   }
 
-  // 10. Check target_audience is specified
+  // 11. Check target_audience is specified
   if (!outline.target_audience || outline.target_audience.trim().length < 3) {
     issues.push({
       severity: "warning",
@@ -220,6 +222,84 @@ export function validateOutlineStructure(outline: OutlineResult): CritiqueIssue[
       message: "Target audience is not specified. This affects content tone and depth.",
       affected_slides: [],
     });
+  }
+
+  return issues;
+}
+
+/**
+ * Validate that the outline adequately covers the research data.
+ * Checks that anchor insights and theme clusters are represented in the slides.
+ */
+export function validateResearchCoverage(
+  outline: OutlineResult,
+  analysis: AnalysisResult,
+): CritiqueIssue[] {
+  const issues: CritiqueIssue[] = [];
+
+  if (!analysis || analysis.total_anchors === 0) {
+    return issues; // No research to validate against
+  }
+
+  // Check that high-impact anchor insights are covered
+  const highImpactAnchors = analysis.anchor_insights.filter((a) => a.impact_score >= 7);
+  const allKeyPoints = outline.slides.flatMap((s) => s.key_points.map((kp) => kp.toLowerCase()));
+  const allTitles = outline.slides.map((s) => s.title.toLowerCase());
+  const allText = [...allKeyPoints, ...allTitles].join(" ");
+
+  let coveredAnchors = 0;
+  for (const anchor of highImpactAnchors) {
+    // Check if any significant words from the anchor appear in the outline
+    const anchorWords = anchor.insight
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 4); // Only meaningful words
+    const matchCount = anchorWords.filter((w) => allText.includes(w)).length;
+    if (matchCount >= Math.ceil(anchorWords.length * 0.3)) {
+      coveredAnchors++;
+    }
+  }
+
+  if (highImpactAnchors.length > 0) {
+    const coverageRatio = coveredAnchors / highImpactAnchors.length;
+    if (coverageRatio < 0.5) {
+      issues.push({
+        severity: "warning",
+        aspect: "research_coverage",
+        message: `Only ${coveredAnchors}/${highImpactAnchors.length} high-impact research insights are reflected in the outline. Consider incorporating: ${highImpactAnchors
+          .slice(0, 3)
+          .map((a) => `"${a.insight.substring(0, 80)}..."`)
+          .join(", ")}`,
+        affected_slides: [],
+      });
+    }
+  }
+
+  // Check that strong theme clusters have corresponding slides
+  const strongClusters = analysis.theme_clusters.filter((c) => c.strength >= 7);
+  let coveredClusters = 0;
+  for (const cluster of strongClusters) {
+    const clusterWords = cluster.cluster_name
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
+    const hasMatch = clusterWords.some((w) => allText.includes(w));
+    if (hasMatch) coveredClusters++;
+  }
+
+  if (strongClusters.length > 0) {
+    const clusterCoverage = coveredClusters / strongClusters.length;
+    if (clusterCoverage < 0.5) {
+      issues.push({
+        severity: "suggestion",
+        aspect: "research_coverage",
+        message: `Only ${coveredClusters}/${strongClusters.length} strong research clusters are represented. Missing clusters: ${strongClusters
+          .slice(0, 3)
+          .map((c) => c.cluster_name)
+          .join(", ")}`,
+        affected_slides: [],
+      });
+    }
   }
 
   return issues;
@@ -304,7 +384,7 @@ Return JSON with:
 - improved_outline: (only if passed=false) full OutlineResult with fixes applied
 </output_format>`;
 
-function buildCriticUserPrompt(outline: OutlineResult, localIssues: CritiqueIssue[]): string {
+function buildCriticUserPrompt(outline: OutlineResult, localIssues: CritiqueIssue[], analysisContext?: string): string {
   const slideSummaries = outline.slides
     .map(
       (s) =>
@@ -320,6 +400,10 @@ function buildCriticUserPrompt(outline: OutlineResult, localIssues: CritiqueIssu
     ? `\n<local_validation_issues>\n${localIssues.map((i) => `[${i.severity}] ${i.aspect}: ${i.message}`).join("\n")}\n</local_validation_issues>`
     : "";
 
+  const analysisStr = analysisContext
+    ? `\n${analysisContext}\n<instruction>Also evaluate whether the outline adequately covers the research data. High-impact insights should be reflected in the slides.</instruction>`
+    : "";
+
   return `<outline>
 Title: ${outline.presentation_title}
 Target audience: ${outline.target_audience}
@@ -327,7 +411,7 @@ Narrative arc: ${outline.narrative_arc}
 Total slides: ${outline.slides.length}
 
 ${slideSummaries}
-</outline>${localIssuesStr}
+</outline>${localIssuesStr}${analysisStr}
 
 Evaluate this outline against all 5 criteria. If quality is insufficient (score < 7), provide an improved outline.`;
 }
@@ -350,13 +434,25 @@ Evaluate this outline against all 5 criteria. If quality is insufficient (score 
  */
 export async function runOutlineCritic(
   outline: OutlineResult,
+  analysis?: AnalysisResult,
+  analysisContext?: string,
 ): Promise<{ outline: OutlineResult; critique: CritiqueResult }> {
   // Step 1: Local validation
   const localIssues = validateOutlineStructure(outline);
+
+  // Step 1.5: Research coverage validation (if analysis available)
+  if (analysis) {
+    const researchIssues = validateResearchCoverage(outline, analysis);
+    localIssues.push(...researchIssues);
+    if (researchIssues.length > 0) {
+      console.log(`[OutlineCritic] Research coverage: ${researchIssues.length} issues found`);
+    }
+  }
+
   const localScore = calculateLocalScore(localIssues);
 
   // Step 2: LLM critique
-  const userPrompt = buildCriticUserPrompt(outline, localIssues);
+  const userPrompt = buildCriticUserPrompt(outline, localIssues, analysisContext);
 
   const slideSchema = {
     type: "object" as const,

@@ -1591,3 +1591,16 @@
 - [x] Write tests (15 tests passed)
 - [x] Browser test (all features confirmed)
 - [x] Save checkpoint
+
+## Round 49: Research-First Pipeline Refactoring
+- [x] Refactor pipeline order: Research → Analysis → Planner → Outline → Critic → Writer
+- [x] Update prompts.ts: inject analysis_context into Master Planner, Outline, Writer prompts
+- [x] Update outlineCritic.ts: add research coverage validation + accept AnalysisResult
+- [x] Update storytellingAgent.ts: accept AnalysisResult, use narrative arc from analysis
+- [x] Refactor generator.ts: move Research+Analysis before Planner, pass context downstream
+- [x] Update runPlanner to accept analysisContext parameter
+- [x] Update runOutline to accept analysisContext parameter
+- [x] Update runWriterSingle/runWriterParallel to accept analysisHighlights
+- [x] Verify TypeScript compilation (0 errors)
+- [x] Run tests and fix failures (1567/1567 passed, fixed devtools test: 18→19 steps, 58→64 endpoints)
+- [x] Save checkpoint

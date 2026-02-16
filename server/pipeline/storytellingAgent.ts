@@ -14,6 +14,7 @@
 
 import { invokeLLM } from "../_core/llm";
 import type { SlideContent, OutlineResult } from "./generator";
+import type { AnalysisResult } from "./analysisAgent";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -112,6 +113,7 @@ Return JSON with:
 function buildStorytellingUserPrompt(
   content: SlideContent[],
   outline: OutlineResult,
+  analysisNarrativeArc?: string,
 ): string {
   const slideSummaries = content
     .map(
@@ -133,6 +135,8 @@ Total slides: ${content.length}
 <slides>
 ${slideSummaries}
 </slides>
+
+${analysisNarrativeArc ? `\n<analysis_narrative_arc>\n${analysisNarrativeArc}\n</analysis_narrative_arc>\n<instruction>Use the analysis narrative arc above as the guiding thread for the story. Align slide transitions and narrative roles with this arc.</instruction>` : ""}
 
 Transform each slide title into an action title and ensure narrative coherence across all slides. 
 Use the content's data points and key messages to craft specific, insight-driven titles.
@@ -179,8 +183,10 @@ export function truncateTitle(title: string, maxChars: number): string {
 export async function runStorytellingAgent(
   content: SlideContent[],
   outline: OutlineResult,
+  analysis?: AnalysisResult,
 ): Promise<{ enhancedContent: SlideContent[]; narrativeThread: string }> {
-  const userPrompt = buildStorytellingUserPrompt(content, outline);
+  const analysisNarrativeArc = analysis?.narrative_arc;
+  const userPrompt = buildStorytellingUserPrompt(content, outline, analysisNarrativeArc);
 
   const response = await invokeLLM({
     messages: [
