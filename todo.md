@@ -1693,3 +1693,17 @@
 - [x] Write vitest tests for intent extraction — 1583 tests passing
 - [x] Test end-to-end with various user requests (API test confirmed: topic, slideCount, enableImages, audience, styleHints all extracted correctly)
 - [ ] Save checkpoint
+
+## Round 59: Mid-Conversation Requirement Editing
+- [x] Analyze current conversation phases and identify where parameter changes should be possible
+- [x] Implement LLM-based "requirement change detection" — detect when user wants to modify parameters vs. just chatting
+- [x] Create updateRequirements function: merge new changes into existing UserRequirements in session metadata
+- [x] Handle requirement changes during mode_selection phase (before generation starts)
+- [x] Handle requirement changes during step-by-step phases (outline, content, design)
+- [x] Handle "add more slides" requests — update slideCount and regenerate/extend outline
+- [x] Handle "enable/disable images" requests — update enableImages flag and adjust pipeline
+- [x] Handle style/audience/purpose changes — update pipelineContext for subsequent steps
+- [x] Provide user confirmation of changes ("Понял, обновил параметры: теперь 7 слайдов, с картинками")
+- [x] Write vitest tests for requirement change detection and merging — 1612 tests passing
+- [x] End-to-end test with various mid-conversation change scenarios (API confirmed: slideCount, enableImages, userWillAddImages all correctly updated mid-conversation)
+- [x] Save checkpoint

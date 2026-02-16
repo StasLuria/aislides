@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 143 |
-| Total tasks | 1320 |
-| Completed | 1307 (99%) |
+| Total sections | 144 |
+| Total tasks | 1332 |
+| Completed | 1319 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 59: Mid-Conversation Requirement Editing ✅
+
+- [x] Analyze current conversation phases and identify where parameter changes should be possible
+- [x] Implement LLM-based "requirement change detection" — detect when user wants to modify parameters vs. just chatting
+- [x] Create updateRequirements function: merge new changes into existing UserRequirements in session metadata
+- [x] Handle requirement changes during mode_selection phase (before generation starts)
+- [x] Handle requirement changes during step-by-step phases (outline, content, design)
+- [x] Handle "add more slides" requests — update slideCount and regenerate/extend outline
+- [x] Handle "enable/disable images" requests — update enableImages flag and adjust pipeline
+- [x] Handle style/audience/purpose changes — update pipelineContext for subsequent steps
+- [x] Provide user confirmation of changes ("Понял, обновил параметры: теперь 7 слайдов, с картинками")
+- [x] Write vitest tests for requirement change detection and merging — 1612 tests passing
+- [x] End-to-end test with various mid-conversation change scenarios (API confirmed: slideCount, enableImages, userWillAddImages all correctly updated mid-conversation)
+- [x] Save checkpoint
 
 ### 🚀 Round 58: Smart User Intent Understanding — Friendly Presentation Assistant 🔴 9/10
 
@@ -1808,7 +1823,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (74 sections, 830/843 tasks)
+### 🚀 Improvements (75 sections, 842/855 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1884,6 +1899,7 @@
 - **Round 56: Fix BSPB Theme — Logo & Red Stripe Missing on Non-Title Slides** — ✅
 - **Round 57: Fix Slide Count Not Respected** — ✅
 - **Round 58: Smart User Intent Understanding — Friendly Presentation Assistant** — 9/10
+- **Round 59: Mid-Conversation Requirement Editing** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

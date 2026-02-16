@@ -40,7 +40,7 @@ import { renderPresentation, renderSlide, renderSlidePreview, BASE_CSS, getLayou
 import { htmlComposerSystem, htmlComposerUser } from "./pipeline/prompts";
 import { getThemePreset, type ThemePreset } from "./pipeline/themes";
 import { autoSelectTheme } from "./pipeline/themeSelector";
-import { extractUserRequirements, formatRequirementsSummary, buildPipelineContext, type UserRequirements } from "./pipeline/intentExtractor";
+import { extractUserRequirements, formatRequirementsSummary, buildPipelineContext, detectRequirementChange, mergeRequirements, formatChangeConfirmation, type UserRequirements, type RequirementChangeResult } from "./pipeline/intentExtractor";
 import { classifyPresentation } from "./pipeline/presentationTypeClassifier";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./pipeline/adaptiveSizing";
 import { pickLayoutForPreview } from "./interactiveRoutes";
@@ -69,6 +69,75 @@ function deepMerge(target: Record<string, any>, source: Record<string, any>): Re
     }
   }
   return result;
+}
+
+/**
+ * Check if a user message is a requirement change, and if so, apply it.
+ * Returns the change result so the caller can decide how to proceed.
+ * If a change is detected, updates session metadata and sends confirmation to user.
+ */
+async function checkAndApplyRequirementChange(
+  sessionId: string,
+  userMessage: string,
+  currentPhase: string,
+  writer: SSEWriter,
+): Promise<RequirementChangeResult | null> {
+  const session = await getChatSession(sessionId);
+  if (!session) return null;
+
+  const metadata = (session.metadata as Record<string, any>) || {};
+  const currentReqs: UserRequirements = metadata.requirements || {
+    topic: session.topic || "",
+    slideCount: metadata.slideCount || null,
+    enableImages: metadata.enableImages ?? null,
+    userWillAddImages: false,
+    styleHints: [],
+    structureHints: [],
+    audience: null,
+    purpose: null,
+    language: null,
+    customInstructions: [],
+    topicIsClear: true,
+    clarifyingQuestion: null,
+    confidence: 0.5,
+  };
+
+  const changeResult = await detectRequirementChange(userMessage, currentPhase, currentReqs);
+
+  if (!changeResult.isRequirementChange || changeResult.confidence < 0.6) {
+    return null; // Not a requirement change — let the phase handler deal with it
+  }
+
+  // Apply changes
+  const updatedReqs = mergeRequirements(currentReqs, changeResult.changes);
+
+  // Update session metadata
+  const updatedMeta = {
+    ...metadata,
+    requirements: updatedReqs,
+    ...(updatedReqs.slideCount ? { slideCount: updatedReqs.slideCount } : {}),
+    ...(updatedReqs.enableImages !== null ? { enableImages: updatedReqs.enableImages } : {}),
+    ...(updatedReqs.userWillAddImages ? { userWillAddImages: true } : {}),
+  };
+
+  await updateChatSession(sessionId, {
+    metadata: updatedMeta,
+  });
+
+  // Send confirmation to user
+  const confirmMsg = formatChangeConfirmation(changeResult, updatedReqs);
+  writer({ type: "token", data: confirmMsg });
+
+  const assistantMsg: ChatMessage = {
+    role: "assistant",
+    content: confirmMsg,
+    timestamp: Date.now(),
+  };
+  await appendMessage(sessionId, assistantMsg);
+
+  console.log(`[ChatOrchestrator] Requirement change applied in phase ${currentPhase}:`, JSON.stringify(changeResult.changedFields));
+
+  return changeResult;
 }
 
 /** Call LLM and return text content. */
@@ -629,6 +698,26 @@ async function handleModeSelection(
   messages: ChatMessage[],
   writer: SSEWriter,
 ): Promise<void> {
+  // Check for requirement changes before mode selection
+  const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "mode_selection", writer);
+  if (changeResult) {
+    // Requirement changed — re-show mode selection with updated params
+    writer({ type: "token", data: "\n\nВыберите режим создания:" });
+    const msg: ChatMessage = {
+      role: "assistant",
+      content: "Параметры обновлены. Выберите режим создания:",
+      timestamp: Date.now(),
+      actions: [
+        { id: "mode_quick", label: "⚡ Быстрый режим", variant: "default" },
+        { id: "mode_step", label: "🎯 Пошаговый режим", variant: "outline" },
+      ],
+    };
+    await appendMessage(sessionId, msg);
+    writer({ type: "actions", data: msg.actions });
+    writer({ type: "done", data: null });
+    return;
+  }
+
   const lowerMsg = userMessage.toLowerCase();
   const isQuick =
     lowerMsg.includes("быстр") ||
@@ -1142,8 +1231,40 @@ async function handleStructureApproval(
       await updateChatSession(sessionId, { phase: "step_structure" });
     }
   } else {
-    // User sent text feedback — use LLM to modify the existing structure
-    await handleStructureEditRequest(sessionId, userMessage, writer);
+    // Check for requirement changes first
+    const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "step_structure", writer);
+    if (changeResult) {
+      // Requirement changed — if slide count changed, regenerate structure
+      if (changeResult.changedFields.includes("slideCount")) {
+        writer({ type: "token", data: "\n\n🔄 Пересоздаю структуру с новым количеством слайдов...\n" });
+        await startStepByStepGeneration(sessionId, writer);
+      } else {
+        // Other changes (style, images, etc.) — just confirm and re-show structure
+        const session2 = await getChatSession(sessionId);
+        const meta2 = (session2?.metadata as Record<string, any>) || {};
+        const outline2: OutlineResult = meta2.outline;
+        if (outline2) {
+          const outlineText = outline2.slides
+            .map((s: any, i: number) => `**${i + 1}. ${s.title}**\n   ${s.purpose}`)
+            .join("\n\n");
+          writer({ type: "token", data: `\n\n📋 **Структура: «${outline2.presentation_title}»**\n\n${outlineText}\n\nПодтвердите структуру или напишите, что изменить.` });
+          const msg: ChatMessage = {
+            role: "assistant",
+            content: `📋 Структура презентации (параметры обновлены)`,
+            timestamp: Date.now(),
+            actions: [
+              { id: "approve_structure", label: "✅ Утвердить", variant: "default" },
+              { id: "regenerate_structure", label: "🔄 Пересоздать", variant: "outline" },
+            ],
+          };
+          await appendMessage(sessionId, msg);
+          writer({ type: "actions", data: msg.actions });
+        }
+      }
+    } else {
+      // User sent text feedback — use LLM to modify the existing structure
+      await handleStructureEditRequest(sessionId, userMessage, writer);
+    }
   }
 
   writer({ type: "done", data: null });
@@ -1644,6 +1765,35 @@ async function handleSlideContentFeedback(
   userMessage: string,
   writer: SSEWriter,
 ): Promise<void> {
+  // Check for requirement changes first
+  const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "step_slide_content", writer);
+  if (changeResult) {
+    // Requirement changed — confirm and re-show current slide content
+    writer({ type: "token", data: "\n\nПараметры обновлены. Продолжаем работу над слайдом." });
+    const session2 = await getChatSession(sessionId);
+    const meta2 = (session2?.metadata as Record<string, any>) || {};
+    const proposed2 = meta2.proposedContent;
+    if (proposed2) {
+      const outline2 = meta2.outline;
+      const totalSlides = outline2?.slides?.length || 1;
+      const slideIdx = meta2.currentSlideIndex ?? 0;
+      const contentDisplay = formatSlideContentForDisplay(proposed2, slideIdx + 1, totalSlides);
+      writer({ type: "token", data: contentDisplay });
+      const msg: ChatMessage = {
+        role: "assistant",
+        content: contentDisplay,
+        timestamp: Date.now(),
+        actions: [
+          { id: "approve_slide_content", label: "✅ Готово — создать дизайн", variant: "default" },
+        ],
+      };
+      await appendMessage(sessionId, msg);
+      writer({ type: "actions", data: msg.actions });
+    }
+    writer({ type: "done", data: null });
+    return;
+  }
+
   const session = await getChatSession(sessionId);
   if (!session) return;
 
@@ -1941,6 +2091,25 @@ async function handleSlideDesignFeedback(
   userMessage: string,
   writer: SSEWriter,
 ): Promise<void> {
+  // Check for requirement changes first
+  const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "step_slide_design", writer);
+  if (changeResult) {
+    // Requirement changed — confirm and re-show current slide design
+    writer({ type: "token", data: "\n\nПараметры обновлены. Продолжаем работу над дизайном слайда." });
+    const msg: ChatMessage = {
+      role: "assistant",
+      content: "Параметры обновлены. Продолжаем работу.",
+      timestamp: Date.now(),
+      actions: [
+        { id: "approve_slide_design", label: "✅ Готово", variant: "default" },
+      ],
+    };
+    await appendMessage(sessionId, msg);
+    writer({ type: "actions", data: msg.actions });
+    writer({ type: "done", data: null });
+    return;
+  }
+
   const session = await getChatSession(sessionId);
   if (!session) return;
 
