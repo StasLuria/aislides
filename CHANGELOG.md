@@ -7,14 +7,22 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 144 |
-| Total tasks | 1332 |
-| Completed | 1319 (99%) |
+| Total sections | 145 |
+| Total tasks | 1337 |
+| Completed | 1324 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 60: Fix Quick Mode Not Generating HTML Slides ✅
+
+- [x] Diagnose why quick mode shows draft text but doesn't generate actual HTML slides — ROOT CAUSE: clarification loop + mode word hijacking
+- [x] Fix clarification response handling: merge user's answer with previous topic context instead of treating as new topic
+- [x] Fix mode selection: check mode keywords FIRST before requirement change detection (prevents "быстрый" being interpreted as style change)
+- [x] Test end-to-end: full flow "муку" → "производство" → "быстрый" → 3 HTML slides generated successfully
+- [x] Save checkpoint — all 1612 tests passing
 
 ### 🚀 Round 59: Mid-Conversation Requirement Editing ✅
 
@@ -1823,7 +1831,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (75 sections, 842/855 tasks)
+### 🚀 Improvements (76 sections, 847/860 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1900,6 +1908,7 @@
 - **Round 57: Fix Slide Count Not Respected** — ✅
 - **Round 58: Smart User Intent Understanding — Friendly Presentation Assistant** — 9/10
 - **Round 59: Mid-Conversation Requirement Editing** — ✅
+- **Round 60: Fix Quick Mode Not Generating HTML Slides** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

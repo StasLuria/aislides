@@ -573,27 +573,66 @@ async function handleTopicInput(
 
   const currentSession = await getChatSession(sessionId);
   const currentMeta = (currentSession?.metadata as Record<string, any>) || {};
+  const previousReqs = currentMeta.requirements as UserRequirements | undefined;
+  const previousTopic = currentSession?.topic || "";
+
+  // Detect if this is a CLARIFICATION RESPONSE (user answering our question about a vague topic)
+  // Conditions: session already has a topic, previous requirements had topicIsClear=false
+  const isClarificationResponse = !!(previousTopic && previousReqs && !previousReqs.topicIsClear);
 
   // Check for attached files
   const sessionFiles = await getSessionFiles(sessionId);
   const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
   const hasFiles = readyFiles.length > 0;
 
-  // ── LLM-based intent extraction ──
-  // Extract ALL user requirements from the message (slide count, images, style, etc.)
-  console.log(`[ChatOrchestrator] Extracting user requirements from: "${userMessage.slice(0, 100)}"`);
-  const requirements = await extractUserRequirements(userMessage, hasFiles);
-  console.log(`[ChatOrchestrator] Extracted requirements:`, JSON.stringify({
-    topic: requirements.topic,
-    slideCount: requirements.slideCount,
-    enableImages: requirements.enableImages,
-    userWillAddImages: requirements.userWillAddImages,
-    styleHints: requirements.styleHints,
-    audience: requirements.audience,
-    purpose: requirements.purpose,
-    topicIsClear: requirements.topicIsClear,
-    confidence: requirements.confidence,
-  }));
+  let requirements: UserRequirements;
+
+  if (isClarificationResponse) {
+    // This is a response to our clarifying question — merge with previous context
+    const combinedTopic = `${previousReqs.topic}: ${userMessage}`;
+    console.log(`[ChatOrchestrator] Clarification response detected. Combining: "${previousReqs.topic}" + "${userMessage}" → "${combinedTopic}"`);
+
+    // Re-extract with the combined topic for better understanding
+    const freshReqs = await extractUserRequirements(
+      `Презентация про ${combinedTopic}`,
+      hasFiles,
+    );
+    console.log(`[ChatOrchestrator] Re-extracted from combined topic:`, JSON.stringify({
+      topic: freshReqs.topic,
+      topicIsClear: freshReqs.topicIsClear,
+      confidence: freshReqs.confidence,
+    }));
+
+    // Merge: keep previous settings (slideCount, images, etc.), update topic
+    requirements = {
+      ...previousReqs,
+      topic: freshReqs.topic || combinedTopic,
+      topicIsClear: true, // User answered our question, so topic is now clear
+      clarifyingQuestion: null,
+      confidence: Math.max(freshReqs.confidence, 0.8), // Boost confidence since user clarified
+      // Merge any new requirements from the clarification
+      ...(freshReqs.slideCount && !previousReqs.slideCount ? { slideCount: freshReqs.slideCount } : {}),
+      ...(freshReqs.audience && !previousReqs.audience ? { audience: freshReqs.audience } : {}),
+      ...(freshReqs.purpose && !previousReqs.purpose ? { purpose: freshReqs.purpose } : {}),
+      ...(freshReqs.enableImages !== null && previousReqs.enableImages === null ? { enableImages: freshReqs.enableImages } : {}),
+      ...(freshReqs.styleHints.length > 0 && previousReqs.styleHints.length === 0 ? { styleHints: freshReqs.styleHints } : {}),
+    };
+  } else {
+    // Fresh topic input — extract requirements normally
+    console.log(`[ChatOrchestrator] Extracting user requirements from: "${userMessage.slice(0, 100)}"`);
+    requirements = await extractUserRequirements(userMessage, hasFiles);
+    console.log(`[ChatOrchestrator] Extracted requirements:`, JSON.stringify({
+      topic: requirements.topic,
+      slideCount: requirements.slideCount,
+      enableImages: requirements.enableImages,
+      userWillAddImages: requirements.userWillAddImages,
+      styleHints: requirements.styleHints,
+      audience: requirements.audience,
+      purpose: requirements.purpose,
+      topicIsClear: requirements.topicIsClear,
+      confidence: requirements.confidence,
+    }));
+  }
 
   // Save requirements to session metadata
   const updatedMeta = {
@@ -604,8 +643,9 @@ async function handleTopicInput(
     ...(requirements.userWillAddImages ? { userWillAddImages: true } : {}),
   };
 
-  // If topic is unclear, ask clarifying question instead of proceeding to mode selection
-  if (!requirements.topicIsClear && requirements.clarifyingQuestion) {
+  // If topic is unclear AND this is NOT a clarification response, ask clarifying question
+  // (After a clarification response, we always proceed — don't loop forever)
+  if (!requirements.topicIsClear && requirements.clarifyingQuestion && !isClarificationResponse) {
     await updateChatSession(sessionId, {
       topic: userMessage,
       phase: "idle", // Stay in idle so next message goes through handleTopicInput again
@@ -698,39 +738,42 @@ async function handleModeSelection(
   messages: ChatMessage[],
   writer: SSEWriter,
 ): Promise<void> {
-  // Check for requirement changes before mode selection
-  const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "mode_selection", writer);
-  if (changeResult) {
-    // Requirement changed — re-show mode selection with updated params
-    writer({ type: "token", data: "\n\nВыберите режим создания:" });
-    const msg: ChatMessage = {
-      role: "assistant",
-      content: "Параметры обновлены. Выберите режим создания:",
-      timestamp: Date.now(),
-      actions: [
-        { id: "mode_quick", label: "⚡ Быстрый режим", variant: "default" },
-        { id: "mode_step", label: "🎯 Пошаговый режим", variant: "outline" },
-      ],
-    };
-    await appendMessage(sessionId, msg);
-    writer({ type: "actions", data: msg.actions });
-    writer({ type: "done", data: null });
-    return;
-  }
-
   const lowerMsg = userMessage.toLowerCase();
+
+  // FIRST: Check if this is a clear mode selection command
+  // Must check BEFORE requirement change detection to prevent "быстрый" being interpreted as a style change
   const isQuick =
     lowerMsg.includes("быстр") ||
     lowerMsg.includes("mode_quick") ||
     lowerMsg.includes("авто") ||
-    lowerMsg.includes("1") ||
     lowerMsg.includes("⚡");
   const isStep =
     lowerMsg.includes("пошаг") ||
     lowerMsg.includes("mode_step") ||
     lowerMsg.includes("шаг") ||
-    lowerMsg.includes("2") ||
     lowerMsg.includes("🎯");
+
+  // If the message is NOT a clear mode selection, check for requirement changes
+  if (!isQuick && !isStep) {
+    const changeResult = await checkAndApplyRequirementChange(sessionId, userMessage, "mode_selection", writer);
+    if (changeResult) {
+      // Requirement changed — re-show mode selection with updated params
+      writer({ type: "token", data: "\n\nВыберите режим создания:" });
+      const msg: ChatMessage = {
+        role: "assistant",
+        content: "Параметры обновлены. Выберите режим создания:",
+        timestamp: Date.now(),
+        actions: [
+          { id: "mode_quick", label: "⚡ Быстрый режим", variant: "default" },
+          { id: "mode_step", label: "🎯 Пошаговый режим", variant: "outline" },
+        ],
+      };
+      await appendMessage(sessionId, msg);
+      writer({ type: "actions", data: msg.actions });
+      writer({ type: "done", data: null });
+      return;
+    }
+  }
 
   if (!isQuick && !isStep) {
     // Unclear selection — ask again

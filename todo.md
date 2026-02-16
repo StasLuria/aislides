@@ -1707,3 +1707,10 @@
 - [x] Write vitest tests for requirement change detection and merging — 1612 tests passing
 - [x] End-to-end test with various mid-conversation change scenarios (API confirmed: slideCount, enableImages, userWillAddImages all correctly updated mid-conversation)
 - [x] Save checkpoint
+
+## Round 60: Fix Quick Mode Not Generating HTML Slides
+- [x] Diagnose why quick mode shows draft text but doesn't generate actual HTML slides — ROOT CAUSE: clarification loop + mode word hijacking
+- [x] Fix clarification response handling: merge user's answer with previous topic context instead of treating as new topic
+- [x] Fix mode selection: check mode keywords FIRST before requirement change detection (prevents "быстрый" being interpreted as style change)
+- [x] Test end-to-end: full flow "муку" → "производство" → "быстрый" → 3 HTML slides generated successfully
+- [x] Save checkpoint — all 1612 tests passing
