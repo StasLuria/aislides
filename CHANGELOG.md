@@ -7,14 +7,23 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 137 |
-| Total tasks | 1273 |
-| Completed | 1261 (99%) |
+| Total sections | 138 |
+| Total tasks | 1279 |
+| Completed | 1267 (99%) |
 | Pending | 12 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 53: Viewer Keyboard Navigation ✅
+
+- [x] Left/right arrow, up/down, space — already implemented
+- [x] Add Home/End keys for first/last slide
+- [x] Prevent navigation when editing text — already implemented
+- [x] F for fullscreen, E for edit, Escape to exit — already implemented
+- [x] 0 TS errors
+- [x] Save checkpoint
 
 ### 🚀 Round 52: Remove "Применить изменения" Button ✅
 
@@ -1743,7 +1752,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (68 sections, 784/796 tasks)
+### 🚀 Improvements (69 sections, 790/802 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1813,6 +1822,7 @@
 - **Round 50: Test Generation — Research-First Pipeline Comparison** — ✅
 - **Round 51: Chat Slide Preview Redesign — Cover Card Only** — ✅
 - **Round 52: Remove "Применить изменения" Button** — ✅
+- **Round 53: Viewer Keyboard Navigation** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

@@ -658,6 +658,19 @@ export default function Viewer() {
           if (next !== prev) setSlideTransition("slide-right");
           return next;
         });
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setCurrentSlide((prev) => {
+          if (prev !== 0) setSlideTransition("slide-right");
+          return 0;
+        });
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setCurrentSlide((prev) => {
+          const last = totalSlides - 1;
+          if (prev !== last) setSlideTransition("slide-left");
+          return last;
+        });
       } else if (e.key === "Escape") {
         if (isEditing) {
           setEditMode("off");

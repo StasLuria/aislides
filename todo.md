@@ -1627,3 +1627,11 @@
 - [x] Remove related handler/logic (quote-based onQuoteReply call)
 - [x] Test: 1567/1567 tests passing, 0 TS errors
 - [x] Save checkpoint
+
+## Round 53: Viewer Keyboard Navigation
+- [x] Left/right arrow, up/down, space — already implemented
+- [x] Add Home/End keys for first/last slide
+- [x] Prevent navigation when editing text — already implemented
+- [x] F for fullscreen, E for edit, Escape to exit — already implemented
+- [x] 0 TS errors
+- [x] Save checkpoint
