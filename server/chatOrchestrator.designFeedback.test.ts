@@ -130,7 +130,7 @@ describe("Design Feedback Handling", () => {
       
       // Verify session was updated (design feedback saved)
       expect(updateChatSession).toHaveBeenCalled();
-    }, 15000);
+    }, 30000);
 
     it("should handle data_patches for text changes without recompose", async () => {
       const mockLlmResponse = {

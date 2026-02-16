@@ -40,6 +40,7 @@ import { renderPresentation, renderSlide, renderSlidePreview, BASE_CSS, getLayou
 import { htmlComposerSystem, htmlComposerUser } from "./pipeline/prompts";
 import { getThemePreset, type ThemePreset } from "./pipeline/themes";
 import { autoSelectTheme } from "./pipeline/themeSelector";
+import { extractUserRequirements, formatRequirementsSummary, buildPipelineContext, type UserRequirements } from "./pipeline/intentExtractor";
 import { classifyPresentation } from "./pipeline/presentationTypeClassifier";
 import { analyzeContentDensity, generateAdaptiveStyles } from "./pipeline/adaptiveSizing";
 import { pickLayoutForPreview } from "./interactiveRoutes";
@@ -310,12 +311,16 @@ const CHAT_SYSTEM_PROMPT = `Ты — AI-ассистент для создани
 
 Если пользователь пишет что-то не связанное с презентациями, вежливо направь его обратно к теме.`;
 
-const MODE_SELECTION_PROMPT = `Пользователь указал тему для презентации. Предложи выбрать режим создания:
+const MODE_SELECTION_PROMPT = `Пользователь указал тему для презентации.
 
-1. ⚡ Быстрый режим — полная генерация за ~60 секунд. AI создаст всё автоматически.
-2. 🎯 Пошаговый режим — ты утверждаешь структуру, контент и дизайн каждого слайда.
+Твоя задача:
+1. Подтверди тему и покажи, что ты понял ВСЕ пожелания пользователя (количество слайдов, стиль, без картинок и т.д.)
+2. Если есть извлечённые требования — кратко перечисли их, чтобы пользователь видел, что ты всё учёл
+3. Предложи выбрать режим создания:
+   ⚡ Быстрый режим — полная генерация за ~60 секунд. AI создаст всё автоматически.
+   🎯 Пошаговый режим — ты утверждаешь структуру, контент и дизайн каждого слайда.
 
-Спроси, какой режим предпочитает пользователь. Будь кратким (2-3 предложения).`;
+Будь кратким (3-5 предложений). Покажи, что ты дружелюбный помощник, который внимательно слушает.`;
 
 // ═══════════════════════════════════════════════════════
 // TITLE GENERATION
@@ -496,27 +501,76 @@ async function handleTopicInput(
   // IMPORTANT: Update phase and topic FIRST to prevent race conditions.
   // If the user clicks a mode button before the update completes,
   // processMessage would see phase="idle" and treat the button text as a new topic.
-  
-  // Parse slide count from user message (e.g., "из 3 слайдов", "5 slides", "на 7 слайдов")
-  const slideCountMatch = userMessage.match(/(?:из|на|ровно|exactly)?\s*(\d+)\s*(?:слайд|slide|стр)/i);
-  const parsedSlideCount = slideCountMatch ? parseInt(slideCountMatch[1], 10) : undefined;
-  
+
   const currentSession = await getChatSession(sessionId);
   const currentMeta = (currentSession?.metadata as Record<string, any>) || {};
-  
-  await updateChatSession(sessionId, {
-    topic: userMessage,
-    phase: "mode_selection",
-    // If user specified slide count in message, save it to metadata (overrides settings)
-    ...(parsedSlideCount ? {
-      metadata: { ...currentMeta, slideCount: parsedSlideCount },
-    } : {}),
-  });
 
   // Check for attached files
   const sessionFiles = await getSessionFiles(sessionId);
   const readyFiles = sessionFiles.filter(f => f.status === "ready" && f.extractedText);
-  
+  const hasFiles = readyFiles.length > 0;
+
+  // ── LLM-based intent extraction ──
+  // Extract ALL user requirements from the message (slide count, images, style, etc.)
+  console.log(`[ChatOrchestrator] Extracting user requirements from: "${userMessage.slice(0, 100)}"`);
+  const requirements = await extractUserRequirements(userMessage, hasFiles);
+  console.log(`[ChatOrchestrator] Extracted requirements:`, JSON.stringify({
+    topic: requirements.topic,
+    slideCount: requirements.slideCount,
+    enableImages: requirements.enableImages,
+    userWillAddImages: requirements.userWillAddImages,
+    styleHints: requirements.styleHints,
+    audience: requirements.audience,
+    purpose: requirements.purpose,
+    topicIsClear: requirements.topicIsClear,
+    confidence: requirements.confidence,
+  }));
+
+  // Save requirements to session metadata
+  const updatedMeta = {
+    ...currentMeta,
+    requirements,
+    ...(requirements.slideCount ? { slideCount: requirements.slideCount } : {}),
+    ...(requirements.enableImages !== null ? { enableImages: requirements.enableImages } : {}),
+    ...(requirements.userWillAddImages ? { userWillAddImages: true } : {}),
+  };
+
+  // If topic is unclear, ask clarifying question instead of proceeding to mode selection
+  if (!requirements.topicIsClear && requirements.clarifyingQuestion) {
+    await updateChatSession(sessionId, {
+      topic: userMessage,
+      phase: "idle", // Stay in idle so next message goes through handleTopicInput again
+      metadata: updatedMeta,
+    });
+
+    // Stream a friendly clarifying question
+    const clarifyPrompt = `${CHAT_SYSTEM_PROMPT}\n\nПользователь написал: "${userMessage}"\n\nТема слишком размытая. Задай уточняющий вопрос, чтобы лучше понять, какую презентацию создать.\nПредложенный вопрос: ${requirements.clarifyingQuestion}\n\nБудь дружелюбным и помоги пользователю сформулировать запрос. Не предлагай режим — сначала уточни тему.`;
+
+    const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+    const fullResponse = await streamLLMResponse(
+      clarifyPrompt,
+      chatMessages.slice(-6),
+      writer,
+    );
+
+    const assistantMsg: ChatMessage = {
+      role: "assistant",
+      content: fullResponse,
+      timestamp: Date.now(),
+    };
+    await appendMessage(sessionId, assistantMsg);
+    writer({ type: "done", data: null });
+    return;
+  }
+
+  // Topic is clear — proceed to mode selection
+  await updateChatSession(sessionId, {
+    topic: requirements.topic || userMessage,
+    phase: "mode_selection",
+    metadata: updatedMeta,
+  });
+
+  // Build file context for the AI response
   let fileContext = "";
   if (readyFiles.length > 0) {
     fileContext = `\n\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ${readyFiles.length} ФАЙЛ(ОВ):\n`;
@@ -526,14 +580,19 @@ async function handleTopicInput(
     fileContext += `\nИспользуй содержимое этих файлов как основу для презентации. Упомяни, что файлы получены и будут использованы.`;
   }
 
-  // Stream AI response acknowledging the topic
-  const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  // Build requirements summary for the AI to include in its response
+  const reqSummary = formatRequirementsSummary(requirements);
+  const reqContext = reqSummary
+    ? `\n\nИЗВЛЕЧЁННЫЕ ТРЕБОВАНИЯ ПОЛЬЗОВАТЕЛЯ (обязательно подтверди их в ответе):${reqSummary}`
+    : "";
 
-  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\n${MODE_SELECTION_PROMPT}\n\nТема пользователя: "${userMessage}"${fileContext}`;
+  // Stream AI response acknowledging the topic and requirements
+  const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\n${MODE_SELECTION_PROMPT}\n\nТема пользователя: "${userMessage}"${reqContext}${fileContext}`;
 
   const fullResponse = await streamLLMResponse(
     systemPrompt,
-    chatMessages.slice(-6), // Keep context manageable
+    chatMessages.slice(-6),
     writer,
   );
 
@@ -556,7 +615,6 @@ async function handleTopicInput(
   });
 
   // Auto-generate a short title from the user's topic
-  // Must complete before done event so the client receives the title_update
   await generateSessionTitle(sessionId, userMessage, writer);
 
   writer({ type: "done", data: null });
@@ -676,16 +734,27 @@ async function startQuickGeneration(
   await appendMessage(sessionId, startMsg);
 
   try {
-    // Build generation config — check for custom template in session metadata
+    // Build generation config — check for custom template and user requirements in session metadata
     const sessionMeta = (session.metadata as Record<string, any>) || {};
+    const userReqs = sessionMeta.requirements as UserRequirements | undefined;
+    
+    // Determine enableImages: user requirement > session setting > default true
+    let enableImages = true;
+    if (userReqs && userReqs.enableImages !== null) {
+      enableImages = userReqs.enableImages;
+    } else if (sessionMeta.enableImages !== undefined) {
+      enableImages = !!sessionMeta.enableImages;
+    }
+    
     const genConfig: GenerationConfig = {
       themePreset: sessionMeta.customTemplateId ? undefined : "auto",
-      enableImages: true,
+      enableImages,
       customCssVariables: sessionMeta.customCssVariables || undefined,
       customFontsUrl: sessionMeta.customFontsUrl || undefined,
       customTemplateId: sessionMeta.customTemplateId || undefined,
       preBuiltOutline: preBuiltOutline || undefined,
       slideCount: sessionMeta.slideCount || undefined,
+      pipelineContext: userReqs ? buildPipelineContext(userReqs) : undefined,
     };
 
     // Run the pipeline with progress streaming + slide previews
@@ -902,9 +971,11 @@ async function startStepByStepGeneration(
       outline = preBuiltOutline;
       writer({ type: "token", data: "\n\n📎 Использую структуру из загруженного файла.\n" });
     } else {
-      // Pass slideCount from session metadata (from user settings or parsed from message)
+      // Pass slideCount and pipelineContext from session metadata (from user settings or parsed from message)
       const stepMeta = (session.metadata as Record<string, any>) || {};
-      outline = await runOutline(enrichedTopic, plannerResult.branding, plannerResult.language || "ru", undefined, undefined, stepMeta.slideCount);
+      const stepReqs = stepMeta.requirements as UserRequirements | undefined;
+      const stepPipelineCtx = stepReqs ? buildPipelineContext(stepReqs) : undefined;
+      outline = await runOutline(enrichedTopic, plannerResult.branding, plannerResult.language || "ru", undefined, undefined, stepMeta.slideCount, stepPipelineCtx);
     }
 
     // Format outline for display

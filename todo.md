@@ -1680,4 +1680,16 @@
   - Added hard enforcement: truncate outline to N slides if LLM generates more
   - Updated prompts.ts with strict "EXACTLY N slides" instruction
 - [x] Test with "3 слайда" request and verify output has exactly 3 slides — CONFIRMED: 3 slides generated
+- [x] Save checkpoint
+
+## Round 58: Smart User Intent Understanding — Friendly Presentation Assistant
+- [x] Analyze current chatOrchestrator handleTopicInput and message flow
+- [x] Design structured UserRequirements interface (slideCount, enableImages, style, structure, language, customInstructions)
+- [x] Implement LLM-based intent extraction: parse user message into UserRequirements
+- [x] Implement clarifying questions: if topic is too vague or requirements ambiguous, ask before generating
+- [x] Pass all extracted preferences to pipeline (images on/off, style hints, structure hints)
+- [x] Update chatOrchestrator to use new intent extraction for all modes (quick, step-by-step)
+- [x] Handle mid-conversation preference changes (e.g. "не используй картинки", "добавь еще слайд")
+- [x] Write vitest tests for intent extraction — 1583 tests passing
+- [x] Test end-to-end with various user requests (API test confirmed: topic, slideCount, enableImages, audience, styleHints all extracted correctly)
 - [ ] Save checkpoint

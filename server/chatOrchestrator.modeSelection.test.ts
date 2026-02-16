@@ -125,6 +125,26 @@ vi.mock("./pipeline/inlineFieldInjector", () => ({
   injectInlineEditableFields: vi.fn((html: string) => html),
 }));
 
+// Mock intentExtractor
+vi.mock("./pipeline/intentExtractor", () => ({
+  extractUserRequirements: vi.fn(async (message: string) => ({
+    topic: message,
+    slideCount: null,
+    enableImages: null,
+    userWillAddImages: false,
+    styleHints: [],
+    audience: null,
+    purpose: null,
+    topicIsClear: true,
+    confidence: 0.9,
+    structureHints: [],
+    language: null,
+    customInstructions: [],
+  })),
+  formatRequirementsSummary: vi.fn(() => ""),
+  buildPipelineContext: vi.fn(() => ""),
+}));
+
 // Mock classifyPresentation
 vi.mock("./pipeline/presentationTypeClassifier", () => ({
   classifyPresentation: vi.fn(() => ({

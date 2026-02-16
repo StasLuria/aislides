@@ -89,9 +89,9 @@ router.post("/api/v1/interactive/start", async (req: Request, res: Response) => 
       message: "Создание структуры...",
     });
 
-    // Run outline (pass slideCount from config if specified)
+    // Run outline (pass slideCount and pipelineContext from config if specified)
     const requestedSlideCount = config?.slide_count ? Number(config.slide_count) : undefined;
-    const outline = await runOutline(prompt, plannerResult.branding, language, undefined, undefined, requestedSlideCount);
+    const outline = await runOutline(prompt, plannerResult.branding, language, undefined, undefined, requestedSlideCount, undefined);
 
     // Store intermediate state
     await updatePresentationProgress(presentationId, {

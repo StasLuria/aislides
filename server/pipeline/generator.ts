@@ -52,6 +52,8 @@ export interface GenerationConfig {
   customTemplateId?: string;
   /** Pre-built outline from uploaded file (skips runOutline + runOutlineCritic when provided) */
   preBuiltOutline?: OutlineResult;
+  /** Additional context from user requirements (audience, purpose, style hints, custom instructions) */
+  pipelineContext?: string;
 }
 
 export interface PipelineProgress {
@@ -239,10 +241,13 @@ export async function runOutline(
   typeHint?: string,
   analysisContext?: string,
   slideCount?: number,
+  pipelineContext?: string,
 ): Promise<OutlineResult> {
   const system = outlineSystem(language, slideCount);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr, typeHint, analysisContext, slideCount);
+  // Enrich the prompt with user requirements context (audience, purpose, style, etc.)
+  const enrichedPrompt = pipelineContext ? `${prompt}${pipelineContext}` : prompt;
+  const user = outlineUser(enrichedPrompt, brandingStr, typeHint, analysisContext, slideCount);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -393,8 +398,11 @@ export async function runWriterSingle(
   researchContext?: string,
   writerTypeHint?: string,
   analysisHighlights?: string,
+  pipelineContext?: string,
 ): Promise<SlideContent> {
-  const system = writerSystem(language, presentationTitle, allTitles, targetAudience, writerTypeHint);
+  // Inject user requirements into the writer system prompt
+  const baseSystem = writerSystem(language, presentationTitle, allTitles, targetAudience, writerTypeHint);
+  const system = pipelineContext ? `${baseSystem}\n\n${pipelineContext}` : baseSystem;
   const user = writerUser(
     slideInfo.slide_number,
     slideInfo.title,
@@ -482,6 +490,7 @@ export async function runWriterParallel(
   researchContextFormatter?: (slideNumber: number) => string,
   writerTypeHint?: string,
   analysisHighlights?: string,
+  pipelineContext?: string,
 ): Promise<SlideContent[]> {
   const allTitles = outline.slides.map((s) => s.title).join(", ");
   const results: SlideContent[] = [];
@@ -504,7 +513,7 @@ export async function runWriterParallel(
   const keySlides = outline.slides.filter((_, i) => keyIndices.has(i));
   const coreSlides = outline.slides.filter((_, i) => !keyIndices.has(i));
 
-  const writeSingle = (slide: OutlineResult["slides"][0], context: string) =>
+  const writeSingle = (slide: OutlineResult["slides"][0], context: string, pipelineCtx?: string) =>
     runWriterSingle(
       slide,
       outline.presentation_title,
@@ -515,6 +524,7 @@ export async function runWriterParallel(
       researchContextFormatter?.(slide.slide_number),
       writerTypeHint,
       analysisHighlights,
+      pipelineCtx,
     ).catch((err): SlideContent => {
       console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
       return {
@@ -531,7 +541,7 @@ export async function runWriterParallel(
   console.log(`[Writer] Hybrid mode: ${keySlides.length} key slides sequential, ${coreSlides.length} core slides parallel`);
   for (const slide of keySlides) {
     const previousContext = buildWriterContext(results);
-    const result = await writeSingle(slide, previousContext);
+    const result = await writeSingle(slide, previousContext, pipelineContext);
     results.push(result);
     onSlideWritten?.(result.slide_number, total);
   }
@@ -547,7 +557,7 @@ export async function runWriterParallel(
     for (let i = 0; i < coreSlides.length; i += batchSize) {
       const batch = coreSlides.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((slide) => writeSingle(slide, keyContext)),
+        batch.map((slide) => writeSingle(slide, keyContext, pipelineContext)),
       );
       batchResults.sort((a, b) => a.slide_number - b.slide_number);
       results.push(...batchResults);
@@ -1597,7 +1607,7 @@ export async function generatePresentation(
     onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск (структура из файла)" });
   } else {
     onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 22, message: "Создание структуры презентации..." });
-    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint, analysisContextStr || undefined, config.slideCount);
+    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint, analysisContextStr || undefined, config.slideCount, config.pipelineContext);
 
     // 4.5. OUTLINE CRITIC — validate and improve outline structure (now with research coverage)
     // SKIP critic when user explicitly requested a specific slide count — critic tends to add slides
@@ -1653,6 +1663,7 @@ export async function generatePresentation(
     researchFormatter,
     typeProfile.writerHint,
     analysisHighlightsStr || undefined,
+    config.pipelineContext,
   );
   onProgress({ nodeName: "writer", currentStep: "writing", progressPercent: 40, message: "Контент готов" });
 
