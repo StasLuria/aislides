@@ -43,7 +43,10 @@ Analyze the request and determine the generation strategy.`;
 // ═══════════════════════════════════════════════════════
 // OUTLINE AGENT (Enhanced with few-shot examples)
 // ═══════════════════════════════════════════════════════
-export function outlineSystem(language: string): string {
+export function outlineSystem(language: string, slideCount?: number): string {
+  const slideCountRule = slideCount
+    ? `- The user has requested EXACTLY ${slideCount} slides (including title and final slides). You MUST create exactly ${slideCount} slides — no more, no less. This is a hard requirement.`
+    : `- Determine the number of slides based on the content complexity (typically 8-14 slides).`;
   return `You are Outline Agent — a world-class presentation structure architect.
 <role>
 Create a detailed, compelling outline for a presentation based on the topic, audience, and context.
@@ -60,7 +63,7 @@ When analysis_context is provided, you MUST ground your outline in verified rese
 </task>
 <rules>
 - ONE SLIDE = ONE IDEA. Each slide must convey exactly one clear thought.
-- Determine the number of slides based on the content complexity (typically 8-14 slides).
+${slideCountRule}
 - ALWAYS start with a TitleSlide (slide 1).
 - ALWAYS end with a FinalSlide (last slide).
 - Use SectionHeader slides to separate major sections (typically 2-3 section headers).
@@ -148,10 +151,13 @@ Return a JSON with: presentation_title, target_audience, narrative_arc, slides (
 </output_format>`;
 }
 
-export function outlineUser(userPrompt: string, branding: string, typeHint?: string, analysisContext?: string): string {
+export function outlineUser(userPrompt: string, branding: string, typeHint?: string, analysisContext?: string, slideCount?: number): string {
   const typeSection = typeHint ? `\n<presentation_type_hint>\n${typeHint}\n</presentation_type_hint>` : "";
   const analysisSection = analysisContext
     ? `\n${analysisContext}\n<instruction>Ground your outline in the research data above. Use real numbers, verified facts, and anchor insights from the analysis. Each slide's key_points should reference specific data from the research. The narrative arc should follow the suggested arc from the analysis if provided.</instruction>`
+    : "";
+  const slideCountInstruction = slideCount
+    ? ` You MUST create EXACTLY ${slideCount} slides (including title slide and final slide).`
     : "";
   return `<topic>
 ${userPrompt}
@@ -159,7 +165,7 @@ ${userPrompt}
 <branding>
 ${branding}
 </branding>${typeSection}${analysisSection}
-Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.`;
+Create a detailed presentation outline. Choose the best narrative arc type for this topic. Make slide titles engaging and specific. Each slide's key_points should contain concrete facts, metrics, or examples that the Writer can expand into rich content.${slideCountInstruction}`;
 }
 
 // ═══════════════════════════════════════════════════════

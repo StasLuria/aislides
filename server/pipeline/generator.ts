@@ -42,6 +42,8 @@ import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
 export interface GenerationConfig {
   themePreset?: string;
   enableImages?: boolean;
+  /** Target number of slides requested by user (includes title + final). If not set, LLM decides. */
+  slideCount?: number;
   /** Custom template CSS variables (overrides theme preset when provided) */
   customCssVariables?: string;
   /** Custom template fonts URL */
@@ -236,10 +238,11 @@ export async function runOutline(
   language: string,
   typeHint?: string,
   analysisContext?: string,
+  slideCount?: number,
 ): Promise<OutlineResult> {
-  const system = outlineSystem(language);
+  const system = outlineSystem(language, slideCount);
   const brandingStr = JSON.stringify(branding);
-  const user = outlineUser(prompt, brandingStr, typeHint, analysisContext);
+  const user = outlineUser(prompt, brandingStr, typeHint, analysisContext, slideCount);
 
   return llmStructured<OutlineResult>(system, user, "OutlineOutput", {
     type: "object",
@@ -1594,29 +1597,47 @@ export async function generatePresentation(
     onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск (структура из файла)" });
   } else {
     onProgress({ nodeName: "outline", currentStep: "outlining", progressPercent: 22, message: "Создание структуры презентации..." });
-    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint, analysisContextStr || undefined);
+    const rawOutline = await runOutline(prompt, plannerResult.branding, language, combinedOutlineHint, analysisContextStr || undefined, config.slideCount);
 
     // 4.5. OUTLINE CRITIC — validate and improve outline structure (now with research coverage)
-    onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 26, message: "Проверка структуры презентации..." });
+    // SKIP critic when user explicitly requested a specific slide count — critic tends to add slides
     outline = rawOutline;
-    try {
-      const criticResult = await runOutlineCritic(rawOutline, analysisResult || undefined, analysisContextStr || undefined);
-      outline = criticResult.outline;
-      const { critique } = criticResult;
-      if (critique.improved_outline) {
-        console.log(`[Pipeline] Outline improved by critic (score: ${critique.score}/10, ${critique.issues.length} issues)`);
-      } else {
-        console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
+    if (config.slideCount) {
+      console.log(`[Pipeline] Skipping outline critic — user requested exactly ${config.slideCount} slides (got ${rawOutline.slides.length})`);
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: `Пропуск (${rawOutline.slides.length} слайдов по запросу)` });
+    } else {
+      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 26, message: "Проверка структуры презентации..." });
+      try {
+        const criticResult = await runOutlineCritic(rawOutline, analysisResult || undefined, analysisContextStr || undefined);
+        outline = criticResult.outline;
+        const { critique } = criticResult;
+        if (critique.improved_outline) {
+          console.log(`[Pipeline] Outline improved by critic (score: ${critique.score}/10, ${critique.issues.length} issues)`);
+        } else {
+          console.log(`[Pipeline] Outline passed critic (score: ${critique.score}/10)`);
+        }
+        onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: `Структура проверена (${critique.score}/10)` });
+      } catch (err) {
+        console.error("[Pipeline] Outline critic failed, using original outline:", err);
+        onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск проверки (ошибка)" });
       }
-      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: `Структура проверена (${critique.score}/10)` });
-    } catch (err) {
-      console.error("[Pipeline] Outline critic failed, using original outline:", err);
-      onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск проверки (ошибка)" });
     }
   }
 
   // 4.6. OUTLINE SHAPE POST-PROCESSING — force specialized shapes based on user keywords
   outline = postProcessOutlineShapes(outline, prompt);
+
+  // 4.7. HARD SLIDE COUNT ENFORCEMENT — if user requested N slides, truncate to N
+  if (config.slideCount && outline.slides.length > config.slideCount) {
+    console.log(`[Pipeline] Enforcing slide count: truncating ${outline.slides.length} → ${config.slideCount} slides`);
+    outline = {
+      ...outline,
+      slides: outline.slides.slice(0, config.slideCount).map((s, i) => ({
+        ...s,
+        slide_number: i + 1,
+      })),
+    };
+  }
 
   // ═══════════════════════════════════════════════════════
   // PHASE 5: WRITER — enriched with research + analysis context

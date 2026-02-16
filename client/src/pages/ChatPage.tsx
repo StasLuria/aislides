@@ -1778,18 +1778,19 @@ export default function ChatPage() {
       justCreatedSessionRef.current = true;
       navigate(`/chat/${newId}`, { replace: true });
 
-      // Apply custom template metadata to the session before first message
-      if (settings.customTemplateId) {
-        try {
-          await api.setSessionTemplate(
-            newId,
-            settings.customTemplateId,
-            settings.customCssVariables || undefined,
-            settings.customFontsUrl || undefined,
-          );
-        } catch (err) {
-          console.error("[ChatPage] Failed to set template on session:", err);
-        }
+      // Apply settings metadata to the session before first message
+      try {
+        await api.setSessionMetadata(newId, {
+          slideCount: settings.slideCount,
+          themePreset: settings.themePreset,
+          ...(settings.customTemplateId ? {
+            customTemplateId: settings.customTemplateId,
+            customCssVariables: settings.customCssVariables || null,
+            customFontsUrl: settings.customFontsUrl || null,
+          } : {}),
+        });
+      } catch (err) {
+        console.error("[ChatPage] Failed to set session metadata:", err);
       }
 
       // Upload files first if any, then send message

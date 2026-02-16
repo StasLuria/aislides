@@ -496,9 +496,21 @@ async function handleTopicInput(
   // IMPORTANT: Update phase and topic FIRST to prevent race conditions.
   // If the user clicks a mode button before the update completes,
   // processMessage would see phase="idle" and treat the button text as a new topic.
+  
+  // Parse slide count from user message (e.g., "из 3 слайдов", "5 slides", "на 7 слайдов")
+  const slideCountMatch = userMessage.match(/(?:из|на|ровно|exactly)?\s*(\d+)\s*(?:слайд|slide|стр)/i);
+  const parsedSlideCount = slideCountMatch ? parseInt(slideCountMatch[1], 10) : undefined;
+  
+  const currentSession = await getChatSession(sessionId);
+  const currentMeta = (currentSession?.metadata as Record<string, any>) || {};
+  
   await updateChatSession(sessionId, {
     topic: userMessage,
     phase: "mode_selection",
+    // If user specified slide count in message, save it to metadata (overrides settings)
+    ...(parsedSlideCount ? {
+      metadata: { ...currentMeta, slideCount: parsedSlideCount },
+    } : {}),
   });
 
   // Check for attached files
@@ -673,6 +685,7 @@ async function startQuickGeneration(
       customFontsUrl: sessionMeta.customFontsUrl || undefined,
       customTemplateId: sessionMeta.customTemplateId || undefined,
       preBuiltOutline: preBuiltOutline || undefined,
+      slideCount: sessionMeta.slideCount || undefined,
     };
 
     // Run the pipeline with progress streaming + slide previews
@@ -889,7 +902,9 @@ async function startStepByStepGeneration(
       outline = preBuiltOutline;
       writer({ type: "token", data: "\n\n📎 Использую структуру из загруженного файла.\n" });
     } else {
-      outline = await runOutline(enrichedTopic, plannerResult.branding, plannerResult.language || "ru");
+      // Pass slideCount from session metadata (from user settings or parsed from message)
+      const stepMeta = (session.metadata as Record<string, any>) || {};
+      outline = await runOutline(enrichedTopic, plannerResult.branding, plannerResult.language || "ru", undefined, undefined, stepMeta.slideCount);
     }
 
     // Format outline for display

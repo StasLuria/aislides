@@ -798,6 +798,13 @@ class ApiClient {
     });
   }
 
+  async setSessionMetadata(
+    sessionId: string,
+    metadata: Record<string, any>,
+  ): Promise<void> {
+    await axios.patch(`/api/v1/chat/sessions/${sessionId}/metadata`, metadata);
+  }
+
   // — Export —
 
   async exportPptx(id: string): Promise<Blob> {

@@ -52,12 +52,12 @@ export interface CritiqueResult {
  * Validate structural rules that can be checked without LLM.
  * Returns issues found.
  */
-export function validateOutlineStructure(outline: OutlineResult): CritiqueIssue[] {
+export function validateOutlineStructure(outline: OutlineResult, userSlideCount?: number): CritiqueIssue[] {
   const issues: CritiqueIssue[] = [];
   const slides = outline.slides;
 
-  // 1. Must have at least 5 slides
-  if (slides.length < 5) {
+  // 1. Must have at least 5 slides (unless user explicitly requested fewer)
+  if (!userSlideCount && slides.length < 5) {
     issues.push({
       severity: "error",
       aspect: "structure",
@@ -436,9 +436,10 @@ export async function runOutlineCritic(
   outline: OutlineResult,
   analysis?: AnalysisResult,
   analysisContext?: string,
+  userSlideCount?: number,
 ): Promise<{ outline: OutlineResult; critique: CritiqueResult }> {
-  // Step 1: Local validation
-  const localIssues = validateOutlineStructure(outline);
+  // Step 1: Local validation (pass userSlideCount to skip min-5 check when user specified count)
+  const localIssues = validateOutlineStructure(outline, userSlideCount);
 
   // Step 1.5: Research coverage validation (if analysis available)
   if (analysis) {
@@ -561,11 +562,14 @@ export async function runOutlineCritic(
     };
 
     // If LLM provided improved outline and score is low, use it
+    // When user specified slideCount, don't replace with a longer outline
+    const minSlidesForImproved = userSlideCount || 5;
     if (
       !passed &&
       llmResult.has_improved_outline &&
       llmResult.improved_slides &&
-      llmResult.improved_slides.length >= 5
+      llmResult.improved_slides.length >= minSlidesForImproved &&
+      (!userSlideCount || llmResult.improved_slides.length <= userSlideCount + 1)
     ) {
       const improvedOutline: OutlineResult = {
         presentation_title: llmResult.improved_presentation_title || outline.presentation_title,

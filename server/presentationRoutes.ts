@@ -257,6 +257,7 @@ async function startGeneration(
       generatePresentation(prompt, {
         themePreset: config.theme_preset,
         enableImages: config.enable_images !== false, // enabled by default
+        slideCount: config.slide_count || undefined,
       }, onProgress),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Pipeline timed out after 10 minutes")), PIPELINE_TIMEOUT_MS)

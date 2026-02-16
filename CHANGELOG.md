@@ -7,23 +7,40 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 140 |
-| Total tasks | 1299 |
-| Completed | 1286 (99%) |
+| Total sections | 142 |
+| Total tasks | 1310 |
+| Completed | 1297 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
 
-### 🚀 Round 55: Fix BSPB Theme — All Slides Must Be in Banking Style 🔴 11/12
+### 🚀 Round 57: Fix Slide Count Not Respected 🔴 4/5
+
+- [x] Investigate how slide_count is parsed from user message in chatOrchestrator
+- [x] Investigate how slide_count is passed to the pipeline generator
+- [x] Fix: when user requests N slides, generate exactly N slides (not default 5)
+- [x] Test with "3 слайда" request and verify output has exactly 3 slides — CONFIRMED: 3 slides generated
+- [ ] Save checkpoint
+
+### 🚀 Round 56: Fix BSPB Theme — Logo & Red Stripe Missing on Non-Title Slides ✅
+
+- [x] Investigate BSPB theme CSS: how ::before/::after for logo and red stripe are scoped
+- [x] Identify why only title-slide gets branding elements — RESOLVED: old presentation used corporate_blue, not bspb_corporate
+- [x] Fix CSS so ALL slide containers get BSPB branding — was already working, server restart applied the default theme fix
+- [x] Generate test presentation and visually verify ALL slides — CONFIRMED: all 5 slides have BSPB branding
+- [x] Run tests — 1567 tests pass
+- [x] Save checkpoint
+
+### 🚀 Round 55: Fix BSPB Theme — All Slides Must Be in Banking Style ✅
 
 - [x] Investigate how bspb_corporate theme CSS is applied to slides
 - [x] Identify why only the first slide (cover) gets banking styling — CONFIRMED: theme applies to ALL slides (logo, red stripe, blue headings)
 - [x] Fix theme CSS / template engine so ALL slide layouts receive BSPB styling — was already working
 - [x] Test by generating a presentation with BSPB theme — verified visually
 - [x] Verify all slides display in banking style (not just cover) — confirmed
-- [ ] Save checkpoint
+- [x] Save checkpoint
 - [x] Make bspb_corporate 100% default theme (always used unless user explicitly picks another)
 - [x] Update themeSelector.ts: skip keyword/LLM matching when no theme_preset specified, return bspb_corporate
 - [x] Update generator.ts: ensure default theme is bspb_corporate
@@ -1778,7 +1795,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (71 sections, 809/822 tasks)
+### 🚀 Improvements (73 sections, 820/833 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1850,7 +1867,9 @@
 - **Round 52: Remove "Применить изменения" Button** — ✅
 - **Round 53: Viewer Keyboard Navigation** — ✅
 - **Round 54: Documentation & Architecture Audit** — ✅
-- **Round 55: Fix BSPB Theme — All Slides Must Be in Banking Style** — 11/12
+- **Round 55: Fix BSPB Theme — All Slides Must Be in Banking Style** — ✅
+- **Round 56: Fix BSPB Theme — Logo & Red Stripe Missing on Non-Title Slides** — ✅
+- **Round 57: Fix Slide Count Not Respected** — 4/5
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

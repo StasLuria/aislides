@@ -1652,10 +1652,32 @@
 - [x] Fix theme CSS / template engine so ALL slide layouts receive BSPB styling — was already working
 - [x] Test by generating a presentation with BSPB theme — verified visually
 - [x] Verify all slides display in banking style (not just cover) — confirmed
-- [ ] Save checkpoint
+- [x] Save checkpoint
 - [x] Make bspb_corporate 100% default theme (always used unless user explicitly picks another)
 - [x] Update themeSelector.ts: skip keyword/LLM matching when no theme_preset specified, return bspb_corporate
 - [x] Update generator.ts: ensure default theme is bspb_corporate
 - [x] Update frontend: default theme selector value = bspb_corporate
 - [x] Update interactive routes: default to bspb_corporate (+ chatOrchestrator.ts)
 - [x] Fix broken tests — all 1567 tests pass
+
+## Round 56: Fix BSPB Theme — Logo & Red Stripe Missing on Non-Title Slides
+- [x] Investigate BSPB theme CSS: how ::before/::after for logo and red stripe are scoped
+- [x] Identify why only title-slide gets branding elements — RESOLVED: old presentation used corporate_blue, not bspb_corporate
+- [x] Fix CSS so ALL slide containers get BSPB branding — was already working, server restart applied the default theme fix
+- [x] Generate test presentation and visually verify ALL slides — CONFIRMED: all 5 slides have BSPB branding
+- [x] Run tests — 1567 tests pass
+- [x] Save checkpoint
+
+## Round 57: Fix Slide Count Not Respected
+- [x] Investigate how slide_count is parsed from user message in chatOrchestrator
+- [x] Investigate how slide_count is passed to the pipeline generator
+- [x] Fix: when user requests N slides, generate exactly N slides (not default 5)
+  - Added slideCount to GenerationConfig interface
+  - Added slide count parsing from user message text (regex: N слайдов/slides)
+  - Added slideCount to session metadata from frontend
+  - Fixed presentationRoutes.ts to pass slide_count to generatePresentation
+  - Skip outline critic when slideCount is specified (prevents adding slides)
+  - Added hard enforcement: truncate outline to N slides if LLM generates more
+  - Updated prompts.ts with strict "EXACTLY N slides" instruction
+- [x] Test with "3 слайда" request and verify output has exactly 3 slides — CONFIRMED: 3 slides generated
+- [ ] Save checkpoint
