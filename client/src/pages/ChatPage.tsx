@@ -1793,19 +1793,17 @@ export default function ChatPage() {
         console.error("[ChatPage] Failed to set session metadata:", err);
       }
 
-      // Upload files first if any, then send message
+      // Upload files first if any
       if (filesToUpload.length > 0) {
         await uploadFilesToSession(newId, filesToUpload);
         // Wait a bit for text extraction to start
         await new Promise(r => setTimeout(r, 1500));
-        // After file upload completes, send message directly
-        // (pendingMessageRef useEffect already fired when sessionId changed,
-        //  so we can't rely on it — it ran before files were uploaded)
-        await sendMessage(messageToSend, newId, currentQuote || undefined);
-        setRefreshTrigger((p) => p + 1);
-        return;
       }
-      pendingMessageRef.current = messageToSend;
+
+      // Send message directly with the newId — don't rely on pendingMessageRef
+      // because the useEffect may fire before pendingMessageRef is set (race condition)
+      await sendMessage(messageToSend, newId, currentQuote || undefined);
+      setRefreshTrigger((p) => p + 1);
       return;
     }
 

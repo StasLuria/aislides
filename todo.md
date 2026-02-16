@@ -1714,3 +1714,11 @@
 - [x] Fix mode selection: check mode keywords FIRST before requirement change detection (prevents "быстрый" being interpreted as style change)
 - [x] Test end-to-end: full flow "муку" → "производство" → "быстрый" → 3 HTML slides generated successfully
 - [x] Save checkpoint — all 1612 tests passing
+
+## Round 61: Fix First Message Not Showing Response
+- [x] Diagnose why first message in new chat shows no response — ROOT CAUSE: race condition in pendingMessageRef
+- [x] Check frontend SSE connection and session creation flow — createSession sets sessionId (async React state) before pendingMessageRef is set
+- [x] Check backend message handling for new sessions — backend is fine, message was never sent from frontend
+- [x] Fix the root cause — replaced pendingMessageRef pattern with direct sendMessage(msg, newId) call after session creation
+- [x] Test end-to-end — browser test confirmed: first message now shows response immediately
+- [x] Save checkpoint — all 1612 tests passing

@@ -7,14 +7,23 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 145 |
-| Total tasks | 1337 |
-| Completed | 1324 (99%) |
+| Total sections | 146 |
+| Total tasks | 1343 |
+| Completed | 1330 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 61: Fix First Message Not Showing Response ✅
+
+- [x] Diagnose why first message in new chat shows no response — ROOT CAUSE: race condition in pendingMessageRef
+- [x] Check frontend SSE connection and session creation flow — createSession sets sessionId (async React state) before pendingMessageRef is set
+- [x] Check backend message handling for new sessions — backend is fine, message was never sent from frontend
+- [x] Fix the root cause — replaced pendingMessageRef pattern with direct sendMessage(msg, newId) call after session creation
+- [x] Test end-to-end — browser test confirmed: first message now shows response immediately
+- [x] Save checkpoint — all 1612 tests passing
 
 ### 🚀 Round 60: Fix Quick Mode Not Generating HTML Slides ✅
 
@@ -1831,7 +1840,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (76 sections, 847/860 tasks)
+### 🚀 Improvements (77 sections, 853/866 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1909,6 +1918,7 @@
 - **Round 58: Smart User Intent Understanding — Friendly Presentation Assistant** — 9/10
 - **Round 59: Mid-Conversation Requirement Editing** — ✅
 - **Round 60: Fix Quick Mode Not Generating HTML Slides** — ✅
+- **Round 61: Fix First Message Not Showing Response** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
