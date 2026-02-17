@@ -1888,3 +1888,9 @@
 - [x] Audit current README.md content vs actual project state
 - [x] Update README.md with current architecture, features, and API documentation
 - [x] Ensure README reflects all major features (chat, step-by-step, polling, editing, etc.)
+
+## Round 71: Fix ChatSidebar fetch error
+- [ ] Fix "Failed to fetch" error in ChatSidebar.tsx line 50-51 when loading sessions on /chat page
+
+## Round 71: Fix ChatSidebar fetch error
+- [x] Fix "Failed to fetch" error in ChatSidebar.tsx — added fetchWithRetry with exponential backoff (2 retries), AbortController for cleanup on unmount, credentials: "include" on all fetch calls, silent error handling for background polling

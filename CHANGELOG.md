@@ -7,14 +7,22 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 155 |
-| Total tasks | 1451 |
-| Completed | 1430 (99%) |
-| Pending | 21 |
+| Total sections | 157 |
+| Total tasks | 1453 |
+| Completed | 1431 (98%) |
+| Pending | 22 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 71: Fix ChatSidebar fetch error ✅
+
+- [x] Fix "Failed to fetch" error in ChatSidebar.tsx — added fetchWithRetry with exponential backoff (2 retries), AbortController for cleanup on unmount, credentials: "include" on all fetch calls, silent error handling for background polling
+
+### 🚀 Round 71: Fix ChatSidebar fetch error 🔴 0/1
+
+- [ ] Fix "Failed to fetch" error in ChatSidebar.tsx line 50-51 when loading sessions on /chat page
 
 ### 🚀 Round 70: README.md update ✅
 
@@ -1975,7 +1983,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (85 sections, 939/960 tasks)
+### 🚀 Improvements (87 sections, 940/962 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -2062,6 +2070,8 @@
 - **Round 68: Step-by-step mode CJM bug** — 0/5
 - **Round 69: Step-by-step improvements + Polling fallback** — ✅
 - **Round 70: README.md update** — ✅
+- **Round 71: Fix ChatSidebar fetch error** — 0/1
+- **Round 71: Fix ChatSidebar fetch error** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

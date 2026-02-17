@@ -2,6 +2,9 @@
  * ChatSidebar — Collapsible sidebar with chat session history.
  * Clean Light Design: white background, subtle borders, soft shadows.
  * Supports inline title editing and real-time title updates.
+ *
+ * Resilient fetch: AbortController on unmount, retry with backoff,
+ * credentials: "include", silent errors on background polling.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -43,6 +46,35 @@ interface ChatSidebarProps {
 
 const API_BASE = "/api/v1/chat";
 
+/** Retry a fetch up to `maxRetries` times with exponential backoff. */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  maxRetries = 2,
+  signal?: AbortSignal,
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        credentials: "include",
+        signal,
+      });
+      return res;
+    } catch (err) {
+      lastError = err;
+      // Don't retry if the request was intentionally aborted
+      if (signal?.aborted) throw err;
+      // Don't retry on the last attempt
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
@@ -75,26 +107,60 @@ export default function ChatSidebar({
   const [editValue, setEditValue] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchSessions = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/sessions?limit=50`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setSessions(data);
-    } catch (err) {
-      console.error("Failed to load sessions:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Track whether this is the initial load vs background polling
+  const hasLoadedOnce = useRef(false);
+  // AbortController for cleanup on unmount
+  const abortRef = useRef<AbortController | null>(null);
 
+  const fetchSessions = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      // Abort any in-flight request before starting a new one
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetchWithRetry(
+          `${API_BASE}/sessions?limit=50`,
+          {},
+          opts?.silent ? 1 : 2, // fewer retries for background polling
+          controller.signal,
+        );
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setSessions(data);
+        hasLoadedOnce.current = true;
+      } catch (err) {
+        // Silently ignore aborted requests (unmount / new request)
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // Only log to console for background polling, don't spam the user
+        if (opts?.silent || hasLoadedOnce.current) {
+          console.warn("[ChatSidebar] Background refresh failed:", err);
+        } else {
+          console.error("[ChatSidebar] Initial load failed:", err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Initial load + refresh on trigger change
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions, refreshTrigger]);
 
+  // Background polling every 30s (silent mode — no error toasts)
   useEffect(() => {
-    const interval = setInterval(fetchSessions, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => fetchSessions({ silent: true }), 30000);
+    return () => {
+      clearInterval(interval);
+      // Abort any in-flight request on unmount
+      abortRef.current?.abort();
+    };
   }, [fetchSessions]);
 
   // Apply real-time title update from SSE
@@ -122,7 +188,10 @@ export default function ChatSidebar({
     setConfirmDeleteId(null);
     setDeletingId(sessionId);
     try {
-      await fetch(`${API_BASE}/sessions/${sessionId}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
       if (sessionId === currentSessionId) {
         await onNewChat();
@@ -158,6 +227,7 @@ export default function ChatSidebar({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
+        credentials: "include",
       });
       setSessions((prev) =>
         prev.map((s) =>
