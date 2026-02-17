@@ -7,14 +7,29 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 151 |
-| Total tasks | 1420 |
-| Completed | 1405 (99%) |
-| Pending | 15 |
+| Total sections | 152 |
+| Total tasks | 1432 |
+| Completed | 1416 (99%) |
+| Pending | 16 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 67: Completion Card Bug + Timeline Visual Test 🔴 11/12
+
+- [x] Investigate why the completion card (preview + "Открыть презентацию" button) doesn't appear after generation finishes
+- [x] Root cause: SSE stream can drop during long generation (~100s), presentation_link event is lost
+- [x] Fix: Added recoverSessionState() in useSSEChat.ts - if SSE completes without done/presentation_link events but had progress events, reload session from server
+- [x] Added presentationLinkRef for synchronous state tracking
+- [x] Applied recovery logic to both sendMessage and triggerAction finally blocks
+- [ ] Verify fix works for both quick and step-by-step modes (needs real-world testing)
+- [x] Generated test HTML with 3, 4, and 5 event vertical-timelines
+- [x] Fixed autoDensity height estimation (was 72px/event, now 113px/event matching actual rendered height)
+- [x] Fixed computeDensity thresholds for vertical-timeline (separated from horizontal timeline)
+- [x] Reduced max events from 6 to 5 in designCriticAgent and generator
+- [x] Visual verification: 3 events (normal) ✅, 4 events (normal) ✅, 5 events (compact) ✅ - all fully visible
+- [x] All 1623 tests passing
 
 ### 🚀 Round 66: Timeline Fix + Step-by-Step Mode Testing ✅
 
@@ -1932,7 +1947,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (81 sections, 914/929 tasks)
+### 🚀 Improvements (82 sections, 925/941 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -2015,6 +2030,7 @@
 - **Round 63: Fix All Bugs from Comprehensive Testing** — ✅
 - **Round 65: Comprehensive E2E Testing for Client Handoff** — 30/32
 - **Round 66: Timeline Fix + Step-by-Step Mode Testing** — ✅
+- **Round 67: Completion Card Bug + Timeline Visual Test** — 11/12
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

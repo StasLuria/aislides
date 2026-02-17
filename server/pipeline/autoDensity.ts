@@ -374,14 +374,24 @@ export function estimateContentHeight(
       for (const event of events) {
         const titleLines = clampLines(estimateTextLines(event?.title || "", p.smallSize, 900), 2);
         const descLines = clampLines(estimateTextLines(event?.description || "", p.tinySize, 900), p.descClamp);
+        // Each event card actual structure:
+        // - date+badge row: ~16px (tinySize * 1.2 + margin 4px)
+        // - title: smallSize * 1.3 * lines
+        // - description: tinySize * 1.4 * lines + margin-top 4px
+        // - card padding: at-card-padding top + bottom (14px each in dense = 28px)
+        // - circle overlap adds ~8px effective height
+        // - gap between cards: gapSm
         const dateH = event?.date ? p.tinySize * 1.2 + 4 : 0;
-        // Use reduced card padding for vertical-timeline (template uses tighter padding)
-        const cardPad = Math.max(p.cardPadding - 4, 10);
-        eventsH += dateH + titleLines * (p.smallSize * 1.3) + descLines * (p.tinySize * 1.4) + cardPad * 2 + p.gapSm;
+        const badgeH = 4; // badge row margin-bottom
+        const titleH = titleLines * (p.smallSize * 1.3);
+        const descH = descLines > 0 ? descLines * (p.tinySize * 1.4) + 4 : 0; // +4 for margin-top
+        const cardPadV = p.cardPadding * 2; // full card padding (top + bottom)
+        const circleOverlap = 8; // circle extends above card
+        eventsH += dateH + badgeH + titleH + descH + cardPadV + circleOverlap + p.gapSm;
       }
       // vertical-timeline uses padding 28+48=76px (top 28 + bottom 48 to clear footer)
-      // Standard is 68+30=98, so we have 22px extra available height
-      return Math.max(0, headerH + eventsH - 22);
+      // Available = 720 - 76 - footer(32) = 612px, vs standard 622px → 10px less
+      return Math.max(0, headerH + eventsH + 10);
     }
 
     case "comparison-table": {

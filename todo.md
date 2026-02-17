@@ -1836,3 +1836,21 @@
 - [x] Test design approval flow (all 5 slides)
 - [x] Verify final presentation renders correctly (5 slides, all layouts render properly)
 - [x] Fix any bugs found during testing (no bugs found - step-by-step mode works correctly)
+
+## Round 67: Completion Card Bug + Timeline Visual Test
+
+### Bug: Presentation completion card not appearing in real-time
+- [x] Investigate why the completion card (preview + "Открыть презентацию" button) doesn't appear after generation finishes
+- [x] Root cause: SSE stream can drop during long generation (~100s), presentation_link event is lost
+- [x] Fix: Added recoverSessionState() in useSSEChat.ts - if SSE completes without done/presentation_link events but had progress events, reload session from server
+- [x] Added presentationLinkRef for synchronous state tracking
+- [x] Applied recovery logic to both sendMessage and triggerAction finally blocks
+- [ ] Verify fix works for both quick and step-by-step modes (needs real-world testing)
+
+### Visual Test: Vertical Timeline with 5-6 Events
+- [x] Generated test HTML with 3, 4, and 5 event vertical-timelines
+- [x] Fixed autoDensity height estimation (was 72px/event, now 113px/event matching actual rendered height)
+- [x] Fixed computeDensity thresholds for vertical-timeline (separated from horizontal timeline)
+- [x] Reduced max events from 6 to 5 in designCriticAgent and generator
+- [x] Visual verification: 3 events (normal) ✅, 4 events (normal) ✅, 5 events (compact) ✅ - all fully visible
+- [x] All 1623 tests passing

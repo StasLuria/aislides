@@ -2340,8 +2340,16 @@ export function computeDensity(layoutId: string, data: Record<string, any>): Den
       denseThreshold = 6;
       break;
 
-    case "timeline":
     case "vertical-timeline":
+      itemCount = countItems(data.events);
+      textLength = totalTextLen(data.events);
+      // Vertical timeline is naturally compact with tight card spacing
+      // desc-clamp limits overflow, so higher thresholds are safe
+      compactThreshold = 5;
+      denseThreshold = 8;
+      break;
+
+    case "timeline":
     case "timeline-horizontal":
       itemCount = countItems(data.events);
       textLength = totalTextLen(data.events);

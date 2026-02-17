@@ -1128,7 +1128,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
       const sc5 = content.structured_content as any;
       const rawEvents = sc5?.events || sc5?.items;
       if (rawEvents && Array.isArray(rawEvents)) {
-        data.events = rawEvents.slice(0, 6).map((e: any, i: number) => {
+        data.events = rawEvents.slice(0, 5).map((e: any, i: number) => {
           const iconName = e.icon_hint || e.icon?.name || "";
           return {
             date: e.date || e.period || "",
@@ -1141,7 +1141,7 @@ export function buildFallbackData(content: SlideContent, layoutName: string): Re
         });
       } else {
         // Ensure at least 3 events for validation
-        const eventBullets = bullets.length >= 3 ? bullets.slice(0, 6) : [
+        const eventBullets = bullets.length >= 3 ? bullets.slice(0, 5) : [
           ...bullets,
           ...Array.from({ length: 3 - bullets.length }, (_, i) => ({
             title: `Этап ${bullets.length + i + 1}`,

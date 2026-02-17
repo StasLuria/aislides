@@ -140,6 +140,7 @@ export function useSSEChat() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastProgressRef = useRef<{ percent: number; message: string } | null>(null);
   const receivedDoneRef = useRef(false);
+  const presentationLinkRef = useRef<PresentationLink | null>(null);
 
   /**
    * Stop polling if running.
@@ -229,6 +230,54 @@ export function useSSEChat() {
   );
 
   /**
+   * Recover session state after SSE stream ends.
+   * If generation completed but we missed the presentation_link event
+   * (e.g., SSE connection dropped cleanly), fetch the session and restore state.
+   */
+  const recoverSessionState = useCallback(async (sid: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${sid}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.phase === "completed" && data.presentation_id) {
+        // Restore presentation link
+        const link: PresentationLink = {
+          presentationId: data.presentation_id,
+          title: data.topic || "",
+        };
+        setPresentationLink(link);
+        presentationLinkRef.current = link;
+
+        // Restore all messages from persisted state (includes slidePreviews + presentationLink)
+        const allMessages = (data.messages || []).map((m: any) => ({
+          ...m,
+          isStreaming: false,
+        }));
+        setMessages(allMessages);
+
+        // Restore actions from last assistant message
+        const lastAssistant = [...allMessages].reverse().find(
+          (m: any) => m.role === "assistant" && m.actions?.length,
+        );
+        if (lastAssistant?.actions) {
+          setCurrentActions(lastAssistant.actions);
+        }
+
+        console.log("[useSSEChat] Recovered session state after SSE completion");
+      } else if (data.phase === "generating") {
+        // Still generating — start polling
+        console.log("[useSSEChat] Session still generating, starting polling");
+        startPolling(sid);
+        return true; // Signal that polling was started, don't reset isStreaming
+      }
+    } catch {
+      // Recovery failed — user can reload
+    }
+    return false;
+  }, [startPolling]);
+
+  /**
    * Reset to empty state (no session, no messages). Used when navigating to /chat without ID.
    */
   const resetSession = useCallback(() => {
@@ -237,6 +286,7 @@ export function useSSEChat() {
     setMessages([]);
     setCurrentActions([]);
     setPresentationLink(null);
+    presentationLinkRef.current = null;
     setSessionTitle(null);
     setProgress(null);
     setSlideProgress(null);
@@ -349,7 +399,9 @@ export function useSSEChat() {
           break;
 
         case "presentation_link":
+          console.log("[useSSEChat] presentation_link event received:", event.data);
           setPresentationLink(event.data);
+          presentationLinkRef.current = event.data;
           break;
 
         case "slide_preview":
@@ -415,6 +467,7 @@ export function useSSEChat() {
       streamingContentRef.current = "";
       lastProgressRef.current = null;
       receivedDoneRef.current = false;
+      presentationLinkRef.current = null;
 
       // Add user message immediately — include quote context visually in the displayed message
       const displayContent = quoteContext
@@ -491,13 +544,30 @@ export function useSSEChat() {
       } finally {
         // Only cleanup if not polling (polling handles its own cleanup)
         if (!pollingRef.current) {
-          setIsStreaming(false);
-          setProgress(null);
+          // If we had progress events but never got presentation_link,
+          // the SSE stream may have dropped cleanly. Recover from server.
+          const lastProg0 = lastProgressRef.current as { percent: number; message: string } | null;
+          const hadProgress0 = lastProg0 && lastProg0.percent > 0;
+          const gotLink0 = !!presentationLinkRef.current;
+          const gotDone0 = receivedDoneRef.current;
+          const sid0 = sessionId;
+
+          if (hadProgress0 && !gotLink0 && !gotDone0 && sid0) {
+            console.log("[useSSEChat] SSE ended without presentation_link or done in sendMessage, recovering");
+            const startedPolling0 = await recoverSessionState(sid0);
+            if (!startedPolling0) {
+              setIsStreaming(false);
+              setProgress(null);
+            }
+          } else {
+            setIsStreaming(false);
+            setProgress(null);
+          }
         }
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming, createSSEHandler, startPolling],
+    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState],
   );
 
   /**
@@ -513,6 +583,7 @@ export function useSSEChat() {
       streamingContentRef.current = "";
       lastProgressRef.current = null;
       receivedDoneRef.current = false;
+      presentationLinkRef.current = null;
 
       // Add empty assistant message for streaming
       const assistantMsg: ChatMessage = {
@@ -562,13 +633,29 @@ export function useSSEChat() {
         setError(err.message);
       } finally {
         if (!pollingRef.current) {
-          setIsStreaming(false);
-          setProgress(null);
+          // If we had progress events but never got presentation_link,
+          // the SSE stream may have dropped cleanly. Recover from server.
+          const lastProg = lastProgressRef.current as { percent: number; message: string } | null;
+          const hadProgress = lastProg && lastProg.percent > 0;
+          const gotLink = !!presentationLinkRef.current;
+          const gotDone = receivedDoneRef.current;
+
+          if (hadProgress && !gotLink && !gotDone && sessionId) {
+            console.log("[useSSEChat] SSE ended without presentation_link or done, recovering session state");
+            const startedPolling = await recoverSessionState(sessionId);
+            if (!startedPolling) {
+              setIsStreaming(false);
+              setProgress(null);
+            }
+          } else {
+            setIsStreaming(false);
+            setProgress(null);
+          }
         }
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming, createSSEHandler, startPolling],
+    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState],
   );
 
   /**
