@@ -46,6 +46,7 @@ import { analyzeContentDensity, generateAdaptiveStyles } from "./pipeline/adapti
 import { pickLayoutForPreview } from "./interactiveRoutes";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { logError, logWarning } from "./errorLogger";
 
 // ═══════════════════════════════════════════════════════
 // HELPERS
@@ -218,7 +219,7 @@ function parseOutlineFromFiles(
         slides,
       };
     } catch (err) {
-      console.error(`[parseOutlineFromFiles] Failed to parse outline from ${f.filename}:`, err);
+      logWarning({ stage: "file_parser", errorType: "OutlineParseError", message: `Failed to parse outline from ${f.filename}: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Skipping file" });
     }
   }
 
@@ -444,7 +445,7 @@ async function generateSessionTitle(
       console.log(`[ChatOrchestrator] Generated title for ${sessionId}: "${title}" (topic preserved as original prompt)`);
     }
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Title generation error:", err.message);
+    logWarning({ sessionId, stage: "title_generation", errorType: "TitleGenError", message: `Title generation error: ${err.message}`, error: err, recovered: true, recoveryAction: "Using default title" });
     // Non-critical — keep the original topic as fallback
   }
 }
@@ -541,7 +542,7 @@ export async function processMessage(
         break;
     }
   } catch (err: any) {
-    console.error(`[ChatOrchestrator] Error in session ${sessionId}:`, err);
+    logError({ sessionId, stage: "chat_orchestrator", errorType: "SessionError", message: `Error in session ${sessionId}: ${err.message}`, error: err });
     // Sanitize error message — don't show raw SQL errors to users
     const isDbError = err.message?.includes("Failed query") || err.message?.includes("ER_");
     const userFriendlyMessage = isDbError
@@ -934,7 +935,7 @@ async function startQuickGeneration(
       htmlUrl = uploaded.url;
       console.log(`[ChatOrchestrator] Uploaded HTML to S3: ${htmlUrl}`);
     } catch (uploadErr: any) {
-      console.error(`[ChatOrchestrator] Failed to upload HTML to S3:`, uploadErr);
+      logWarning({ sessionId, stage: "s3_upload", errorType: "S3UploadFailed", message: `Failed to upload HTML to S3: ${uploadErr.message}`, error: uploadErr, recovered: true, recoveryAction: "Presentation available without S3 URL" });
     }
 
     // Save to DB
@@ -1018,7 +1019,7 @@ async function startQuickGeneration(
 
     await updateChatSession(sessionId, { phase: "completed" });
   } catch (err: any) {
-    console.error(`[ChatOrchestrator] Quick generation failed:`, err);
+    logError({ sessionId, stage: "quick_generation", errorType: "QuickGenFailed", message: `Quick generation failed: ${err.message}`, error: err, mode: "quick" });
 
     await updatePresentationProgress(presentation.presentationId, {
       status: "failed",
@@ -1142,7 +1143,7 @@ async function startStepByStepGeneration(
 
     writer({ type: "actions", data: assistantMsg.actions });
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Step-by-step structure failed:", err);
+    logError({ sessionId, stage: "step_structure", errorType: "StructureGenFailed", message: `Step-by-step structure failed: ${err.message}`, error: err, mode: "step_by_step" });
     writer({ type: "token", data: `\n\n❌ Ошибка: ${err.message}` });
 
     const errorMsg: ChatMessage = {
@@ -1292,7 +1293,7 @@ async function handleStructureApproval(
       // Propose content for the target slide
       await proposeSlideContent(sessionId, resumeIndex, writer);
     } catch (err: any) {
-      console.error("[ChatOrchestrator] Step-by-slide theme init failed:", err);
+      logError({ sessionId, stage: "step_theme_init", errorType: "ThemeInitFailed", message: `Step-by-slide theme init failed: ${err.message}`, error: err, mode: "step_by_step" });
       writer({ type: "token", data: `\n\n❌ Ошибка: ${err.message}` });
       await updateChatSession(sessionId, { phase: "step_structure" });
     }
@@ -1503,7 +1504,7 @@ ${currentOutlineText}
     writer({ type: "actions", data: assistantMsg.actions });
 
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Structure edit failed:", err);
+    logError({ sessionId, stage: "structure_edit", errorType: "StructureEditFailed", message: `Structure edit failed: ${err.message}`, error: err, mode: "step_by_step" });
     writer({ type: "token", data: `\n\nНе удалось обработать изменения: ${err.message}. Попробуйте сформулировать иначе.` });
 
     const errorMsg: ChatMessage = {
@@ -1834,7 +1835,7 @@ async function proposeSlideContent(
     await appendMessage(sessionId, msg);
     writer({ type: "actions", data: msg.actions });
   } catch (err: any) {
-    console.error(`[ChatOrchestrator] Slide content generation failed for slide ${slideIndex + 1}:`, err);
+    logError({ sessionId, stage: "slide_content_gen", errorType: "SlideContentFailed", message: `Slide content generation failed for slide ${slideIndex + 1}: ${err.message}`, error: err, mode: "step_by_step", context: { slideIndex } });
     writer({ type: "token", data: `\n\n❌ Ошибка генерации контента: ${err.message}` });
   }
 
@@ -2036,7 +2037,7 @@ async function handleSlideContentFeedback(
     await appendMessage(sessionId, msg);
     writer({ type: "actions", data: msg.actions });
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Slide content edit failed:", err);
+    logError({ sessionId, stage: "slide_content_edit", errorType: "ContentEditFailed", message: `Slide content edit failed: ${err.message}`, error: err, mode: "step_by_step" });
     writer({ type: "token", data: `\n\nНе удалось обработать изменения: ${err.message}. Попробуйте сформулировать иначе.` });
 
     const errorMsg: ChatMessage = {
@@ -2202,7 +2203,7 @@ async function generateSlideDesign(
     await appendMessage(sessionId, msg);
     writer({ type: "actions", data: msg.actions });
   } catch (err: any) {
-    console.error(`[ChatOrchestrator] Slide design generation failed for slide ${slideIndex + 1}:`, err);
+    logError({ sessionId, stage: "slide_design_gen", errorType: "SlideDesignFailed", message: `Slide design generation failed for slide ${slideIndex + 1}: ${err.message}`, error: err, mode: "step_by_step", context: { slideIndex } });
     writer({ type: "token", data: `\n\n❌ Ошибка генерации дизайна: ${err.message}` });
 
     const errorMsg: ChatMessage = {
@@ -2435,7 +2436,7 @@ async function handleSlideDesignFeedback(
     await appendMessage(sessionId, msg);
     writer({ type: "actions", data: msg.actions });
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Slide design edit failed:", err);
+    logError({ sessionId, stage: "slide_design_edit", errorType: "DesignEditFailed", message: `Slide design edit failed: ${err.message}`, error: err, mode: "step_by_step" });
     writer({ type: "token", data: `\n\nНе удалось обработать изменения: ${err.message}` });
 
     const errorMsg: ChatMessage = {
@@ -2674,7 +2675,7 @@ async function finalizeStepPresentation(
       htmlUrl = uploaded.url;
       console.log(`[ChatOrchestrator] Step-by-slide: Uploaded HTML to S3: ${htmlUrl}`);
     } catch (uploadErr: any) {
-      console.error(`[ChatOrchestrator] Step-by-slide: Failed to upload HTML to S3:`, uploadErr);
+      logWarning({ sessionId, stage: "step_s3_upload", errorType: "S3UploadFailed", message: `Step-by-slide: Failed to upload HTML to S3: ${uploadErr.message}`, error: uploadErr, recovered: true, recoveryAction: "Presentation available without S3 URL", mode: "step_by_step" });
     }
 
     // Update presentation in DB
@@ -2750,7 +2751,7 @@ async function finalizeStepPresentation(
 
     await updateChatSession(sessionId, { phase: "completed" });
   } catch (err: any) {
-    console.error("[ChatOrchestrator] Step-by-slide finalization failed:", err);
+    logError({ sessionId, stage: "step_finalization", errorType: "FinalizationFailed", message: `Step-by-slide finalization failed: ${err.message}`, error: err, mode: "step_by_step" });
     writer({ type: "token", data: `\n\n❌ Ошибка при сборке презентации: ${err.message}` });
   }
 

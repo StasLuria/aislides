@@ -34,6 +34,7 @@ import { runResearchAgent, runResearchByTopic, formatResearchForWriter, type Res
 import { runAnalysisAgent, formatAnalysisForDownstream, formatAnalysisForWriter, type AnalysisResult, type AnalysisAgentResult } from "./analysisAgent";
 import { runDataVizAgent, injectChartIntoSlideData } from "./dataVizAgent";
 import { autoSelectTheme, type ThemeSelectionResult } from "./themeSelector";
+import { logError, logWarning } from "../errorLogger";
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -536,7 +537,7 @@ export async function runWriterParallel(
       analysisHighlights,
       pipelineCtx,
     ).catch((err): SlideContent => {
-      console.error(`[writer] Slide ${slide.slide_number} failed:`, err);
+      logWarning({ stage: "content_writer", errorType: "SlideWriteFailed", message: `Slide ${slide.slide_number} failed: ${err instanceof Error ? err.message : err}`, error: err, recovered: true, recoveryAction: "Used fallback slide content", context: { slideNumber: slide.slide_number } });
       return {
         slide_number: slide.slide_number,
         title: slide.title,
@@ -1551,7 +1552,7 @@ export async function generatePresentation(
     console.log(`[Pipeline] Research (topic-first): ${researchResult.totalFacts} facts for ${researchResult.slidesResearched} categories`);
     onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 10, message: `Найдено ${researchResult.totalFacts} фактов` });
   } catch (err) {
-    console.error("[Pipeline] Research agent failed, proceeding without research:", err);
+    logWarning({ stage: "research_agent", errorType: "ResearchFailed", message: `Research agent failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Proceeding without research" });
     onProgress({ nodeName: "research", currentStep: "researching", progressPercent: 10, message: "Пропуск исследования (ошибка)" });
   }
 
@@ -1573,7 +1574,7 @@ export async function generatePresentation(
       console.log(`[Pipeline] Analysis: ${analysisAgentResult.clusterCount} clusters, ${analysisAgentResult.anchorCount} anchors, arc: ${analysisResult.narrative_arc}`);
       onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 16, message: `${analysisAgentResult.clusterCount} кластеров, ${analysisAgentResult.anchorCount} якорных инсайтов` });
     } catch (err) {
-      console.error("[Pipeline] Analysis agent failed, proceeding without analysis:", err);
+      logWarning({ stage: "analysis_agent", errorType: "AnalysisFailed", message: `Analysis agent failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Proceeding without analysis" });
       onProgress({ nodeName: "analysis", currentStep: "analyzing", progressPercent: 16, message: "Пропуск анализа (ошибка)" });
     }
   } else {
@@ -1638,7 +1639,7 @@ export async function generatePresentation(
         }
         onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: `Структура проверена (${critique.score}/10)` });
       } catch (err) {
-        console.error("[Pipeline] Outline critic failed, using original outline:", err);
+        logWarning({ stage: "outline_critic", errorType: "OutlineCriticFailed", message: `Outline critic failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Using original outline" });
         onProgress({ nodeName: "outline_critic", currentStep: "critique", progressPercent: 28, message: "Пропуск проверки (ошибка)" });
       }
     }
@@ -1688,7 +1689,7 @@ export async function generatePresentation(
     }
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Нарратив улучшен" });
   } catch (err) {
-    console.error("[Pipeline] Storytelling agent failed, using original content:", err);
+    logWarning({ stage: "storytelling_agent", errorType: "StorytellingFailed", message: `Storytelling agent failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Using original content" });
     onProgress({ nodeName: "storytelling", currentStep: "storytelling", progressPercent: 45, message: "Пропуск нарратива (ошибка)" });
   }
 
@@ -1774,7 +1775,7 @@ export async function generatePresentation(
     );
     onProgress({ nodeName: "evaluator", currentStep: "evaluating", progressPercent: 46, message: `Оценка: ${evalResult.evaluations.overallScore}/5` });
   } catch (err) {
-    console.error("[Pipeline] Content Evaluator failed, continuing:", err);
+    logWarning({ stage: "content_evaluator", errorType: "EvaluatorFailed", message: `Content Evaluator failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Skipping evaluation" });
     onProgress({ nodeName: "evaluator", currentStep: "evaluating", progressPercent: 46, message: "Пропуск оценки (ошибка)" });
   }
 
@@ -1880,7 +1881,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
         onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Изображения не требуются" });
       }
     } catch (err) {
-      console.error("[Pipeline] Image generation failed, continuing without images:", err);
+      logWarning({ stage: "image_generation", errorType: "ImageGenFailed", message: `Image generation failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Continuing without images" });
       onProgress({ nodeName: "image", currentStep: "images", progressPercent: 70, message: "Пропуск изображений (ошибка)" });
     }
   } else {
@@ -1920,7 +1921,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
     console.log(`[Pipeline] Speaker notes generated (~${coachResult.total_estimated_minutes} min presentation)`);
     onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 72, message: `Заметки готовы (~${coachResult.total_estimated_minutes} мин)` });
   } catch (err) {
-    console.error("[Pipeline] Speaker coach failed, continuing with basic notes:", err);
+    logWarning({ stage: "speaker_coach", errorType: "SpeakerCoachFailed", message: `Speaker coach failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Continuing with basic notes" });
     onProgress({ nodeName: "speaker_coach", currentStep: "speaker_notes", progressPercent: 72, message: "Пропуск заметок (ошибка)" });
   }
 
@@ -1938,7 +1939,7 @@ const IMAGE_PROTECTED_LAYOUTS = new Set([
     console.log(`[Pipeline] Data Viz: ${dataVizResult.totalChartsGenerated} SVG charts generated`);
     onProgress({ nodeName: "data_viz", currentStep: "done", progressPercent: 74, message: `${dataVizResult.totalChartsGenerated} графиков создано` });
   } catch (err) {
-    console.error("[Pipeline] Data Viz failed, continuing without charts:", err);
+    logWarning({ stage: "data_viz_agent", errorType: "DataVizFailed", message: `Data Viz failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Continuing without charts" });
     onProgress({ nodeName: "data_viz", currentStep: "done", progressPercent: 74, message: "Пропуск визуализации (ошибка)" });
   }
 
@@ -2161,7 +2162,7 @@ const CHART_PROTECTED_LAYOUTS = new Set([
       });
     }
   } catch (err) {
-    console.error("[Pipeline] Design critic failed, continuing:", err);
+    logWarning({ stage: "design_critic", errorType: "DesignCriticFailed", message: `Design critic failed: ${(err as Error).message}`, error: err, recovered: true, recoveryAction: "Continuing without design critique" });
     onProgress({ nodeName: "design_critic", currentStep: "design_review", progressPercent: 94, message: "Пропуск проверки дизайна" });
   }
 

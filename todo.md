@@ -1894,3 +1894,15 @@
 
 ## Round 71: Fix ChatSidebar fetch error
 - [x] Fix "Failed to fetch" error in ChatSidebar.tsx — added fetchWithRetry with exponential backoff (2 retries), AbortController for cleanup on unmount, credentials: "include" on all fetch calls, silent error handling for background polling
+
+## Round 72: Error Analytics for Generation Monitoring
+- [x] Audit current error handling in pipeline (generator.ts, chatOrchestrator.ts, routes)
+- [x] Check if errors are persisted to DB or only logged to console
+- [x] Check if there's any error aggregation or monitoring endpoint
+- [x] Design error analytics schema (DB table for generation_errors with 13 columns)
+- [x] Implement error logging service (logError, logWarning, logInfo, withErrorLogging, withFallback)
+- [x] Instrument 24 error points in generator.ts and chatOrchestrator.ts
+- [x] Add tRPC procedures for error analytics (overview, byStage, byType, timeline, recent)
+- [x] Add ErrorAnalytics page with charts (timeline, by stage, by type, recent errors table)
+- [x] Add link to error analytics from main Analytics page
+- [x] Write 13 tests for error logging and analytics (all passing)

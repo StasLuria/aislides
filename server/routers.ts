@@ -14,6 +14,13 @@ import {
   getThemeQualityMetrics,
   getExportFormatDistribution,
 } from "./analyticsDb";
+import {
+  getErrorOverview,
+  getErrorsByStage,
+  getErrorsByType,
+  getErrorTimeline,
+  getRecentErrors,
+} from "./errorAnalyticsDb";
 
 const dateRangeInput = z.object({
   dateFrom: z.string().optional(), // ISO date string
@@ -102,6 +109,44 @@ export const appRouter = router({
       const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
       return getExportFormatDistribution(dateFrom, dateTo);
     }),
+  }),
+
+  /** Error analytics — monitoring generation errors */
+  errorAnalytics: router({
+    /** Overview: total errors, fatal, warnings, recovery rate, top stage/type */
+    overview: protectedProcedure.input(dateRangeInput).query(async ({ input }) => {
+      const dateFrom = input.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
+      return getErrorOverview(dateFrom, dateTo);
+    }),
+
+    /** Errors grouped by pipeline stage */
+    byStage: protectedProcedure.input(dateRangeInput).query(async ({ input }) => {
+      const dateFrom = input.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
+      return getErrorsByStage(dateFrom, dateTo);
+    }),
+
+    /** Errors grouped by error type */
+    byType: protectedProcedure.input(dateRangeInput).query(async ({ input }) => {
+      const dateFrom = input.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo = input.dateTo ? new Date(input.dateTo) : undefined;
+      return getErrorsByType(dateFrom, dateTo);
+    }),
+
+    /** Daily error timeline (fatal/warning/info) */
+    timeline: protectedProcedure
+      .input(z.object({ dateFrom: z.string(), dateTo: z.string() }))
+      .query(async ({ input }) => {
+        return getErrorTimeline(new Date(input.dateFrom), new Date(input.dateTo));
+      }),
+
+    /** Recent errors list */
+    recent: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(async ({ input }) => {
+        return getRecentErrors(input.limit);
+      }),
   }),
 });
 

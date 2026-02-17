@@ -275,3 +275,38 @@ export const exportEvents = mysqlTable("export_events", {
 
 export type ExportEvent = typeof exportEvents.$inferSelect;
 export type InsertExportEvent = typeof exportEvents.$inferInsert;
+
+/**
+ * Generation errors table — detailed log of all errors during presentation generation.
+ * Captures both fatal errors (that stop generation) and non-fatal warnings (that allow generation to continue).
+ * Used for error analytics, monitoring, and debugging.
+ */
+export const generationErrors = mysqlTable("generation_errors", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Linked presentation ID (public UUID, nullable for chat-only errors) */
+  presentationId: varchar("presentationId", { length: 64 }),
+  /** Linked chat session ID (nullable) */
+  sessionId: varchar("sessionId", { length: 64 }),
+  /** Error severity: fatal (stops generation), warning (generation continues), info (logged for monitoring) */
+  severity: mysqlEnum("severity", ["fatal", "warning", "info"]).default("warning").notNull(),
+  /** Pipeline stage where error occurred */
+  stage: varchar("stage", { length: 128 }).notNull(),
+  /** Error type/category for grouping */
+  errorType: varchar("errorType", { length: 128 }).notNull(),
+  /** Human-readable error message */
+  message: text("message").notNull(),
+  /** Full error stack trace (if available) */
+  stackTrace: text("stackTrace"),
+  /** Additional context as JSON (slide number, agent name, LLM model, retry count, etc.) */
+  context: json("context"),
+  /** Generation mode: quick, step_by_step, interactive */
+  mode: varchar("mode", { length: 32 }),
+  /** Whether the error was auto-recovered (fallback used) */
+  recovered: boolean("recovered").default(false).notNull(),
+  /** Recovery action taken (if any) */
+  recoveryAction: varchar("recoveryAction", { length: 256 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GenerationError = typeof generationErrors.$inferSelect;
+export type InsertGenerationError = typeof generationErrors.$inferInsert;

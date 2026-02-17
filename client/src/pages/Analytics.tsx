@@ -9,7 +9,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BarChart3, TrendingUp, CheckCircle, XCircle, Layers, Percent, Download, FileText, FlaskConical, Trophy } from "lucide-react";
+import { Loader2, BarChart3, TrendingUp, CheckCircle, XCircle, Layers, Percent, Download, FileText, FlaskConical, Trophy, AlertTriangle } from "lucide-react";
+import { Link } from "wouter";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -132,6 +133,16 @@ export default function Analytics() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/analytics/errors">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Мониторинг ошибок
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"
