@@ -160,7 +160,7 @@ export default function Analytics() {
             }}
           >
             <FileText className="w-3.5 h-3.5" />
-            PDF
+            HTML-отчёт
           </Button>
           <Select value={range} onValueChange={(v) => setRange(v as DateRange)}>
             <SelectTrigger className="w-[160px]">

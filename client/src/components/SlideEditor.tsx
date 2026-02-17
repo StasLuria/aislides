@@ -17,9 +17,11 @@ import {
   Trash2,
   ImageIcon,
   Type,
-  LayoutGrid,
   Loader2,
   RefreshCw,
+  Plus,
+  GripVertical,
+  List,
 } from "lucide-react";
 import api from "@/lib/api";
 import type { SlideData, SlideEditResponse } from "@/lib/api";
@@ -93,6 +95,59 @@ const LAYOUT_TEXT_FIELDS: Record<string, Array<{ key: string; label: string; mul
     { key: "title", label: "Заголовок" },
     { key: "description", label: "Описание", multiline: true },
   ],
+  "chart-text": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+};
+
+// Layouts that have an "items" array (bullet points, metrics, steps, etc.)
+const ARRAY_ITEM_LAYOUTS: Record<string, { arrayKey: string; fields: Array<{ key: string; label: string; multiline?: boolean }> }> = {
+  "bullet-list-slide": {
+    arrayKey: "items",
+    fields: [
+      { key: "title", label: "Пункт" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "metrics-slide": {
+    arrayKey: "items",
+    fields: [
+      { key: "value", label: "Значение" },
+      { key: "label", label: "Метка" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "icons-numbers": {
+    arrayKey: "items",
+    fields: [
+      { key: "number", label: "Число" },
+      { key: "label", label: "Метка" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "process-steps": {
+    arrayKey: "items",
+    fields: [
+      { key: "title", label: "Шаг" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "timeline": {
+    arrayKey: "items",
+    fields: [
+      { key: "year", label: "Год/Период" },
+      { key: "title", label: "Событие" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "comparison": {
+    arrayKey: "items",
+    fields: [
+      { key: "title", label: "Название" },
+      { key: "description", label: "Описание" },
+    ],
+  },
 };
 
 // Default fields for unknown layouts
@@ -128,12 +183,41 @@ export default function SlideEditor({
   }, [slide.index, slide.layoutId]);
 
   const fields = LAYOUT_TEXT_FIELDS[slide.layoutId] || DEFAULT_TEXT_FIELDS;
+  const arrayConfig = ARRAY_ITEM_LAYOUTS[slide.layoutId];
 
   const hasImage = !!(editData.image?.url || editData.backgroundImage?.url);
   const imageUrl = editData.image?.url || editData.backgroundImage?.url;
 
   const handleFieldChange = useCallback((key: string, value: string) => {
     setEditData((prev) => ({ ...prev, [key]: value }));
+    setIsDirty(true);
+  }, []);
+
+  // Array items handlers
+  const handleArrayItemChange = useCallback((arrayKey: string, index: number, fieldKey: string, value: string) => {
+    setEditData((prev) => {
+      const items = [...(prev[arrayKey] || [])];
+      items[index] = { ...items[index], [fieldKey]: value };
+      return { ...prev, [arrayKey]: items };
+    });
+    setIsDirty(true);
+  }, []);
+
+  const handleAddArrayItem = useCallback((arrayKey: string) => {
+    setEditData((prev) => {
+      const items = [...(prev[arrayKey] || [])];
+      items.push({});
+      return { ...prev, [arrayKey]: items };
+    });
+    setIsDirty(true);
+  }, []);
+
+  const handleRemoveArrayItem = useCallback((arrayKey: string, index: number) => {
+    setEditData((prev) => {
+      const items = [...(prev[arrayKey] || [])];
+      items.splice(index, 1);
+      return { ...prev, [arrayKey]: items };
+    });
     setIsDirty(true);
   }, []);
 
@@ -259,6 +343,83 @@ export default function SlideEditor({
               </div>
             ))}
           </div>
+
+          {/* Array Items Section (bullet points, metrics, steps, etc.) */}
+          {arrayConfig && (
+            <>
+              <div className="h-px bg-border/50" />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <List className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Элементы
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary"
+                    onClick={() => handleAddArrayItem(arrayConfig.arrayKey)}
+                  >
+                    <Plus className="w-3 h-3" />
+                    Добавить
+                  </Button>
+                </div>
+
+                {(editData[arrayConfig.arrayKey] || []).map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="relative rounded-lg border border-border/40 bg-secondary/20 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <GripVertical className="w-3 h-3 text-muted-foreground/40" />
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          #{idx + 1}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveArrayItem(arrayConfig.arrayKey, idx)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    {arrayConfig.fields.map((field) => (
+                      <div key={field.key} className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground/70">{field.label}</Label>
+                        {field.multiline ? (
+                          <Textarea
+                            value={item[field.key] || ""}
+                            onChange={(e) => handleArrayItemChange(arrayConfig.arrayKey, idx, field.key, e.target.value)}
+                            className="min-h-[60px] resize-none bg-background/50 border-border/30 text-xs"
+                            placeholder={field.label}
+                          />
+                        ) : (
+                          <Input
+                            value={item[field.key] || ""}
+                            onChange={(e) => handleArrayItemChange(arrayConfig.arrayKey, idx, field.key, e.target.value)}
+                            className="h-8 bg-background/50 border-border/30 text-xs"
+                            placeholder={field.label}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {(!editData[arrayConfig.arrayKey] || editData[arrayConfig.arrayKey].length === 0) && (
+                  <div className="text-center py-4 text-xs text-muted-foreground/50">
+                    Нет элементов. Нажмите «Добавить» для создания.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Divider */}
           <div className="h-px bg-border/50" />

@@ -676,9 +676,8 @@ export default function Viewer() {
           setEditMode("off");
         } else if (isFullscreen) {
           setIsFullscreen(false);
-        } else {
-          navigate(backPath);
         }
+        // Do NOT navigate away on Escape — it's unexpected UX
       } else if (e.key === "f" || e.key === "F") {
         if (!isEditing) setIsFullscreen((prev) => !prev);
       } else if (e.key === "e" || e.key === "E") {

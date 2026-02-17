@@ -1176,6 +1176,29 @@ async function handleStructureApproval(
   const session = await getChatSession(sessionId);
   if (!session) return;
 
+  // BUG-14 fix: Detect approve-like text messages and treat them as explicit approval
+  if (!isExplicitApproval) {
+    const lowerMsg = userMessage.toLowerCase().trim();
+    const approvePatterns = [
+      /^\s*(✅\s*)?(утверд)/i,       // "утвердить", "✅ утвердить"
+      /^\s*(✅\s*)?approve/i,              // "approve"
+      /^\s*да\s*[,.]?\s*$/i,                 // "да", "да."
+      /^\s*ок(\s|$)/i,                       // "ок"
+      /^\s*ладно\s*$/i,                    // "ладно"
+      /^\s*хорошо\s*$/i,                   // "хорошо"
+      /^\s*подтвержд/i,                  // "подтверждаю"
+      /^\s*соглас/i,                      // "согласен"
+      /^\s*давай\s*$/i,                     // "давай"
+      /^\s*поехали\s*$/i,                  // "поехали"
+      /^\s*всё\s*устраивает/i,           // "всё устраивает"
+      /^\s*устраивает/i,                // "устраивает"
+      /^\s*норм(\s|$)/i,                    // "норм"
+    ];
+    if (approvePatterns.some(p => p.test(lowerMsg))) {
+      isExplicitApproval = true;
+    }
+  }
+
   if (isExplicitApproval) {
     // ── SLIDE-BY-SLIDE WORKFLOW ──
     // Instead of running the full pipeline, we prepare the theme and start
@@ -1337,9 +1360,12 @@ async function handleStructureEditRequest(
 
   writer({ type: "token", data: "✏️ Вношу изменения в структуру...\n\n" });
 
-  // Format current outline for LLM context
+  // Format current outline with FULL detail for LLM context (BUG-13 fix)
   const currentOutlineText = currentOutline.slides
-    .map((s: any, i: number) => `${i + 1}. ${s.title} — ${s.purpose}`)
+    .map((s: any, i: number) => {
+      const kp = Array.isArray(s.key_points) ? s.key_points.join(", ") : "";
+      return `${i + 1}. "${s.title}" — ${s.purpose}${kp ? ` [Ключевые пункты: ${kp}]` : ""}`;
+    })
     .join("\n");
 
   const editPrompt = `Ты — AI-ассистент для создания презентаций. У тебя есть текущая структура презентации, и пользователь просит внести изменения.
@@ -1349,20 +1375,28 @@ ${currentOutlineText}
 
 Запрос пользователя: "${userFeedback}"
 
-Внеси ТОЧНО те изменения, которые просит пользователь. Не меняй ничего другого.
+ПРАВИЛА:
+1. Внеси ТОЧНО те изменения, которые просит пользователь.
+2. Если пользователь просит ДОБАВИТЬ слайд — добавь новый слайд с title, purpose и key_points.
+3. Если пользователь просит УДАЛИТЬ слайд — убери его из списка.
+4. Если пользователь просит ИЗМЕНИТЬ слайд — обнови только указанные поля.
+5. Слайды, которые пользователь НЕ упоминал, оставь БЕЗ ИЗМЕНЕНИЙ (скопируй title, purpose и key_points как есть).
+6. Каждый слайд ОБЯЗАТЕЛЬНО должен иметь key_points (3-5 пунктов).
+7. Пронумеруй слайды последовательно (slide_number: 1, 2, 3...).
+
 Ответь СТРОГО в JSON формате (без markdown-обёртки):
 {
   "presentation_title": "...",
   "slides": [
-    { "title": "...", "purpose": "..." }
+    { "slide_number": 1, "title": "...", "purpose": "...", "key_points": ["...", "...", "..."] }
   ]
 }`;
 
   try {
-    // Use structured JSON response format for reliable parsing
+    // Use structured JSON response format for reliable parsing (BUG-13 fix: expanded schema)
     const llmResult = await invokeLLM({
       messages: [
-        { role: "system", content: "You are an AI assistant that modifies presentation outlines. Always respond with valid JSON." },
+        { role: "system", content: "You are an AI assistant that modifies presentation outlines. Always respond with valid JSON. Preserve all unchanged slides exactly as they are." },
         { role: "user", content: editPrompt },
       ],
       response_format: {
@@ -1379,10 +1413,16 @@ ${currentOutlineText}
                 items: {
                   type: "object",
                   properties: {
+                    slide_number: { type: "integer", description: "Sequential slide number" },
                     title: { type: "string", description: "Slide title" },
                     purpose: { type: "string", description: "Slide purpose/description" },
+                    key_points: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "3-5 key points for the slide",
+                    },
                   },
-                  required: ["title", "purpose"],
+                  required: ["slide_number", "title", "purpose", "key_points"],
                   additionalProperties: false,
                 },
               },
@@ -1409,11 +1449,29 @@ ${currentOutlineText}
       }
     }
 
+    // Smart merge: preserve content_shape, slide_category from original slides where title matches (BUG-13 fix)
+    const mergedSlides = (modifiedOutline.slides || currentOutline.slides).map((newSlide: any, idx: number) => {
+      // Try to find matching original slide by title
+      const originalSlide = currentOutline.slides.find(
+        (orig: any) => orig.title === newSlide.title || orig.title.toLowerCase() === newSlide.title.toLowerCase()
+      );
+      return {
+        slide_number: newSlide.slide_number || idx + 1,
+        title: newSlide.title,
+        purpose: newSlide.purpose,
+        key_points: Array.isArray(newSlide.key_points) && newSlide.key_points.length > 0
+          ? newSlide.key_points
+          : (originalSlide?.key_points || [newSlide.purpose]),
+        content_shape: originalSlide?.content_shape || "bullet_points",
+        slide_category: originalSlide?.slide_category || (idx === 0 ? "opening" : idx === (modifiedOutline.slides.length - 1) ? "closing" : "body"),
+      };
+    });
+
     // Update the outline in metadata
     const updatedOutline = {
       ...currentOutline,
       presentation_title: modifiedOutline.presentation_title || currentOutline.presentation_title,
-      slides: modifiedOutline.slides || currentOutline.slides,
+      slides: mergedSlides,
     };
 
     await updateChatSession(sessionId, {

@@ -780,29 +780,44 @@ function renderEmptyChart(width: number, height: number, message: string): strin
 // ═══════════════════════════════════════════════════════
 
 export function renderChart(config: ChartConfig): ChartResult {
+  // Validate data — filter out NaN/undefined values and ensure we have usable data
+  const cleanedData = config.data
+    .filter(d => d && typeof d.value === 'number' && !isNaN(d.value) && d.label)
+    .map(d => ({ ...d, label: String(d.label), value: Number(d.value) }));
+  
+  if (cleanedData.length === 0) {
+    return {
+      svg: renderEmptyChart(config.width || 600, config.height || 360, "Нет данных для графика"),
+      chartType: config.type,
+      dataPointCount: 0,
+    };
+  }
+  
+  // Use cleaned data
+  const cleanConfig = { ...config, data: cleanedData };
   let svg: string;
 
-  switch (config.type) {
+  switch (cleanConfig.type) {
     case "bar":
-      svg = renderBarChart(config);
+      svg = renderBarChart(cleanConfig);
       break;
     case "horizontal-bar":
-      svg = renderHorizontalBarChart(config);
+      svg = renderHorizontalBarChart(cleanConfig);
       break;
     case "line":
-      svg = renderLineChart(config);
+      svg = renderLineChart(cleanConfig);
       break;
     case "pie":
-      svg = renderPieChart(config);
+      svg = renderPieChart(cleanConfig);
       break;
     case "donut":
-      svg = renderDonutChart(config);
+      svg = renderDonutChart(cleanConfig);
       break;
     case "radar":
-      svg = renderRadarChart(config);
+      svg = renderRadarChart(cleanConfig);
       break;
     default:
-      svg = renderBarChart(config);
+      svg = renderBarChart(cleanConfig);
   }
 
   return {

@@ -246,7 +246,8 @@ Output: {"text": "**Скорость**: Сокращение времени об
 - Card/bullet descriptions: MAX 2 sentences, 30 words each.
 - Stat card descriptions: MAX 1-2 sentences.
 - Table cells: MAX 10 words per cell.
-- Titles: MAX 5 words.
+- Slide title: MAX 50 characters (Russian) or 60 characters (English). If the outline title is too long, SHORTEN it.
+- Card/bullet titles: MAX 5 words.
 - NEVER write paragraphs. Every piece of text must be scannable.
 - Use **bold** for key numbers and terms.
 </text_conciseness_rules>

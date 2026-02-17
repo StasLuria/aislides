@@ -400,18 +400,24 @@ export async function runWriterSingle(
   analysisHighlights?: string,
   pipelineContext?: string,
 ): Promise<SlideContent> {
+  // Normalize slideInfo fields with safe defaults (BUG-15 fix)
+  const safeSlideNumber = slideInfo.slide_number ?? 1;
+  const safeKeyPoints = Array.isArray(slideInfo.key_points) ? slideInfo.key_points : [];
+  const safeContentShape = slideInfo.content_shape || "bullet_points";
+  const safeSlideCategory = slideInfo.slide_category || "body";
+
   // Inject user requirements into the writer system prompt
   const baseSystem = writerSystem(language, presentationTitle, allTitles, targetAudience, writerTypeHint);
   const system = pipelineContext ? `${baseSystem}\n\n${pipelineContext}` : baseSystem;
   const user = writerUser(
-    slideInfo.slide_number,
+    safeSlideNumber,
     slideInfo.title,
     slideInfo.purpose,
-    slideInfo.key_points.join(", "),
+    safeKeyPoints.join(", "),
     previousContext,
     researchContext,
-    slideInfo.content_shape,
-    slideInfo.slide_category,
+    safeContentShape,
+    safeSlideCategory,
     analysisHighlights,
   );
 
@@ -438,12 +444,12 @@ export async function runWriterSingle(
       // Last resort: create minimal slide from outline
       result = {
         slide: {
-          slide_number: slideInfo.slide_number,
+          slide_number: safeSlideNumber,
           title: slideInfo.title,
-          text: slideInfo.key_points.join("\n"),
+          text: safeKeyPoints.join("\n") || slideInfo.purpose || slideInfo.title,
           notes: "",
           data_points: [],
-          key_message: slideInfo.purpose,
+          key_message: slideInfo.purpose || slideInfo.title,
         } as SlideContent,
       };
     }
@@ -453,9 +459,13 @@ export async function runWriterSingle(
   const slide = result.slide;
   // Use outline's content_shape as fallback if writer didn't return one
   if (!slide.content_shape || slide.content_shape === "bullet_points") {
-    slide.content_shape = slideInfo.content_shape || "bullet_points";
+    slide.content_shape = safeContentShape;
   }
-  slide.slide_category = slideInfo.slide_category;
+  slide.slide_category = safeSlideCategory;
+  // Ensure slide_number is set
+  if (!slide.slide_number) {
+    slide.slide_number = safeSlideNumber;
+  }
   
   // Ensure structured_content exists
   if (!slide.structured_content || typeof slide.structured_content !== 'object' || Object.keys(slide.structured_content).length === 0) {

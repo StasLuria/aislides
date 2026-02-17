@@ -1,20 +1,34 @@
 # CHANGELOG
 
 > Auto-generated from `todo.md` by `pnpm changelog`
-> Last updated: 2026-02-16
+> Last updated: 2026-02-17
 
 ## Summary
 
 | Metric | Value |
 |---|---|
-| Total sections | 147 |
-| Total tasks | 1351 |
-| Completed | 1338 (99%) |
+| Total sections | 148 |
+| Total tasks | 1362 |
+| Completed | 1349 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 63: Fix All Bugs from Comprehensive Testing ✅
+
+- [x] BUG-15: Fix crash `undefined.join()` in runWriterSingle — add fallbacks for missing key_points, slide_number, content_shape, slide_category
+- [x] BUG-13: Fix structure feedback not applied — improved prompt with full outline context, expanded JSON schema with key_points/slide_number, smart merge preserving content_shape/slide_category
+- [x] BUG-14: Fix infinite approval loop — added 13 approve-like text patterns (утвердить, да, ок, подтверждаю, etc.) in handleStructureApproval
+- [x] BUG-4/5/6: Fix text truncation on slides — added stricter title length constraint in writer prompt (MAX 50 chars RU / 60 EN); CSS overflow already handled by templates with -webkit-line-clamp
+- [x] BUG-7: Fix broken chart rendering — added data validation/cleaning in renderChart (filter NaN/undefined, empty data fallback)
+- [x] BUG-1: NOT A BUG — displayTitle is saved in metadata.displayTitle and returned correctly via API (tested: list and get endpoints both use displayTitle || topic)
+- [x] BUG-2: NOT A BUG — presentationLink is saved in the final ChatMessage and restored on session load
+- [x] BUG-9: Double done event — minor, frontend ignores second done; no fix needed
+- [x] BUG-10: "Add Slide" — feature exists via chat text ("готово + ещё слайд"); viewer button is a feature request, not a bug
+- [x] BUG-11: Fixed Escape key — removed navigate(backPath) fallback, Escape now only exits edit/fullscreen modes
+- [x] BUG-12: Renamed "PDF" button to "HTML-отчёт" since endpoint returns HTML, not PDFreturning HTML instead of PDF
 
 ### 🚀 Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification ✅
 
@@ -1851,7 +1865,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (78 sections, 861/874 tasks)
+### 🚀 Improvements (79 sections, 872/885 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1931,6 +1945,7 @@
 - **Round 60: Fix Quick Mode Not Generating HTML Slides** — ✅
 - **Round 61: Fix First Message Not Showing Response** — ✅
 - **Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification** — ✅
+- **Round 63: Fix All Bugs from Comprehensive Testing** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 
