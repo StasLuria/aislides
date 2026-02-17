@@ -7,14 +7,20 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 154 |
-| Total tasks | 1448 |
-| Completed | 1427 (99%) |
+| Total sections | 155 |
+| Total tasks | 1451 |
+| Completed | 1430 (99%) |
 | Pending | 21 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 70: README.md update ✅
+
+- [x] Audit current README.md content vs actual project state
+- [x] Update README.md with current architecture, features, and API documentation
+- [x] Ensure README reflects all major features (chat, step-by-step, polling, editing, etc.)
 
 ### 🚀 Round 69: Step-by-step improvements + Polling fallback ✅
 
@@ -1969,7 +1975,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (84 sections, 936/957 tasks)
+### 🚀 Improvements (85 sections, 939/960 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -2055,6 +2061,7 @@
 - **Round 67: Completion Card Bug + Timeline Visual Test** — 11/12
 - **Round 68: Step-by-step mode CJM bug** — 0/5
 - **Round 69: Step-by-step improvements + Polling fallback** — ✅
+- **Round 70: README.md update** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

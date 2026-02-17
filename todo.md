@@ -1882,3 +1882,9 @@
 - [x] User can modify the AI-proposed content directly in the chat
 - [x] Modified content is saved and used for design generation
 - [x] Test editing flow: modify content → approve → verify design uses modified content
+
+## Round 70: README.md update
+
+- [x] Audit current README.md content vs actual project state
+- [x] Update README.md with current architecture, features, and API documentation
+- [x] Ensure README reflects all major features (chat, step-by-step, polling, editing, etc.)
