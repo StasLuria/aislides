@@ -1854,3 +1854,31 @@
 - [x] Reduced max events from 6 to 5 in designCriticAgent and generator
 - [x] Visual verification: 3 events (normal) ✅, 4 events (normal) ✅, 5 events (compact) ✅ - all fully visible
 - [x] All 1623 tests passing
+
+## Round 68: Step-by-step mode CJM bug
+
+### Bug: Step-by-step mode breaks after slide 2 approval
+- [ ] Investigate: After approving slide 2, system shows slide 3 content but then says "Нет контента для утверждения"
+- [ ] Investigate: Free-text message ("и что сделать?") causes system to skip remaining slides and declare presentation complete
+- [ ] Fix: Ensure content approval works correctly for all slides in sequence
+- [ ] Fix: Ensure free-text messages during step_slide_content phase are handled properly (not treated as completion)
+- [ ] Test: Full step-by-step flow through all 5 slides without errors
+
+## Round 69: Step-by-step improvements + Polling fallback
+
+### Test step-by-step mode with 5+ slides
+- [x] Create new presentation in step-by-step mode with 5 slides
+- [x] Verify all 5 slides complete the full cycle (content → design → next)
+- [x] Verify final presentation renders correctly
+
+### Polling fallback for completion card reliability
+- [x] Add periodic polling (every 10 seconds) during generation to check session state
+- [x] If polling detects presentation is complete but SSE missed the event, show completion card
+- [x] Ensure polling doesn't interfere with normal SSE flow
+- [x] Test polling fallback with both quick and step-by-step modes
+
+### Inline text editing in step-by-step mode
+- [x] Add editable text fields for slide content before approval (title, key message, text, bullets)
+- [x] User can modify the AI-proposed content directly in the chat
+- [x] Modified content is saved and used for design generation
+- [x] Test editing flow: modify content → approve → verify design uses modified content

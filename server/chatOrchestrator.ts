@@ -1819,7 +1819,6 @@ async function proposeSlideContent(
         proposedContent: content,
       },
     });
-
     // Format content for display
     const contentDisplay = formatSlideContentForDisplay(content, slideIndex + 1, totalSlides);
     writer({ type: "token", data: contentDisplay });
@@ -2070,7 +2069,10 @@ async function handleSlideContentApproval(
   const outline: OutlineResult = metadata.outline;
   const slideIndex: number = metadata.currentSlideIndex ?? 0;
 
+
+
   if (!proposedContent || !outline) {
+
     writer({ type: "token", data: "❌ Нет контента для утверждения." });
     writer({ type: "done", data: null });
     return;
@@ -2164,6 +2166,7 @@ async function generateSlideDesign(
     );
 
     // Save the design result
+
     await updateChatSession(sessionId, {
       phase: "step_slide_design",
       metadata: {
@@ -2509,6 +2512,7 @@ async function handleSlideDesignApproval(
     await finalizeStepPresentation(sessionId, writer);
   } else {
     // Move to next slide
+
     await updateChatSession(sessionId, {
       phase: "step_slide_content",
       metadata: {
@@ -2523,6 +2527,7 @@ async function handleSlideDesignApproval(
     writer({ type: "token", data: `\n\n✅ Слайд ${slideNum} утверждён! Переходим к слайду ${nextSlideIndex + 1} из ${totalSlides}.\n` });
 
     // Propose content for next slide
+
     await proposeSlideContent(sessionId, nextSlideIndex, writer);
   }
 }

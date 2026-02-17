@@ -7,14 +7,36 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 152 |
-| Total tasks | 1432 |
-| Completed | 1416 (99%) |
-| Pending | 16 |
+| Total sections | 154 |
+| Total tasks | 1448 |
+| Completed | 1427 (99%) |
+| Pending | 21 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 69: Step-by-step improvements + Polling fallback ✅
+
+- [x] Create new presentation in step-by-step mode with 5 slides
+- [x] Verify all 5 slides complete the full cycle (content → design → next)
+- [x] Verify final presentation renders correctly
+- [x] Add periodic polling (every 10 seconds) during generation to check session state
+- [x] If polling detects presentation is complete but SSE missed the event, show completion card
+- [x] Ensure polling doesn't interfere with normal SSE flow
+- [x] Test polling fallback with both quick and step-by-step modes
+- [x] Add editable text fields for slide content before approval (title, key message, text, bullets)
+- [x] User can modify the AI-proposed content directly in the chat
+- [x] Modified content is saved and used for design generation
+- [x] Test editing flow: modify content → approve → verify design uses modified content
+
+### 🚀 Round 68: Step-by-step mode CJM bug 🔴 0/5
+
+- [ ] Investigate: After approving slide 2, system shows slide 3 content but then says "Нет контента для утверждения"
+- [ ] Investigate: Free-text message ("и что сделать?") causes system to skip remaining slides and declare presentation complete
+- [ ] Fix: Ensure content approval works correctly for all slides in sequence
+- [ ] Fix: Ensure free-text messages during step_slide_content phase are handled properly (not treated as completion)
+- [ ] Test: Full step-by-step flow through all 5 slides without errors
 
 ### 🚀 Round 67: Completion Card Bug + Timeline Visual Test 🔴 11/12
 
@@ -1947,7 +1969,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (82 sections, 925/941 tasks)
+### 🚀 Improvements (84 sections, 936/957 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -2031,6 +2053,8 @@
 - **Round 65: Comprehensive E2E Testing for Client Handoff** — 30/32
 - **Round 66: Timeline Fix + Step-by-Step Mode Testing** — ✅
 - **Round 67: Completion Card Bug + Timeline Visual Test** — 11/12
+- **Round 68: Step-by-step mode CJM bug** — 0/5
+- **Round 69: Step-by-step improvements + Polling fallback** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

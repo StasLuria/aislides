@@ -121,6 +121,7 @@ async function readSSEStream(
 
 const API_BASE = "/api/v1/chat";
 const POLL_INTERVAL_MS = 5000;
+const SAFETY_POLL_INTERVAL_MS = 10000;
 
 export function useSSEChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -142,6 +143,21 @@ export function useSSEChat() {
   const receivedDoneRef = useRef(false);
   const presentationLinkRef = useRef<PresentationLink | null>(null);
 
+  // Safety polling — periodic check every 10s during active generation
+  const safetyPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const safetyPollingSessionRef = useRef<string | null>(null);
+
+  /**
+   * Stop safety polling if running.
+   */
+  const stopSafetyPolling = useCallback(() => {
+    if (safetyPollingRef.current) {
+      clearInterval(safetyPollingRef.current);
+      safetyPollingRef.current = null;
+    }
+    safetyPollingSessionRef.current = null;
+  }, []);
+
   /**
    * Stop polling if running.
    */
@@ -151,13 +167,17 @@ export function useSSEChat() {
       pollingRef.current = null;
     }
     setIsPolling(false);
-  }, []);
+    stopSafetyPolling();
+  }, [stopSafetyPolling]);
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+      }
+      if (safetyPollingRef.current) {
+        clearInterval(safetyPollingRef.current);
       }
     };
   }, []);
@@ -189,8 +209,8 @@ export function useSSEChat() {
             return;
           }
 
-          // Generation completed or moved to a different phase
-          if (phase === "completed" || phase === "mode_selection" || phase === "step_structure" || phase === "idle") {
+          // Generation completed or moved to a waiting phase
+          if (phase === "completed" || phase === "mode_selection" || phase === "step_structure" || phase === "step_slide_content" || phase === "step_slide_design" || phase === "idle") {
             console.log("[useSSEChat] Polling detected phase change:", phase);
             stopPolling();
 
@@ -219,6 +239,7 @@ export function useSSEChat() {
 
             setIsStreaming(false);
             setProgress(null);
+            setSlideProgress(null);
             setError(null);
           }
         } catch {
@@ -240,8 +261,10 @@ export function useSSEChat() {
       if (!res.ok) return;
       const data = await res.json();
 
-      if (data.phase === "completed" && data.presentation_id) {
-        // Restore presentation link
+      const phase = data.phase as string;
+
+      // Completed with presentation
+      if (phase === "completed" && data.presentation_id) {
         const link: PresentationLink = {
           presentationId: data.presentation_id,
           title: data.topic || "",
@@ -249,14 +272,12 @@ export function useSSEChat() {
         setPresentationLink(link);
         presentationLinkRef.current = link;
 
-        // Restore all messages from persisted state (includes slidePreviews + presentationLink)
         const allMessages = (data.messages || []).map((m: any) => ({
           ...m,
           isStreaming: false,
         }));
         setMessages(allMessages);
 
-        // Restore actions from last assistant message
         const lastAssistant = [...allMessages].reverse().find(
           (m: any) => m.role === "assistant" && m.actions?.length,
         );
@@ -265,17 +286,93 @@ export function useSSEChat() {
         }
 
         console.log("[useSSEChat] Recovered session state after SSE completion");
-      } else if (data.phase === "generating") {
+      } else if (phase === "generating") {
         // Still generating — start polling
         console.log("[useSSEChat] Session still generating, starting polling");
         startPolling(sid);
-        return true; // Signal that polling was started, don't reset isStreaming
+        return true;
+      } else if (phase === "step_slide_content" || phase === "step_slide_design" || phase === "step_structure" || phase === "mode_selection") {
+        // Step-by-step phase — recover messages and actions
+        console.log("[useSSEChat] Recovered step-by-step session state, phase:", phase);
+        const allMessages = (data.messages || []).map((m: any) => ({
+          ...m,
+          isStreaming: false,
+        }));
+        setMessages(allMessages);
+
+        const lastAssistant = [...allMessages].reverse().find(
+          (m: any) => m.role === "assistant" && m.actions?.length,
+        );
+        if (lastAssistant?.actions) {
+          setCurrentActions(lastAssistant.actions);
+        }
       }
     } catch {
       // Recovery failed — user can reload
     }
     return false;
   }, [startPolling]);
+
+  /**
+   * Start safety polling — periodic check every 10s during active SSE streams.
+   * This catches cases where SSE completes but the done event is missed.
+   */
+  const startSafetyPolling = useCallback(
+    (sid: string) => {
+      if (safetyPollingRef.current) return; // Already running
+      safetyPollingSessionRef.current = sid;
+
+      safetyPollingRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/sessions/${sid}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const phase = data.phase as string;
+
+          // If session moved to a waiting/completed phase but we're still streaming,
+          // it means the SSE stream didn't deliver the final state properly
+          const waitingPhases = ["completed", "step_slide_content", "step_slide_design", "step_structure", "mode_selection", "idle"];
+          if (waitingPhases.includes(phase)) {
+            console.log("[useSSEChat] Safety polling detected phase:", phase, "— recovering");
+            stopSafetyPolling();
+
+            // Reload full session state
+            const allMessages = (data.messages || []).map((m: any) => ({
+              ...m,
+              isStreaming: false,
+            }));
+            setMessages(allMessages);
+
+            // Restore actions
+            const lastAssistant = [...allMessages].reverse().find(
+              (m: any) => m.role === "assistant" && m.actions?.length,
+            );
+            if (lastAssistant?.actions) {
+              setCurrentActions(lastAssistant.actions);
+            }
+
+            // Restore presentation link
+            if (data.presentation_id && phase === "completed") {
+              const link: PresentationLink = {
+                presentationId: data.presentation_id,
+                title: data.topic || "",
+              };
+              setPresentationLink(link);
+              presentationLinkRef.current = link;
+            }
+
+            setIsStreaming(false);
+            setProgress(null);
+            setSlideProgress(null);
+            setError(null);
+          }
+        } catch {
+          // Safety polling error — just continue
+        }
+      }, SAFETY_POLL_INTERVAL_MS);
+    },
+    [stopSafetyPolling],
+  );
 
   /**
    * Reset to empty state (no session, no messages). Used when navigating to /chat without ID.
@@ -433,6 +530,7 @@ export function useSSEChat() {
 
         case "done":
           receivedDoneRef.current = true;
+          stopSafetyPolling();
           setMessages((prev) => {
             const updated = [...prev];
             const lastIdx = updated.length - 1;
@@ -447,7 +545,7 @@ export function useSSEChat() {
           break;
       }
     };
-  }, []);
+  }, [stopSafetyPolling]);
 
   /**
    * Send a message and stream the AI response via SSE.
@@ -468,6 +566,9 @@ export function useSSEChat() {
       lastProgressRef.current = null;
       receivedDoneRef.current = false;
       presentationLinkRef.current = null;
+
+      // Start safety polling as a fallback during generation
+      startSafetyPolling(sid);
 
       // Add user message immediately — include quote context visually in the displayed message
       const displayContent = quoteContext
@@ -560,6 +661,7 @@ export function useSSEChat() {
               setProgress(null);
             }
           } else {
+            stopSafetyPolling();
             setIsStreaming(false);
             setProgress(null);
           }
@@ -567,7 +669,7 @@ export function useSSEChat() {
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState],
+    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState, startSafetyPolling, stopSafetyPolling],
   );
 
   /**
@@ -584,6 +686,9 @@ export function useSSEChat() {
       lastProgressRef.current = null;
       receivedDoneRef.current = false;
       presentationLinkRef.current = null;
+
+      // Start safety polling as a fallback during generation
+      startSafetyPolling(sessionId);
 
       // Add empty assistant message for streaming
       const assistantMsg: ChatMessage = {
@@ -648,6 +753,7 @@ export function useSSEChat() {
               setProgress(null);
             }
           } else {
+            stopSafetyPolling();
             setIsStreaming(false);
             setProgress(null);
           }
@@ -655,7 +761,7 @@ export function useSSEChat() {
         abortRef.current = null;
       }
     },
-    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState],
+    [sessionId, isStreaming, createSSEHandler, startPolling, recoverSessionState, startSafetyPolling, stopSafetyPolling],
   );
 
   /**
@@ -664,9 +770,10 @@ export function useSSEChat() {
   const cancelStream = useCallback(() => {
     abortRef.current?.abort();
     stopPolling();
+    stopSafetyPolling();
     setIsStreaming(false);
     setProgress(null);
-  }, [stopPolling]);
+  }, [stopPolling, stopSafetyPolling]);
 
   /**
    * List all sessions.

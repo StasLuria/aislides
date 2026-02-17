@@ -42,6 +42,7 @@ import {
   Quote,
   Highlighter,
   StickyNote,
+  Pencil,
 } from "lucide-react";
 import { useSSEChat, type ChatMessage, type ChatAction, type SlidePreview, type SlideProgress, type MessageComment, type MessageAnnotation } from "@/hooks/useSSEChat";
 import ChatSidebar from "@/components/ChatSidebar";
@@ -49,6 +50,7 @@ import FileUploadButton, { FileChips, validateFiles, type AttachedFile } from "@
 import api, { type CustomTemplateListItem } from "@/lib/api";
 import { THEME_PRESETS, THEME_CATEGORIES } from "@/lib/constants";
 import { Streamdown } from 'streamdown';
+import SlideContentEditor from "@/components/SlideContentEditor";
 
 // ═══════════════════════════════════════════════════════
 // SETTINGS TYPES
@@ -1717,6 +1719,10 @@ export default function ChatPage() {
   // Quote-reply state
   const [quoteReply, setQuoteReply] = useState<{ text: string; messageIndex: number } | null>(null);
 
+  // Slide content editing state (step-by-step mode)
+  const [isEditingSlideContent, setIsEditingSlideContent] = useState(false);
+  const [editingSlideContent, setEditingSlideContent] = useState<any>(null);
+
   // Initialize session — only load if URL has an ID, otherwise reset to empty state
   // IMPORTANT: Skip loadSession when we just created the session (to avoid race condition
   // where loadSession wipes messages that sendMessage is about to add)
@@ -1849,10 +1855,57 @@ export default function ChatPage() {
         setSettingsApplied(false);
         return;
       }
+      if (actionId === "edit_slide_content" && sessionId) {
+        // Fetch current proposed content from session metadata
+        try {
+          const res = await fetch(`/api/v1/chat/sessions/${sessionId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const proposedContent = data.metadata?.proposedContent;
+            if (proposedContent) {
+              setEditingSlideContent(proposedContent);
+              setIsEditingSlideContent(true);
+            } else {
+              toast.error("Нет контента для редактирования");
+            }
+          }
+        } catch {
+          toast.error("Не удалось загрузить контент");
+        }
+        return;
+      }
+      // Close editor if approving content after edit
+      if (actionId === "approve_slide_content") {
+        setIsEditingSlideContent(false);
+        setEditingSlideContent(null);
+      }
       await triggerAction(actionId);
       setRefreshTrigger((p) => p + 1);
     },
-    [triggerAction, presentationLink, navigate, createSession],
+    [triggerAction, presentationLink, navigate, createSession, sessionId],
+  );
+
+  // Handle save from slide content editor
+  const handleSlideContentSave = useCallback(
+    (updatedContent: any) => {
+      setIsEditingSlideContent(false);
+      setEditingSlideContent(null);
+
+      // Update the last assistant message to show updated content
+      // The message content is markdown, so we reconstruct it
+      const totalSlides = updatedContent._totalSlides || "?";
+      const slideNum = updatedContent.slide_number || "?";
+      let contentDisplay = `\n\n\u{1F4CB} **Контент слайда ${slideNum}/${totalSlides}: \u00AB${updatedContent.title}\u00BB**\n\n`;
+      contentDisplay += `**Ключевое сообщение:** ${updatedContent.key_message}\n\n`;
+      contentDisplay += `**Текст:**\n${updatedContent.text}\n\n`;
+      if (updatedContent.notes) {
+        contentDisplay += `**Заметки спикера:** ${updatedContent.notes}\n\n`;
+      }
+      contentDisplay += `\u2705 *Контент отредактирован.* Если всё устраивает \u2014 нажмите \u00ABГотово\u00BB. Или продолжите редактирование.`;
+
+      toast.success("Контент слайда обновлён");
+    },
+    [],
   );
 
   // Handle pending message after session creation
@@ -1983,11 +2036,39 @@ export default function ChatPage() {
               {/* Action buttons */}
               {!isStreaming && filteredActions.length > 0 && (
                 <div className="pl-10">
-                  <ActionButtons
-                    actions={filteredActions}
-                    onAction={handleAction}
-                    disabled={isStreaming}
-                  />
+                  {/* Show edit button alongside approve_slide_content */}
+                  {filteredActions.some(a => a.id === "approve_slide_content") && !isEditingSlideContent ? (
+                    <ActionButtons
+                      actions={[
+                        ...filteredActions,
+                        { id: "edit_slide_content", label: "✏️ Редактировать", variant: "outline" },
+                      ]}
+                      onAction={handleAction}
+                      disabled={isStreaming}
+                    />
+                  ) : !isEditingSlideContent ? (
+                    <ActionButtons
+                      actions={filteredActions}
+                      onAction={handleAction}
+                      disabled={isStreaming}
+                    />
+                  ) : null}
+
+                  {/* Inline slide content editor */}
+                  {isEditingSlideContent && editingSlideContent && sessionId && (
+                    <SlideContentEditor
+                      sessionId={sessionId}
+                      content={editingSlideContent}
+                      onSave={handleSlideContentSave}
+                      onCancel={() => {
+                        setIsEditingSlideContent(false);
+                        setEditingSlideContent(null);
+                      }}
+                    />
+                  )}
+
+                  {/* Show approve/edit buttons after editing */}
+                  {isEditingSlideContent === false && editingSlideContent === null && filteredActions.some(a => a.id === "approve_slide_content") && null}
                 </div>
               )}
 
