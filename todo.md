@@ -1752,3 +1752,27 @@
 - [x] BUG-10: "Add Slide" — feature exists via chat text ("готово + ещё слайд"); viewer button is a feature request, not a bug
 - [x] BUG-11: Fixed Escape key — removed navigate(backPath) fallback, Escape now only exits edit/fullscreen modes
 - [x] BUG-12: Renamed "PDF" button to "HTML-отчёт" since endpoint returns HTML, not PDFreturning HTML instead of PDF
+
+## Round 64: Critical Bug Fixes for Client Testing
+
+### BUG-R64-DUPLICATE: Duplicate "Open Presentation" buttons
+- [x] Root cause: Backend sends both `presentation_link` SSE event AND `view_presentation` action — frontend renders both
+- [x] Fix: Filter `view_presentation` from actions when `presentationLink` exists; show single "Открыть презентацию" + "Создать новую" button group
+- [x] Verified: No more duplicate buttons
+
+### BUG-R64-12: Edit mode squashes slide content
+- [x] Root cause: Editor panel (w-[380px]) + left sidebar (w-[200px]) steal space from slide area, reducing it from 620px to 260px
+- [x] Fix: Auto-collapse left sidebar when editor panel opens; recalculate mainSize accounting for collapsed sidebar
+- [x] Verified: Slide now only shrinks ~13% in edit mode (620px → 540px), content remains readable
+
+### BUG-R64-10: Broken chart on slide 7 (empty SVG)
+- [x] Root cause: `processSlideDataMarkdown()` converts `\n` → `<br>` in ALL string fields including `chartSvg` — `<br>` tags inside SVG break browser rendering
+- [x] Fix (backend): Added `chartSvg`, `leftChartSvg`, `rightChartSvg` to SKIP_KEYS in markdownInline.ts
+- [x] Fix (viewer): Added SVG cleanup in parseSlides — removes `<br>` from inside `<svg>` blocks for already-generated presentations
+- [x] Test: 11 new vitest tests for markdownInline including SVG skip verification
+- [x] Verified: Chart renders correctly with bars, grid, labels
+
+### BUG-R64-18/19: Action buttons don't disable after click
+- [x] Analysis: `triggerAction` already calls `setCurrentActions([])` + `setIsStreaming(true)` — buttons disappear correctly
+- [x] Enhancement: Added local `clickedId` state in ActionButtons for immediate visual feedback (spinner + disabled state) before parent state propagates
+- [x] Verified: All 1623 tests passing (1612 existing + 11 new)

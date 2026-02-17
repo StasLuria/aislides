@@ -355,7 +355,14 @@ function ActionButtons({
   onAction: (id: string) => void;
   disabled: boolean;
 }) {
+  const [clickedId, setClickedId] = useState<string | null>(null);
+
   if (!actions.length) return null;
+
+  const handleClick = (id: string) => {
+    setClickedId(id);
+    onAction(id);
+  };
 
   return (
     <div className="flex flex-wrap gap-2 mt-3">
@@ -364,10 +371,13 @@ function ActionButtons({
           key={action.id}
           variant={action.variant === "outline" ? "outline" : "default"}
           size="sm"
-          onClick={() => onAction(action.id)}
-          disabled={disabled}
+          onClick={() => handleClick(action.id)}
+          disabled={disabled || clickedId !== null}
           className="text-xs gap-1.5"
         >
+          {clickedId === action.id && (
+            <div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+          )}
           {action.label}
         </Button>
       ))}
@@ -1883,7 +1893,10 @@ export default function ChatPage() {
   }, [error]);
 
   // Show all action buttons including mode selection
-  const filteredActions = currentActions;
+  // Filter out view_presentation from actions since we show it as a dedicated button via presentationLink
+  const filteredActions = presentationLink
+    ? currentActions.filter(a => a.id !== "view_presentation")
+    : currentActions;
 
   const hasMessages = messages.length > 0;
 
@@ -1977,13 +1990,13 @@ export default function ChatPage() {
                 </div>
               )}
 
-              {/* Presentation link */}
+              {/* Presentation link — single button, no duplication with actions */}
               {presentationLink && !isStreaming && (
-                <div className="pl-10">
+                <div className="pl-10 flex flex-wrap gap-2 mt-3">
                   <Button
                     variant="default"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 text-xs"
                     onClick={() => navigate(`/view/${presentationLink.presentationId}?from=chat/${sessionId}`)}
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -1994,6 +2007,18 @@ export default function ChatPage() {
                       </span>
                     )}
                   </Button>
+                  {/* Show "Create new" alongside if available */}
+                  {currentActions.filter(a => a.id === "new_presentation").map(action => (
+                    <Button
+                      key={action.id}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5"
+                      onClick={() => handleAction(action.id)}
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
                 </div>
               )}
 

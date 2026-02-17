@@ -7,14 +7,31 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 148 |
-| Total tasks | 1362 |
-| Completed | 1349 (99%) |
+| Total sections | 149 |
+| Total tasks | 1376 |
+| Completed | 1363 (99%) |
 | Pending | 13 |
 
 ---
 
 ## Detailed Changelog
+
+### 🐛 Round 64: Critical Bug Fixes for Client Testing ✅
+
+- [x] Root cause: Backend sends both `presentation_link` SSE event AND `view_presentation` action — frontend renders both
+- [x] Fix: Filter `view_presentation` from actions when `presentationLink` exists; show single "Открыть презентацию" + "Создать новую" button group
+- [x] Verified: No more duplicate buttons
+- [x] Root cause: Editor panel (w-[380px]) + left sidebar (w-[200px]) steal space from slide area, reducing it from 620px to 260px
+- [x] Fix: Auto-collapse left sidebar when editor panel opens; recalculate mainSize accounting for collapsed sidebar
+- [x] Verified: Slide now only shrinks ~13% in edit mode (620px → 540px), content remains readable
+- [x] Root cause: `processSlideDataMarkdown()` converts `\n` → `<br>` in ALL string fields including `chartSvg` — `<br>` tags inside SVG break browser rendering
+- [x] Fix (backend): Added `chartSvg`, `leftChartSvg`, `rightChartSvg` to SKIP_KEYS in markdownInline.ts
+- [x] Fix (viewer): Added SVG cleanup in parseSlides — removes `<br>` from inside `<svg>` blocks for already-generated presentations
+- [x] Test: 11 new vitest tests for markdownInline including SVG skip verification
+- [x] Verified: Chart renders correctly with bars, grid, labels
+- [x] Analysis: `triggerAction` already calls `setCurrentActions([])` + `setIsStreaming(true)` — buttons disappear correctly
+- [x] Enhancement: Added local `clickedId` state in ActionButtons for immediate visual feedback (spinner + disabled state) before parent state propagates
+- [x] Verified: All 1623 tests passing (1612 existing + 11 new)
 
 ### 🚀 Round 63: Fix All Bugs from Comprehensive Testing ✅
 
@@ -1951,7 +1968,7 @@
 
 - **Auto-Theme Selection (AI-based)** — ✅
 
-### 🐛 Bug Fixes (24 sections, 125/125 tasks)
+### 🐛 Bug Fixes (25 sections, 139/139 tasks)
 
 - **Bug Fix: POST /presentations 500 error on deployed version** — ✅
 - **Bug Fixes: Viewer + Home Page** — ✅
@@ -1977,6 +1994,7 @@
 - **Bug Fix: Sidebar Scroll in Viewer** — ✅
 - **Round 30: Bug fixes — slide preview clipping + design feedback not working** — ✅
 - **Round 31: Bug fix — empty slide preview in step-by-step mode** — ✅
+- **Round 64: Critical Bug Fixes for Client Testing** — ✅
 
 ### 🏗️ Infrastructure (7 sections, 31/31 tasks)
 

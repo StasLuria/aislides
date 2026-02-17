@@ -112,6 +112,12 @@ function parseSlides(html: string): string[] {
   // Sanitize the full HTML first to fix any broken CSS from old templates
   html = sanitizeSlideHtml(html);
 
+  // Fix SVG charts corrupted by <br> tags (from markdownInline converting \n to <br> inside chartSvg)
+  // This handles already-generated presentations where the SVG was stored with <br> tags
+  html = html.replace(/<svg[\s\S]*?<\/svg>/gi, (svgBlock) => {
+    return svgBlock.replace(/<br\s*\/?>/gi, '\n');
+  });
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
@@ -152,12 +158,48 @@ function parseSlides(html: string): string[] {
     });
 
     return rawSlides.map((slideHtml, idx) => {
-      const hasCanvas = slideHtml.includes("<canvas");
-      const chartInit = hasCanvas
+      let processedSlideHtml = slideHtml;
+      let needsChartLib = false;
+
+      // Detect empty SVG charts and replace with canvas fallback
+      const emptySvgMatch = slideHtml.match(/<svg[^>]*><\/svg>/i);
+      if (emptySvgMatch) {
+        // Check if there's a chart init script for this slide index
+        const matchingInit = chartInitScripts.find((s) => s.includes(`chart-${idx}`));
+        if (matchingInit) {
+          // Replace empty SVG with a canvas element
+          processedSlideHtml = slideHtml.replace(
+            /<div[^>]*>\s*<svg[^>]*><\/svg>\s*<\/div>/i,
+            `<div style="width: 100%; max-width: 700px; max-height: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><canvas id="chart-${idx}" style="max-width: 100%; max-height: 100%;"></canvas></div>`
+          );
+          needsChartLib = true;
+        }
+      }
+
+      const hasCanvas = processedSlideHtml.includes("<canvas");
+      // Try multiple matching strategies for chart init scripts
+      let chartInit = hasCanvas
         ? chartInitScripts.find((s) => s.includes(`chart-${idx}`))
         : null;
+      // Fallback: try matching by canvas ID found in the slide HTML
+      if (hasCanvas && !chartInit) {
+        const canvasIdMatch = processedSlideHtml.match(/id=["']([^"']*chart[^"']*)["']/i);
+        if (canvasIdMatch) {
+          chartInit = chartInitScripts.find((s) => s.includes(canvasIdMatch[1]));
+        }
+      }
+      // Fallback: if only one chart init script and one chart slide, use it
+      if (hasCanvas && !chartInit && chartInitScripts.length === 1) {
+        chartInit = chartInitScripts[0];
+      }
+      // Fallback: try matching by slide index in different formats
+      if (hasCanvas && !chartInit) {
+        chartInit = chartInitScripts.find((s) => s.includes(`slide-${idx}`)) || null;
+      }
+      const chartScript = chartInit ? `<script>${chartInit}<\/script>` : "";
+      const includeChartLib = hasCanvas || needsChartLib;
 
-      return `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8" />\n  ${headContent}\n  ${hasCanvas ? chartLibScript : ""}\n  <style>\n    html, body { margin: 0; padding: 0; overflow: hidden; width: 1280px; height: 720px; background: #fff; }\n    .slide-container { margin: 0 !important; padding: 0 !important; }\n    .slide-number { display: none !important; }\n  </style>\n</head>\n<body>${slideHtml}</body>\n</html>`;
+      return `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8" />\n  ${headContent}\n  ${includeChartLib ? chartLibScript : ""}\n  <style>\n    html, body { margin: 0; padding: 0; overflow: hidden; width: 1280px; height: 720px; background: #fff; }\n    .slide-container { margin: 0 !important; padding: 0 !important; }\n    .slide-number { display: none !important; }\n  </style>\n</head>\n<body>${processedSlideHtml}${chartScript}</body>\n</html>`;
     });
   }
 
@@ -191,9 +233,20 @@ function parseSlides(html: string): string[] {
     return Array.from(slideElements).map((el, idx) => {
       const hasCanvas = el.querySelector("canvas") !== null;
       // Find the chart init script that matches this slide's canvas id
-      const chartInit = hasCanvas
+      let chartInit = hasCanvas
         ? chartInitScripts.find((s) => s.includes(`chart-${idx}`))
         : null;
+      // Fallback: try matching by canvas ID found in the slide HTML
+      if (hasCanvas && !chartInit) {
+        const canvas = el.querySelector("canvas");
+        if (canvas?.id) {
+          chartInit = chartInitScripts.find((s) => s.includes(canvas.id)) || null;
+        }
+      }
+      // Fallback: if only one chart init script and one chart slide, use it
+      if (hasCanvas && !chartInit && chartInitScripts.length === 1) {
+        chartInit = chartInitScripts[0];
+      }
 
       return `<!DOCTYPE html>
 <html>
@@ -446,7 +499,8 @@ export default function Viewer() {
       } else {
         // Fallback calculation
         const editorWidth = editMode === "sidebar" ? 360 : 0;
-        const w = Math.min(window.innerWidth - 280 - 48 - editorWidth, 1280);
+        const sidebarWidth = editMode === "sidebar" ? 0 : 260; // sidebar collapses when editor is open
+        const w = Math.min(window.innerWidth - sidebarWidth - 48 - editorWidth, 1280);
         const h = window.innerHeight - 56 - 48 - 48;
         setMainSize({ w: Math.max(w, 400), h: Math.max(h, 300) });
       }
@@ -1208,8 +1262,10 @@ export default function Viewer() {
   return (
     <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
       <div className="flex flex-col lg:flex-row h-full">
-        {/* Left panel — Slide list */}
-        <div className="lg:w-[260px] border-r border-border/50 flex flex-col h-full overflow-hidden">
+        {/* Left panel — Slide list (auto-collapses when editor panel is open) */}
+        <div className={`shrink-0 border-r border-border/50 flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out ${
+          editMode === "sidebar" ? "!w-0 !min-w-0 !p-0 opacity-0 border-r-0 pointer-events-none" : "lg:w-[260px]"
+        }`}>
           {/* Header */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center gap-2 mb-3">
@@ -1621,7 +1677,7 @@ export default function Viewer() {
           </Dialog>
 
           {/* Slide display */}
-          <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20">
+          <div ref={mainAreaRef} className="flex-1 flex items-center justify-center p-6 bg-black/20 transition-all duration-300">
             <div
               className={`rounded-lg overflow-hidden border shadow-2xl bg-white slide-transition ${slideTransition} ${
                 editMode === "inline" ? "border-primary/40 ring-1 ring-primary/20" : "border-border/30"

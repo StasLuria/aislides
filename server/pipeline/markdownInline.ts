@@ -45,7 +45,7 @@ export function parseInlineMarkdown(text: string): string {
 export function processSlideDataMarkdown(data: Record<string, any>): Record<string, any> {
   if (!data || typeof data !== "object") return data;
 
-  const SKIP_KEYS = new Set(["url", "src", "href", "image_url", "icon", "_slideNumber", "_totalSlides", "_presentationTitle", "_slide_index", "name"]);
+  const SKIP_KEYS = new Set(["url", "src", "href", "image_url", "icon", "_slideNumber", "_totalSlides", "_presentationTitle", "_slide_index", "name", "chartSvg", "leftChartSvg", "rightChartSvg"]);
 
   function processValue(key: string, value: any): any {
     // Skip internal/url keys
