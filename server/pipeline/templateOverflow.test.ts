@@ -262,8 +262,9 @@ describe("Template Overflow Protection — All Templates", () => {
         // Should have 36px or less
         const hasPadding36 = html.includes("padding: 36px");
         const hasPadding32 = html.includes("padding: 32px");
-        const hasCompact = hasPadding36 || hasPadding32;
-        expect(hasCompact, `${layout}: should have compact padding`).toBe(true);
+        const hasPadding28 = html.includes("padding: 28px");
+        const hasCompact = hasPadding36 || hasPadding32 || hasPadding28;
+        expect(hasCompact, `${layout}: should have compact padding (≤36px top)`).toBe(true);
       });
     }
   });

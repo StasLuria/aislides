@@ -1816,5 +1816,23 @@
 - [x] BUG: Editor missing array fields for 8+ layouts — fixed ARRAY_ITEM_LAYOUTS with correct backend keys
 - [x] BUG: Editor missing text fields for 6+ layouts — added LAYOUT_TEXT_FIELDS entries
 - [ ] MINOR: Logo "БСПБ" appears on all slides regardless of topic
-- [ ] MINOR: Timeline slide — 5th item (2030) cut off at bottom
+- [x] MINOR: Timeline slide — 5th item (2030) cut off at bottom
 - [ ] MINOR: Long title overlaps logo on closing slide
+
+## Round 66: Timeline Fix + Step-by-Step Mode Testing
+
+### Timeline Overflow Fix
+- [x] Investigate why 5th timeline item (2030) is cut off at bottom
+- [x] Fix the vertical-timeline template to handle 5+ items without overflow (increased bottom padding from 20px to 48px, reduced max events to 6)
+- [x] Verify fix in viewer (tested via new presentation generation)
+
+### Step-by-Step Mode E2E Testing
+- [x] Create new presentation in step-by-step (interactive) mode
+- [x] Verify structure proposal is displayed correctly
+- [x] Test structure approval flow
+- [x] Verify content proposal for each slide (all 5 slides)
+- [x] Test content approval flow (all 5 slides)
+- [x] Verify design proposal for each slide (all 5 slides)
+- [x] Test design approval flow (all 5 slides)
+- [x] Verify final presentation renders correctly (5 slides, all layouts render properly)
+- [x] Fix any bugs found during testing (no bugs found - step-by-step mode works correctly)

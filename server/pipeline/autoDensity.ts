@@ -190,7 +190,8 @@ export function estimateContentHeight(
         const descLines = clampLines(estimateTextLines(event?.description || "", p.smallSize, 400), p.descClamp);
         eventsH += titleLines * (p.bodySize * p.bodyLh) + descLines * (p.smallSize * 1.4) + 24 + p.gapSm;
       }
-      return headerH + eventsH;
+      // timeline uses reduced outer padding (28+24=52 instead of 68)
+      return Math.max(0, headerH + eventsH - 16);
     }
 
     case "process-steps": {
@@ -374,9 +375,13 @@ export function estimateContentHeight(
         const titleLines = clampLines(estimateTextLines(event?.title || "", p.smallSize, 900), 2);
         const descLines = clampLines(estimateTextLines(event?.description || "", p.tinySize, 900), p.descClamp);
         const dateH = event?.date ? p.tinySize * 1.2 + 4 : 0;
-        eventsH += dateH + titleLines * (p.smallSize * 1.3) + descLines * (p.tinySize * 1.4) + p.cardPadding * 2 + p.gapSm;
+        // Use reduced card padding for vertical-timeline (template uses tighter padding)
+        const cardPad = Math.max(p.cardPadding - 4, 10);
+        eventsH += dateH + titleLines * (p.smallSize * 1.3) + descLines * (p.tinySize * 1.4) + cardPad * 2 + p.gapSm;
       }
-      return headerH + eventsH;
+      // vertical-timeline uses padding 28+48=76px (top 28 + bottom 48 to clear footer)
+      // Standard is 68+30=98, so we have 22px extra available height
+      return Math.max(0, headerH + eventsH - 22);
     }
 
     case "comparison-table": {

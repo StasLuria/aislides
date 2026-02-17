@@ -1077,9 +1077,13 @@ export function fixSlideDensity(
   }
 
   // 6. Limit events count (timeline)
-  if (data.events && Array.isArray(data.events) && data.events.length > 8) {
-    data.events = data.events.slice(0, 8);
-    fixes.push('Events limited to 8 items');
+  if (data.events && Array.isArray(data.events)) {
+    // vertical-timeline is more space-constrained than horizontal timeline
+    const maxEvents = layoutId === 'vertical-timeline' ? 6 : 8;
+    if (data.events.length > maxEvents) {
+      data.events = data.events.slice(0, maxEvents);
+      fixes.push(`Events limited to ${maxEvents} items`);
+    }
   }
 
   // 7. Limit table rows and truncate long cells

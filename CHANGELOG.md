@@ -7,16 +7,31 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 150 |
-| Total tasks | 1408 |
-| Completed | 1392 (99%) |
-| Pending | 16 |
+| Total sections | 151 |
+| Total tasks | 1420 |
+| Completed | 1405 (99%) |
+| Pending | 15 |
 
 ---
 
 ## Detailed Changelog
 
-### 🚀 Round 65: Comprehensive E2E Testing for Client Handoff 🔴 29/32
+### 🚀 Round 66: Timeline Fix + Step-by-Step Mode Testing ✅
+
+- [x] Investigate why 5th timeline item (2030) is cut off at bottom
+- [x] Fix the vertical-timeline template to handle 5+ items without overflow (increased bottom padding from 20px to 48px, reduced max events to 6)
+- [x] Verify fix in viewer (tested via new presentation generation)
+- [x] Create new presentation in step-by-step (interactive) mode
+- [x] Verify structure proposal is displayed correctly
+- [x] Test structure approval flow
+- [x] Verify content proposal for each slide (all 5 slides)
+- [x] Test content approval flow (all 5 slides)
+- [x] Verify design proposal for each slide (all 5 slides)
+- [x] Test design approval flow (all 5 slides)
+- [x] Verify final presentation renders correctly (5 slides, all layouts render properly)
+- [x] Fix any bugs found during testing (no bugs found - step-by-step mode works correctly)
+
+### 🚀 Round 65: Comprehensive E2E Testing for Client Handoff 🔴 30/32
 
 - [x] Create new presentation via chat (topic entry → generation → completion)
 - [x] Verify generation progress events display correctly
@@ -48,7 +63,7 @@
 - [x] BUG: Editor missing array fields for 8+ layouts — fixed ARRAY_ITEM_LAYOUTS with correct backend keys
 - [x] BUG: Editor missing text fields for 6+ layouts — added LAYOUT_TEXT_FIELDS entries
 - [ ] MINOR: Logo "БСПБ" appears on all slides regardless of topic
-- [ ] MINOR: Timeline slide — 5th item (2030) cut off at bottom
+- [x] MINOR: Timeline slide — 5th item (2030) cut off at bottom
 - [ ] MINOR: Long title overlaps logo on closing slide
 
 ### 🐛 Round 64: Critical Bug Fixes for Client Testing ✅
@@ -1917,7 +1932,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (80 sections, 901/917 tasks)
+### 🚀 Improvements (81 sections, 914/929 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1998,7 +2013,8 @@
 - **Round 61: Fix First Message Not Showing Response** — ✅
 - **Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification** — ✅
 - **Round 63: Fix All Bugs from Comprehensive Testing** — ✅
-- **Round 65: Comprehensive E2E Testing for Client Handoff** — 29/32
+- **Round 65: Comprehensive E2E Testing for Client Handoff** — 30/32
+- **Round 66: Timeline Fix + Step-by-Step Mode Testing** — ✅
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

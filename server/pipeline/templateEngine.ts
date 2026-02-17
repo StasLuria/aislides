@@ -257,10 +257,10 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   </div>
 </div>`,
 
-  "timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
-  <div style="flex-shrink: 0; margin-bottom: 16px;">
+  "timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 28px 48px 24px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 10px;">
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 12px;"></div>
+    <div class="accent-line" style="margin-top: 8px;"></div>
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; align-items: center; overflow: hidden;">
     <div style="position: relative; width: 100%;">
@@ -1361,12 +1361,12 @@ const LAYOUT_TEMPLATES: Record<string, string> = {
   // ROUND 6 LAYOUTS
   // ═══════════════════════════════════════════════════════
 
-  "vertical-timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 36px 48px 32px; overflow: hidden;">
-  <div style="flex-shrink: 0; margin-bottom: 16px;">
+  "vertical-timeline": `<div style="display: flex; flex-direction: column; height: 100%; padding: 28px 48px 48px; overflow: hidden;">
+  <div style="flex-shrink: 0; margin-bottom: 8px;">
     <h1 style="color: var(--text-heading-color, #111827); font-size: var(--at-title-size, 36px); font-weight: 700; line-height: var(--at-title-lh, 1.1); margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: var(--at-title-clamp, 2); -webkit-box-orient: vertical;">{{ title }}</h1>
-    <div class="accent-line" style="margin-top: 12px;"></div>
+    <div class="accent-line" style="margin-top: 8px;"></div>
     {% if description %}
-    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 8px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
+    <p style="color: var(--text-body-color, #4b5563); font-size: var(--at-body-size, 15px); line-height: 1.5; margin: 6px 0 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ description }}</p>
     {% endif %}
   </div>
   <div style="flex: 1 1 0%; min-height: 0; display: flex; overflow: hidden;">
@@ -2341,13 +2341,16 @@ export function computeDensity(layoutId: string, data: Record<string, any>): Den
       break;
 
     case "timeline":
+    case "vertical-timeline":
+    case "timeline-horizontal":
       itemCount = countItems(data.events);
       textLength = totalTextLen(data.events);
-      compactThreshold = 5;
-      denseThreshold = 7;
+      compactThreshold = 4;
+      denseThreshold = 6;
       break;
 
     case "process-steps":
+    case "numbered-steps-v2":
       itemCount = countItems(data.steps);
       textLength = totalTextLen(data.steps);
       compactThreshold = 4;
