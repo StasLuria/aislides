@@ -250,8 +250,9 @@ describe("Slide-by-slide workflow", () => {
       expect(slidePreview).toBeDefined();
       expect(slidePreview?.data?.slideNumber).toBe(1);
 
-      // Should have actions for design approval
-      const actionsEvent = events.find((e) => e.type === "actions");
+      // Should have actions for design approval (use findLast since clearLastAssistantActions sends empty actions first)
+      const actionsEvents = events.filter((e) => e.type === "actions");
+      const actionsEvent = actionsEvents[actionsEvents.length - 1];
       expect(actionsEvent).toBeDefined();
       const actions = actionsEvent?.data as any[];
       expect(actions?.some((a: any) => a.id === "approve_slide_design")).toBe(true);

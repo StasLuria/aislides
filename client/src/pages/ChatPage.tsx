@@ -1893,9 +1893,10 @@ export default function ChatPage() {
   }, [error]);
 
   // Show all action buttons including mode selection
-  // Filter out view_presentation from actions since we show it as a dedicated button via presentationLink
+  // Filter out view_presentation and new_presentation from actions when presentationLink exists,
+  // since they are shown as dedicated buttons in the presentationLink section below
   const filteredActions = presentationLink
-    ? currentActions.filter(a => a.id !== "view_presentation")
+    ? currentActions.filter(a => a.id !== "view_presentation" && a.id !== "new_presentation")
     : currentActions;
 
   const hasMessages = messages.length > 0;

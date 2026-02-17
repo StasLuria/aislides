@@ -927,8 +927,10 @@ export default function Viewer() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `presentation-${presentationId.slice(0, 8)}.html`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
     toast.success("Файл скачан");
   };
 
@@ -971,46 +973,32 @@ export default function Viewer() {
     }
   };
 
-  // Download PDF
+  // Download PDF — use direct API URL (blob URLs fail in some environments)
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = () => {
     setIsExportingPdf(true);
-    try {
-      const blob = await api.exportPdf(presentationId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `presentation-${presentationId.slice(0, 8)}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF файл скачан");
-    } catch (error) {
-      console.error("PDF export failed:", error);
-      toast.error("Не удалось экспортировать в PDF");
-    } finally {
-      setIsExportingPdf(false);
-    }
+    const a = document.createElement("a");
+    a.href = `/api/v1/presentations/${presentationId}/export/pdf`;
+    a.download = `presentation-${presentationId.slice(0, 8)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("PDF файл скачивается...");
+    setTimeout(() => setIsExportingPdf(false), 5000);
   };
 
-  // Download PPTX
+  // Download PPTX — use direct API URL (blob URLs fail in some environments)
   const [isExportingPptx, setIsExportingPptx] = useState(false);
-  const handleDownloadPptx = async () => {
+  const handleDownloadPptx = () => {
     setIsExportingPptx(true);
-    try {
-      const blob = await api.exportPptx(presentationId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `presentation-${presentationId.slice(0, 8)}.pptx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PPTX файл скачан");
-    } catch (error) {
-      console.error("PPTX export failed:", error);
-      toast.error("Не удалось экспортировать в PPTX");
-    } finally {
-      setIsExportingPptx(false);
-    }
+    const a = document.createElement("a");
+    a.href = `/api/v1/presentations/${presentationId}/export/pptx`;
+    a.download = `presentation-${presentationId.slice(0, 8)}.pptx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("PPTX файл скачивается...");
+    setTimeout(() => setIsExportingPptx(false), 5000);
   };
 
   // Theme switching with preview

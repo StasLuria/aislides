@@ -7,14 +7,49 @@
 
 | Metric | Value |
 |---|---|
-| Total sections | 149 |
-| Total tasks | 1376 |
-| Completed | 1363 (99%) |
-| Pending | 13 |
+| Total sections | 150 |
+| Total tasks | 1408 |
+| Completed | 1392 (99%) |
+| Pending | 16 |
 
 ---
 
 ## Detailed Changelog
+
+### 🚀 Round 65: Comprehensive E2E Testing for Client Handoff 🔴 29/32
+
+- [x] Create new presentation via chat (topic entry → generation → completion)
+- [x] Verify generation progress events display correctly
+- [x] Verify "Open Presentation" button appears after completion
+- [x] Open presentation in Viewer — verify all slides render (13 slides, all OK)
+- [x] Test edit mode — open editor, modify text, save changes (title edit saved successfully)
+- [x] Test download — PPTX (1.3MB), PDF (3.2MB), HTML exports all working
+- [x] Verify presentation appears in chat history sidebar
+- [x] Found BUG: theme selection was ignored (themePreset vs theme_preset key mismatch) — FIXED
+- [x] Verified chart rendering works in generated presentations
+- [x] Verified second presentation (electric cars) renders all 10 slides correctly
+- [x] Test title-slide layout editing (title, subtitle) — fields show correctly
+- [x] Test section-header layout editing — fields show correctly
+- [x] Test highlight-stats layout editing (metrics array) — FIXED: was missing, now shows value/label/description
+- [x] Test big-statement layout editing — FIXED: added text fields
+- [x] Test card-grid layout editing (cards array) — FIXED: was missing, now shows title/badge/description/value
+- [x] Test chart-slide layout editing (title, chart data) — chart renders, basic fields editable
+- [x] Test numbered-steps-v2 layout editing (steps array) — FIXED: was missing, now shows step fields
+- [x] Test image-text layout editing (bullets array) — FIXED: was missing, now shows point/description
+- [x] Test vertical-timeline layout editing (events array) — FIXED: was missing, now shows year/title/description
+- [x] Test icons-numbers layout editing (metrics array) — FIXED: was missing, now shows icon/value/label
+- [x] Test closing layout editing — fields show correctly
+- [x] Verify save works — title edit saved and re-rendered successfully
+- [x] Verify navigation works in edit mode — keyboard arrows + button arrows both work
+- [x] BUG: Duplicate "Создать новую" button — filtered new_presentation from actions when presentationLink exists
+- [x] BUG: PPTX/PDF download 0 bytes — switched from blob URL to direct API URL approach
+- [x] BUG: Action buttons (Быстрый режим) persist after click — added clearLastAssistantActions to processAction
+- [x] BUG: Theme selection ignored — fixed themePreset vs theme_preset key mismatch in chatOrchestrator
+- [x] BUG: Editor missing array fields for 8+ layouts — fixed ARRAY_ITEM_LAYOUTS with correct backend keys
+- [x] BUG: Editor missing text fields for 6+ layouts — added LAYOUT_TEXT_FIELDS entries
+- [ ] MINOR: Logo "БСПБ" appears on all slides regardless of topic
+- [ ] MINOR: Timeline slide — 5th item (2030) cut off at bottom
+- [ ] MINOR: Long title overlaps logo on closing slide
 
 ### 🐛 Round 64: Critical Bug Fixes for Client Testing ✅
 
@@ -1882,7 +1917,7 @@
 - **Task: Version History** — ✅
 - **Task: PDF Export** — ✅
 
-### 🚀 Improvements (79 sections, 872/885 tasks)
+### 🚀 Improvements (80 sections, 901/917 tasks)
 
 - **Improve Slide Design** — ✅
 - **Quality Overhaul: Slide Templates & Content** — ✅
@@ -1963,6 +1998,7 @@
 - **Round 61: Fix First Message Not Showing Response** — ✅
 - **Round 62: Fix Completion Buttons Not Appearing + Reduce Over-Clarification** — ✅
 - **Round 63: Fix All Bugs from Comprehensive Testing** — ✅
+- **Round 65: Comprehensive E2E Testing for Client Handoff** — 29/32
 
 ### 🎨 Design (1 sections, 8/8 tasks)
 

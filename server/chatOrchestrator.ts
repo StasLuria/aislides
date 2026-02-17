@@ -879,7 +879,7 @@ async function startQuickGeneration(
     }
     
     const genConfig: GenerationConfig = {
-      themePreset: sessionMeta.customTemplateId ? undefined : "auto",
+      themePreset: sessionMeta.customTemplateId ? undefined : (sessionMeta.themePreset || "auto"),
       enableImages,
       customCssVariables: sessionMeta.customCssVariables || undefined,
       customFontsUrl: sessionMeta.customFontsUrl || undefined,
@@ -916,7 +916,7 @@ async function startQuickGeneration(
     let htmlUrl: string | undefined;
     try {
       const config = (session.metadata as Record<string, any>) || {};
-      const themePreset = getThemePreset(config.theme_preset || "auto");
+      const themePreset = getThemePreset(config.themePreset || config.theme_preset || "auto");
       const renderedSlides = result.slides.map(s => ({
         layoutId: s.layoutId,
         data: s.data,
@@ -956,7 +956,7 @@ async function startQuickGeneration(
 
     // Send all slide previews at completion — wrap each with full CSS + theme
     const batchThemePreset = getThemePreset(
-      (session.metadata as Record<string, any>)?.theme_preset || "auto"
+      (session.metadata as Record<string, any>)?.themePreset || (session.metadata as Record<string, any>)?.theme_preset || "auto"
     );
     for (let si = 0; si < result.slides.length; si++) {
       if (result.slides[si].html) {
@@ -1629,6 +1629,23 @@ async function handleGenericMessage(
 }
 
 /**
+ * Clear actions from the last assistant message in the DB so they don't
+ * reappear on page reload / polling after the user has already clicked one.
+ */
+async function clearLastAssistantActions(sessionId: string): Promise<void> {
+  const session = await getChatSession(sessionId);
+  if (!session?.messages?.length) return;
+  const msgs = [...session.messages];
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role === "assistant" && msgs[i].actions?.length) {
+      msgs[i] = { ...msgs[i], actions: [] };
+      break;
+    }
+  }
+  await updateChatSession(sessionId, { messages: msgs });
+}
+
+/**
  * Handle action button clicks (special message format).
  */
 export async function processAction(
@@ -1636,6 +1653,11 @@ export async function processAction(
   actionId: string,
   writer: SSEWriter,
 ): Promise<void> {
+  // Clear the action buttons from the DB so they don't reappear on reload
+  await clearLastAssistantActions(sessionId);
+  // Also tell the frontend to clear actions immediately
+  writer({ type: "actions", data: [] });
+
   switch (actionId) {
     case "mode_quick": {
       // Directly call handleModeSelection to avoid processMessage treating this as a new topic

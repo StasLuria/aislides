@@ -99,53 +99,221 @@ const LAYOUT_TEXT_FIELDS: Record<string, Array<{ key: string; label: string; mul
     { key: "title", label: "Заголовок" },
     { key: "description", label: "Описание", multiline: true },
   ],
+  "chart-slide": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "big-statement": [
+    { key: "title", label: "Заголовок" },
+    { key: "bigNumber", label: "Большое число" },
+    { key: "label", label: "Метка" },
+    { key: "subtitle", label: "Подзаголовок", multiline: true },
+    { key: "source", label: "Источник" },
+  ],
+  "highlight-stats": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "card-grid": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "checklist": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "roadmap": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "funnel": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "numbered-steps-v2": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "vertical-timeline": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "verdict-analysis": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+    { key: "verdict", label: "Вердикт" },
+  ],
+  "agenda-table-of-contents": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "logo-grid": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "swot-analysis": [
+    { key: "title", label: "Заголовок" },
+  ],
+  "pros-cons": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "pyramid": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "matrix-2x2": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "team-profiles": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "risk-matrix": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "waterfall-chart": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "dual-chart": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
+  "financial-formula": [
+    { key: "title", label: "Заголовок" },
+    { key: "description", label: "Описание", multiline: true },
+  ],
 };
 
 // Layouts that have an "items" array (bullet points, metrics, steps, etc.)
+// IMPORTANT: arrayKey must match the actual backend data key (metrics, steps, events, cards, etc.)
 const ARRAY_ITEM_LAYOUTS: Record<string, { arrayKey: string; fields: Array<{ key: string; label: string; multiline?: boolean }> }> = {
-  "bullet-list-slide": {
-    arrayKey: "items",
+  "text-slide": {
+    arrayKey: "bullets",
     fields: [
       { key: "title", label: "Пункт" },
       { key: "description", label: "Описание" },
     ],
   },
-  "metrics-slide": {
-    arrayKey: "items",
+  "image-text": {
+    arrayKey: "bullets",
+    fields: [
+      { key: "title", label: "Пункт" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "chart-text": {
+    arrayKey: "bullets",
+    fields: [
+      { key: "title", label: "Пункт" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "icons-numbers": {
+    arrayKey: "metrics",
     fields: [
       { key: "value", label: "Значение" },
       { key: "label", label: "Метка" },
       { key: "description", label: "Описание" },
     ],
   },
-  "icons-numbers": {
-    arrayKey: "items",
-    fields: [
-      { key: "number", label: "Число" },
-      { key: "label", label: "Метка" },
-      { key: "description", label: "Описание" },
-    ],
-  },
   "process-steps": {
-    arrayKey: "items",
+    arrayKey: "steps",
     fields: [
+      { key: "number", label: "Номер" },
       { key: "title", label: "Шаг" },
       { key: "description", label: "Описание" },
     ],
   },
   "timeline": {
-    arrayKey: "items",
+    arrayKey: "events",
     fields: [
-      { key: "year", label: "Год/Период" },
+      { key: "date", label: "Дата/Период" },
       { key: "title", label: "Событие" },
       { key: "description", label: "Описание" },
     ],
   },
-  "comparison": {
+  "vertical-timeline": {
+    arrayKey: "events",
+    fields: [
+      { key: "date", label: "Дата/Период" },
+      { key: "title", label: "Событие" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "numbered-steps-v2": {
+    arrayKey: "steps",
+    fields: [
+      { key: "number", label: "Номер" },
+      { key: "title", label: "Шаг" },
+      { key: "description", label: "Описание" },
+      { key: "result", label: "Результат" },
+    ],
+  },
+  "card-grid": {
+    arrayKey: "cards",
+    fields: [
+      { key: "title", label: "Заголовок" },
+      { key: "badge", label: "Бейдж" },
+      { key: "description", label: "Описание", multiline: true },
+      { key: "value", label: "Значение" },
+    ],
+  },
+  "checklist": {
     arrayKey: "items",
     fields: [
-      { key: "title", label: "Название" },
+      { key: "title", label: "Пункт" },
       { key: "description", label: "Описание" },
+      { key: "status", label: "Статус" },
+    ],
+  },
+  "roadmap": {
+    arrayKey: "milestones",
+    fields: [
+      { key: "date", label: "Дата" },
+      { key: "title", label: "Этап" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "funnel": {
+    arrayKey: "milestones",
+    fields: [
+      { key: "value", label: "Значение" },
+      { key: "title", label: "Этап" },
+      { key: "description", label: "Описание" },
+      { key: "conversion", label: "Конверсия" },
+    ],
+  },
+  "highlight-stats": {
+    arrayKey: "supportingStats",
+    fields: [
+      { key: "value", label: "Значение" },
+      { key: "label", label: "Метка" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "verdict-analysis": {
+    arrayKey: "criteria",
+    fields: [
+      { key: "label", label: "Критерий" },
+      { key: "value", label: "Значение" },
+      { key: "detail", label: "Детали" },
+    ],
+  },
+  "agenda-table-of-contents": {
+    arrayKey: "sections",
+    fields: [
+      { key: "title", label: "Раздел" },
+      { key: "description", label: "Описание" },
+    ],
+  },
+  "logo-grid": {
+    arrayKey: "logos",
+    fields: [
+      { key: "name", label: "Название" },
     ],
   },
 };

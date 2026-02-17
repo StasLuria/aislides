@@ -133,49 +133,39 @@ export default function SharedViewer() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `presentation.html`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
     toast.success("HTML скачан");
   };
 
   // Download PPTX
-  const handleDownloadPptx = async () => {
+  const handleDownloadPptx = () => {
     if (!token) return;
     setIsExportingPptx(true);
-    try {
-      const blob = await api.exportSharedPptx(token);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${presentation?.title || "presentation"}.pptx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PPTX файл скачан");
-    } catch {
-      toast.error("Не удалось экспортировать в PPTX");
-    } finally {
-      setIsExportingPptx(false);
-    }
+    const a = document.createElement("a");
+    a.href = `/api/v1/shared/${token}/export/pptx`;
+    a.download = `${presentation?.title || "presentation"}.pptx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("PPTX файл скачивается...");
+    setTimeout(() => setIsExportingPptx(false), 5000);
   };
 
-  // Download PDF
-  const handleDownloadPdf = async () => {
+  // Download PDF — use direct API URL
+  const handleDownloadPdf = () => {
     if (!token) return;
     setIsExportingPdf(true);
-    try {
-      const blob = await api.exportSharedPdf(token);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${presentation?.title || "presentation"}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF файл скачан");
-    } catch {
-      toast.error("Не удалось экспортировать в PDF");
-    } finally {
-      setIsExportingPdf(false);
-    }
+    const a = document.createElement("a");
+    a.href = `/api/v1/shared/${token}/export/pdf`;
+    a.download = `${presentation?.title || "presentation"}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("PDF файл скачивается...");
+    setTimeout(() => setIsExportingPdf(false), 5000);
   };
 
   // Scale iframe
