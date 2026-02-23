@@ -1,16 +1,16 @@
 # AI Presentation Generator
 
-**Version:** 0.10.0
+**Version:** 1.0.0
 
-AI-powered presentation generator with an LLM-driven planning and execution engine. The system supports multi-tenancy with JWT-based authentication and ensures data isolation between users.
+AI-powered presentation generator with an LLM-driven planning and execution engine. The system supports multi-tenancy with JWT-based authentication, data isolation, artifact editing, and export to PDF/PPTX.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration, with secure endpoints protected by JWT authentication. The frontend delivers a chat-based interface with an artifact panel for interacting with the AI, previewing, and editing generated presentations, complete with login/registration functionality.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration, with secure endpoints protected by JWT authentication. The frontend delivers a chat-based interface with an artifact panel for interacting with the AI, previewing, editing, and exporting generated presentations, complete with login/registration functionality.
 
 ## Architecture
 
-The system is composed of three main parts: the **Engine Core**, the **FastAPI Backend**, and the **React Frontend**.
+The system is composed of three main parts: the **Engine Core**, the **FastAPI Backend**, and the **React Frontend**, all containerized with Docker.
 
 ### Engine Core
 
@@ -42,7 +42,8 @@ The backend handles business logic, data persistence, and real-time communicatio
 | **Auth Dependencies** | `get_current_user` (REST) and `ws_authenticate` (WebSocket) | ✅ |
 | **ProjectService** | CRUD operations with user-based data isolation | ✅ |
 | **EngineService** | Wrapper over EngineAPI with DB persistence | ✅ |
-| **REST API routes** | Secure CRUD endpoints for projects, messages, artifacts | ✅ |
+| **ExportService** | PDF (WeasyPrint) and PPTX (python-pptx) export | ✅ |
+| **REST API routes** | Secure CRUD endpoints for projects, messages, artifacts, export | ✅ |
 | **WebSocket endpoint** | `/ws/projects/{id}` with JWT authentication | ✅ |
 | **ConnectionManager** | Multi-client WebSocket connection management | ✅ |
 | **EngineBridge** | EventBus → WebSocket event mapping and streaming | ✅ |
@@ -56,16 +57,13 @@ The frontend provides a complete user interface for interacting with the system.
 |:---|:---|:---:|
 | **AuthContext** | Global auth state management, JWT decoding, session restore | ✅ |
 | **AuthPage** | Login/Registration page with form toggle | ✅ |
-| **LoginForm/RegisterForm** | Forms with validation and error handling | ✅ |
 | **ProtectedRoute** | Route guard for authenticated pages | ✅ |
-| **authApi/tokenStorage** | HTTP client and secure localStorage for JWT | ✅ |
 | **AppLayout** | Three-zone layout (sidebar, chat, artifacts) | ✅ |
-| **ChatMessage** | User/AI message bubbles with avatars and timestamps | ✅ |
 | **ChatInput** | Auto-resize textarea, Enter/Shift+Enter, file attachments | ✅ |
 | **useWebSocket** | WebSocket client hook with JWT auth and auto-reconnect | ✅ |
 | **StatusCard** | Generation progress (S0-S5) with progress bar | ✅ |
 | **ProjectList** | Sidebar project list with selection and creation | ✅ |
-| **ArtifactPanel** | Right panel with toolbar, tabs, download/open actions | ✅ |
+| **ArtifactPanel** | Right panel with toolbar, tabs, download/open/export actions | ✅ |
 | **CodeEditor/SlideTextEditor** | Monaco editor and WYSIWYG editor for artifacts | ✅ |
 
 ### WebSocket Protocol
@@ -74,8 +72,8 @@ The WebSocket endpoint at `/ws/projects/{id}?token=<jwt_token>` supports bidirec
 
 **Client → Server:**
 - `user_message`
-- `artifact_feedback`
 - `artifact_updated`
+- `redesign`
 - `cancel`
 
 **Server → Client:**
@@ -85,64 +83,31 @@ The WebSocket endpoint at `/ws/projects/{id}?token=<jwt_token>` supports bidirec
 - `ai_message`
 - `error`
 
-## Project Structure
-
-```
-ai-presentation-generator/
-├── backend/          # FastAPI backend
-│   └── app/          # Application package
-│       ├── models/   # SQLAlchemy ORM models (User, Project, etc.)
-│       ├── schemas/  # Pydantic API schemas (Auth, Project, etc.)
-│       ├── services/ # Business logic (AuthService, ProjectService, etc.)
-│       ├── routers/  # REST API + WebSocket routes (auth, projects, etc.)
-│       └── dependencies/ # Shared dependencies (get_current_user)
-├── frontend/         # React frontend
-│   └── src/
-│       ├── components/  # UI components (auth, chat, layout, artifact)
-│       ├── contexts/    # React contexts (AuthContext)
-│       ├── services/    # API services (authApi, tokenStorage)
-│       ├── hooks/       # Custom hooks (useWebSocket, etc.)
-│       └── types/       # TypeScript type definitions
-├── engine/           # Core engine (API, runtime, event bus, nodes)
-├── tools/            # Tool nodes (S1-S5)
-├── tests/            # Tests (unit, integration, e2e)
-│   ├── unit/         # Unit tests (backend, frontend)
-│   └── integration/  # Integration tests (auth, data_isolation, websocket)
-└── ...
-```
-
-## Quick Start
+## Quick Start (Docker)
 
 ```bash
-# 1. Install dependencies (backend & frontend)
-poetry install
-cd frontend && pnpm install && cd ..
-
-# 2. Set up environment
+# 1. Clone the repository and create the environment file
 cp .env.example .env
-# Fill in API keys in .env
 
-# 3. Run all tests (backend + frontend)
-make check
+# 2. Fill in your GEMINI_API_KEY in the .env file
 
-# 4. Start backend (with auto-migration)
-poetry run uvicorn backend.app.main:app --reload
+# 3. Build and run the application using Docker Compose
+make up
 
-# 5. Start frontend dev server
-cd frontend && pnpm dev
+# 4. Access the application at http://localhost:5173
 ```
 
 ## Status
 
-**Current Sprint:** 9 — Authentication & Multi-tenancy (COMPLETED)
+**Product v1.0 is complete.** All core features are implemented, tested, and documented.
 
-**Milestones:** Engine Core v1.0 ✅ → Backend v1.0 ✅ → MVP v1.0 ✅ → Auth v1.0 ✅
+**Milestones:** Engine Core v1.0 ✅ → Backend v1.0 ✅ → MVP v1.0 ✅ → Auth v1.0 ✅ → **Product v1.0 ✅**
 
-### Sprint 9 Results
+### Final Metrics (v1.0.0)
 
-- **Full authentication flow:** User registration, login, JWT session management, and secure endpoints.
-- **Multi-tenancy:** Complete data isolation between users for projects, messages, and artifacts.
-- **338 backend tests** (pytest) — all passing, **96.16% coverage**.
-- **241 frontend tests** (Vitest) — all passing.
-- **36 new integration tests** covering auth endpoints, data isolation, and WebSocket security using a real in-memory database.
-- **0 linter errors** (ESLint + ruff + mypy).
+- **Backend tests:** **628 passed** (pytest) with **96.82% coverage**.
+- **Frontend tests:** **245 passed** (Vitest).
+- **Integration tests:** **78 total** (auth, data isolation, WebSocket, editing, export).
+- **Linters:** **0 errors** (ruff, mypy, eslint).
+- **Design System:** **8 presets** and **7 layout families**.
+-**.

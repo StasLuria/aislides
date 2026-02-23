@@ -25,7 +25,7 @@
 | **1** | Ядро движка (Engine Core) | 0, 1, 2, 3 | 3 недели | Работающий движок, способный генерировать презентацию от запроса до HTML | ✅ |
 | **2** | Backend + WebSocket | 4, 5 | 2 недели | FastAPI-сервер, WebSocket-коммуникация, PostgreSQL, EngineAPI | ✅ |
 | **3** | MVP Frontend | 6, 7 | 2 недели | Чат-интерфейс с превью артефактов и real-time статусами | ✅ |
-| **4** | Полноценный продукт | 8, 9, 10+ | 3+ недель | Все CJM, редактирование, авторизация, деплой | ☐ |
+| **4** | Полноценный продукт | 8, 9, 10+ | 3+ недель | Все CJM, редактирование, авторизация, деплой | ✅ |
 
 ---
 
@@ -219,7 +219,7 @@
 | 10.5 | Реализовать экспорт в PDF и PPTX | ✅ | ExportService (WeasyPrint PDF + python-pptx), export router, UI кнопки, 23 unit + 9 integration тестов, 2026-02-23 |
 | 10.6 | Настроить Docker Compose для деплоя | ✅ | Backend Dockerfile + Frontend Dockerfile + docker-compose.yml (3 services: db, api, frontend) + dev override + nginx.conf + .env.example, 2026-02-23 |
 | 10.7 | Написать документацию для пользователей | ✅ | 5-секционный user_guide (Introduction, Getting Started, UI, Workflows, Development), 2026-02-23 |
-| 10.8 | **Milestone: Product v1.0** | ☐ | Полноценный продукт, готовый к использованию |
+| 10.8 | **Milestone: Product v1.0** | ✅ | v1.0.0: 628 backend + 245 frontend тестов, 96.82% coverage, 8 пресетов, 7 семейств макетов, Docker, PDF/PPTX export, user docs, 2026-02-23 |
 
 ---
 

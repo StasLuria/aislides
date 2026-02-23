@@ -8,10 +8,10 @@
 **Milestone: Backend v1.0 — ДОСТИГНУТ ✅**
 **Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
 **Milestone: MVP v1.0 — ДОСТИГНУТ ✅**
-**Спринт 8: Редактирование артефактов — ЗАВЕРШЁН ✅**
 **Milestone: Auth v1.0 — ДОСТИГНУТ ✅**
-**Спринт 9: Авторизация и многопользовательность — ЗАВЕРШЁН ✅**
-**Спринт 10: Расширение и полировка — В ПРОЦЕССЕ (6/8 задач)**
+**Milestone: Product v1.0 — ДОСТИГНУТ ✅**
+
+Все 4 этапа разработки завершены. Продукт готов к использованию.
 
 ## Что сделано
 
@@ -153,7 +153,7 @@
 | 9.5 Integration-тесты: авторизация, изоляция данных | ✅ | 36 integration-тестов: auth endpoints (15), data isolation (11), WebSocket auth (10), реальная in-memory SQLite + JWT |
 | 9.6 Обновить README.md и CHANGELOG.md | ✅ | README: +Auth, User, WS JWT; CHANGELOG: v0.10.0 |
 
-### Спринт 10: Расширение и полировка (в процессе)
+### Спринт 10: Расширение и полировка ✅
 
 | Задача | Статус | Детали |
 |:---|:---|:---|
@@ -164,7 +164,7 @@
 | 10.5 Экспорт в PDF и PPTX | ✅ | ExportService (WeasyPrint + python-pptx), export router, UI кнопки, 32 теста |
 | 10.6 Docker Compose | ✅ | Backend + Frontend Dockerfiles, docker-compose.yml (3 services), dev override, nginx.conf |
 | 10.7 Документация для пользователей | ✅ | 5-секционный user_guide |
-| 10.8 Milestone Product v1.0 | ☐ | Финализация |
+| 10.8 Milestone Product v1.0 | ✅ | v1.0.0: 628 backend + 245 frontend тестов, 96.82% coverage |
 
 ## Метрики
 
@@ -178,11 +178,13 @@
 | ESLint ошибки | 0 |
 | Дизайн-пресетов | 8 |
 | Семейств макетов | 7 |
-| Версия | 0.10.0 |
+| Версия | 1.0.0 |
 
 ## Следующий шаг
 
-**Task 10.8: Milestone Product v1.0** — финальный version bump, README, CHANGELOG, release
+Продукт v1.0 завершён. Возможные направления развития:
+- **Task 10.1:** CJM 2Б «Исследователь» — deep research с web search API
+- **Sprint 11+:** Performance optimization, Alembic migrations, CI/CD pipeline, monitoring
 
 ## Блокеры
 

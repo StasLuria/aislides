@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-02-23 — Milestone: Product v1.0
+
+### Summary
+
+This release marks the **Product v1.0 milestone**. All 4 development stages are complete: Engine Core, Backend + WebSocket, MVP Frontend, and Full Product (editing, authentication, export, deployment).
+
+### Metrics
+
+- **628 backend tests** (pytest) — 96.82% coverage
+- **245 frontend tests** (Vitest)
+- **78 integration tests** (auth, data isolation, WebSocket, editing, export)
+- **8 design presets**, **7 layout families**
+- **0 linter errors** (ruff, mypy, eslint)
+
+### Added
+
+- Final README.md update with Product v1.0 status and Docker Quick Start (task 10.8)
+- Version bump to 1.0.0 across pyproject.toml, README.md (task 10.8)
+
 ## [0.11.0] - 2026-02-23 — Sprint 10: Expansion & Polish
 
 ### Added
