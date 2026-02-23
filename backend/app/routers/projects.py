@@ -10,6 +10,7 @@
 - GET    /api/projects/{id}/artifacts — список артефактов
 
 Все эндпоинты требуют авторизации (Bearer JWT).
+Проекты фильтруются по user_id для изоляции данных.
 """
 
 from __future__ import annotations
@@ -66,7 +67,7 @@ async def create_project(
     Returns:
         Созданный проект.
     """
-    project = await svc.create_project(title=body.title)
+    project = await svc.create_project(user_id=current_user.id, title=body.title)
     return ProjectRead.model_validate(project)
 
 
@@ -81,7 +82,7 @@ async def list_projects(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectListRead:
-    """Получить список проектов с пагинацией.
+    """Получить список проектов текущего пользователя с пагинацией.
 
     Args:
         offset: Смещение для пагинации.
@@ -92,7 +93,7 @@ async def list_projects(
     Returns:
         Список проектов и общее количество.
     """
-    projects, total = await svc.list_projects(offset=offset, limit=limit)
+    projects, total = await svc.list_projects(user_id=current_user.id, offset=offset, limit=limit)
     return ProjectListRead(
         projects=[ProjectRead.model_validate(p) for p in projects],
         total=total,
@@ -109,7 +110,7 @@ async def get_project(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectRead:
-    """Получить проект по ID.
+    """Получить проект по ID (только свой).
 
     Args:
         project_id: UUID проекта.
@@ -120,9 +121,9 @@ async def get_project(
         Данные проекта.
 
     Raises:
-        HTTPException 404: Если проект не найден.
+        HTTPException 404: Если проект не найден или принадлежит другому пользователю.
     """
-    project = await svc.get_project(project_id)
+    project = await svc.get_project(project_id, user_id=current_user.id)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -142,7 +143,7 @@ async def update_project(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectRead:
-    """Обновить проект.
+    """Обновить проект (только свой).
 
     Args:
         project_id: UUID проекта.
@@ -154,9 +155,9 @@ async def update_project(
         Обновлённый проект.
 
     Raises:
-        HTTPException 404: Если проект не найден.
+        HTTPException 404: Если проект не найден или принадлежит другому пользователю.
     """
-    project = await svc.update_project(project_id, title=body.title)
+    project = await svc.update_project(project_id, user_id=current_user.id, title=body.title)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -175,7 +176,7 @@ async def delete_project(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> None:
-    """Удалить проект.
+    """Удалить проект (только свой).
 
     Args:
         project_id: UUID проекта.
@@ -183,9 +184,9 @@ async def delete_project(
         svc: Сервис проектов.
 
     Raises:
-        HTTPException 404: Если проект не найден.
+        HTTPException 404: Если проект не найден или принадлежит другому пользователю.
     """
-    deleted = await svc.delete_project(project_id)
+    deleted = await svc.delete_project(project_id, user_id=current_user.id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -205,7 +206,7 @@ async def list_messages(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> MessageListRead:
-    """Получить историю сообщений проекта.
+    """Получить историю сообщений проекта (только своего).
 
     Args:
         project_id: UUID проекта.
@@ -218,9 +219,9 @@ async def list_messages(
         Список сообщений и общее количество.
 
     Raises:
-        HTTPException 404: Если проект не найден.
+        HTTPException 404: Если проект не найден или принадлежит другому пользователю.
     """
-    project = await svc.get_project(project_id)
+    project = await svc.get_project(project_id, user_id=current_user.id)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -249,7 +250,7 @@ async def list_artifacts(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ArtifactListRead:
-    """Получить артефакты проекта.
+    """Получить артефакты проекта (только своего).
 
     Args:
         project_id: UUID проекта.
@@ -262,9 +263,9 @@ async def list_artifacts(
         Список артефактов и общее количество.
 
     Raises:
-        HTTPException 404: Если проект не найден.
+        HTTPException 404: Если проект не найден или принадлежит другому пользователю.
     """
-    project = await svc.get_project(project_id)
+    project = await svc.get_project(project_id, user_id=current_user.id)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

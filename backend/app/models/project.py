@@ -10,11 +10,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.models.base import Base
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
 
 
 class Project(Base):
@@ -22,6 +26,7 @@ class Project(Base):
 
     Attributes:
         id: UUID проекта.
+        user_id: FK на владельца проекта.
         title: Название проекта.
         status: Текущий статус (idle, running, completed, failed).
         created_at: Дата создания.
@@ -34,6 +39,11 @@ class Project(Base):
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
     )
     title: Mapped[str] = mapped_column(String(255), default="Новый проект")
     status: Mapped[str] = mapped_column(
@@ -51,6 +61,7 @@ class Project(Base):
     )
 
     # Relationships
+    owner: Mapped[User] = relationship(back_populates="projects")
     messages: Mapped[list[Message]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",

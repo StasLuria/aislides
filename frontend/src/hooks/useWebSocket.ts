@@ -6,6 +6,7 @@
  * переподключение при обрыве связи.
  *
  * Протокол: JSON-сообщения с полями { type, payload }.
+ * Авторизация: JWT-токен передаётся в query-параметре ?token=xxx.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react'
@@ -17,6 +18,8 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'er
 export interface UseWebSocketOptions {
   /** URL WebSocket-сервера (например, ws://localhost:8000/ws/projects/123). */
   url: string | null
+  /** JWT-токен для авторизации (добавляется как ?token=xxx). */
+  token?: string | null
   /** Callback при получении серверного сообщения. */
   onMessage?: (message: ServerMessage) => void
   /** Callback при подключении. */
@@ -44,8 +47,23 @@ export interface UseWebSocketReturn {
   reconnect: () => void
 }
 
+/**
+ * Формирует URL с JWT-токеном в query-параметре.
+ *
+ * @param baseUrl - Базовый WebSocket URL.
+ * @param token - JWT-токен (опционально).
+ * @returns URL с параметром ?token=xxx или исходный URL.
+ */
+function buildWsUrl(baseUrl: string, token?: string | null): string {
+  if (!token) return baseUrl
+
+  const separator = baseUrl.includes('?') ? '&' : '?'
+  return `${baseUrl}${separator}token=${encodeURIComponent(token)}`
+}
+
 export function useWebSocket({
   url,
+  token,
   onMessage,
   onConnect,
   onDisconnect,
@@ -102,7 +120,8 @@ export function useWebSocket({
       setStatus('connecting')
       isManualCloseRef.current = false
 
-      const ws = new WebSocket(url)
+      const wsUrl = buildWsUrl(url, token)
+      const ws = new WebSocket(wsUrl)
 
       ws.onopen = () => {
         setStatus('connected')
@@ -148,7 +167,7 @@ export function useWebSocket({
 
       wsRef.current = ws
     }
-  }, [url])
+  }, [url, token])
 
   const connect = useCallback(() => {
     connectRef.current()
@@ -178,7 +197,7 @@ export function useWebSocket({
     connect()
   }, [connect, clearReconnectTimer])
 
-  // Подключаемся при монтировании / изменении url
+  // Подключаемся при монтировании / изменении url или token
   useEffect(() => {
     if (url) {
       connect()
@@ -192,7 +211,7 @@ export function useWebSocket({
         wsRef.current = null
       }
     }
-  }, [url, connect, clearReconnectTimer])
+  }, [url, token, connect, clearReconnectTimer])
 
   return { status, send, disconnect, reconnect }
 }

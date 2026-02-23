@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.models.base import Base
+
+if TYPE_CHECKING:
+    from backend.app.models.project import Project
 
 
 class User(Base):
@@ -45,4 +49,11 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+    )
+
+    # Relationships
+    projects: Mapped[list[Project]] = relationship(
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        order_by="Project.updated_at.desc()",
     )

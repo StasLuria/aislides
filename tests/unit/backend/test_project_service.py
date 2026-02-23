@@ -26,7 +26,7 @@ class TestProjectServiceCRUD:
     async def test_create_project(self, db_session: AsyncSession) -> None:
         """Создание проекта."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тестовый проект")
+        project = await svc.create_project(user_id="test-user-001", title="Тестовый проект")
         assert project.title == "Тестовый проект"
         assert project.status == "idle"
         assert project.id is not None
@@ -35,14 +35,14 @@ class TestProjectServiceCRUD:
     async def test_create_project_default_title(self, db_session: AsyncSession) -> None:
         """Создание проекта с дефолтным названием."""
         svc = ProjectService(db_session)
-        project = await svc.create_project()
+        project = await svc.create_project(user_id="test-user-001")
         assert project.title == "Новый проект"
 
     @pytest.mark.asyncio
     async def test_get_project(self, db_session: AsyncSession) -> None:
         """Получение проекта по ID."""
         svc = ProjectService(db_session)
-        created = await svc.create_project(title="Найди меня")
+        created = await svc.create_project(user_id="test-user-001", title="Найди меня")
         found = await svc.get_project(created.id)
         assert found is not None
         assert found.id == created.id
@@ -59,10 +59,10 @@ class TestProjectServiceCRUD:
     async def test_list_projects(self, db_session: AsyncSession) -> None:
         """Список проектов."""
         svc = ProjectService(db_session)
-        await svc.create_project(title="Проект 1")
-        await svc.create_project(title="Проект 2")
+        await svc.create_project(user_id="test-user-001", title="Проект 1")
+        await svc.create_project(user_id="test-user-001", title="Проект 2")
 
-        projects, total = await svc.list_projects()
+        projects, total = await svc.list_projects(user_id="test-user-001")
         assert total == 2
         assert len(projects) == 2
 
@@ -71,9 +71,9 @@ class TestProjectServiceCRUD:
         """Пагинация списка проектов."""
         svc = ProjectService(db_session)
         for i in range(5):
-            await svc.create_project(title=f"Проект {i}")
+            await svc.create_project(user_id="test-user-001", title=f"Проект {i}")
 
-        projects, total = await svc.list_projects(offset=2, limit=2)
+        projects, total = await svc.list_projects(user_id="test-user-001", offset=2, limit=2)
         assert total == 5
         assert len(projects) == 2
 
@@ -81,7 +81,7 @@ class TestProjectServiceCRUD:
     async def test_update_project(self, db_session: AsyncSession) -> None:
         """Обновление проекта."""
         svc = ProjectService(db_session)
-        created = await svc.create_project(title="Старое")
+        created = await svc.create_project(user_id="test-user-001", title="Старое")
         updated = await svc.update_project(created.id, title="Новое")
         assert updated is not None
         assert updated.title == "Новое"
@@ -97,7 +97,7 @@ class TestProjectServiceCRUD:
     async def test_delete_project(self, db_session: AsyncSession) -> None:
         """Удаление проекта."""
         svc = ProjectService(db_session)
-        created = await svc.create_project(title="Удалить")
+        created = await svc.create_project(user_id="test-user-001", title="Удалить")
         deleted = await svc.delete_project(created.id)
         assert deleted is True
 
@@ -124,7 +124,7 @@ class TestProjectServiceMessages:
     async def test_add_message(self, db_session: AsyncSession) -> None:
         """Добавление сообщения."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         msg = await svc.add_message(
             project_id=project.id,
             sender="user",
@@ -138,7 +138,7 @@ class TestProjectServiceMessages:
     async def test_add_message_with_metadata(self, db_session: AsyncSession) -> None:
         """Добавление сообщения с метаданными."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         msg = await svc.add_message(
             project_id=project.id,
             sender="ai",
@@ -151,7 +151,7 @@ class TestProjectServiceMessages:
     async def test_list_messages(self, db_session: AsyncSession) -> None:
         """Список сообщений проекта."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         await svc.add_message(project_id=project.id, sender="user", text="Сообщение 1")
         await svc.add_message(project_id=project.id, sender="ai", text="Сообщение 2")
 
@@ -163,7 +163,7 @@ class TestProjectServiceMessages:
     async def test_list_messages_pagination(self, db_session: AsyncSession) -> None:
         """Пагинация сообщений."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         for i in range(5):
             await svc.add_message(project_id=project.id, sender="user", text=f"Msg {i}")
 
@@ -184,7 +184,7 @@ class TestProjectServiceArtifacts:
     async def test_add_artifact(self, db_session: AsyncSession) -> None:
         """Добавление артефакта."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         artifact = await svc.add_artifact(
             project_id=project.id,
             filename="presentation.html",
@@ -200,7 +200,7 @@ class TestProjectServiceArtifacts:
     async def test_get_artifact(self, db_session: AsyncSession) -> None:
         """Получение артефакта по ID."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         created = await svc.add_artifact(
             project_id=project.id,
             filename="test.html",
@@ -221,7 +221,7 @@ class TestProjectServiceArtifacts:
     async def test_list_artifacts(self, db_session: AsyncSession) -> None:
         """Список артефактов проекта."""
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
         await svc.add_artifact(project_id=project.id, filename="a.html", file_type="html")
         await svc.add_artifact(project_id=project.id, filename="b.css", file_type="css")
 

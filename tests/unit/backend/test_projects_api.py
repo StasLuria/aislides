@@ -29,6 +29,7 @@ class TestCreateProject:
         assert data["title"] == "Новый проект"
         assert data["status"] == "idle"
         assert "id" in data
+        assert "user_id" in data
         assert "created_at" in data
         assert "updated_at" in data
 

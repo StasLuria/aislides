@@ -1,6 +1,7 @@
 """Сервис для работы с проектами, сообщениями и артефактами.
 
 Инкапсулирует бизнес-логику CRUD-операций.
+Все операции с проектами фильтруются по user_id для изоляции данных.
 """
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy import func as sa_func
 from sqlalchemy import select
 
 from backend.app.models.project import Artifact, Message, Project
@@ -30,38 +32,93 @@ class ProjectService:
 
     # --- Projects ---
 
-    async def create_project(self, title: str = "Новый проект") -> Project:
-        """Создать новый проект."""
-        project = Project(title=title)
+    async def create_project(
+        self,
+        user_id: str,
+        title: str = "Новый проект",
+    ) -> Project:
+        """Создать новый проект.
+
+        Args:
+            user_id: UUID владельца проекта.
+            title: Название проекта.
+
+        Returns:
+            Созданный проект.
+        """
+        project = Project(user_id=user_id, title=title)
         self.db.add(project)
         await self.db.flush()
         await self.db.refresh(project)
-        logger.info("Создан проект: %s (%s)", project.title, project.id)
+        logger.info("Создан проект: %s (%s) для user %s", project.title, project.id, user_id)
         return project
 
-    async def get_project(self, project_id: str) -> Project | None:
-        """Получить проект по ID."""
-        result = await self.db.execute(select(Project).where(Project.id == project_id))
+    async def get_project(self, project_id: str, user_id: str | None = None) -> Project | None:
+        """Получить проект по ID.
+
+        Args:
+            project_id: UUID проекта.
+            user_id: Если указан, проверяет принадлежность проекта пользователю.
+
+        Returns:
+            Проект или None.
+        """
+        stmt = select(Project).where(Project.id == project_id)
+        if user_id is not None:
+            stmt = stmt.where(Project.user_id == user_id)
+        result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_projects(self, offset: int = 0, limit: int = 50) -> tuple[list[Project], int]:
-        """Получить список проектов с пагинацией.
+    async def list_projects(
+        self,
+        user_id: str,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> tuple[list[Project], int]:
+        """Получить список проектов пользователя с пагинацией.
+
+        Args:
+            user_id: UUID владельца.
+            offset: Смещение для пагинации.
+            limit: Количество записей.
 
         Returns:
             Кортеж (список проектов, общее количество).
         """
         # Общее количество
-        count_result = await self.db.execute(select(Project.id))
-        total = len(count_result.all())
+        count_result = await self.db.execute(
+            select(sa_func.count()).select_from(Project).where(Project.user_id == user_id)
+        )
+        total = count_result.scalar() or 0
 
         # Список с пагинацией
-        result = await self.db.execute(select(Project).order_by(Project.updated_at.desc()).offset(offset).limit(limit))
+        result = await self.db.execute(
+            select(Project)
+            .where(Project.user_id == user_id)
+            .order_by(Project.updated_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
         projects = list(result.scalars().all())
         return projects, total
 
-    async def update_project(self, project_id: str, **kwargs: Any) -> Project | None:
-        """Обновить проект."""
-        project = await self.get_project(project_id)
+    async def update_project(
+        self,
+        project_id: str,
+        user_id: str | None = None,
+        **kwargs: Any,
+    ) -> Project | None:
+        """Обновить проект.
+
+        Args:
+            project_id: UUID проекта.
+            user_id: Если указан, проверяет принадлежность.
+            **kwargs: Поля для обновления.
+
+        Returns:
+            Обновлённый проект или None.
+        """
+        project = await self.get_project(project_id, user_id=user_id)
         if project is None:
             return None
         for key, value in kwargs.items():
@@ -72,9 +129,17 @@ class ProjectService:
         logger.info("Обновлён проект: %s", project_id)
         return project
 
-    async def delete_project(self, project_id: str) -> bool:
-        """Удалить проект (каскадно удаляет сообщения и артефакты)."""
-        project = await self.get_project(project_id)
+    async def delete_project(self, project_id: str, user_id: str | None = None) -> bool:
+        """Удалить проект (каскадно удаляет сообщения и артефакты).
+
+        Args:
+            project_id: UUID проекта.
+            user_id: Если указан, проверяет принадлежность.
+
+        Returns:
+            True если удалён, False если не найден.
+        """
+        project = await self.get_project(project_id, user_id=user_id)
         if project is None:
             return False
         await self.db.delete(project)

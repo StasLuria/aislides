@@ -26,6 +26,7 @@ class ProjectRead(BaseModel):
     """Схема чтения проекта."""
 
     id: str
+    user_id: str
     title: str
     status: str
     created_at: datetime

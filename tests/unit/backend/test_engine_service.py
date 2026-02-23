@@ -43,7 +43,7 @@ class TestEngineServiceGenerate:
         from backend.app.services.project_service import ProjectService
 
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
 
         store = _make_store(
             project_id=project.id,
@@ -86,7 +86,7 @@ class TestEngineServiceGenerate:
         from backend.app.services.project_service import ProjectService
 
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
 
         store = _make_store(
             project_id=project.id,
@@ -119,7 +119,7 @@ class TestEngineServiceApplyEdit:
         from backend.app.services.project_service import ProjectService
 
         svc = ProjectService(db_session)
-        project = await svc.create_project(title="Тест")
+        project = await svc.create_project(user_id="test-user-001", title="Тест")
 
         store = _make_store(project_id=project.id)
 
