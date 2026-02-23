@@ -152,7 +152,7 @@
 |:---|:---|:---:|:---|
 | 6.1 | Инициализировать React + Vite + TypeScript + TailwindCSS | ✅ | Vite 7 + React 19 + TS 5.9 + Tailwind 4.2 + Vitest 4 |
 | 6.2 | Реализовать layout: три зоны (sidebar, chat, artifacts) | ✅ | AppLayout, Sidebar, ChatPanel, ArtifactPanel + 12 тестов |
-| 6.3 | Реализовать компонент `ChatMessage` | ☐ | Сообщения пользователя и AI |
+| 6.3 | Реализовать компонент `ChatMessage` | ✅ | user/ai роли, аватары, timestamp, 8 тестов |
 | 6.4 | Реализовать компонент `ChatInput` (поле ввода + кнопка отправки) | ☐ | С поддержкой прикрепления файлов |
 | 6.5 | Реализовать WebSocket-клиент (хук `useWebSocket`) | ☐ | Подключение, переподключение, обработка событий |
 | 6.6 | Реализовать компонент `StatusCard` (карточки статуса S0-S5) | ☐ | По PRD, раздел 5.3 |
