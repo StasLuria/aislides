@@ -13,7 +13,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pydantic = "^2.6"
+pydantic = {extras = ["email"], version = "^2.12.5"}
 instructor = "^1.5"
 openai = "^1.12"
 google-generativeai = "^0.8"
@@ -27,6 +27,8 @@ asyncpg = "^0.31.0"
 aiosqlite = "^0.22.1"
 python-multipart = "^0.0.22"
 pydantic-settings = "^2.13.1"
+python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+bcrypt = "^5.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

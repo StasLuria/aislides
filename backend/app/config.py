@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
+    # JWT Auth
+    jwt_secret_key: str = "dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60 * 24  # 24 часа
+
     # LLM
     llm_model: str = "gemini-2.5-flash"
     llm_api_key: str | None = None
