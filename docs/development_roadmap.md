@@ -158,7 +158,7 @@
 | 6.6 | Реализовать компонент `StatusCard` (карточки статуса S0-S5) | ✅ | Progress bar, 4 статуса, createInitialSteps, 13 тестов |
 | 6.7 | Реализовать компонент `ProjectList` (sidebar) | ✅ | Список, выбор, создание, empty state, относит. даты, 10 тестов |
 | 6.8 | E2E-тест: отправка сообщения → получение ответа в чате | ✅ | Full flow + error + multi-msg + loading, 4 E2E-теста |
-| 6.9 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 6.9 | Обновить README.md и CHANGELOG.md | ✅ | v0.7.0, Frontend секция, Quick Start |
 
 ### Спринт 7: Панель артефактов и превью (1 неделя)
 

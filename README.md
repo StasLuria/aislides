@@ -4,7 +4,7 @@ AI-powered presentation generator with LLM-driven planning and execution engine.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface for interacting with the AI.
 
 ## Architecture
 
@@ -42,6 +42,17 @@ The engine follows an **intelligent orchestrator** pattern:
 | **FileStorage** | Local file storage with upload/download/delete | ✅ |
 | **Upload endpoint** | `/api/upload` with validation (size, extension) | ✅ |
 
+### Frontend (React + Vite + TypeScript + TailwindCSS)
+
+| Component | Purpose | Status |
+|:---|:---|:---|
+| **AppLayout** | Three-zone layout (sidebar, chat, artifacts) | ✅ |
+| **ChatMessage** | User/AI message bubbles with avatars and timestamps | ✅ |
+| **ChatInput** | Auto-resize textarea, Enter/Shift+Enter, file attachments | ✅ |
+| **useWebSocket** | WebSocket client hook with reconnect (exp backoff) | ✅ |
+| **StatusCard** | Generation progress (S0-S5) with progress bar | ✅ |
+| **ProjectList** | Sidebar project list with selection and creation | ✅ |
+
 ### WebSocket Protocol
 
 The WebSocket endpoint at `/ws/projects/{id}` supports bidirectional real-time communication:
@@ -74,6 +85,11 @@ ai-presentation-generator/
 │       ├── services/ # Business logic (ProjectService, EngineService, ConnectionManager, EngineBridge)
 │       ├── routers/  # REST API + WebSocket routes
 │       └── main.py   # FastAPI application entry point
+├── frontend/         # React frontend
+│   └── src/          # Source code
+│       ├── components/  # UI components (chat, layout, status, sidebar)
+│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactPanel)
+│       └── types/       # TypeScript type definitions
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
 │   ├── presets/      # Design presets (corporate_classic, etc.)
@@ -102,14 +118,23 @@ poetry install
 cp .env.example .env
 # Fill in API keys in .env
 
-# 3. Run tests
+# 3. Run backend tests
 poetry run pytest
 
-# 4. Run linters
+# 4. Run backend linters
 make check
 
 # 5. Start backend (requires database)
 poetry run uvicorn backend.app.main:app --reload
+
+# 6. Install frontend dependencies
+cd frontend && pnpm install
+
+# 7. Run frontend tests
+pnpm test
+
+# 8. Start frontend dev server
+pnpm dev
 ```
 
 ## Documentation
@@ -125,46 +150,14 @@ poetry run uvicorn backend.app.main:app --reload
 
 ## Status
 
-**Current Sprint:** 5 — WebSocket + Real-time (COMPLETED)
-**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅
+**Current Sprint:** 6 — Basic Chat Interface (COMPLETED)
+**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅ → Frontend Chat v1.0 ✅
 
-### Sprint 5 Results
+### Sprint 6 Results
 
-- **252 tests** (unit + integration + e2e) — all passing
-- **96.16% code coverage** (target: 90%)
-- **0 linter errors** (ruff + mypy)
-- **WebSocket endpoint** with ConnectionManager for multi-client support
-- **EngineBridge** maps engine events to WebSocket messages in real-time
-- **FileStorage** with upload endpoint and validation
-
-| Module | Status | Coverage |
-|:---|:---|:---|
-| `schemas/shared_store.py` | ✅ | 100% |
-| `schemas/execution_plan.py` | ✅ | 100% |
-| `schemas/tool_schemas.py` | ✅ | 100% |
-| `schemas/events.py` | ✅ | 100% |
-| `engine/event_bus.py` | ✅ | 100% |
-| `engine/registry.py` | ✅ | 100% |
-| `engine/runtime.py` | ✅ | 98% |
-| `engine/base_node.py` | ✅ | 100% |
-| `engine/api.py` | ✅ | 95% |
-| `engine/file_storage.py` | ✅ | 92% |
-| `engine/nodes/planner_node.py` | ✅ | 100% |
-| `engine/nodes/validator_node.py` | ✅ | 100% |
-| `tools/s1_context_analyzer.py` | ✅ | 96% |
-| `tools/s2_narrative_architect.py` | ✅ | 97% |
-| `tools/s3_design_architect.py` | ✅ | 83% |
-| `tools/s4_slide_generator.py` | ✅ | 100% |
-| `tools/s5_quality_validator.py` | ✅ | 98% |
-| `backend/app/main.py` | ✅ | — |
-| `backend/app/models/` | ✅ | — |
-| `backend/app/services/` | ✅ | — |
-| `backend/app/routers/` | ✅ | — |
-| `backend/app/services/connection_manager.py` | ✅ | — |
-| `backend/app/services/engine_bridge.py` | ✅ | — |
-| `backend/app/routers/websocket.py` | ✅ | — |
-| `backend/app/routers/upload.py` | ✅ | — |
-| `data/presets/corporate_classic.json` | ✅ | — |
-| `data/layouts/corporate_layouts.md` | ✅ | — |
-| `data/scoring/scoring_rubric.json` | ✅ | — |
-| `tools/prompts/` | ✅ | — |
+- **73 frontend tests** (Vitest + Testing Library) — all passing
+- **252 backend tests** (pytest) — all passing, 96.16% coverage
+- **0 linter errors** (ESLint + ruff + mypy)
+- **6 UI components:** AppLayout, ChatMessage, ChatInput, StatusCard, ProjectList, ArtifactPanel
+- **1 custom hook:** useWebSocket with reconnect and exponential backoff
+- **4 E2E integration tests:** full chat flow, error handling, multi-message, loading state

@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-23 — Sprint 6: Basic Chat Interface
+
+### Added
+
+- `frontend/` — React + Vite 7 + TypeScript 5.9 + TailwindCSS 4.2 + Vitest 4 project scaffold (task 6.1)
+- `frontend/src/components/layout/` — AppLayout, Sidebar, ChatPanel, ArtifactPanel (task 6.2)
+- `frontend/src/components/chat/ChatMessage.tsx` — User/AI message bubbles with avatars and timestamps (task 6.3)
+- `frontend/src/components/chat/ChatInput.tsx` — Auto-resize textarea, Enter/Shift+Enter, file attachments, isLoading (task 6.4)
+- `frontend/src/hooks/useWebSocket.ts` — WebSocket client hook with reconnect and exponential backoff (task 6.5)
+- `frontend/src/components/status/StatusCard.tsx` — Generation progress S0-S5 with progress bar and 4 statuses (task 6.6)
+- `frontend/src/components/sidebar/ProjectList.tsx` — Project list with selection, creation, empty state, relative dates (task 6.7)
+- `frontend/src/types/index.ts` — TypeScript types for messages, projects, artifacts, WebSocket protocol
+- 73 frontend tests: Layout (12), ChatMessage (8), ChatInput (12), useWebSocket (12), StatusCard (13), ProjectList (10), E2E ChatFlow (4), App (2) (tasks 6.2-6.8)
+
+### Changed
+
+- `README.md` — Added Frontend section, updated project structure and quick start
+- `vite.config.ts` — Proxy to backend API for development
+
 ## [0.6.0] - 2026-02-23 — Sprint 5: WebSocket + Real-time
 
 ### Added
