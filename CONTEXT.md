@@ -9,6 +9,7 @@
 **Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
 **Milestone: MVP v1.0 — ДОСТИГНУТ ✅**
 **Спринт 8: Редактирование артефактов — ЗАВЕРШЁН ✅**
+**Спринт 9: Авторизация и многопользовательность — В ПРОЦЕССЕ (9.1-9.4 ✅, 9.5-9.6 ☐)**
 
 ## Что сделано
 
@@ -139,13 +140,24 @@
 | 8.5 Integration-тесты: редактирование → перегенерация | ✅ | 13 integration-тестов: WS handler + EngineBridge + E2E cycle |
 | 8.6 README + CHANGELOG | ✅ | v0.9.0 |
 
+### Спринт 9: Авторизация и многопользовательность (в процессе)
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 9.1 Регистрация и авторизация (JWT) | ✅ | User model, bcrypt, JWT, auth_service, /api/auth/register + /login, 26 тестов |
+| 9.2 Middleware авторизации для REST и WebSocket | ✅ | get_current_user (REST Bearer), ws_authenticate (WS query token), 302 backend тестов |
+| 9.3 Привязать проекты и артефакты к пользователям | ✅ | user_id в Project model, ProjectService фильтрация по user_id |
+| 9.4 Страница логина/регистрации на Frontend | ✅ | AuthContext, LoginForm, RegisterForm, AuthPage, ProtectedRoute, authApi, tokenStorage, useWebSocket+JWT, 34 новых теста (241 frontend) |
+| 9.5 Integration-тесты: авторизация, изоляция данных | ☐ | |
+| 9.6 Обновить README.md и CHANGELOG.md | ☐ | |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Backend тесты (pytest) | 265 passed |
+| Backend тесты (pytest) | 302 passed |
 | Backend покрытие | 96.16% |
-| Frontend тесты (vitest) | 200 passed |
+| Frontend тесты (vitest) | 241 passed |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
 | ESLint ошибки | 0 |
@@ -153,7 +165,7 @@
 
 ## Следующий шаг
 
-**Спринт 9: Авторизация и многопользовательность** — JWT/OAuth, разделение данных между пользователями
+**Task 9.5: Integration-тесты: авторизация, изоляция данных** — тесты на изоляцию проектов между пользователями, E2E авторизация
 
 ## Блокеры
 

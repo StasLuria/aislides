@@ -201,8 +201,8 @@
 |:---|:---|:---:|:---|
 | 9.1 | Реализовать регистрацию и авторизацию (JWT) | ✅ | User model, bcrypt, JWT, auth_service, /api/auth/register + /login, 26 тестов |
 | 9.2 | Реализовать middleware авторизации для REST и WebSocket | ✅ | get_current_user (REST Bearer), ws_authenticate (WS query token), auth dependency на projects/upload/ws, 302 backend тестов |
-| 9.3 | Привязать проекты и артефакты к пользователям | ☐ | |
-| 9.4 | Реализовать страницу логина/регистрации на Frontend | ☐ | |
+| 9.3 | Привязать проекты и артефакты к пользователям | ✅ | user_id в Project model, ProjectService фильтрация по user_id, 302 backend тестов, 2026-02-23 |
+| 9.4 | Реализовать страницу логина/регистрации на Frontend | ✅ | AuthContext, LoginForm, RegisterForm, AuthPage, ProtectedRoute, authApi, tokenStorage, useWebSocket+JWT, 34 новых теста (241 frontend), 2026-02-23 |
 | 9.5 | Integration-тесты: авторизация, изоляция данных | ☐ | |
 | 9.6 | Обновить README.md и CHANGELOG.md | ☐ | |
 

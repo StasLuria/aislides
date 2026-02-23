@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added (Sprint 9: Auth — Tasks 9.1-9.4)
+
+- `backend/app/models/user.py` — User SQLAlchemy model with bcrypt password hashing (task 9.1)
+- `backend/app/services/auth_service.py` — Registration, login, JWT token creation/verification (task 9.1)
+- `backend/app/routers/auth.py` — `/api/auth/register`, `/api/auth/login`, `/api/auth/me` endpoints (task 9.1)
+- `backend/app/schemas/auth.py` — Pydantic schemas for auth requests/responses (task 9.1)
+- `backend/app/dependencies/auth.py` — `get_current_user` dependency for REST, `ws_authenticate` for WebSocket (task 9.2)
+- `frontend/src/contexts/AuthContext.tsx` — React context for global auth state with JWT decode/validate/restore (task 9.4)
+- `frontend/src/components/auth/LoginForm.tsx` — Login form with validation and error handling (task 9.4)
+- `frontend/src/components/auth/RegisterForm.tsx` — Registration form with password match/length validation (task 9.4)
+- `frontend/src/components/auth/AuthPage.tsx` — Auth page with login/register toggle (task 9.4)
+- `frontend/src/components/auth/ProtectedRoute.tsx` — Route guard with redirect to /auth (task 9.4)
+- `frontend/src/services/authApi.ts` — HTTP client for auth endpoints (task 9.4)
+- `frontend/src/services/tokenStorage.ts` — localStorage JWT token management with error handling (task 9.4)
+- 34 new frontend auth tests: tokenStorage (7), authApi (8), AuthContext (7), LoginForm (5), RegisterForm (4), AuthPage (3), ProtectedRoute (4), App (3)
+
+### Changed
+
+- `backend/app/models/project.py` — Added `user_id` field for project ownership (task 9.3)
+- `backend/app/services/project_service.py` — All operations now filter by `user_id` (task 9.3)
+- `frontend/src/App.tsx` — Added BrowserRouter, AuthProvider, route-based auth flow (task 9.4)
+- `frontend/src/hooks/useWebSocket.ts` — JWT token sent in WebSocket query params (task 9.4)
+- Backend tests: 302 total (was 265), 96.16% coverage
+- Frontend tests: 241 total (was 200)
+
 ## [0.9.0] - 2026-02-23 — Sprint 8: Artifact Editing
 
 ### Added
