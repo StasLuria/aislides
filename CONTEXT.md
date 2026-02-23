@@ -8,7 +8,7 @@
 **Milestone: Backend v1.0 — ДОСТИГНУТ ✅**
 **Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
 **Milestone: MVP v1.0 — ДОСТИГНУТ ✅**
-**Спринт 7: Панель артефактов и превью — ЗАВЕРШЁН ✅**
+**Спринт 8: Редактирование артефактов — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -128,21 +128,32 @@
 | 7.8 README + CHANGELOG | ✅ | v0.8.0 |
 | 7.9 Milestone MVP v1.0 | ✅ | 252 backend + 150 frontend тестов, 0 lint ошибок |
 
+### Спринт 8: Редактирование артефактов ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 8.1 Monaco Editor для текстовых файлов | ✅ | CodeEditor + editorUtils + 22 теста |
+| 8.2 Редактирование structure.md → перегенерация | ✅ | EditableArtifact + useArtifactEditor + 14 тестов |
+| 8.3 WebSocket-сообщение artifact_edited | ✅ | WS: artifact_updated→artifact_edited, EngineBridge.run_artifact_update |
+| 8.4 WYSIWYG-редактирование текста на слайдах | ✅ | SlideTextEditor + 14 тестов, contentEditable + useRef |
+| 8.5 Integration-тесты: редактирование → перегенерация | ✅ | 13 integration-тестов: WS handler + EngineBridge + E2E cycle |
+| 8.6 README + CHANGELOG | ✅ | v0.9.0 |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Backend тесты (pytest) | 252 passed |
+| Backend тесты (pytest) | 265 passed |
 | Backend покрытие | 96.16% |
-| Frontend тесты (vitest) | 150 passed |
+| Frontend тесты (vitest) | 200 passed |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
 | ESLint ошибки | 0 |
-| Версия | 0.8.0 |
+| Версия | 0.9.0 |
 
 ## Следующий шаг
 
-**Этап 4, Спринт 8: Полноценный продукт** — редактирование, авторизация, деплой
+**Спринт 9: Авторизация и многопользовательность** — JWT/OAuth, разделение данных между пользователями
 
 ## Блокеры
 
