@@ -72,16 +72,18 @@
 
 | # | Задача | Статус | Комментарий |
 |:---|:---|:---:|:---|
-| 2.1 | `engine/nodes/planner_node.py` — S0_PlannerNode | ☐ | По ТЗ v3.0, §6.1. Формирование промпта, вызов Instructor |
-| 2.2 | `engine/nodes/validator_node.py` — PlanValidatorNode | ☐ | По ТЗ v3.0, §6.1. Валидация плана |
-| 2.3 | `tools/s1_context_analyzer.py` — S1 Node | ☐ | По technical_specification.md, раздел 2.2. Анализ контекста |
-| 2.4 | `tools/s2_narrative_architect.py` — S2 Node | ☐ | По technical_specification.md, раздел 2.3. Структура нарратива |
-| 2.5 | `tools/s3_design_architect.py` — S3 Node | ☐ | По technical_specification.md, раздел 2.4. Дизайн-стратегия |
-| 2.6 | Создать MVP-пресет `data/presets/corporate_classic.json` | ☐ | По technical_specification.md, раздел 4.3 |
-| 2.7 | Unit-тесты: S0 (формирование промпта, парсинг плана) | ☐ | С mock LLM |
-| 2.8 | Unit-тесты: S1, S2, S3 (каждый в изоляции) | ☐ | С mock LLM |
-| 2.9 | Integration-тест: S0 → Validator → Runtime → S1 → S2 | ☐ | Сквозной сценарий с mock LLM |
-| 2.10 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 2.1 | `engine/nodes/planner_node.py` — S0_PlannerNode | ✅ | По ТЗ v3.0, §6.1. Instructor + OpenAI-compatible API |
+| 2.2 | `engine/nodes/validator_node.py` — PlanValidatorNode | ✅ | По ТЗ v3.0, §6.1. Валидация + dependency checks |
+| 2.3 | `tools/s1_context_analyzer.py` — S1 Node | ✅ | По technical_specification.md, раздел 2.2 |
+| 2.4 | `tools/s2_narrative_architect.py` — S2 Node | ✅ | По technical_specification.md, раздел 2.3 |
+| 2.5 | `tools/s3_design_architect.py` — S3 Node | ✅ | По technical_specification.md, раздел 2.4 |
+| 2.6 | Создать MVP-пресет `data/presets/corporate_classic.json` | ✅ | По technical_specification.md, раздел 4.3 |
+| 2.7 | `tools/prompts/` — шаблоны промптов S0-S3 | ✅ | s0_planner, s1_context, s2_narrative, s3_design |
+| 2.8 | Unit-тесты: S0 PlannerNode (13 тестов) | ✅ | С mock LLM |
+| 2.9 | Unit-тесты: PlanValidatorNode (18 тестов) | ✅ | Валидация плана, зависимости, ошибки |
+| 2.10 | Unit-тесты: S1, S2, S3 (23 теста) | ✅ | С mock LLM |
+| 2.11 | Интеграция EngineAPI с PlannerNode и ValidatorNode | ✅ | Replan loop, PLAN_COMPLETED event |
+| 2.12 | Обновить README.md и CHANGELOG.md | ✅ | v0.3.0 |
 
 ### Спринт 3: Инструменты S4-S5 и сквозной тест (1 неделя)
 

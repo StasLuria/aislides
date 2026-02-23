@@ -216,8 +216,9 @@ class TestEngineEvent:
         assert event.data is None
 
     def test_all_event_types(self) -> None:
-        """Все 6 типов событий определены."""
+        """Все 7 типов событий определены."""
         types = [e.value for e in EventType]
-        assert len(types) == 6
+        assert len(types) == 7
         assert "ai_message" in types
         assert "artifact_created" in types
+        assert "plan_completed" in types

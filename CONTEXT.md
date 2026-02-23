@@ -4,7 +4,7 @@
 
 ## Текущий спринт
 
-**Спринт 1: Схемы данных и ядро — ЗАВЕРШЁН ✅**
+**Спринт 2: Планировщик и инструменты S1-S3 — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -36,9 +36,36 @@
 | 1.8-1.11 Unit-тесты | ✅ | 55 тестов, 96.54% coverage |
 | 1.12 README + CHANGELOG | ✅ | Обновлены |
 
+### Спринт 2: Планировщик и инструменты S1-S3 ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 2.1 engine/nodes/planner_node.py | ✅ | S0_PlannerNode (Instructor + OpenAI-compatible API) |
+| 2.2 engine/nodes/validator_node.py | ✅ | PlanValidatorNode (валидация + dependency checks) |
+| 2.3 tools/s1_context_analyzer.py | ✅ | S1_ContextAnalyzerNode |
+| 2.4 tools/s2_narrative_architect.py | ✅ | S2_NarrativeArchitectNode |
+| 2.5 tools/s3_design_architect.py | ✅ | S3_DesignArchitectNode |
+| 2.6 data/presets/corporate_classic.json | ✅ | MVP-пресет |
+| 2.7 tools/prompts/ | ✅ | Шаблоны промптов S0-S3 |
+| 2.8 Unit-тесты PlannerNode | ✅ | 13 тестов с mock LLM |
+| 2.9 Unit-тесты ValidatorNode | ✅ | 18 тестов |
+| 2.10 Unit-тесты S1-S3 | ✅ | 23 теста с mock LLM |
+| 2.11 Интеграция EngineAPI | ✅ | Replan loop, PLAN_COMPLETED event |
+| 2.12 README + CHANGELOG | ✅ | v0.3.0 |
+
+## Метрики
+
+| Метрика | Значение |
+|:---|:---|
+| Unit-тесты | 115 passed |
+| Покрытие | 95.32% |
+| Ruff ошибки | 0 |
+| Mypy ошибки | 0 |
+| Версия | 0.3.0 |
+
 ## Следующий шаг
 
-**Спринт 2: Планировщик и инструменты S1-S3** — задача 2.1: `engine/nodes/planner_node.py` (S0_PlannerNode по ТЗ v3.0, §6.1)
+**Спринт 3: Инструменты S4-S5 и сквозной тест** — задача 3.1: `tools/s4_slide_generator.py` (S4 Node по technical_specification.md, раздел 2.5)
 
 ## Блокеры
 

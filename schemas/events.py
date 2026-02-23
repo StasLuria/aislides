@@ -19,6 +19,7 @@ class EventType(str, Enum):
     STEP_COMPLETED = "step_completed"
     ARTIFACT_CREATED = "artifact_created"
     ERROR = "error"
+    PLAN_COMPLETED = "plan_completed"
     AI_MESSAGE = "ai_message"
 
 

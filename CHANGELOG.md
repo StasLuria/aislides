@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-23 — Sprint 2: Planner & Tools S1-S3
+
+### Added
+
+- `engine/nodes/planner_node.py` — S0_PlannerNode: LLM planner with Instructor per §6.1 and §7 (task 2.1)
+- `engine/nodes/validator_node.py` — PlanValidatorNode: plan validation with dependency checks per §6.1 (task 2.2)
+- `tools/s1_context_analyzer.py` — S1_ContextAnalyzerNode: context analysis per tech spec S1 (task 2.3)
+- `tools/s2_narrative_architect.py` — S2_NarrativeArchitectNode: narrative design per tech spec S2 (task 2.4)
+- `tools/s3_design_architect.py` — S3_DesignArchitectNode: design system per tech spec S3 (task 2.5)
+- `data/presets/corporate_classic.json` — MVP design preset with full color/typography/layout config (task 2.6)
+- `tools/prompts/` — LLM prompt templates for S0-S3 (task 2.7)
+- 60 new unit tests: PlannerNode (13), ValidatorNode (18), S1-S3 (23), EngineAPI updated (6) (tasks 2.8-2.11)
+- `schemas/events.py` — added PLAN_COMPLETED event type
+
+### Changed
+
+- `engine/api.py` — full integration with S0_PlannerNode and PlanValidatorNode, replan loop (task 2.11)
+- Test coverage: 95.32% (115 tests, target: 90%)
+
 ## [0.2.0] - 2026-02-23 — Sprint 1: Schemas & Core Engine
 
 ### Added

@@ -3,9 +3,6 @@
 Реализация по ТЗ v3.0, §3.
 Инкапсулирует весь жизненный цикл: создание SharedStore,
 вызов S0_PlannerNode, валидацию плана, исполнение через RuntimeAgent.
-
-На данном этапе (Спринт 1) — заглушка с корректной структурой.
-Полная реализация — Спринт 2 (после реализации S0_PlannerNode).
 """
 
 from __future__ import annotations
@@ -16,12 +13,17 @@ import uuid
 from typing import Any
 
 from engine.event_bus import EventBus
+from engine.nodes.planner_node import S0PlannerNode
+from engine.nodes.validator_node import PlanValidatorNode
 from engine.registry import ToolRegistry
 from engine.runtime import RuntimeAgent
 from schemas.events import EngineEvent, EventType
 from schemas.shared_store import ChatMessage, ProjectStatus, SharedStore
 
 logger = logging.getLogger(__name__)
+
+# Максимальное количество попыток перепланирования при ошибках валидации
+MAX_REPLAN_ATTEMPTS = 2
 
 
 class EngineAPI:
@@ -43,6 +45,22 @@ class EngineAPI:
         self.registry = ToolRegistry()
         self._cancellation_tokens: dict[str, asyncio.Event] = {}
 
+        # Настройки LLM из конфигурации
+        llm_config = self._config.get("llm", {})
+        self._llm_model = llm_config.get("model", "gemini-2.5-flash")
+        self._llm_api_key = llm_config.get("api_key")
+        self._llm_base_url = llm_config.get("base_url")
+        self._llm_max_retries = llm_config.get("max_retries", 3)
+
+        # Создаём узлы планирования и валидации
+        self._planner = S0PlannerNode(
+            model=self._llm_model,
+            max_retries=self._llm_max_retries,
+            api_key=self._llm_api_key,
+            base_url=self._llm_base_url,
+        )
+        self._validator = PlanValidatorNode(registry=self.registry)
+
     async def run(
         self,
         project_id: str | None = None,
@@ -52,6 +70,13 @@ class EngineAPI:
         attached_files: list[dict[str, Any]] | None = None,
     ) -> SharedStore:
         """Основной метод: выполнить полный цикл генерации.
+
+        Цикл:
+        1. Создать SharedStore.
+        2. Вызвать S0_PlannerNode для генерации плана.
+        3. Валидировать план через PlanValidatorNode.
+        4. При ошибках валидации — перепланировать (до MAX_REPLAN_ATTEMPTS).
+        5. Исполнить план через RuntimeAgent.
 
         Args:
             project_id: Уникальный ID проекта (генерируется, если не указан).
@@ -90,14 +115,41 @@ class EngineAPI:
         )
 
         try:
-            # 3. Вызвать S0_PlannerNode (TODO: Спринт 2)
-            # store = await self._planner.execute(store)
+            # 3. Планирование + валидация (с повторными попытками)
+            store = await self._plan_and_validate(store, trace_id)
 
-            # 4. Вызвать PlanValidatorNode (TODO: Спринт 2)
-            # store = await self._validator.execute(store)
+            # Проверяем, прошла ли валидация
+            if store.plan_validation_errors:
+                store.status = ProjectStatus.FAILED
+                store.errors.append(
+                    {
+                        "component": "PlanValidatorNode",
+                        "error": f"План не прошёл валидацию после {MAX_REPLAN_ATTEMPTS} попыток: "
+                        + "; ".join(store.plan_validation_errors),
+                    }
+                )
+                await self.event_bus.emit(
+                    EngineEvent(
+                        event_type=EventType.ERROR,
+                        trace_id=trace_id,
+                        component="PlanValidatorNode",
+                        message="План не прошёл валидацию",
+                    )
+                )
+                return store
 
-            # 5. Вызвать RuntimeAgent
+            await self.event_bus.emit(
+                EngineEvent(
+                    event_type=EventType.PLAN_COMPLETED,
+                    trace_id=trace_id,
+                    component="EngineAPI",
+                    message="План сгенерирован и валидирован",
+                )
+            )
+
+            # 4. Исполнение плана через RuntimeAgent
             if store.execution_plan is not None:
+                store.status = ProjectStatus.EXECUTING
                 agent = RuntimeAgent(
                     registry=self.registry,
                     event_bus=self.event_bus,
@@ -124,6 +176,50 @@ class EngineAPI:
 
         return store
 
+    async def _plan_and_validate(self, store: SharedStore, trace_id: str) -> SharedStore:
+        """Планирование с валидацией и повторными попытками.
+
+        Args:
+            store: SharedStore для планирования.
+            trace_id: ID для трассировки.
+
+        Returns:
+            SharedStore с валидированным планом или ошибками валидации.
+        """
+        for attempt in range(1, MAX_REPLAN_ATTEMPTS + 1):
+            logger.info(
+                "[%s] Планирование: попытка %d/%d",
+                trace_id,
+                attempt,
+                MAX_REPLAN_ATTEMPTS,
+            )
+
+            # Вызвать S0_PlannerNode
+            store = await self._planner.execute(store)
+
+            # Вызвать PlanValidatorNode
+            store = await self._validator.execute(store)
+
+            # Если план валиден — выходим
+            if store.plan_validation_errors is None:
+                logger.info("[%s] План валиден с попытки %d", trace_id, attempt)
+                return store
+
+            # Если есть ошибки — добавляем их в user_input для перепланирования
+            logger.warning(
+                "[%s] Попытка %d: ошибки валидации: %s",
+                trace_id,
+                attempt,
+                "; ".join(store.plan_validation_errors),
+            )
+
+            if attempt < MAX_REPLAN_ATTEMPTS:
+                # Добавляем ошибки валидации в контекст для перепланирования
+                store.user_input["validation_errors"] = store.plan_validation_errors
+                store.execution_plan = None  # Сбрасываем план
+
+        return store
+
     async def apply_edit(
         self,
         project_id: str,
@@ -133,6 +229,9 @@ class EngineAPI:
         existing_results: dict[str, Any],
     ) -> SharedStore:
         """Обработать ручную правку артефакта.
+
+        Создаёт SharedStore с edit_context и запускает цикл перепланирования,
+        чтобы определить, какие шаги нужно перевыполнить.
 
         Args:
             project_id: ID проекта.
@@ -144,21 +243,18 @@ class EngineAPI:
         Returns:
             Обновлённый SharedStore.
         """
-        # TODO: Спринт 2 — полная реализация
-        store = SharedStore(
+        return await self.run(
             project_id=project_id,
-            status=ProjectStatus.PENDING,
             user_input={
+                "prompt": f"Обновить артефакт {artifact_id}",
                 "edit_context": {
                     "artifact_id": artifact_id,
                     "new_content": new_content,
-                }
+                },
             },
-            config=self._config,
-            chat_history=[ChatMessage(**msg) for msg in chat_history],
-            results=existing_results,
+            chat_history=chat_history,
+            existing_results=existing_results,
         )
-        return store
 
     async def cancel(self, project_id: str) -> bool:
         """Отменить текущее выполнение для проекта.

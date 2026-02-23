@@ -1,0 +1,89 @@
+{
+  "preset_id": "corporate_classic",
+  "category": "Corporate & Professional",
+  "description": "Классический корпоративный стиль для деловых презентаций. Подходит для инвесторов, C-level, партнёров.",
+  "recommended_for": {
+    "audiences": ["investors", "c-level", "board", "partners", "clients"],
+    "purposes": ["pitch", "report", "proposal", "quarterly_review"],
+    "tones": ["professional", "formal", "confident"]
+  },
+  "layout_family": "corporate",
+  "color_variants": {
+    "navy_gold": {
+      "background": "#FFFFFF",
+      "text_primary": "#1A1A2E",
+      "text_secondary": "#4A4A6A",
+      "accent": "#C9A84C",
+      "accent_secondary": "#1A3A5C",
+      "surface": "#F5F5F0"
+    },
+    "dark_navy": {
+      "background": "#0F1923",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#B0BEC5",
+      "accent": "#4FC3F7",
+      "accent_secondary": "#FF8A65",
+      "surface": "#1A2A3A"
+    },
+    "classic_blue": {
+      "background": "#FFFFFF",
+      "text_primary": "#212121",
+      "text_secondary": "#616161",
+      "accent": "#1565C0",
+      "accent_secondary": "#E65100",
+      "surface": "#F5F7FA"
+    },
+    "slate_teal": {
+      "background": "#FAFAFA",
+      "text_primary": "#263238",
+      "text_secondary": "#546E7A",
+      "accent": "#00897B",
+      "accent_secondary": "#5C6BC0",
+      "surface": "#ECEFF1"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Inter",
+    "font_family_body": "Inter",
+    "size_h1": "48px",
+    "size_h2": "36px",
+    "size_h3": "28px",
+    "size_body": "18px",
+    "size_caption": "14px",
+    "line_height": 1.5,
+    "letter_spacing_heading": "-0.02em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 700,
+    "font_weight_body": 400
+  },
+  "spacing": {
+    "unit": 4,
+    "whitespace_target": "55-60%",
+    "slide_padding": "64px",
+    "content_gap": "32px",
+    "section_gap": "48px"
+  },
+  "content_rules": {
+    "bullet_style": "dot",
+    "max_bullets_per_slide": 5,
+    "max_words_per_bullet": 15,
+    "max_words_title": 8,
+    "image_treatment": "rounded_corners_8px"
+  },
+  "layout_templates": {
+    "hero_title": "corp_hero",
+    "section_header": "corp_section",
+    "key_point": "corp_key_point",
+    "bullet_list": "corp_bullets",
+    "process_steps": "corp_process",
+    "comparison": "corp_comparison",
+    "data_table": "corp_data_table",
+    "chart": "corp_chart",
+    "quote": "corp_quote",
+    "image_text": "corp_image_text",
+    "funnel_stages": "corp_funnel",
+    "timeline": "corp_timeline",
+    "team_grid": "corp_team",
+    "cta": "corp_cta"
+  }
+}
