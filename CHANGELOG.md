@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-23 — Sprint 8: Artifact Editing
+
+### Added
+
+- `frontend/src/components/artifact/CodeEditor.tsx` — Monaco Editor integration for text file editing with language detection (task 8.1)
+- `frontend/src/components/artifact/editorUtils.ts` — File extension → language mapping utility (task 8.1)
+- `frontend/src/components/artifact/EditableArtifact.tsx` — Toggle between MarkdownViewer and CodeEditor view/edit modes (task 8.2)
+- `frontend/src/hooks/useArtifactEditor.ts` — Edit state management, dirty tracking, WebSocket save (task 8.2)
+- `frontend/src/components/artifact/SlideTextEditor.tsx` — WYSIWYG editing of text on HTML slides via contentEditable (task 8.4)
+- `backend/app/routers/websocket.py` — Added `artifact_updated` handler with validation (task 8.3)
+- `backend/app/services/engine_bridge.py` — Added `run_artifact_update()` method for edit → regeneration (task 8.3)
+- `frontend/src/types/index.ts` — Extended with WsArtifactUpdated, WsArtifactEdited types
+- `tests/integration/test_artifact_editing.py` — 13 integration tests: WS handler validation, EngineBridge update cycle, E2E edit flow (task 8.5)
+- 50 new frontend tests: CodeEditor (22), EditableArtifact (8), useArtifactEditor (6), SlideTextEditor (14)
+
+### Changed
+
+- WebSocket protocol: added `artifact_updated` (client→server) and `artifact_edited` (server→client) message types
+- `README.md` — Added 4 new editing components, updated WS protocol docs, updated status
+- Frontend tests: 200 total (was 150), Backend tests: 265 total (was 252), 96.16% coverage
+
 ## [0.8.0] - 2026-02-23 — Sprint 7: Artifact Panel & Preview | Milestone: MVP v1.0
 
 ### Added

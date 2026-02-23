@@ -4,7 +4,7 @@ AI-powered presentation generator with LLM-driven planning and execution engine.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface with artifact panel for interacting with the AI and previewing generated presentations.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface with artifact panel for interacting with the AI, previewing and editing generated presentations.
 
 ## Architecture
 
@@ -58,6 +58,10 @@ The engine follows an **intelligent orchestrator** pattern:
 | **SlidePreview** | HTML slide preview via iframe with 1920×1080 scaling | ✅ |
 | **VersionList** | Artifact version list with navigation and highlighting | ✅ |
 | **useArtifactActions** | Download (Blob) and open in new tab actions | ✅ |
+| **CodeEditor** | Monaco Editor integration for text file editing | ✅ |
+| **EditableArtifact** | Toggle between view/edit mode for artifacts | ✅ |
+| **SlideTextEditor** | WYSIWYG editing of text on HTML slides | ✅ |
+| **useArtifactEditor** | Edit state management and WebSocket save | ✅ |
 
 ### WebSocket Protocol
 
@@ -65,12 +69,14 @@ The WebSocket endpoint at `/ws/projects/{id}` supports bidirectional real-time c
 
 **Client → Server:**
 - `user_message` — Send a message to trigger generation
-- `edit_request` — Request artifact editing
+- `artifact_feedback` — Request AI-driven artifact editing
+- `artifact_updated` — Send manually edited artifact content for regeneration
 - `cancel` — Cancel active generation
 
 **Server → Client:**
 - `status_update` — Step progress (step_started, step_completed)
 - `artifact_generated` — New artifact with preview URL
+- `artifact_edited` — Confirmation of artifact edit (accepted/completed/error)
 - `ai_message` — AI response text
 - `error` — Error notification
 
@@ -94,7 +100,7 @@ ai-presentation-generator/
 ├── frontend/         # React frontend
 │   └── src/          # Source code
 │       ├── components/  # UI components (chat, layout, status, sidebar, artifact)
-│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactPanel, useArtifactActions)
+│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactEditor, useArtifactActions)
 │       └── types/       # TypeScript type definitions
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
@@ -104,7 +110,7 @@ ai-presentation-generator/
 ├── tests/            # Tests (unit, integration, e2e)
 │   ├── unit/         # Unit tests (engine, schemas, backend)
 │   │   └── backend/  # Backend-specific unit tests
-│   ├── integration/  # Integration tests (apply_edit, websocket)
+│   ├── integration/  # Integration tests (apply_edit, websocket, artifact_editing)
 │   └── e2e/          # End-to-end pipeline tests
 ├── docs/             # Documentation (specs, roadmap, ADRs)
 │   └── adr/          # Architecture Decision Records
@@ -156,14 +162,15 @@ pnpm dev
 
 ## Status
 
-**Current Sprint:** 7 — Artifact Panel & Preview (COMPLETED)
+**Current Sprint:** 8 — Artifact Editing (COMPLETED)
 **Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅ → Frontend Chat v1.0 ✅ → MVP v1.0 ✅
 
-### Sprint 7 Results
+### Sprint 8 Results
 
-- **150 frontend tests** (Vitest + Testing Library) — all passing
-- **252 backend tests** (pytest) — all passing, 96.16% coverage
+- **200 frontend tests** (Vitest + Testing Library) — all passing
+- **265 backend tests** (pytest) — all passing, 96.16% coverage
 - **0 linter errors** (ESLint + ruff + mypy)
-- **5 new artifact components:** ArtifactPanel, ArtifactCard, MarkdownViewer, SlidePreview, VersionList
-- **2 new hooks:** useArtifactActions, useArtifactPanel
-- **8 E2E integration tests:** full artifact flow (Card→Panel, Preview, MD, Versions, Tabs, Toolbar)
+- **4 new editing components:** CodeEditor, EditableArtifact, SlideTextEditor, editorUtils
+- **2 new hooks:** useArtifactEditor, useArtifactActions (extended)
+- **Backend:** artifact_updated WS handler, EngineBridge.run_artifact_update
+- **13 integration tests:** full edit → regeneration cycle
