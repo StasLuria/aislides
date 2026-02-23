@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title=settings.app_name,
     description="Backend API для генерации презентаций с помощью AI",
-    version="0.6.0",
+    version="0.8.0",
     lifespan=lifespan,
 )
 
