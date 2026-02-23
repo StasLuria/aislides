@@ -1,0 +1,121 @@
+/**
+ * ArtifactCard — карточка артефакта, отображаемая в ленте чата.
+ *
+ * По PRD 5.3: «При генерации артефактов в чате появляются их превью.
+ * При клике на превью артефакт открывается в Панели артефактов».
+ *
+ * Показывает иконку типа файла, имя, тип и кнопку открытия.
+ */
+
+import type { ArtifactData } from '../../types'
+
+export interface ArtifactCardProps {
+  /** Данные артефакта. */
+  artifact: ArtifactData
+  /** Callback при клике — открывает артефакт в панели. */
+  onClick: (artifact: ArtifactData) => void
+}
+
+/** Иконка по типу файла. */
+function getFileIcon(fileType: string): string {
+  switch (fileType) {
+    case 'html':
+      return '🖼'
+    case 'md':
+      return '📄'
+    case 'json':
+      return '📋'
+    case 'css':
+      return '🎨'
+    case 'pdf':
+      return '📕'
+    case 'image':
+      return '🖼️'
+    default:
+      return '📎'
+  }
+}
+
+/** Человекочитаемое название типа. */
+function getFileTypeLabel(fileType: string): string {
+  switch (fileType) {
+    case 'html':
+      return 'HTML-слайды'
+    case 'md':
+      return 'Markdown'
+    case 'json':
+      return 'JSON'
+    case 'css':
+      return 'Стили CSS'
+    case 'pdf':
+      return 'PDF-документ'
+    case 'image':
+      return 'Изображение'
+    default:
+      return 'Файл'
+  }
+}
+
+export function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
+  return (
+    <button
+      data-testid="artifact-card"
+      data-artifact-id={artifact.artifact_id}
+      onClick={() => onClick(artifact)}
+      className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm hover:border-blue-300 hover:shadow-md transition-all group"
+    >
+      <div className="flex items-start gap-3">
+        {/* Иконка типа */}
+        <div
+          className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-lg group-hover:bg-blue-50 transition-colors"
+          data-testid="artifact-icon"
+        >
+          {getFileIcon(artifact.file_type)}
+        </div>
+
+        {/* Информация */}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-gray-800 truncate">
+            {artifact.filename}
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            {getFileTypeLabel(artifact.file_type)}
+          </div>
+        </div>
+
+        {/* Стрелка открытия */}
+        <div className="flex items-center text-gray-300 group-hover:text-blue-500 transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Превью (если есть preview_url) */}
+      {artifact.preview_url && (
+        <div
+          data-testid="artifact-preview"
+          className="mt-2 rounded border border-gray-100 bg-gray-50 h-24 overflow-hidden"
+        >
+          <img
+            src={artifact.preview_url}
+            alt={`Превью ${artifact.filename}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Версия */}
+      {artifact.current_version && artifact.current_version > 1 && (
+        <div className="mt-1.5 text-xs text-gray-400" data-testid="artifact-version">
+          Версия {artifact.current_version}
+        </div>
+      )}
+    </button>
+  )
+}

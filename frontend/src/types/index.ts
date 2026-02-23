@@ -11,6 +11,9 @@ export type MessageRole = 'user' | 'ai'
 /** Статус шага генерации. */
 export type StepStatus = 'pending' | 'in_progress' | 'completed' | 'error'
 
+/** Тип файла артефакта. */
+export type ArtifactFileType = 'html' | 'md' | 'json' | 'css' | 'txt' | 'pdf' | 'image'
+
 /** Сообщение в чате. */
 export interface ChatMessageData {
   id: string
@@ -26,12 +29,23 @@ export interface GenerationStep {
   message?: string
 }
 
+/** Версия артефакта. */
+export interface ArtifactVersion {
+  version: number
+  created_at: string
+  preview_url?: string
+}
+
 /** Артефакт (сгенерированный файл). */
 export interface ArtifactData {
   artifact_id: string
   filename: string
   file_type: string
   preview_url?: string
+  download_url?: string
+  content?: string
+  versions?: ArtifactVersion[]
+  current_version?: number
 }
 
 /** Проект / чат. */
