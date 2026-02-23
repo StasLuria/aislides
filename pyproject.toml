@@ -53,6 +53,9 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by black)
+    "RUF001",  # ambiguous characters in strings (project uses Russian)
+    "RUF002",  # ambiguous characters in docstrings (project uses Russian)
+    "RUF003",  # ambiguous characters in comments (project uses Russian)
 ]
 
 [tool.ruff.lint.isort]
@@ -77,6 +80,7 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
+disallow_untyped_decorators = false
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

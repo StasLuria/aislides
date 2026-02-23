@@ -66,4 +66,22 @@ make check
 
 ## Status
 
-**Current Sprint:** 0 — Project Setup
+**Current Sprint:** 1 — Schemas & Core Engine (COMPLETED)
+
+### Sprint 1 Results
+
+- **55 unit tests** — all passing
+- **96.54% code coverage** (target: 90%)
+- **0 linter errors** (ruff + mypy)
+
+| Module | Status | Coverage |
+|:---|:---|:---|
+| `schemas/shared_store.py` | ✅ | 100% |
+| `schemas/execution_plan.py` | ✅ | 100% |
+| `schemas/tool_schemas.py` | ✅ | 100% |
+| `schemas/events.py` | ✅ | 100% |
+| `engine/event_bus.py` | ✅ | 100% |
+| `engine/registry.py` | ✅ | 100% |
+| `engine/runtime.py` | ✅ | 98% |
+| `engine/base_node.py` | ✅ | 100% |
+| `engine/api.py` | ✅ (stub) | 79% |

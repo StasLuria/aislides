@@ -53,18 +53,18 @@
 
 | # | Задача | Статус | Комментарий |
 |:---|:---|:---:|:---|
-| 1.1 | `schemas/shared_store.py` — SharedStore | ☐ | По ТЗ v3.0, §4. Включая `ChatMessage`, `AttachedFile`, `Artifact` |
-| 1.2 | `schemas/execution_plan.py` — ExecutionPlanSchema | ☐ | По ТЗ v3.0, §8 |
-| 1.3 | `schemas/tool_schemas.py` — Pydantic-модели для S1-S5 | ☐ | По technical_specification.md, разделы 2.2-2.6 |
-| 1.4 | `engine/event_bus.py` — EventBus | ☐ | По ТЗ v3.0, §5 (async, Observer pattern) |
-| 1.5 | `engine/registry.py` — ToolRegistry | ☐ | По ТЗ v3.0, §6 и §9 |
-| 1.6 | `engine/runtime.py` — RuntimeAgent | ☐ | По ТЗ v3.0, §9. Интеграция с EventBus |
-| 1.7 | `engine/api.py` — EngineAPI (заглушка) | ☐ | По ТЗ v3.0, §3. Методы `run()` и `apply_edit()` |
-| 1.8 | Unit-тесты: SharedStore (создание, сериализация, валидация) | ☐ | `tests/unit/test_shared_store.py` |
-| 1.9 | Unit-тесты: ExecutionPlan (валидация, невалидные планы) | ☐ | `tests/unit/test_execution_plan.py` |
-| 1.10 | Unit-тесты: EventBus (подписка, эмит, async) | ☐ | `tests/unit/test_event_bus.py` |
-| 1.11 | Unit-тесты: RuntimeAgent (с mock-узлами) | ☐ | `tests/unit/test_runtime.py` |
-| 1.12 | Обновить README.md | ☐ | Описать текущее состояние проекта |
+| 1.1 | `schemas/shared_store.py` — SharedStore | ✅ | По ТЗ v3.0, §4. Включая `ChatMessage`, `AttachedFile`, `Artifact` |
+| 1.2 | `schemas/execution_plan.py` — ExecutionPlanSchema | ✅ | По ТЗ v3.0, §8 |
+| 1.3 | `schemas/tool_schemas.py` — Pydantic-модели для S1-S5 | ✅ | По technical_specification.md, разделы 2.2-2.6 |
+| 1.4 | `engine/event_bus.py` — EventBus | ✅ | По ТЗ v3.0, §5 (async, Observer pattern). + `schemas/events.py` |
+| 1.5 | `engine/registry.py` — ToolRegistry | ✅ | По ТЗ v3.0, §6 и §9. + `engine/base_node.py` |
+| 1.6 | `engine/runtime.py` — RuntimeAgent | ✅ | По ТЗ v3.0, §9. Интеграция с EventBus, cancel_token |
+| 1.7 | `engine/api.py` — EngineAPI (заглушка) | ✅ | По ТЗ v3.0, §3. `run()`, `apply_edit()`, `cancel()` |
+| 1.8 | Unit-тесты: SharedStore (создание, сериализация, валидация) | ✅ | 12 тестов, 100% coverage |
+| 1.9 | Unit-тесты: ExecutionPlan (валидация, невалидные планы) | ✅ | 9 тестов, 100% coverage |
+| 1.10 | Unit-тесты: EventBus (подписка, эмит, async) | ✅ | 11 тестов, 100% coverage |
+| 1.11 | Unit-тесты: RuntimeAgent (с mock-узлами) | ✅ | 16 тестов (Registry + Runtime), 98-100% coverage |
+| 1.12 | Обновить README.md | ✅ | + CHANGELOG.md обновлён |
 
 ### Спринт 2: Планировщик и инструменты S1-S3 (1 неделя)
 
