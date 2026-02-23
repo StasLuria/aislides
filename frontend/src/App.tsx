@@ -2,17 +2,24 @@
  * App — корневой компонент приложения.
  *
  * Отображает основной layout с тремя зонами:
- * sidebar, chat, artifacts (будет реализовано в задаче 6.2).
+ * sidebar, chat, artifacts (по PRD 5.2).
  */
+import { AppLayout } from './components/layout'
+
 function App() {
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900">
-      <div className="flex items-center justify-center w-full">
-        <h1 className="text-2xl font-bold text-blue-600">
-          AI Presentation Generator
-        </h1>
-      </div>
-    </div>
+    <AppLayout
+      sidebarContent={
+        <div className="p-4 text-sm text-gray-400">
+          Проекты появятся здесь
+        </div>
+      }
+      chatContent={
+        <div className="flex items-center justify-center flex-1 text-gray-400">
+          Напишите сообщение, чтобы начать
+        </div>
+      }
+    />
   )
 }
 
