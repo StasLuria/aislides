@@ -7,7 +7,8 @@
 **Milestone: Engine Core v1.0 — ДОСТИГНУТ ✅**
 **Milestone: Backend v1.0 — ДОСТИГНУТ ✅**
 **Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
-**Спринт 6: Базовый чат-интерфейс — ЗАВЕРШЁН ✅**
+**Milestone: MVP v1.0 — ДОСТИГНУТ ✅**
+**Спринт 7: Панель артефактов и превью — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -113,21 +114,35 @@
 | 6.8 E2E-тест чата | ✅ | Full flow + error + multi-msg + loading, 4 E2E-теста |
 | 6.9 README + CHANGELOG | ✅ | v0.7.0 |
 
+### Спринт 7: Панель артефактов и превью ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 7.1 ArtifactPanel (расширение) | ✅ | Toolbar, табы, download/open, версия, 17 тестов |
+| 7.2 MarkdownViewer | ✅ | react-markdown + remark-gfm + rehype-highlight, 13 тестов |
+| 7.3 SlidePreview | ✅ | iframe + srcdoc, ResizeObserver, scale 1920×1080, 14 тестов |
+| 7.4 ArtifactCard | ✅ | Иконки, превью, версия, onClick → панель, 11 тестов |
+| 7.5 Кнопки «Скачать», «Открыть» | ✅ | useArtifactActions: Blob download + openNewTab, 9 тестов |
+| 7.6 Версионирование артефактов | ✅ | VersionList: сортировка, подсветка, выбор, 12 тестов |
+| 7.7 E2E-тест полного сценария | ✅ | 8 E2E-тестов: Card→Panel, SlidePreview, MD, Versions, Tabs, Toolbar |
+| 7.8 README + CHANGELOG | ✅ | v0.8.0 |
+| 7.9 Milestone MVP v1.0 | ✅ | 252 backend + 150 frontend тестов, 0 lint ошибок |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
 | Backend тесты (pytest) | 252 passed |
 | Backend покрытие | 96.16% |
-| Frontend тесты (vitest) | 73 passed |
+| Frontend тесты (vitest) | 150 passed |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
 | ESLint ошибки | 0 |
-| Версия | 0.7.0 |
+| Версия | 0.8.0 |
 
 ## Следующий шаг
 
-**Этап 3, Спринт 7: Панель артефактов и превью** — задача 7.1
+**Этап 4, Спринт 8: Полноценный продукт** — редактирование, авторизация, деплой
 
 ## Блокеры
 
