@@ -173,7 +173,7 @@
 | 7.5 | Реализовать кнопки «Скачать», «Открыть в новой вкладке» | ✅ | useArtifactActions: Blob download + openNewTab, 9 тестов |
 | 7.6 | Реализовать версионирование артефактов (список версий) | ✅ | VersionList: сортировка, подсветка, выбор, 12 тестов |
 | 7.7 | E2E-тест: полный сценарий (запрос → генерация → превью слайдов) | ✅ | 8 E2E-тестов: Card→Panel, SlidePreview, MD, Versions, Tabs, Toolbar |
-| 7.8 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 7.8 | Обновить README.md и CHANGELOG.md | ✅ | v0.8.0, 8 Added, 3 Changed, Milestone MVP v1.0 |
 | 7.9 | **Milestone: MVP v1.0** | ☐ | Работающий продукт: чат → генерация → просмотр презентации |
 
 ---

@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-23 — Sprint 7: Artifact Panel & Preview | Milestone: MVP v1.0
+
+### Added
+
+- `frontend/src/components/artifact/ArtifactCard.tsx` — Clickable artifact card in chat with icon, preview, version badge (task 7.1, 7.4)
+- `frontend/src/components/artifact/MarkdownViewer.tsx` — Markdown rendering with react-markdown, remark-gfm, rehype-highlight (task 7.2)
+- `frontend/src/components/artifact/SlidePreview.tsx` — HTML slide preview via iframe + srcdoc, ResizeObserver, 1920×1080 scaling (task 7.3)
+- `frontend/src/components/artifact/VersionList.tsx` — Artifact version list with sorting, highlighting, navigation (task 7.6)
+- `frontend/src/hooks/useArtifactActions.ts` — Download (Blob) and open in new tab actions (task 7.5)
+- `frontend/src/types/index.ts` — Extended with ArtifactVersion, ArtifactFileType, WsArtifactFeedback types
+- 8 E2E artifact flow tests: Card→Panel, SlidePreview, MarkdownViewer, Versions, Tabs, Toolbar, Close, Empty (task 7.7)
+- 77 new frontend tests total: ArtifactCard (11), MarkdownViewer (13), SlidePreview (14), VersionList (12), useArtifactActions (9), ArtifactPanel (10), ArtifactFlow E2E (8)
+
+### Changed
+
+- `frontend/src/components/layout/ArtifactPanel.tsx` — Extended with toolbar (download, open, close), artifact tabs, version display
+- `README.md` — Added 6 new artifact components to Frontend table, updated status to MVP v1.0
+- Frontend tests: 150 total (was 73), Backend tests: 252 total, 96.16% coverage
+
+### Milestone
+
+- **MVP v1.0** reached: full pipeline from chat input → AI generation → artifact preview with download/versioning
+
 ## [0.7.0] - 2026-02-23 — Sprint 6: Basic Chat Interface
 
 ### Added

@@ -4,7 +4,7 @@ AI-powered presentation generator with LLM-driven planning and execution engine.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface for interacting with the AI.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface with artifact panel for interacting with the AI and previewing generated presentations.
 
 ## Architecture
 
@@ -52,6 +52,12 @@ The engine follows an **intelligent orchestrator** pattern:
 | **useWebSocket** | WebSocket client hook with reconnect (exp backoff) | ✅ |
 | **StatusCard** | Generation progress (S0-S5) with progress bar | ✅ |
 | **ProjectList** | Sidebar project list with selection and creation | ✅ |
+| **ArtifactPanel** | Right panel with toolbar, tabs, download/open actions | ✅ |
+| **ArtifactCard** | Clickable artifact card in chat with icon and preview | ✅ |
+| **MarkdownViewer** | Markdown rendering with GFM and syntax highlighting | ✅ |
+| **SlidePreview** | HTML slide preview via iframe with 1920×1080 scaling | ✅ |
+| **VersionList** | Artifact version list with navigation and highlighting | ✅ |
+| **useArtifactActions** | Download (Blob) and open in new tab actions | ✅ |
 
 ### WebSocket Protocol
 
@@ -87,8 +93,8 @@ ai-presentation-generator/
 │       └── main.py   # FastAPI application entry point
 ├── frontend/         # React frontend
 │   └── src/          # Source code
-│       ├── components/  # UI components (chat, layout, status, sidebar)
-│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactPanel)
+│       ├── components/  # UI components (chat, layout, status, sidebar, artifact)
+│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactPanel, useArtifactActions)
 │       └── types/       # TypeScript type definitions
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
@@ -150,14 +156,14 @@ pnpm dev
 
 ## Status
 
-**Current Sprint:** 6 — Basic Chat Interface (COMPLETED)
-**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅ → Frontend Chat v1.0 ✅
+**Current Sprint:** 7 — Artifact Panel & Preview (COMPLETED)
+**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅ → Frontend Chat v1.0 ✅ → MVP v1.0 ✅
 
-### Sprint 6 Results
+### Sprint 7 Results
 
-- **73 frontend tests** (Vitest + Testing Library) — all passing
+- **150 frontend tests** (Vitest + Testing Library) — all passing
 - **252 backend tests** (pytest) — all passing, 96.16% coverage
 - **0 linter errors** (ESLint + ruff + mypy)
-- **6 UI components:** AppLayout, ChatMessage, ChatInput, StatusCard, ProjectList, ArtifactPanel
-- **1 custom hook:** useWebSocket with reconnect and exponential backoff
-- **4 E2E integration tests:** full chat flow, error handling, multi-message, loading state
+- **5 new artifact components:** ArtifactPanel, ArtifactCard, MarkdownViewer, SlidePreview, VersionList
+- **2 new hooks:** useArtifactActions, useArtifactPanel
+- **8 E2E integration tests:** full artifact flow (Card→Panel, Preview, MD, Versions, Tabs, Toolbar)
