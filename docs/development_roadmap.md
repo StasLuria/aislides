@@ -154,7 +154,7 @@
 | 6.2 | Реализовать layout: три зоны (sidebar, chat, artifacts) | ✅ | AppLayout, Sidebar, ChatPanel, ArtifactPanel + 12 тестов |
 | 6.3 | Реализовать компонент `ChatMessage` | ✅ | user/ai роли, аватары, timestamp, 8 тестов |
 | 6.4 | Реализовать компонент `ChatInput` (поле ввода + кнопка отправки) | ✅ | Auto-resize, Enter/Shift+Enter, файлы, isLoading, 12 тестов |
-| 6.5 | Реализовать WebSocket-клиент (хук `useWebSocket`) | ☐ | Подключение, переподключение, обработка событий |
+| 6.5 | Реализовать WebSocket-клиент (хук `useWebSocket`) | ✅ | Reconnect с exp backoff, JSON-протокол, 12 тестов |
 | 6.6 | Реализовать компонент `StatusCard` (карточки статуса S0-S5) | ☐ | По PRD, раздел 5.3 |
 | 6.7 | Реализовать компонент `ProjectList` (sidebar) | ☐ | Список проектов, создание нового |
 | 6.8 | E2E-тест: отправка сообщения → получение ответа в чате | ☐ | С реальным Backend |
