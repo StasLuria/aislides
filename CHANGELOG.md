@@ -22,13 +22,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `frontend/src/services/tokenStorage.ts` — localStorage JWT token management with error handling (task 9.4)
 - 34 new frontend auth tests: tokenStorage (7), authApi (8), AuthContext (7), LoginForm (5), RegisterForm (4), AuthPage (3), ProtectedRoute (4), App (3)
 
+### Added (Sprint 9: Auth — Task 9.5)
+
+- `tests/integration/test_auth_integration.py` — 15 integration tests for register, login, token validation, full auth flow (task 9.5)
+- `tests/integration/test_data_isolation.py` — 11 integration tests for project/messages/artifacts isolation between users (task 9.5)
+- `tests/integration/test_ws_auth_integration.py` — 10 integration tests for ws_authenticate and WebSocket endpoint auth (task 9.5)
+- `tests/integration/conftest.py` — Shared fixtures with real in-memory SQLite, real JWT tokens, user_alice/user_bob helpers (task 9.5)
+
 ### Changed
 
 - `backend/app/models/project.py` — Added `user_id` field for project ownership (task 9.3)
 - `backend/app/services/project_service.py` — All operations now filter by `user_id` (task 9.3)
 - `frontend/src/App.tsx` — Added BrowserRouter, AuthProvider, route-based auth flow (task 9.4)
 - `frontend/src/hooks/useWebSocket.ts` — JWT token sent in WebSocket query params (task 9.4)
-- Backend tests: 302 total (was 265), 96.16% coverage
+- Backend tests: 338 total (was 265), 96.16% coverage
 - Frontend tests: 241 total (was 200)
 
 ## [0.9.0] - 2026-02-23 — Sprint 8: Artifact Editing
