@@ -99,6 +99,14 @@ export interface WsArtifactUpdated extends WsMessage {
   }
 }
 
+/** Сообщение от клиента: redesign (смена стиля презентации, CJM 5). */
+export interface WsRedesignMessage extends WsMessage {
+  type: 'redesign'
+  payload: {
+    style_request: string
+  }
+}
+
 /** Сообщение от клиента: cancel. */
 export interface WsCancelMessage extends WsMessage {
   type: 'cancel'
@@ -169,4 +177,5 @@ export type ClientMessage =
   | WsUserMessage
   | WsArtifactFeedback
   | WsArtifactUpdated
+  | WsRedesignMessage
   | WsCancelMessage

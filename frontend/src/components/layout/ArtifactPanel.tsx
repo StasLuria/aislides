@@ -28,6 +28,8 @@ export interface ArtifactPanelProps {
   onDownload?: (artifact: ArtifactData) => void
   /** Callback для открытия в новой вкладке. */
   onOpenNewTab?: (artifact: ArtifactData) => void
+  /** Callback для редизайна (CJM 5). */
+  onRedesign?: () => void
   /** Дочерние элементы (viewer). */
   children?: React.ReactNode
 }
@@ -40,6 +42,7 @@ export function ArtifactPanel({
   onSelectArtifact,
   onDownload,
   onOpenNewTab,
+  onRedesign,
   children,
 }: ArtifactPanelProps) {
   if (!isOpen) return null
@@ -87,6 +90,24 @@ export function ArtifactPanel({
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </button>
+          )}
+          {onRedesign && (
+            <button
+              onClick={onRedesign}
+              className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors"
+              aria-label="Сменить стиль"
+              data-testid="btn-redesign"
+              title="Сменить стиль презентации"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                 />
               </svg>
             </button>

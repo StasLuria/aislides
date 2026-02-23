@@ -3,7 +3,7 @@
 Реализация по PRD, раздел 9.1 и ТЗ v3.0, §17.
 
 Протокол сообщений:
-- Клиент → Сервер: user_message, artifact_feedback, artifact_updated, cancel
+- Клиент → Сервер: user_message, artifact_feedback, artifact_updated, redesign, cancel
 - Сервер → Клиент: ai_message, status_update, artifact_generated, artifact_edited, error
 
 Авторизация: JWT-токен передаётся через query parameter ?token=JWT.
@@ -109,6 +109,8 @@ async def websocket_endpoint(
                 await _handle_artifact_feedback(project_id, payload)
             elif msg_type == "artifact_updated":
                 await _handle_artifact_updated(project_id, payload)
+            elif msg_type == "redesign":
+                await _handle_redesign(project_id, payload)
             elif msg_type == "cancel":
                 await _handle_cancel(project_id)
             else:
@@ -283,6 +285,54 @@ async def _handle_artifact_updated(
             project_id=project_id,
             artifact_id=artifact_id,
             new_content=new_content,
+        )
+    )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+async def _handle_redesign(
+    project_id: str,
+    payload: dict[str, Any],
+) -> None:
+    """Handle redesign message from client (CJM 5).
+
+    Applies a new design style to the existing presentation,
+    preserving narrative structure. Runs S3 -> S4 -> S5.
+
+    Args:
+        project_id: Project ID.
+        payload: Data (style_request).
+    """
+    from backend.app.services.engine_bridge import EngineBridge
+
+    style_request = payload.get("style_request", "")
+
+    if not style_request.strip():
+        await manager.send_to_project(
+            project_id,
+            {
+                "type": "error",
+                "payload": {"message": "style_request обязателен"},
+            },
+        )
+        return
+
+    await manager.send_to_project(
+        project_id,
+        {
+            "type": "ai_message",
+            "payload": {
+                "text": f"Начинаю редизайн презентации: {style_request[:100]}...",
+            },
+        },
+    )
+
+    bridge = EngineBridge(manager)
+    task = asyncio.create_task(
+        bridge.run_redesign(
+            project_id=project_id,
+            style_request=style_request,
         )
     )
     _background_tasks.add(task)

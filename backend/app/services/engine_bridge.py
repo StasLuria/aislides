@@ -245,6 +245,66 @@ class EngineBridge:
         finally:
             _active_engines.pop(project_id, None)
 
+    async def run_redesign(
+        self,
+        project_id: str,
+        style_request: str,
+    ) -> None:
+        """Run redesign (CJM 5) and broadcast events via WebSocket.
+
+        Applies a new design style to an existing presentation,
+        preserving the narrative structure (S1, S2 results).
+
+        Args:
+            project_id: Project ID.
+            style_request: Description of the desired new style.
+        """
+        engine = EngineAPI()
+        _active_engines[project_id] = engine
+
+        self._subscribe_all(engine, project_id)
+
+        try:
+            store = await engine.redesign(
+                project_id=project_id,
+                style_request=style_request,
+            )
+
+            if store.errors:
+                error_msgs = [e.get("error", "Неизвестная ошибка") for e in store.errors]
+                await self._manager.send_to_project(
+                    project_id,
+                    {
+                        "type": "ai_message",
+                        "payload": {
+                            "text": f"Ошибка при редизайне: {'; '.join(error_msgs)}",
+                        },
+                    },
+                )
+            else:
+                artifact_count = len(store.artifacts)
+                await self._manager.send_to_project(
+                    project_id,
+                    {
+                        "type": "ai_message",
+                        "payload": {
+                            "text": f"Редизайн завершён. Обновлено артефактов: {artifact_count}.",
+                        },
+                    },
+                )
+
+        except Exception as exc:
+            logger.exception("[Bridge] Ошибка redesign для project=%s", project_id)
+            await self._manager.send_to_project(
+                project_id,
+                {
+                    "type": "error",
+                    "payload": {"message": f"Ошибка редизайна: {exc}"},
+                },
+            )
+        finally:
+            _active_engines.pop(project_id, None)
+
     async def cancel(self, project_id: str) -> bool:
         """Отменить текущую генерацию.
 

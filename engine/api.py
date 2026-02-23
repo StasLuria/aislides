@@ -289,6 +289,66 @@ class EngineAPI:
             existing_results=existing_results or {},
         )
 
+    async def redesign(
+        self,
+        project_id: str,
+        style_request: str,
+        existing_results: dict[str, Any] | None = None,
+        chat_history: list[dict[str, Any]] | None = None,
+    ) -> SharedStore:
+        """Redesign existing presentation with a new style.
+
+        Mechanism (CJM 5):
+        1. Validates inputs.
+        2. Sets ``redesign_context`` in ``user_input``.
+        3. Passes ``existing_results`` (S1, S2) so S0_PlannerNode
+           generates a plan with only S3 -> S4 -> S5.
+        4. Runs the standard ``run()`` pipeline.
+
+        Args:
+            project_id: Project ID.
+            style_request: Description of the desired new style.
+            existing_results: Results from previous generation (S1, S2).
+            chat_history: Chat history (optional).
+
+        Returns:
+            Updated SharedStore.
+
+        Raises:
+            ValueError: If ``style_request`` is empty.
+        """
+        if not style_request or not style_request.strip():
+            msg = "style_request не может быть пустым"
+            raise ValueError(msg)
+
+        logger.info(
+            "[%s] redesign: style_request=%s",
+            project_id,
+            style_request[:100],
+        )
+
+        await self.event_bus.emit(
+            EngineEvent(
+                event_type=EventType.AI_MESSAGE,
+                trace_id=project_id,
+                component="EngineAPI",
+                message=f"Начинаю редизайн презентации: {style_request[:100]}",
+                data={"style_request": style_request},
+            )
+        )
+
+        return await self.run(
+            project_id=project_id,
+            user_input={
+                "prompt": f"Смени стиль презентации на: {style_request}",
+                "redesign_context": {
+                    "style_request": style_request,
+                },
+            },
+            chat_history=chat_history or [],
+            existing_results=existing_results or {},
+        )
+
     async def cancel(self, project_id: str) -> bool:
         """Отменить текущее выполнение для проекта.
 
