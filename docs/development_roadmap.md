@@ -189,7 +189,7 @@
 | 8.1 | Интегрировать Monaco Editor для текстовых файлов | ✅ | CodeEditor + editorUtils + 22 теста, 2026-02-23 |
 | 8.2 | Реализовать редактирование `structure.md` → перегенерация | ✅ | EditableArtifact + useArtifactEditor + 14 тестов, 2026-02-23 |
 | 8.3 | Реализовать WebSocket-сообщение `artifact_edited` | ✅ | WS: artifact_updated→artifact_edited, EngineBridge.run_artifact_update, 2026-02-23 |
-| 8.4 | Реализовать WYSIWYG-редактирование текста на слайдах | ☐ | По PRD, раздел 10.3 (v1.2) |
+| 8.4 | Реализовать WYSIWYG-редактирование текста на слайдах | ✅ | SlideTextEditor + 14 тестов, contentEditable + useRef, 2026-02-23 |
 | 8.5 | Integration-тесты: редактирование → перегенерация | ☐ | |
 | 8.6 | Обновить README.md и CHANGELOG.md | ☐ | |
 
