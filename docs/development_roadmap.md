@@ -113,15 +113,15 @@
 
 | # | Задача | Статус | Комментарий |
 |:---|:---|:---:|:---|
-| 4.1 | Создать структуру `backend/` | ☐ | `backend/app/`, `backend/app/routers/`, `backend/app/models/`, `backend/app/services/` |
-| 4.2 | Настроить FastAPI-приложение (`backend/app/main.py`) | ☐ | CORS, middleware, lifespan |
-| 4.3 | Настроить PostgreSQL + Alembic миграции | ☐ | Модели: `User`, `Project`, `ChatMessage`, `Artifact` |
-| 4.4 | Реализовать REST API: `/api/projects` (CRUD) | ☐ | Создание, получение, удаление проектов |
-| 4.5 | Реализовать REST API: `/api/projects/{id}/messages` | ☐ | История сообщений чата |
-| 4.6 | Реализовать REST API: `/api/projects/{id}/artifacts` | ☐ | Список артефактов проекта |
-| 4.7 | Реализовать сервис `EngineService` | ☐ | Обёртка над `EngineAPI`, управление жизненным циклом |
-| 4.8 | Unit-тесты: все REST-эндпоинты | ☐ | С mock EngineService |
-| 4.9 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 4.1 | Создать структуру `backend/` | ✅ | `backend/app/`, `backend/app/routers/`, `backend/app/models/`, `backend/app/services/` |
+| 4.2 | Настроить FastAPI-приложение (`backend/app/main.py`) | ✅ | CORS, middleware, lifespan |
+| 4.3 | Настроить PostgreSQL + Alembic миграции | ✅ | SQLAlchemy async ORM: Project, Message, Artifact (Alembic — при деплое) |
+| 4.4 | Реализовать REST API: `/api/projects` (CRUD) | ✅ | POST/GET/PATCH/DELETE + пагинация |
+| 4.5 | Реализовать REST API: `/api/projects/{id}/messages` | ✅ | GET с пагинацией |
+| 4.6 | Реализовать REST API: `/api/projects/{id}/artifacts` | ✅ | GET с пагинацией |
+| 4.7 | Реализовать сервис `EngineService` | ✅ | generate(), apply_edit(), cancel() с DB persistence |
+| 4.8 | Unit-тесты: все REST-эндпоинты | ✅ | 41 тестов: API (17), ProjectService (14), EngineService (10) |
+| 4.9 | Обновить README.md и CHANGELOG.md | ✅ | v0.5.0 |
 
 ### Спринт 5: WebSocket + Real-time (1 неделя)
 

@@ -8,6 +8,7 @@ packages = [
     { include = "engine" },
     { include = "tools" },
     { include = "schemas" },
+    { include = "backend" },
 ]
 
 [tool.poetry.dependencies]
@@ -18,6 +19,14 @@ openai = "^1.12"
 google-generativeai = "^0.8"
 pyyaml = "^6.0"
 python-dotenv = "^1.0"
+fastapi = "^0.131.0"
+uvicorn = {extras = ["standard"], version = "^0.41.0"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.46"}
+alembic = "^1.18.4"
+asyncpg = "^0.31.0"
+aiosqlite = "^0.22.1"
+python-multipart = "^0.0.22"
+pydantic-settings = "^2.13.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
@@ -27,6 +36,7 @@ ruff = "^0.3"
 black = "^24.2"
 mypy = "^1.8"
 pre-commit = "^3.6"
+httpx = "^0.28.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -36,7 +46,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 target-version = "py311"
 line-length = 120
-src = ["engine", "tools", "schemas", "tests"]
+src = ["engine", "tools", "schemas", "backend", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -53,13 +63,17 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by black)
+    "B008",  # Do not perform function call in argument defaults (FastAPI Depends pattern)
     "RUF001",  # ambiguous characters in strings (project uses Russian)
     "RUF002",  # ambiguous characters in docstrings (project uses Russian)
     "RUF003",  # ambiguous characters in comments (project uses Russian)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"backend/app/models/*.py" = ["TCH003"]  # SQLAlchemy needs runtime type access
+
 [tool.ruff.lint.isort]
-known-first-party = ["engine", "tools", "schemas"]
+known-first-party = ["engine", "tools", "schemas", "backend"]
 
 # --- Black ---
 [tool.black]
@@ -82,10 +96,17 @@ module = "instructor"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = ["backend.*"]
+disallow_untyped_decorators = false
+warn_return_any = false
+disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
 disallow_untyped_decorators = false
 warn_return_any = false
+disallow_any_generics = false
 disable_error_code = ["method-assign"]
 
 [tool.pydantic-mypy]

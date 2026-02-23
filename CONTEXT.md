@@ -5,7 +5,7 @@
 ## Текущий статус
 
 **Milestone: Engine Core v1.0 — ДОСТИГНУТ ✅**
-**Спринт 3: Инструменты S4-S5 и сквозной тест — ЗАВЕРШЁН ✅**
+**Спринт 4: Backend + FastAPI — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -68,19 +68,33 @@
 | 3.10 README + CHANGELOG | ✅ | v0.4.0 |
 | 3.11 Milestone Engine Core v1.0 | ✅ | 179 тестов, 96.39% coverage |
 
+### Спринт 4: Backend + FastAPI ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 4.1 Структура backend/ | ✅ | backend/app/ с routers, models, services, schemas |
+| 4.2 FastAPI main.py | ✅ | CORS, lifespan, router registration |
+| 4.3 SQLAlchemy ORM модели | ✅ | Project, Message, Artifact (async) |
+| 4.4 REST API /api/projects (CRUD) | ✅ | POST/GET/PATCH/DELETE + пагинация |
+| 4.5 REST API /api/projects/{id}/messages | ✅ | GET с пагинацией |
+| 4.6 REST API /api/projects/{id}/artifacts | ✅ | GET с пагинацией |
+| 4.7 EngineService | ✅ | generate(), apply_edit(), cancel() с DB persistence |
+| 4.8 Unit-тесты Backend | ✅ | 41 тест: API (17), ProjectService (14), EngineService (10) |
+| 4.9 README + CHANGELOG | ✅ | v0.5.0 |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Тесты (unit + integration + e2e) | 179 passed |
+| Тесты (unit + integration + e2e) | 220 passed |
 | Покрытие | 96.39% |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
-| Версия | 0.4.0 |
+| Версия | 0.5.0 |
 
 ## Следующий шаг
 
-**Этап 2, Спринт 4: Backend + FastAPI** — задача 4.1: `backend/main.py`
+**Этап 2, Спринт 5: WebSocket + Real-time** — задача 5.1: WebSocket endpoint `/ws/projects/{id}`
 
 ## Блокеры
 

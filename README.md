@@ -4,7 +4,7 @@ AI-powered presentation generator with LLM-driven planning and execution engine.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API for project management and engine integration.
 
 ## Architecture
 
@@ -26,6 +26,17 @@ The engine follows an **intelligent orchestrator** pattern:
 | **S4_SlideGenerator** | Generates HTML/CSS slides from blueprints + design system | ✅ |
 | **S5_QualityValidator** | Validates presentation quality across 4 dimensions | ✅ |
 
+### Backend (FastAPI)
+
+| Component | Purpose | Status |
+|:---|:---|:---|
+| **FastAPI app** | REST API server with CORS, lifespan | ✅ |
+| **SQLAlchemy models** | Project, Message, Artifact ORM models | ✅ |
+| **ProjectService** | CRUD operations for projects, messages, artifacts | ✅ |
+| **EngineService** | Wrapper over EngineAPI with DB persistence | ✅ |
+| **REST API routes** | CRUD endpoints for projects, messages, artifacts | ✅ |
+| **Health check** | `/health` endpoint | ✅ |
+
 ## Project Structure
 
 ```
@@ -35,13 +46,21 @@ ai-presentation-generator/
 ├── tools/            # Tool nodes (S1-S5)
 │   └── prompts/      # LLM prompt templates
 ├── schemas/          # Pydantic models (SharedStore, ExecutionPlan, events)
+├── backend/          # FastAPI backend
+│   └── app/          # Application package
+│       ├── models/   # SQLAlchemy ORM models
+│       ├── schemas/  # Pydantic API schemas
+│       ├── services/ # Business logic services
+│       ├── routers/  # REST API routes
+│       └── main.py   # FastAPI application entry point
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
 │   ├── presets/      # Design presets (corporate_classic, etc.)
 │   ├── layouts/      # Layout templates (corporate_layouts.md)
 │   └── scoring/      # Quality scoring rubrics
 ├── tests/            # Tests (unit, integration, e2e)
-│   ├── unit/         # Unit tests
+│   ├── unit/         # Unit tests (engine, schemas, backend)
+│   │   └── backend/  # Backend-specific unit tests
 │   ├── integration/  # Integration tests (apply_edit)
 │   └── e2e/          # End-to-end pipeline tests
 ├── docs/             # Documentation (specs, roadmap, ADRs)
@@ -67,6 +86,9 @@ poetry run pytest
 
 # 4. Run linters
 make check
+
+# 5. Start backend (requires database)
+poetry run uvicorn backend.app.main:app --reload
 ```
 
 ## Documentation
@@ -82,16 +104,16 @@ make check
 
 ## Status
 
-**Milestone:** Engine Core v1.0 — REACHED ✅
-**Current Sprint:** 3 — Tools S4-S5 & E2E (COMPLETED)
+**Current Sprint:** 4 — Backend + FastAPI (COMPLETED)
+**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅
 
-### Sprint 3 Results
+### Sprint 4 Results
 
-- **179 tests** (unit + integration + e2e) — all passing
+- **220 tests** (unit + integration + e2e) — all passing
 - **96.39% code coverage** (target: 90%)
 - **0 linter errors** (ruff + mypy)
-- **Full pipeline** S0→S1→S2→S3→S4→S5 tested end-to-end
-- **apply_edit()** mechanism implemented and tested
+- **Full REST API** for projects, messages, artifacts
+- **EngineService** integrates engine with database persistence
 
 | Module | Status | Coverage |
 |:---|:---|:---|
@@ -111,6 +133,10 @@ make check
 | `tools/s3_design_architect.py` | ✅ | 83% |
 | `tools/s4_slide_generator.py` | ✅ | 100% |
 | `tools/s5_quality_validator.py` | ✅ | 98% |
+| `backend/app/main.py` | ✅ | — |
+| `backend/app/models/` | ✅ | — |
+| `backend/app/services/` | ✅ | — |
+| `backend/app/routers/` | ✅ | — |
 | `data/presets/corporate_classic.json` | ✅ | — |
 | `data/layouts/corporate_layouts.md` | ✅ | — |
 | `data/scoring/scoring_rubric.json` | ✅ | — |

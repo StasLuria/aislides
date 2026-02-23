@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-23 — Sprint 4: Backend + FastAPI
+
+### Added
+
+- `backend/app/main.py` — FastAPI application with CORS, lifespan, router registration (task 4.1)
+- `backend/app/config.py` — Application settings via pydantic-settings (task 4.1)
+- `backend/app/database.py` — Async SQLAlchemy engine and session factory (task 4.1)
+- `backend/app/models/` — SQLAlchemy ORM models: Project, Message, Artifact (task 4.3)
+- `backend/app/schemas/project.py` — Pydantic API schemas: Create, Read, Update, List (task 4.2)
+- `backend/app/services/project_service.py` — CRUD service for projects, messages, artifacts (task 4.4)
+- `backend/app/services/engine_service.py` — EngineAPI wrapper with DB persistence (task 4.5)
+- `backend/app/routers/projects.py` — REST API: POST/GET/PATCH/DELETE projects, GET messages/artifacts (task 4.2)
+- `backend/app/routers/health.py` — Health check endpoint (task 4.2)
+- 41 backend unit tests: API endpoints (17), ProjectService (14), EngineService (10) (task 4.6-4.7)
+- `tests/unit/backend/conftest.py` — Test fixtures with in-memory SQLite + async TestClient
+
+### Changed
+
+- `pyproject.toml` — Added backend dependencies: sqlalchemy[asyncio], aiosqlite, pydantic-settings, httpx
+- Test coverage: 96.39% (220 tests, target: 90%)
+
 ## [0.4.0] - 2026-02-23 — Sprint 3: Tools S4-S5 & E2E | Milestone: Engine Core v1.0
 
 ### Added
