@@ -1,0 +1,102 @@
+[tool.poetry]
+name = "ai-presentation-generator"
+version = "0.1.0"
+description = "AI-powered presentation generator with LLM-driven planning and execution engine"
+authors = ["Stas"]
+readme = "README.md"
+packages = [
+    { include = "engine" },
+    { include = "tools" },
+    { include = "schemas" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.6"
+instructor = "^1.5"
+openai = "^1.12"
+google-generativeai = "^0.8"
+pyyaml = "^6.0"
+python-dotenv = "^1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^5.0"
+pytest-asyncio = "^0.23"
+ruff = "^0.3"
+black = "^24.2"
+mypy = "^1.8"
+pre-commit = "^3.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# --- Ruff ---
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["engine", "tools", "schemas", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["engine", "tools", "schemas"]
+
+# --- Black ---
+[tool.black]
+target-version = ["py311"]
+line-length = 120
+
+# --- Mypy ---
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# --- Pytest ---
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=engine --cov=tools --cov=schemas --cov-report=term-missing --cov-fail-under=90"
+
+# --- Coverage ---
+[tool.coverage.run]
+source = ["engine", "tools", "schemas"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+]

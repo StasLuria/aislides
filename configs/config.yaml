@@ -1,0 +1,37 @@
+# AI Presentation Generator — Configuration
+# See: engine_architecture_specification_v3_ru.md, §12
+
+# --- LLM Providers ---
+llm:
+  default_provider: "gemini"
+  providers:
+    gemini:
+      api_key: "${GEMINI_API_KEY}"
+      model: "gemini-2.5-flash"
+    openai:
+      api_key: "${OPENAI_API_KEY}"
+      model: "gpt-4.1-mini"
+
+# --- Planner (S0) ---
+planner:
+  provider: "gemini"
+  model: "gemini-2.5-flash"
+
+# --- Engine ---
+engine:
+  max_execution_steps: 10
+
+# --- Chat ---
+chat:
+  max_history_messages: 20
+  max_file_size_mb: 10
+
+# --- File Storage ---
+file_storage:
+  type: "local"  # "local" | "s3"
+  local_path: "./output"
+
+# --- Logging ---
+logging:
+  level: "INFO"
+  format: "json"
