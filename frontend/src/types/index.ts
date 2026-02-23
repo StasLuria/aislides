@@ -90,6 +90,15 @@ export interface WsArtifactFeedback extends WsMessage {
   }
 }
 
+/** Сообщение от клиента: artifact_updated (пользователь отредактировал артефакт). */
+export interface WsArtifactUpdated extends WsMessage {
+  type: 'artifact_updated'
+  payload: {
+    artifact_id: string
+    new_content: string
+  }
+}
+
 /** Сообщение от клиента: cancel. */
 export interface WsCancelMessage extends WsMessage {
   type: 'cancel'
@@ -128,6 +137,16 @@ export interface WsErrorMessage extends WsMessage {
   }
 }
 
+/** Сообщение от сервера: artifact_edited (результат обновления артефакта). */
+export interface WsArtifactEdited extends WsMessage {
+  type: 'artifact_edited'
+  payload: {
+    artifact_id: string
+    status: 'accepted' | 'completed' | 'error'
+    message: string
+  }
+}
+
 /** Сообщение от сервера: connected. */
 export interface WsConnectedMessage extends WsMessage {
   type: 'connected'
@@ -141,6 +160,7 @@ export type ServerMessage =
   | WsAiMessage
   | WsStatusUpdate
   | WsArtifactGenerated
+  | WsArtifactEdited
   | WsErrorMessage
   | WsConnectedMessage
 
@@ -148,4 +168,5 @@ export type ServerMessage =
 export type ClientMessage =
   | WsUserMessage
   | WsArtifactFeedback
+  | WsArtifactUpdated
   | WsCancelMessage

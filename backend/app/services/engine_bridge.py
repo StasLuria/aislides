@@ -177,6 +177,74 @@ class EngineBridge:
         finally:
             _active_engines.pop(project_id, None)
 
+    async def run_artifact_update(
+        self,
+        project_id: str,
+        artifact_id: str,
+        new_content: str,
+    ) -> None:
+        """Обновить артефакт и перегенерировать зависимые.
+
+        По roadmap 8.3: «Реализовать WebSocket-сообщение artifact_edited».
+        Принимает новое содержимое артефакта от клиента,
+        обновляет его в хранилище и запускает перегенерацию
+        зависимых артефактов через apply_edit.
+
+        Args:
+            project_id: ID проекта.
+            artifact_id: ID артефакта.
+            new_content: Новое содержимое артефакта.
+        """
+        engine = EngineAPI()
+        _active_engines[project_id] = engine
+
+        self._subscribe_all(engine, project_id)
+
+        try:
+            store = await engine.apply_edit(
+                project_id=project_id,
+                artifact_id=artifact_id,
+                new_content=new_content,
+            )
+
+            if store.errors:
+                error_msgs = [e.get("error", "Неизвестная ошибка") for e in store.errors]
+                await self._manager.send_to_project(
+                    project_id,
+                    {
+                        "type": "artifact_edited",
+                        "payload": {
+                            "artifact_id": artifact_id,
+                            "status": "error",
+                            "message": f"Ошибка перегенерации: {'; '.join(error_msgs)}",
+                        },
+                    },
+                )
+            else:
+                await self._manager.send_to_project(
+                    project_id,
+                    {
+                        "type": "artifact_edited",
+                        "payload": {
+                            "artifact_id": artifact_id,
+                            "status": "completed",
+                            "message": f"Артефакт '{artifact_id}' обновлён. Перегенерация завершена.",
+                        },
+                    },
+                )
+
+        except Exception as exc:
+            logger.exception("[Bridge] Ошибка artifact_update для project=%s", project_id)
+            await self._manager.send_to_project(
+                project_id,
+                {
+                    "type": "error",
+                    "payload": {"message": f"Ошибка обновления артефакта: {exc}"},
+                },
+            )
+        finally:
+            _active_engines.pop(project_id, None)
+
     async def cancel(self, project_id: str) -> bool:
         """Отменить текущую генерацию.
 

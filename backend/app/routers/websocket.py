@@ -3,8 +3,8 @@
 Реализация по PRD, раздел 9.1 и ТЗ v3.0, §17.
 
 Протокол сообщений:
-- Клиент → Сервер: user_message, artifact_feedback, cancel
-- Сервер → Клиент: ai_message, status_update, artifact_generated, error
+- Клиент → Сервер: user_message, artifact_feedback, artifact_updated, cancel
+- Сервер → Клиент: ai_message, status_update, artifact_generated, artifact_edited, error
 """
 
 from __future__ import annotations
@@ -84,6 +84,8 @@ async def websocket_endpoint(
                 await _handle_user_message(project_id, payload)
             elif msg_type == "artifact_feedback":
                 await _handle_artifact_feedback(project_id, payload)
+            elif msg_type == "artifact_updated":
+                await _handle_artifact_updated(project_id, payload)
             elif msg_type == "cancel":
                 await _handle_cancel(project_id)
             else:
@@ -197,6 +199,63 @@ async def _handle_artifact_feedback(
             project_id=project_id,
             artifact_id=artifact_id,
             feedback_text=feedback_text,
+        )
+    )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+async def _handle_artifact_updated(
+    project_id: str,
+    payload: dict[str, Any],
+) -> None:
+    """Обработать artifact_updated от клиента.
+
+    Пользователь отредактировал артефакт в CodeEditor и сохранил.
+    Запускает перегенерацию зависимых артефактов через EngineBridge.
+
+    По roadmap 8.3: «Реализовать WebSocket-сообщение artifact_edited».
+    По PRD, раздел 10.2: artifact_updated → перегенерация.
+
+    Args:
+        project_id: ID проекта.
+        payload: Данные (artifact_id, new_content).
+    """
+    from backend.app.services.engine_bridge import EngineBridge
+
+    artifact_id = payload.get("artifact_id", "")
+    new_content = payload.get("new_content", "")
+
+    if not artifact_id or not new_content.strip():
+        await manager.send_to_project(
+            project_id,
+            {
+                "type": "error",
+                "payload": {"message": "artifact_id и new_content обязательны"},
+            },
+        )
+        return
+
+    # Подтверждаем получение правки
+    await manager.send_to_project(
+        project_id,
+        {
+            "type": "artifact_edited",
+            "payload": {
+                "artifact_id": artifact_id,
+                "status": "accepted",
+                "message": f"Правка артефакта '{artifact_id}' принята. Запускаю перегенерацию...",
+            },
+        },
+    )
+
+    # Запускаем перегенерацию через EngineBridge
+    bridge = EngineBridge(manager)
+    task = asyncio.create_task(
+        bridge.run_artifact_update(
+            project_id=project_id,
+            artifact_id=artifact_id,
+            new_content=new_content,
         )
     )
     _background_tasks.add(task)
