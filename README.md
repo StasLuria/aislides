@@ -4,7 +4,7 @@ AI-powered presentation generator with LLM-driven planning and execution engine.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API for project management and engine integration.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration.
 
 ## Architecture
 
@@ -36,13 +36,34 @@ The engine follows an **intelligent orchestrator** pattern:
 | **EngineService** | Wrapper over EngineAPI with DB persistence | ✅ |
 | **REST API routes** | CRUD endpoints for projects, messages, artifacts | ✅ |
 | **Health check** | `/health` endpoint | ✅ |
+| **WebSocket endpoint** | `/ws/projects/{id}` real-time communication | ✅ |
+| **ConnectionManager** | Multi-client WebSocket connection management | ✅ |
+| **EngineBridge** | EventBus → WebSocket event mapping and streaming | ✅ |
+| **FileStorage** | Local file storage with upload/download/delete | ✅ |
+| **Upload endpoint** | `/api/upload` with validation (size, extension) | ✅ |
+
+### WebSocket Protocol
+
+The WebSocket endpoint at `/ws/projects/{id}` supports bidirectional real-time communication:
+
+**Client → Server:**
+- `user_message` — Send a message to trigger generation
+- `edit_request` — Request artifact editing
+- `cancel` — Cancel active generation
+
+**Server → Client:**
+- `status_update` — Step progress (step_started, step_completed)
+- `artifact_generated` — New artifact with preview URL
+- `ai_message` — AI response text
+- `error` — Error notification
 
 ## Project Structure
 
 ```
 ai-presentation-generator/
 ├── engine/           # Core engine (API, runtime, event bus, nodes)
-│   └── nodes/        # System nodes (planner, validator)
+│   ├── nodes/        # System nodes (planner, validator)
+│   └── file_storage.py  # Local file storage service
 ├── tools/            # Tool nodes (S1-S5)
 │   └── prompts/      # LLM prompt templates
 ├── schemas/          # Pydantic models (SharedStore, ExecutionPlan, events)
@@ -50,8 +71,8 @@ ai-presentation-generator/
 │   └── app/          # Application package
 │       ├── models/   # SQLAlchemy ORM models
 │       ├── schemas/  # Pydantic API schemas
-│       ├── services/ # Business logic services
-│       ├── routers/  # REST API routes
+│       ├── services/ # Business logic (ProjectService, EngineService, ConnectionManager, EngineBridge)
+│       ├── routers/  # REST API + WebSocket routes
 │       └── main.py   # FastAPI application entry point
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
@@ -61,7 +82,7 @@ ai-presentation-generator/
 ├── tests/            # Tests (unit, integration, e2e)
 │   ├── unit/         # Unit tests (engine, schemas, backend)
 │   │   └── backend/  # Backend-specific unit tests
-│   ├── integration/  # Integration tests (apply_edit)
+│   ├── integration/  # Integration tests (apply_edit, websocket)
 │   └── e2e/          # End-to-end pipeline tests
 ├── docs/             # Documentation (specs, roadmap, ADRs)
 │   └── adr/          # Architecture Decision Records
@@ -104,16 +125,17 @@ poetry run uvicorn backend.app.main:app --reload
 
 ## Status
 
-**Current Sprint:** 4 — Backend + FastAPI (COMPLETED)
-**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅
+**Current Sprint:** 5 — WebSocket + Real-time (COMPLETED)
+**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅
 
-### Sprint 4 Results
+### Sprint 5 Results
 
-- **220 tests** (unit + integration + e2e) — all passing
-- **96.39% code coverage** (target: 90%)
+- **252 tests** (unit + integration + e2e) — all passing
+- **96.16% code coverage** (target: 90%)
 - **0 linter errors** (ruff + mypy)
-- **Full REST API** for projects, messages, artifacts
-- **EngineService** integrates engine with database persistence
+- **WebSocket endpoint** with ConnectionManager for multi-client support
+- **EngineBridge** maps engine events to WebSocket messages in real-time
+- **FileStorage** with upload endpoint and validation
 
 | Module | Status | Coverage |
 |:---|:---|:---|
@@ -126,6 +148,7 @@ poetry run uvicorn backend.app.main:app --reload
 | `engine/runtime.py` | ✅ | 98% |
 | `engine/base_node.py` | ✅ | 100% |
 | `engine/api.py` | ✅ | 95% |
+| `engine/file_storage.py` | ✅ | 92% |
 | `engine/nodes/planner_node.py` | ✅ | 100% |
 | `engine/nodes/validator_node.py` | ✅ | 100% |
 | `tools/s1_context_analyzer.py` | ✅ | 96% |
@@ -137,6 +160,10 @@ poetry run uvicorn backend.app.main:app --reload
 | `backend/app/models/` | ✅ | — |
 | `backend/app/services/` | ✅ | — |
 | `backend/app/routers/` | ✅ | — |
+| `backend/app/services/connection_manager.py` | ✅ | — |
+| `backend/app/services/engine_bridge.py` | ✅ | — |
+| `backend/app/routers/websocket.py` | ✅ | — |
+| `backend/app/routers/upload.py` | ✅ | — |
 | `data/presets/corporate_classic.json` | ✅ | — |
 | `data/layouts/corporate_layouts.md` | ✅ | — |
 | `data/scoring/scoring_rubric.json` | ✅ | — |

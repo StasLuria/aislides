@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-23 — Sprint 5: WebSocket + Real-time
+
+### Added
+
+- `backend/app/routers/websocket.py` — WebSocket endpoint `/ws/projects/{id}` with message routing (task 5.1)
+- `backend/app/services/connection_manager.py` — Multi-client WebSocket connection manager (task 5.1)
+- `backend/app/services/engine_bridge.py` — EventBus → WebSocket bridge with event mapping (tasks 5.2-5.5)
+- WebSocket protocol: `user_message`, `edit_request`, `cancel` (client → server) (tasks 5.3, 5.6)
+- WebSocket protocol: `status_update`, `artifact_generated`, `ai_message`, `error` (server → client) (tasks 5.4, 5.5)
+- Cancel support via WebSocket through `_active_engines` registry (task 5.6)
+- `engine/file_storage.py` — LocalFileStorage: save, load, delete, exists, unique filename generation (task 5.7)
+- `backend/app/routers/upload.py` — File upload endpoint `/api/upload` with size/extension validation (task 5.7)
+- 32 integration tests: ConnectionManager (7), EventMapping (7), EngineBridge (7), FileStorage (7), Upload (4) (task 5.8)
+
+### Changed
+
+- `backend/app/main.py` — Registered WebSocket and upload routers
+- Test coverage: 96.16% (252 tests, target: 90%)
+
 ## [0.5.0] - 2026-02-23 — Sprint 4: Backend + FastAPI
 
 ### Added

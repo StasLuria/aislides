@@ -137,7 +137,7 @@
 | 5.6 | Реализовать `cancel` через WebSocket | ✅ | cancel через EngineBridge._active_engines |
 | 5.7 | Реализовать загрузку файлов (`/api/upload`) | ✅ | LocalFileStorage + upload router, валидация |
 | 5.8 | Integration-тесты: WebSocket-сценарий (подключение → сообщение → события → артефакт) | ✅ | 32 теста: CM, EventMapping, Bridge, FileStorage, Upload |
-| 5.9 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 5.9 | Обновить README.md и CHANGELOG.md | ✅ | v0.6.0, WebSocket protocol docs, 2026-02-23 |
 | 5.10 | **Milestone: Backend v1.0** | ☐ | Сервер принимает запросы, запускает движок, стримит события |
 
 ---
