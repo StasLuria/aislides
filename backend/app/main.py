@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_settings
 from backend.app.database import engine
 from backend.app.models.base import Base
-from backend.app.routers import health, projects
+from backend.app.routers import health, projects, upload, websocket
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -69,3 +69,5 @@ app.add_middleware(
 # Подключаем роутеры
 app.include_router(health.router)
 app.include_router(projects.router)
+app.include_router(upload.router)
+app.include_router(websocket.router)

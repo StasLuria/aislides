@@ -129,14 +129,14 @@
 
 | # | Задача | Статус | Комментарий |
 |:---|:---|:---:|:---|
-| 5.1 | Реализовать WebSocket endpoint: `/ws/projects/{id}` | ☐ | По PRD, раздел 9 (протокол сообщений) |
-| 5.2 | Подключить EventBus движка к WebSocket | ☐ | Backend подписывается на события и пересылает клиенту |
-| 5.3 | Реализовать обработку `user_message` через WebSocket | ☐ | Пользователь отправляет сообщение → Backend запускает движок |
-| 5.4 | Реализовать стриминг событий: `step_started`, `step_completed` | ☐ | Real-time статусы в чате |
-| 5.5 | Реализовать отправку `artifact_generated` с превью | ☐ | Карточки артефактов в чате |
-| 5.6 | Реализовать `cancel` через WebSocket | ☐ | По ТЗ v3.0, §15 |
-| 5.7 | Реализовать загрузку файлов (`/api/upload`) | ☐ | По ТЗ v3.0, §13 (FileStorage) |
-| 5.8 | Integration-тесты: WebSocket-сценарий (подключение → сообщение → события → артефакт) | ☐ | |
+| 5.1 | Реализовать WebSocket endpoint: `/ws/projects/{id}` | ✅ | ConnectionManager + WebSocket router, 2026-02-23 |
+| 5.2 | Подключить EventBus движка к WebSocket | ✅ | EngineBridge: _map_engine_event_to_ws, _subscribe_all |
+| 5.3 | Реализовать обработку `user_message` через WebSocket | ✅ | run_generation, run_edit через EngineBridge |
+| 5.4 | Реализовать стриминг событий: `step_started`, `step_completed` | ✅ | STEP_STARTED/STEP_COMPLETED → status_update |
+| 5.5 | Реализовать отправку `artifact_generated` с превью | ✅ | ARTIFACT_CREATED → artifact_generated |
+| 5.6 | Реализовать `cancel` через WebSocket | ✅ | cancel через EngineBridge._active_engines |
+| 5.7 | Реализовать загрузку файлов (`/api/upload`) | ✅ | LocalFileStorage + upload router, валидация |
+| 5.8 | Integration-тесты: WebSocket-сценарий (подключение → сообщение → события → артефакт) | ✅ | 32 теста: CM, EventMapping, Bridge, FileStorage, Upload |
 | 5.9 | Обновить README.md и CHANGELOG.md | ☐ | |
 | 5.10 | **Milestone: Backend v1.0** | ☐ | Сервер принимает запросы, запускает движок, стримит события |
 
