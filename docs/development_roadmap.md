@@ -204,7 +204,7 @@
 | 9.3 | Привязать проекты и артефакты к пользователям | ✅ | user_id в Project model, ProjectService фильтрация по user_id, 302 backend тестов, 2026-02-23 |
 | 9.4 | Реализовать страницу логина/регистрации на Frontend | ✅ | AuthContext, LoginForm, RegisterForm, AuthPage, ProtectedRoute, authApi, tokenStorage, useWebSocket+JWT, 34 новых теста (241 frontend), 2026-02-23 |
 | 9.5 | Integration-тесты: авторизация, изоляция данных | ✅ | 36 integration-тестов: auth endpoints (15), data isolation (11), WebSocket auth (10), реальная in-memory SQLite + JWT, 2026-02-23 |
-| 9.6 | Обновить README.md и CHANGELOG.md | ☐ | |
+| 9.6 | Обновить README.md и CHANGELOG.md | ✅ | README: +Auth секция, User model, AuthService, ProtectedRoute, WS JWT; CHANGELOG: v0.10.0, 2026-02-23 |
 
 ### Спринт 10+: Расширение и полировка
 

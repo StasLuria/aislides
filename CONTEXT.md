@@ -9,7 +9,8 @@
 **Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
 **Milestone: MVP v1.0 — ДОСТИГНУТ ✅**
 **Спринт 8: Редактирование артефактов — ЗАВЕРШЁН ✅**
-**Спринт 9: Авторизация и многопользовательность — В ПРОЦЕССЕ (9.1-9.5 ✅, 9.6 ☐)**
+**Milestone: Auth v1.0 — ДОСТИГНУТ ✅**
+**Спринт 9: Авторизация и многопользовательность — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -140,7 +141,7 @@
 | 8.5 Integration-тесты: редактирование → перегенерация | ✅ | 13 integration-тестов: WS handler + EngineBridge + E2E cycle |
 | 8.6 README + CHANGELOG | ✅ | v0.9.0 |
 
-### Спринт 9: Авторизация и многопользовательность (в процессе)
+### Спринт 9: Авторизация и многопользовательность ✅
 
 | Задача | Статус | Детали |
 |:---|:---|:---|
@@ -149,7 +150,7 @@
 | 9.3 Привязать проекты и артефакты к пользователям | ✅ | user_id в Project model, ProjectService фильтрация по user_id |
 | 9.4 Страница логина/регистрации на Frontend | ✅ | AuthContext, LoginForm, RegisterForm, AuthPage, ProtectedRoute, authApi, tokenStorage, useWebSocket+JWT, 34 новых теста (241 frontend) |
 | 9.5 Integration-тесты: авторизация, изоляция данных | ✅ | 36 integration-тестов: auth endpoints (15), data isolation (11), WebSocket auth (10), реальная in-memory SQLite + JWT |
-| 9.6 Обновить README.md и CHANGELOG.md | ☐ | |
+| 9.6 Обновить README.md и CHANGELOG.md | ✅ | README: +Auth, User, WS JWT; CHANGELOG: v0.10.0 |
 
 ## Метрики
 
@@ -161,11 +162,11 @@
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
 | ESLint ошибки | 0 |
-| Версия | 0.9.0 |
+| Версия | 0.10.0 |
 
 ## Следующий шаг
 
-**Task 9.6: Обновить README.md и CHANGELOG.md** — финализация Sprint 9
+**Sprint 10: Расширение и полировка** — CJM-сценарии, улучшение UX, подготовка к деплою
 
 ## Блокеры
 

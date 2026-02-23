@@ -1,25 +1,29 @@
 # AI Presentation Generator
 
-AI-powered presentation generator with LLM-driven planning and execution engine.
+**Version:** 0.10.0
+
+AI-powered presentation generator with an LLM-driven planning and execution engine. The system supports multi-tenancy with JWT-based authentication and ensures data isolation between users.
 
 ## Overview
 
-This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration. The frontend delivers a chat-based interface with artifact panel for interacting with the AI, previewing and editing generated presentations.
+This system automatically creates professional HTML5 presentations from user input using a multi-step pipeline orchestrated by an LLM planner. The engine analyzes context, designs narrative structure, applies a design system, generates slides, and validates quality. The backend provides a REST API and WebSocket real-time communication for project management and engine integration, with secure endpoints protected by JWT authentication. The frontend delivers a chat-based interface with an artifact panel for interacting with the AI, previewing, and editing generated presentations, complete with login/registration functionality.
 
 ## Architecture
 
+The system is composed of three main parts: the **Engine Core**, the **FastAPI Backend**, and the **React Frontend**.
+
+### Engine Core
+
 The engine follows an **intelligent orchestrator** pattern:
 
-1. **EngineAPI** — Public interface for the Backend
-2. **S0_PlannerNode** — LLM agent that converts user requests into JSON execution plans
-3. **PlanValidatorNode** — Validates the generated plan (with replan loop)
-4. **RuntimeAgent** — Executes plan steps by invoking tool nodes (S1-S5)
-5. **EventBus** — Broadcasts execution events for real-time UI updates
-
-### Tool Nodes (S1-S5)
+1.  **EngineAPI** — Public interface for the Backend.
+2.  **S0_PlannerNode** — LLM agent that converts user requests into JSON execution plans.
+3.  **PlanValidatorNode** — Validates the generated plan (with a replan loop).
+4.  **RuntimeAgent** — Executes plan steps by invoking tool nodes (S1-S5).
+5.  **EventBus** — Broadcasts execution events for real-time UI updates.
 
 | Node | Purpose | Status |
-|:---|:---|:---|
+|:---|:---|:---:|
 | **S1_ContextAnalyzer** | Analyzes user request: audience, purpose, tone, slide count | ✅ |
 | **S2_NarrativeArchitect** | Designs narrative structure: framework, slide blueprints | ✅ |
 | **S3_DesignArchitect** | Creates design system: colors, typography, layout mapping | ✅ |
@@ -28,149 +32,117 @@ The engine follows an **intelligent orchestrator** pattern:
 
 ### Backend (FastAPI)
 
+The backend handles business logic, data persistence, and real-time communication.
+
 | Component | Purpose | Status |
-|:---|:---|:---|
+|:---|:---|:---:|
 | **FastAPI app** | REST API server with CORS, lifespan | ✅ |
-| **SQLAlchemy models** | Project, Message, Artifact ORM models | ✅ |
-| **ProjectService** | CRUD operations for projects, messages, artifacts | ✅ |
+| **SQLAlchemy models** | Project, Message, Artifact, User ORM models | ✅ |
+| **AuthService** | User registration, login, password hashing, JWT creation | ✅ |
+| **Auth Dependencies** | `get_current_user` (REST) and `ws_authenticate` (WebSocket) | ✅ |
+| **ProjectService** | CRUD operations with user-based data isolation | ✅ |
 | **EngineService** | Wrapper over EngineAPI with DB persistence | ✅ |
-| **REST API routes** | CRUD endpoints for projects, messages, artifacts | ✅ |
-| **Health check** | `/health` endpoint | ✅ |
-| **WebSocket endpoint** | `/ws/projects/{id}` real-time communication | ✅ |
+| **REST API routes** | Secure CRUD endpoints for projects, messages, artifacts | ✅ |
+| **WebSocket endpoint** | `/ws/projects/{id}` with JWT authentication | ✅ |
 | **ConnectionManager** | Multi-client WebSocket connection management | ✅ |
 | **EngineBridge** | EventBus → WebSocket event mapping and streaming | ✅ |
 | **FileStorage** | Local file storage with upload/download/delete | ✅ |
-| **Upload endpoint** | `/api/upload` with validation (size, extension) | ✅ |
 
 ### Frontend (React + Vite + TypeScript + TailwindCSS)
 
+The frontend provides a complete user interface for interacting with the system.
+
 | Component | Purpose | Status |
-|:---|:---|:---|
+|:---|:---|:---:|
+| **AuthContext** | Global auth state management, JWT decoding, session restore | ✅ |
+| **AuthPage** | Login/Registration page with form toggle | ✅ |
+| **LoginForm/RegisterForm** | Forms with validation and error handling | ✅ |
+| **ProtectedRoute** | Route guard for authenticated pages | ✅ |
+| **authApi/tokenStorage** | HTTP client and secure localStorage for JWT | ✅ |
 | **AppLayout** | Three-zone layout (sidebar, chat, artifacts) | ✅ |
 | **ChatMessage** | User/AI message bubbles with avatars and timestamps | ✅ |
 | **ChatInput** | Auto-resize textarea, Enter/Shift+Enter, file attachments | ✅ |
-| **useWebSocket** | WebSocket client hook with reconnect (exp backoff) | ✅ |
+| **useWebSocket** | WebSocket client hook with JWT auth and auto-reconnect | ✅ |
 | **StatusCard** | Generation progress (S0-S5) with progress bar | ✅ |
 | **ProjectList** | Sidebar project list with selection and creation | ✅ |
 | **ArtifactPanel** | Right panel with toolbar, tabs, download/open actions | ✅ |
-| **ArtifactCard** | Clickable artifact card in chat with icon and preview | ✅ |
-| **MarkdownViewer** | Markdown rendering with GFM and syntax highlighting | ✅ |
-| **SlidePreview** | HTML slide preview via iframe with 1920×1080 scaling | ✅ |
-| **VersionList** | Artifact version list with navigation and highlighting | ✅ |
-| **useArtifactActions** | Download (Blob) and open in new tab actions | ✅ |
-| **CodeEditor** | Monaco Editor integration for text file editing | ✅ |
-| **EditableArtifact** | Toggle between view/edit mode for artifacts | ✅ |
-| **SlideTextEditor** | WYSIWYG editing of text on HTML slides | ✅ |
-| **useArtifactEditor** | Edit state management and WebSocket save | ✅ |
+| **CodeEditor/SlideTextEditor** | Monaco editor and WYSIWYG editor for artifacts | ✅ |
 
 ### WebSocket Protocol
 
-The WebSocket endpoint at `/ws/projects/{id}` supports bidirectional real-time communication:
+The WebSocket endpoint at `/ws/projects/{id}?token=<jwt_token>` supports bidirectional real-time communication. The connection **must** be authenticated via a JWT token in the query parameters.
 
 **Client → Server:**
-- `user_message` — Send a message to trigger generation
-- `artifact_feedback` — Request AI-driven artifact editing
-- `artifact_updated` — Send manually edited artifact content for regeneration
-- `cancel` — Cancel active generation
+- `user_message`
+- `artifact_feedback`
+- `artifact_updated`
+- `cancel`
 
 **Server → Client:**
-- `status_update` — Step progress (step_started, step_completed)
-- `artifact_generated` — New artifact with preview URL
-- `artifact_edited` — Confirmation of artifact edit (accepted/completed/error)
-- `ai_message` — AI response text
-- `error` — Error notification
+- `status_update`
+- `artifact_generated`
+- `artifact_edited`
+- `ai_message`
+- `error`
 
 ## Project Structure
 
 ```
 ai-presentation-generator/
-├── engine/           # Core engine (API, runtime, event bus, nodes)
-│   ├── nodes/        # System nodes (planner, validator)
-│   └── file_storage.py  # Local file storage service
-├── tools/            # Tool nodes (S1-S5)
-│   └── prompts/      # LLM prompt templates
-├── schemas/          # Pydantic models (SharedStore, ExecutionPlan, events)
 ├── backend/          # FastAPI backend
 │   └── app/          # Application package
-│       ├── models/   # SQLAlchemy ORM models
-│       ├── schemas/  # Pydantic API schemas
-│       ├── services/ # Business logic (ProjectService, EngineService, ConnectionManager, EngineBridge)
-│       ├── routers/  # REST API + WebSocket routes
-│       └── main.py   # FastAPI application entry point
+│       ├── models/   # SQLAlchemy ORM models (User, Project, etc.)
+│       ├── schemas/  # Pydantic API schemas (Auth, Project, etc.)
+│       ├── services/ # Business logic (AuthService, ProjectService, etc.)
+│       ├── routers/  # REST API + WebSocket routes (auth, projects, etc.)
+│       └── dependencies/ # Shared dependencies (get_current_user)
 ├── frontend/         # React frontend
-│   └── src/          # Source code
-│       ├── components/  # UI components (chat, layout, status, sidebar, artifact)
-│       ├── hooks/       # Custom hooks (useWebSocket, useArtifactEditor, useArtifactActions)
+│   └── src/
+│       ├── components/  # UI components (auth, chat, layout, artifact)
+│       ├── contexts/    # React contexts (AuthContext)
+│       ├── services/    # API services (authApi, tokenStorage)
+│       ├── hooks/       # Custom hooks (useWebSocket, etc.)
 │       └── types/       # TypeScript type definitions
-├── configs/          # Configuration files (config.yaml)
-├── data/             # Data files (presets, layouts, scoring rubrics)
-│   ├── presets/      # Design presets (corporate_classic, etc.)
-│   ├── layouts/      # Layout templates (corporate_layouts.md)
-│   └── scoring/      # Quality scoring rubrics
+├── engine/           # Core engine (API, runtime, event bus, nodes)
+├── tools/            # Tool nodes (S1-S5)
 ├── tests/            # Tests (unit, integration, e2e)
-│   ├── unit/         # Unit tests (engine, schemas, backend)
-│   │   └── backend/  # Backend-specific unit tests
-│   ├── integration/  # Integration tests (apply_edit, websocket, artifact_editing)
-│   └── e2e/          # End-to-end pipeline tests
-├── docs/             # Documentation (specs, roadmap, ADRs)
-│   └── adr/          # Architecture Decision Records
-├── CONTRIBUTING.md   # Development rules and standards
-├── ONBOARDING.md     # Quick start guide for new developers
-└── CHANGELOG.md      # Version history
+│   ├── unit/         # Unit tests (backend, frontend)
+│   └── integration/  # Integration tests (auth, data_isolation, websocket)
+└── ...
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-pip install poetry
+# 1. Install dependencies (backend & frontend)
 poetry install
+cd frontend && pnpm install && cd ..
 
 # 2. Set up environment
 cp .env.example .env
 # Fill in API keys in .env
 
-# 3. Run backend tests
-poetry run pytest
-
-# 4. Run backend linters
+# 3. Run all tests (backend + frontend)
 make check
 
-# 5. Start backend (requires database)
+# 4. Start backend (with auto-migration)
 poetry run uvicorn backend.app.main:app --reload
 
-# 6. Install frontend dependencies
-cd frontend && pnpm install
-
-# 7. Run frontend tests
-pnpm test
-
-# 8. Start frontend dev server
-pnpm dev
+# 5. Start frontend dev server
+cd frontend && pnpm dev
 ```
-
-## Documentation
-
-| Document | Description |
-|:---|:---|
-| [Engine Architecture v3.0](docs/engine_architecture_specification_v3_ru.md) | Engine architecture specification |
-| [Technical Specification](docs/technical_specification.md) | Business logic: S1-S5 skills, design system |
-| [PRD](docs/product_requirements_document.md) | Product requirements |
-| [Development Roadmap](docs/development_roadmap.md) | Sprint plan with tasks |
-| [CONTRIBUTING](CONTRIBUTING.md) | Development rules and standards |
-| [ONBOARDING](ONBOARDING.md) | Quick start for new developers |
 
 ## Status
 
-**Current Sprint:** 8 — Artifact Editing (COMPLETED)
-**Milestones:** Engine Core v1.0 ✅ → Backend API v1.0 ✅ → Backend v1.0 (WebSocket) ✅ → Frontend Chat v1.0 ✅ → MVP v1.0 ✅
+**Current Sprint:** 9 — Authentication & Multi-tenancy (COMPLETED)
 
-### Sprint 8 Results
+**Milestones:** Engine Core v1.0 ✅ → Backend v1.0 ✅ → MVP v1.0 ✅ → Auth v1.0 ✅
 
-- **200 frontend tests** (Vitest + Testing Library) — all passing
-- **265 backend tests** (pytest) — all passing, 96.16% coverage
-- **0 linter errors** (ESLint + ruff + mypy)
-- **4 new editing components:** CodeEditor, EditableArtifact, SlideTextEditor, editorUtils
-- **2 new hooks:** useArtifactEditor, useArtifactActions (extended)
-- **Backend:** artifact_updated WS handler, EngineBridge.run_artifact_update
-- **13 integration tests:** full edit → regeneration cycle
+### Sprint 9 Results
+
+- **Full authentication flow:** User registration, login, JWT session management, and secure endpoints.
+- **Multi-tenancy:** Complete data isolation between users for projects, messages, and artifacts.
+- **338 backend tests** (pytest) — all passing, **96.16% coverage**.
+- **241 frontend tests** (Vitest) — all passing.
+- **36 new integration tests** covering auth endpoints, data isolation, and WebSocket security using a real in-memory database.
+- **0 linter errors** (ESLint + ruff + mypy).
