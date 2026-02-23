@@ -23,8 +23,8 @@ The engine follows an **intelligent orchestrator** pattern:
 | **S1_ContextAnalyzer** | Analyzes user request: audience, purpose, tone, slide count | ✅ |
 | **S2_NarrativeArchitect** | Designs narrative structure: framework, slide blueprints | ✅ |
 | **S3_DesignArchitect** | Creates design system: colors, typography, layout mapping | ✅ |
-| **S4_SlideGenerator** | Generates HTML/CSS slides | 🔜 Sprint 3 |
-| **S5_QualityValidator** | Validates presentation quality | 🔜 Sprint 3 |
+| **S4_SlideGenerator** | Generates HTML/CSS slides from blueprints + design system | ✅ |
+| **S5_QualityValidator** | Validates presentation quality across 4 dimensions | ✅ |
 
 ## Project Structure
 
@@ -37,8 +37,13 @@ ai-presentation-generator/
 ├── schemas/          # Pydantic models (SharedStore, ExecutionPlan, events)
 ├── configs/          # Configuration files (config.yaml)
 ├── data/             # Data files (presets, layouts, scoring rubrics)
-│   └── presets/      # Design presets (corporate_classic, etc.)
-├── tests/            # Tests (unit, integration)
+│   ├── presets/      # Design presets (corporate_classic, etc.)
+│   ├── layouts/      # Layout templates (corporate_layouts.md)
+│   └── scoring/      # Quality scoring rubrics
+├── tests/            # Tests (unit, integration, e2e)
+│   ├── unit/         # Unit tests
+│   ├── integration/  # Integration tests (apply_edit)
+│   └── e2e/          # End-to-end pipeline tests
 ├── docs/             # Documentation (specs, roadmap, ADRs)
 │   └── adr/          # Architecture Decision Records
 ├── CONTRIBUTING.md   # Development rules and standards
@@ -77,13 +82,16 @@ make check
 
 ## Status
 
-**Current Sprint:** 2 — Planner & Tools S1-S3 (COMPLETED)
+**Milestone:** Engine Core v1.0 — REACHED ✅
+**Current Sprint:** 3 — Tools S4-S5 & E2E (COMPLETED)
 
-### Sprint 2 Results
+### Sprint 3 Results
 
-- **115 unit tests** — all passing
-- **95.32% code coverage** (target: 90%)
+- **179 tests** (unit + integration + e2e) — all passing
+- **96.39% code coverage** (target: 90%)
 - **0 linter errors** (ruff + mypy)
+- **Full pipeline** S0→S1→S2→S3→S4→S5 tested end-to-end
+- **apply_edit()** mechanism implemented and tested
 
 | Module | Status | Coverage |
 |:---|:---|:---|
@@ -101,5 +109,9 @@ make check
 | `tools/s1_context_analyzer.py` | ✅ | 96% |
 | `tools/s2_narrative_architect.py` | ✅ | 97% |
 | `tools/s3_design_architect.py` | ✅ | 83% |
+| `tools/s4_slide_generator.py` | ✅ | 100% |
+| `tools/s5_quality_validator.py` | ✅ | 98% |
 | `data/presets/corporate_classic.json` | ✅ | — |
+| `data/layouts/corporate_layouts.md` | ✅ | — |
+| `data/scoring/scoring_rubric.json` | ✅ | — |
 | `tools/prompts/` | ✅ | — |

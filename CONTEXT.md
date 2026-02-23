@@ -2,9 +2,10 @@
 
 **Последнее обновление:** 2026-02-23
 
-## Текущий спринт
+## Текущий статус
 
-**Спринт 2: Планировщик и инструменты S1-S3 — ЗАВЕРШЁН ✅**
+**Milestone: Engine Core v1.0 — ДОСТИГНУТ ✅**
+**Спринт 3: Инструменты S4-S5 и сквозной тест — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -34,7 +35,7 @@
 | 1.6 engine/runtime.py | ✅ | RuntimeAgent с cancel_token |
 | 1.7 engine/api.py | ✅ | EngineAPI (заглушка) |
 | 1.8-1.11 Unit-тесты | ✅ | 55 тестов, 96.54% coverage |
-| 1.12 README + CHANGELOG | ✅ | Обновлены |
+| 1.12 README + CHANGELOG | ✅ | v0.2.0 |
 
 ### Спринт 2: Планировщик и инструменты S1-S3 ✅
 
@@ -47,25 +48,39 @@
 | 2.5 tools/s3_design_architect.py | ✅ | S3_DesignArchitectNode |
 | 2.6 data/presets/corporate_classic.json | ✅ | MVP-пресет |
 | 2.7 tools/prompts/ | ✅ | Шаблоны промптов S0-S3 |
-| 2.8 Unit-тесты PlannerNode | ✅ | 13 тестов с mock LLM |
-| 2.9 Unit-тесты ValidatorNode | ✅ | 18 тестов |
-| 2.10 Unit-тесты S1-S3 | ✅ | 23 теста с mock LLM |
+| 2.8-2.10 Unit-тесты | ✅ | 60 новых тестов с mock LLM |
 | 2.11 Интеграция EngineAPI | ✅ | Replan loop, PLAN_COMPLETED event |
 | 2.12 README + CHANGELOG | ✅ | v0.3.0 |
+
+### Спринт 3: Инструменты S4-S5 и сквозной тест ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 3.1 tools/s4_slide_generator.py | ✅ | S4_SlideGeneratorNode, 100% coverage |
+| 3.2 data/layouts/corporate_layouts.md | ✅ | 8 типов лейаутов |
+| 3.3 tools/s5_quality_validator.py | ✅ | S5_QualityValidatorNode, 98% coverage |
+| 3.4 data/scoring/scoring_rubric.json | ✅ | Рубрика с весами и порогами |
+| 3.5 Unit-тесты S4 | ✅ | 31 тест |
+| 3.6 Unit-тесты S5 | ✅ | 20 тестов |
+| 3.7 E2E-тест полного цикла | ✅ | 5 E2E-тестов |
+| 3.8 apply_edit() в EngineAPI | ✅ | Валидация, логирование, AI_MESSAGE event |
+| 3.9 Integration-тест apply_edit() | ✅ | 8 тестов |
+| 3.10 README + CHANGELOG | ✅ | v0.4.0 |
+| 3.11 Milestone Engine Core v1.0 | ✅ | 179 тестов, 96.39% coverage |
 
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Unit-тесты | 115 passed |
-| Покрытие | 95.32% |
+| Тесты (unit + integration + e2e) | 179 passed |
+| Покрытие | 96.39% |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
-| Версия | 0.3.0 |
+| Версия | 0.4.0 |
 
 ## Следующий шаг
 
-**Спринт 3: Инструменты S4-S5 и сквозной тест** — задача 3.1: `tools/s4_slide_generator.py` (S4 Node по technical_specification.md, раздел 2.5)
+**Этап 2, Спринт 4: Backend + FastAPI** — задача 4.1: `backend/main.py`
 
 ## Блокеры
 

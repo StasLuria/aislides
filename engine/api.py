@@ -225,35 +225,68 @@ class EngineAPI:
         project_id: str,
         artifact_id: str,
         new_content: str,
-        chat_history: list[dict[str, Any]],
-        existing_results: dict[str, Any],
+        chat_history: list[dict[str, Any]] | None = None,
+        existing_results: dict[str, Any] | None = None,
     ) -> SharedStore:
         """Обработать ручную правку артефакта.
 
-        Создаёт SharedStore с edit_context и запускает цикл перепланирования,
-        чтобы определить, какие шаги нужно перевыполнить.
+        Механизм по ТЗ v3.0, §14:
+        1. Валидирует входные данные.
+        2. Записывает ``edit_context`` в ``user_input``.
+        3. Передаёт ``existing_results`` чтобы S0_PlannerNode мог
+           сгенерировать план перегенерации **только зависимых** артефактов.
+        4. Запускает стандартный ``run()``.
 
         Args:
             project_id: ID проекта.
             artifact_id: ID артефакта для правки.
             new_content: Новое содержимое артефакта.
-            chat_history: История чата.
-            existing_results: Текущие результаты.
+            chat_history: История чата (опционально).
+            existing_results: Текущие результаты (опционально).
 
         Returns:
             Обновлённый SharedStore.
+
+        Raises:
+            ValueError: Если ``artifact_id`` или ``new_content`` пустые.
         """
+        # Валидация входных данных
+        if not artifact_id or not artifact_id.strip():
+            msg = "artifact_id не может быть пустым"
+            raise ValueError(msg)
+        if not new_content:
+            msg = "new_content не может быть пустым"
+            raise ValueError(msg)
+
+        logger.info(
+            "[%s] apply_edit: артефакт=%s, длина контента=%d",
+            project_id,
+            artifact_id,
+            len(new_content),
+        )
+
+        await self.event_bus.emit(
+            EngineEvent(
+                event_type=EventType.AI_MESSAGE,
+                trace_id=project_id,
+                component="EngineAPI",
+                message=f"Обработка ручной правки артефакта '{artifact_id}'",
+                data={"artifact_id": artifact_id, "content_length": len(new_content)},
+            )
+        )
+
         return await self.run(
             project_id=project_id,
             user_input={
-                "prompt": f"Обновить артефакт {artifact_id}",
+                "prompt": f"Пользователь вручную отредактировал артефакт '{artifact_id}'. "
+                "Проанализируй правку и перегенерируй только зависимые артефакты.",
                 "edit_context": {
                     "artifact_id": artifact_id,
                     "new_content": new_content,
                 },
             },
-            chat_history=chat_history,
-            existing_results=existing_results,
+            chat_history=chat_history or [],
+            existing_results=existing_results or {},
         )
 
     async def cancel(self, project_id: str) -> bool:

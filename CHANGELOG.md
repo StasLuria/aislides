@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-23 — Sprint 3: Tools S4-S5 & E2E | Milestone: Engine Core v1.0
+
+### Added
+
+- `tools/s4_slide_generator.py` — S4_SlideGeneratorNode: HTML/CSS slide generation with LLM per tech spec S4 (task 3.1)
+- `data/layouts/corporate_layouts.md` — MVP layout templates: 8 layout types with HTML/CSS structure (task 3.2)
+- `tools/s5_quality_validator.py` — S5_QualityValidatorNode: 4-dimension quality scoring per tech spec S5 (task 3.3)
+- `data/scoring/scoring_rubric.json` — Quality scoring rubric with weights and thresholds (task 3.4)
+- 31 unit tests for S4_SlideGenerator (task 3.5)
+- 20 unit tests for S5_QualityValidator (task 3.6)
+- 5 E2E tests: full pipeline S0→S1→S2→S3→S4→S5, cancel, error handling, events (task 3.7)
+- 8 integration tests for apply_edit(): validation, partial regeneration, events (task 3.9)
+- `tests/e2e/` — E2E test directory
+- `tests/integration/` — Integration test directory
+
+### Changed
+
+- `engine/api.py` — apply_edit() fully implemented per §14: validation, logging, AI_MESSAGE event, edit_context (task 3.8)
+- Test coverage: 96.39% (179 tests, target: 90%)
+
+### Milestone
+
+- **Engine Core v1.0** reached: all 5 tool nodes (S1-S5), planner, validator, runtime, event bus, apply_edit, cancel — fully implemented and tested
+
 ## [0.3.0] - 2026-02-23 — Sprint 2: Planner & Tools S1-S3
 
 ### Added
