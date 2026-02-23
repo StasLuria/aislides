@@ -209,7 +209,7 @@ class TestHandleArtifactUpdated:
 
     @pytest.fixture()
     def ws_app(self) -> Any:
-        """Создать FastAPI app с WebSocket router."""
+        """Создать FastAPI app с WebSocket router и мок-авторизацией."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
@@ -219,9 +219,40 @@ class TestHandleArtifactUpdated:
         app.include_router(router)
         return TestClient(app)
 
-    def test_artifact_updated_missing_artifact_id(self, ws_app: Any) -> None:
+    @pytest.fixture()
+    def mock_user(self) -> MagicMock:
+        """Создать mock User."""
+        user = MagicMock()
+        user.id = "test-user-id"
+        user.email = "test@test.com"
+        user.is_active = True
+        return user
+
+    def _connect_ws(self, ws_app: Any, mock_user: MagicMock) -> Any:
+        """Подключиться к WS с мок-авторизацией."""
+        import contextlib
+
+        return contextlib.ExitStack()
+
+    def test_artifact_updated_missing_artifact_id(self, ws_app: Any, mock_user: MagicMock) -> None:
         """Тест: artifact_updated без artifact_id → error."""
-        with ws_app.websocket_connect("/ws/projects/proj-1") as ws:
+        mock_session = AsyncMock()
+        mock_session_factory = MagicMock()
+        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch(
+                "backend.app.dependencies.auth.ws_authenticate",
+                new_callable=AsyncMock,
+                return_value=mock_user,
+            ),
+            patch(
+                "backend.app.database.async_session_factory",
+                mock_session_factory,
+            ),
+            ws_app.websocket_connect("/ws/projects/proj-1?token=fake-jwt") as ws,
+        ):
             # Получаем connected
             data = ws.receive_json()
             assert data["type"] == "connected"
@@ -240,9 +271,25 @@ class TestHandleArtifactUpdated:
             assert response["type"] == "error"
             assert "artifact_id" in response["payload"]["message"]
 
-    def test_artifact_updated_missing_content(self, ws_app: Any) -> None:
+    def test_artifact_updated_missing_content(self, ws_app: Any, mock_user: MagicMock) -> None:
         """Тест: artifact_updated без new_content → error."""
-        with ws_app.websocket_connect("/ws/projects/proj-1") as ws:
+        mock_session = AsyncMock()
+        mock_session_factory = MagicMock()
+        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch(
+                "backend.app.dependencies.auth.ws_authenticate",
+                new_callable=AsyncMock,
+                return_value=mock_user,
+            ),
+            patch(
+                "backend.app.database.async_session_factory",
+                mock_session_factory,
+            ),
+            ws_app.websocket_connect("/ws/projects/proj-1?token=fake-jwt") as ws,
+        ):
             data = ws.receive_json()
             assert data["type"] == "connected"
 
@@ -260,9 +307,25 @@ class TestHandleArtifactUpdated:
             assert response["type"] == "error"
             assert "new_content" in response["payload"]["message"]
 
-    def test_artifact_updated_empty_payload(self, ws_app: Any) -> None:
+    def test_artifact_updated_empty_payload(self, ws_app: Any, mock_user: MagicMock) -> None:
         """Тест: artifact_updated с пустым payload → error."""
-        with ws_app.websocket_connect("/ws/projects/proj-1") as ws:
+        mock_session = AsyncMock()
+        mock_session_factory = MagicMock()
+        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch(
+                "backend.app.dependencies.auth.ws_authenticate",
+                new_callable=AsyncMock,
+                return_value=mock_user,
+            ),
+            patch(
+                "backend.app.database.async_session_factory",
+                mock_session_factory,
+            ),
+            ws_app.websocket_connect("/ws/projects/proj-1?token=fake-jwt") as ws,
+        ):
             data = ws.receive_json()
             assert data["type"] == "connected"
 
@@ -276,9 +339,25 @@ class TestHandleArtifactUpdated:
             response = ws.receive_json()
             assert response["type"] == "error"
 
-    def test_artifact_updated_valid_sends_accepted(self, ws_app: Any) -> None:
+    def test_artifact_updated_valid_sends_accepted(self, ws_app: Any, mock_user: MagicMock) -> None:
         """Тест: валидный artifact_updated → artifact_edited (accepted)."""
-        with ws_app.websocket_connect("/ws/projects/proj-1") as ws:
+        mock_session = AsyncMock()
+        mock_session_factory = MagicMock()
+        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch(
+                "backend.app.dependencies.auth.ws_authenticate",
+                new_callable=AsyncMock,
+                return_value=mock_user,
+            ),
+            patch(
+                "backend.app.database.async_session_factory",
+                mock_session_factory,
+            ),
+            ws_app.websocket_connect("/ws/projects/proj-1?token=fake-jwt") as ws,
+        ):
             data = ws.receive_json()
             assert data["type"] == "connected"
 

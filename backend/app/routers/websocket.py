@@ -5,6 +5,8 @@
 Протокол сообщений:
 - Клиент → Сервер: user_message, artifact_feedback, artifact_updated, cancel
 - Сервер → Клиент: ai_message, status_update, artifact_generated, artifact_edited, error
+
+Авторизация: JWT-токен передаётся через query parameter ?token=JWT.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ import json
 import logging
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from backend.app.services.connection_manager import ConnectionManager
 
@@ -33,22 +35,40 @@ _background_tasks: set[asyncio.Task[None]] = set()
 async def websocket_endpoint(
     websocket: WebSocket,
     project_id: str,
+    token: str | None = Query(default=None),
 ) -> None:
     """WebSocket endpoint для проекта.
 
     Жизненный цикл:
-    1. Принимает подключение.
-    2. Регистрирует клиента в ConnectionManager.
-    3. Слушает входящие сообщения в бесконечном цикле.
-    4. Маршрутизирует сообщения по типу.
-    5. При отключении — очищает ресурсы.
+    1. Аутентифицирует пользователя по JWT-токену из query parameter.
+    2. Принимает подключение.
+    3. Регистрирует клиента в ConnectionManager.
+    4. Слушает входящие сообщения в бесконечном цикле.
+    5. Маршрутизирует сообщения по типу.
+    6. При отключении — очищает ресурсы.
 
     Args:
         websocket: WebSocket-соединение.
         project_id: ID проекта.
+        token: JWT-токен для аутентификации (query parameter).
     """
+    # Аутентификация WebSocket-подключения
+    from backend.app.database import async_session_factory
+    from backend.app.dependencies.auth import ws_authenticate
+
+    user = None
+    if token is not None:
+        async with async_session_factory() as db:
+            user = await ws_authenticate(token, db)
+
+    if user is None:
+        # Закрываем соединение с кодом 4001 (Unauthorized)
+        await websocket.close(code=4001, reason="Unauthorized")
+        logger.warning("[WS] Неавторизованное подключение к проекту %s", project_id)
+        return
+
     await manager.connect(project_id, websocket)
-    logger.info("[WS] Клиент подключён к проекту %s", project_id)
+    logger.info("[WS] Пользователь %s подключён к проекту %s", user.email, project_id)
 
     try:
         # Отправляем подтверждение подключения
@@ -56,7 +76,10 @@ async def websocket_endpoint(
             project_id,
             {
                 "type": "connected",
-                "payload": {"project_id": project_id},
+                "payload": {
+                    "project_id": project_id,
+                    "user_id": user.id,
+                },
             },
         )
 
@@ -93,7 +116,9 @@ async def websocket_endpoint(
                     project_id,
                     {
                         "type": "error",
-                        "payload": {"message": f"Неизвестный тип сообщения: {msg_type}"},
+                        "payload": {
+                            "message": f"Неизвестный тип сообщения: {msg_type}",
+                        },
                     },
                 )
 
@@ -189,7 +214,9 @@ async def _handle_artifact_feedback(
         project_id,
         {
             "type": "ai_message",
-            "payload": {"text": f"Обрабатываю правку для артефакта '{artifact_id}'..."},
+            "payload": {
+                "text": f"Обрабатываю правку для артефакта '{artifact_id}'...",
+            },
         },
     )
 
@@ -244,7 +271,7 @@ async def _handle_artifact_updated(
             "payload": {
                 "artifact_id": artifact_id,
                 "status": "accepted",
-                "message": f"Правка артефакта '{artifact_id}' принята. Запускаю перегенерацию...",
+                "message": f"Правка артефакта '{artifact_id}' принята. " "Запускаю перегенерацию...",
             },
         },
     )

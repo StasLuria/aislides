@@ -496,14 +496,25 @@ class TestUploadEndpoint:
 
     @pytest.fixture()
     def client(self) -> Any:
-        """Создать TestClient для upload endpoint."""
+        """Создать TestClient для upload endpoint с авторизацией."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
+        from backend.app.dependencies.auth import get_current_user
         from backend.app.routers.upload import router
 
         test_app = FastAPI()
         test_app.include_router(router)
+
+        mock_user = MagicMock()
+        mock_user.id = "test-user-id"
+        mock_user.email = "test@test.com"
+        mock_user.is_active = True
+
+        async def override_user() -> Any:
+            return mock_user
+
+        test_app.dependency_overrides[get_current_user] = override_user
         return TestClient(test_app)
 
     def test_upload_success(self, client: Any, tmp_path: Any) -> None:

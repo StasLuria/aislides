@@ -3,15 +3,22 @@
 Реализация по ТЗ v3.0, §13 и PRD.
 Принимает файлы через multipart/form-data,
 сохраняет через FileStorage и возвращает метаданные.
+
+Требует авторизации (Bearer JWT).
 """
 
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
+from backend.app.dependencies.auth import get_current_user
 from engine.file_storage import LocalFileStorage
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +47,10 @@ ALLOWED_EXTENSIONS = {
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile) -> dict[str, str]:
+async def upload_file(
+    file: UploadFile,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     """Загрузить файл.
 
     Принимает файл через multipart/form-data.
@@ -49,6 +59,7 @@ async def upload_file(file: UploadFile) -> dict[str, str]:
 
     Args:
         file: Загружаемый файл.
+        current_user: Текущий авторизованный пользователь.
 
     Returns:
         Метаданные загруженного файла.
@@ -64,7 +75,7 @@ async def upload_file(file: UploadFile) -> dict[str, str]:
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Недопустимое расширение файла: {ext}. Допустимые: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+            detail=f"Недопустимое расширение файла: {ext}. " f"Допустимые: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
         )
 
     # Читаем содержимое
@@ -74,7 +85,7 @@ async def upload_file(file: UploadFile) -> dict[str, str]:
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=400,
-            detail=f"Файл слишком большой: {len(content)} байт. Максимум: {MAX_FILE_SIZE} байт",
+            detail=f"Файл слишком большой: {len(content)} байт. " f"Максимум: {MAX_FILE_SIZE} байт",
         )
 
     # Генерируем уникальное имя и сохраняем
@@ -82,7 +93,8 @@ async def upload_file(file: UploadFile) -> dict[str, str]:
     saved_path = await _storage.save(unique_name, content)
 
     logger.info(
-        "[Upload] Файл загружен: %s -> %s (%d байт)",
+        "[Upload] Файл загружен пользователем %s: %s -> %s (%d байт)",
+        current_user.email,
         file.filename,
         saved_path,
         len(content),

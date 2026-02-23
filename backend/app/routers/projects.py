@@ -8,6 +8,8 @@
 - DELETE /api/projects/{id}     — удалить проект
 - GET    /api/projects/{id}/messages  — история сообщений
 - GET    /api/projects/{id}/artifacts — список артефактов
+
+Все эндпоинты требуют авторизации (Bearer JWT).
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from typing import TYPE_CHECKING
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.app.database import get_db
+from backend.app.dependencies.auth import get_current_user
 from backend.app.schemas.project import (
     ArtifactListRead,
     ArtifactRead,
@@ -31,6 +34,8 @@ from backend.app.services.project_service import ProjectService
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from backend.app.models.user import User
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -48,9 +53,19 @@ def _get_service(db: AsyncSession = Depends(get_db)) -> ProjectService:
 )
 async def create_project(
     body: ProjectCreate,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectRead:
-    """Создать новый проект."""
+    """Создать новый проект.
+
+    Args:
+        body: Данные для создания проекта.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Созданный проект.
+    """
     project = await svc.create_project(title=body.title)
     return ProjectRead.model_validate(project)
 
@@ -63,9 +78,20 @@ async def create_project(
 async def list_projects(
     offset: int = 0,
     limit: int = 50,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectListRead:
-    """Получить список проектов с пагинацией."""
+    """Получить список проектов с пагинацией.
+
+    Args:
+        offset: Смещение для пагинации.
+        limit: Количество записей.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Список проектов и общее количество.
+    """
     projects, total = await svc.list_projects(offset=offset, limit=limit)
     return ProjectListRead(
         projects=[ProjectRead.model_validate(p) for p in projects],
@@ -80,9 +106,22 @@ async def list_projects(
 )
 async def get_project(
     project_id: str,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectRead:
-    """Получить проект по ID."""
+    """Получить проект по ID.
+
+    Args:
+        project_id: UUID проекта.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Данные проекта.
+
+    Raises:
+        HTTPException 404: Если проект не найден.
+    """
     project = await svc.get_project(project_id)
     if project is None:
         raise HTTPException(
@@ -100,9 +139,23 @@ async def get_project(
 async def update_project(
     project_id: str,
     body: ProjectUpdate,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ProjectRead:
-    """Обновить проект."""
+    """Обновить проект.
+
+    Args:
+        project_id: UUID проекта.
+        body: Данные для обновления.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Обновлённый проект.
+
+    Raises:
+        HTTPException 404: Если проект не найден.
+    """
     project = await svc.update_project(project_id, title=body.title)
     if project is None:
         raise HTTPException(
@@ -119,9 +172,19 @@ async def update_project(
 )
 async def delete_project(
     project_id: str,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> None:
-    """Удалить проект."""
+    """Удалить проект.
+
+    Args:
+        project_id: UUID проекта.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Raises:
+        HTTPException 404: Если проект не найден.
+    """
     deleted = await svc.delete_project(project_id)
     if not deleted:
         raise HTTPException(
@@ -139,10 +202,24 @@ async def list_messages(
     project_id: str,
     offset: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> MessageListRead:
-    """Получить историю сообщений проекта."""
-    # Проверяем, что проект существует
+    """Получить историю сообщений проекта.
+
+    Args:
+        project_id: UUID проекта.
+        offset: Смещение для пагинации.
+        limit: Количество записей.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Список сообщений и общее количество.
+
+    Raises:
+        HTTPException 404: Если проект не найден.
+    """
     project = await svc.get_project(project_id)
     if project is None:
         raise HTTPException(
@@ -169,9 +246,24 @@ async def list_artifacts(
     project_id: str,
     offset: int = 0,
     limit: int = 50,
+    current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ) -> ArtifactListRead:
-    """Получить артефакты проекта."""
+    """Получить артефакты проекта.
+
+    Args:
+        project_id: UUID проекта.
+        offset: Смещение для пагинации.
+        limit: Количество записей.
+        current_user: Текущий авторизованный пользователь.
+        svc: Сервис проектов.
+
+    Returns:
+        Список артефактов и общее количество.
+
+    Raises:
+        HTTPException 404: Если проект не найден.
+    """
     project = await svc.get_project(project_id)
     if project is None:
         raise HTTPException(
