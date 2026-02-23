@@ -144,3 +144,77 @@ async def user_bob(
         "token": token,
         "headers": {"Authorization": f"Bearer {token}"},
     }
+
+
+@pytest_asyncio.fixture
+async def async_client(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[AsyncClient, None]:
+    """HTTP-клиент с реальной БД (алиас для auth_client)."""
+
+    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        async with session_factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def alice_token(user_alice: dict[str, Any]) -> str:
+    """JWT-токен Alice."""
+    return user_alice["token"]
+
+
+@pytest_asyncio.fixture
+async def bob_token(user_bob: dict[str, Any]) -> str:
+    """JWT-токен Bob."""
+    return user_bob["token"]
+
+
+@pytest_asyncio.fixture
+async def project_with_artifacts(
+    async_client: AsyncClient,
+    alice_token: str,
+    session_factory: async_sessionmaker[AsyncSession],
+    user_alice: dict[str, Any],
+) -> str:
+    """Создать проект Alice с HTML-артефактами для тестирования экспорта.
+
+    Returns:
+        project_id: UUID проекта.
+    """
+    from backend.app.models.project import Artifact, Project
+
+    async with session_factory() as session:
+        project = Project(
+            user_id=user_alice["id"],
+            title="Export Test Project",
+        )
+        session.add(project)
+        await session.flush()
+        await session.refresh(project)
+
+        # Добавляем HTML-артефакты (слайды)
+        for i in range(3):
+            artifact = Artifact(
+                project_id=project.id,
+                filename=f"slide_{i + 1}.html",
+                file_type="html",
+                content=f"<h1>Slide {i + 1}</h1><p>Content for slide {i + 1}</p>",
+                version=1,
+            )
+            session.add(artifact)
+
+        await session.commit()
+        return project.id

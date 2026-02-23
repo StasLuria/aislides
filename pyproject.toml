@@ -29,6 +29,9 @@ python-multipart = "^0.0.22"
 pydantic-settings = "^2.13.1"
 python-jose = {extras = ["cryptography"], version = "^3.5.0"}
 bcrypt = "^5.0.0"
+python-pptx = "^1.0.2"
+weasyprint = "^68.1"
+beautifulsoup4 = "^4.14.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

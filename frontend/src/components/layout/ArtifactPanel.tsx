@@ -30,6 +30,10 @@ export interface ArtifactPanelProps {
   onOpenNewTab?: (artifact: ArtifactData) => void
   /** Callback для редизайна (CJM 5). */
   onRedesign?: () => void
+  /** Callback для экспорта в PDF. */
+  onExportPdf?: () => void
+  /** Callback для экспорта в PPTX. */
+  onExportPptx?: () => void
   /** Дочерние элементы (viewer). */
   children?: React.ReactNode
 }
@@ -43,6 +47,8 @@ export function ArtifactPanel({
   onDownload,
   onOpenNewTab,
   onRedesign,
+  onExportPdf,
+  onExportPptx,
   children,
 }: ArtifactPanelProps) {
   if (!isOpen) return null
@@ -90,6 +96,42 @@ export function ArtifactPanel({
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </button>
+          )}
+          {onExportPdf && (
+            <button
+              onClick={onExportPdf}
+              className="p-1.5 text-gray-400 hover:text-red-600 rounded transition-colors"
+              aria-label="Экспорт в PDF"
+              data-testid="btn-export-pdf"
+              title="Экспорт в PDF"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+          )}
+          {onExportPptx && (
+            <button
+              onClick={onExportPptx}
+              className="p-1.5 text-gray-400 hover:text-orange-600 rounded transition-colors"
+              aria-label="Экспорт в PPTX"
+              data-testid="btn-export-pptx"
+              title="Экспорт в PPTX"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
                 />
               </svg>
             </button>
