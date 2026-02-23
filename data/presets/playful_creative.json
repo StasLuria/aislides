@@ -1,0 +1,82 @@
+{
+  "preset_id": "playful_creative",
+  "category": "Creative & Playful",
+  "description": "Яркий креативный стиль для маркетинговых презентаций, воркшопов и образовательных материалов. Энергичный, запоминающийся, с характером.",
+  "recommended_for": {
+    "audiences": ["marketers", "creative_teams", "students", "educators", "startup_teams"],
+    "purposes": ["marketing_pitch", "workshop", "educational", "brainstorm", "team_presentation"],
+    "tones": ["playful", "energetic", "creative", "inspiring", "casual"]
+  },
+  "layout_family": "creative",
+  "color_variants": {
+    "sunset_pop": {
+      "background": "#FFFBF0",
+      "text_primary": "#2D1B69",
+      "text_secondary": "#6B5B95",
+      "accent": "#FF6B35",
+      "accent_secondary": "#F7C948",
+      "surface": "#FFF3E0"
+    },
+    "ocean_breeze": {
+      "background": "#F0F9FF",
+      "text_primary": "#1A365D",
+      "text_secondary": "#4A5568",
+      "accent": "#00B4D8",
+      "accent_secondary": "#FF6B6B",
+      "surface": "#E0F2FE"
+    },
+    "neon_night": {
+      "background": "#1A1A2E",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#C0C0D0",
+      "accent": "#E94560",
+      "accent_secondary": "#0F3460",
+      "surface": "#16213E"
+    },
+    "garden_fresh": {
+      "background": "#FAFFF5",
+      "text_primary": "#1B4332",
+      "text_secondary": "#52796F",
+      "accent": "#40916C",
+      "accent_secondary": "#E76F51",
+      "surface": "#D8F3DC"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Poppins",
+    "font_family_body": "Nunito",
+    "size_h1": "52px",
+    "size_h2": "38px",
+    "size_h3": "28px",
+    "size_body": "18px",
+    "size_caption": "14px",
+    "line_height": 1.6,
+    "letter_spacing_heading": "-0.01em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 800,
+    "font_weight_body": 400
+  },
+  "spacing": {
+    "unit": 8,
+    "whitespace_target": "50-60%",
+    "slide_padding": "64px",
+    "content_gap": "32px",
+    "section_gap": "48px"
+  },
+  "content_rules": {
+    "bullet_style": "emoji",
+    "max_bullets_per_slide": 5,
+    "max_words_per_bullet": 12,
+    "max_words_title": 7,
+    "image_treatment": "rounded_corners_16px"
+  },
+  "layout_templates": {
+    "hero_title": "creative_hero",
+    "section_header": "creative_section",
+    "key_point": "creative_key_point",
+    "bullet_list": "creative_bullets",
+    "image_text": "creative_image_text",
+    "quote": "creative_quote",
+    "cta": "creative_cta"
+  }
+}

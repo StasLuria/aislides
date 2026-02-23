@@ -1,0 +1,81 @@
+{
+  "preset_id": "elegant_premium",
+  "category": "Luxury & Premium",
+  "description": "Элегантный премиальный стиль для люксовых брендов, fashion-индустрии и VIP-презентаций. Утончённость, сдержанность, безупречная типографика.",
+  "recommended_for": {
+    "audiences": ["executives", "luxury_brands", "fashion", "high_net_worth", "vip_clients"],
+    "purposes": ["brand_presentation", "luxury_pitch", "annual_report", "gala_event", "product_launch"],
+    "tones": ["elegant", "premium", "refined", "exclusive"]
+  },
+  "layout_family": "luxury",
+  "color_variants": {
+    "black_gold": {
+      "background": "#0A0A0A",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#B8B8B8",
+      "accent": "#D4AF37",
+      "accent_secondary": "#8B7355",
+      "surface": "#1A1A1A"
+    },
+    "ivory_charcoal": {
+      "background": "#FFFEF5",
+      "text_primary": "#2C2C2C",
+      "text_secondary": "#6B6B6B",
+      "accent": "#8B6914",
+      "accent_secondary": "#4A6741",
+      "surface": "#F5F0E8"
+    },
+    "midnight_rose": {
+      "background": "#1A0A1E",
+      "text_primary": "#F5F0F0",
+      "text_secondary": "#B8A0B8",
+      "accent": "#C77DBA",
+      "accent_secondary": "#D4AF37",
+      "surface": "#2A1A2E"
+    },
+    "pearl_navy": {
+      "background": "#F8F6F0",
+      "text_primary": "#1B2A4A",
+      "text_secondary": "#5A6A8A",
+      "accent": "#1B2A4A",
+      "accent_secondary": "#C9A84C",
+      "surface": "#EDE8DE"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Playfair Display",
+    "font_family_body": "Lato",
+    "size_h1": "52px",
+    "size_h2": "38px",
+    "size_h3": "26px",
+    "size_body": "18px",
+    "size_caption": "13px",
+    "line_height": 1.6,
+    "letter_spacing_heading": "0.02em",
+    "letter_spacing_body": "0.01em",
+    "font_weight_heading": 700,
+    "font_weight_body": 300
+  },
+  "spacing": {
+    "unit": 8,
+    "whitespace_target": "65-70%",
+    "slide_padding": "80px",
+    "content_gap": "40px",
+    "section_gap": "56px"
+  },
+  "content_rules": {
+    "bullet_style": "none",
+    "max_bullets_per_slide": 3,
+    "max_words_per_bullet": 12,
+    "max_words_title": 6,
+    "image_treatment": "full_bleed_with_overlay"
+  },
+  "layout_templates": {
+    "hero_title": "luxury_hero",
+    "section_header": "luxury_section",
+    "key_point": "luxury_key_point",
+    "quote": "luxury_quote",
+    "image_text": "luxury_image_text",
+    "cta": "luxury_cta"
+  }
+}

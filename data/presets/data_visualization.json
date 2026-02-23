@@ -1,0 +1,82 @@
+{
+  "preset_id": "data_visualization",
+  "category": "Technical & Data-Driven",
+  "description": "Стиль для дата-аналитиков и BI-специалистов. Оптимизирован для таблиц, графиков и числовых данных. Чистый, информативный, без визуального шума.",
+  "recommended_for": {
+    "audiences": ["data_analysts", "bi_specialists", "data_scientists", "product_managers", "finance"],
+    "purposes": ["data_report", "analytics_review", "dashboard_presentation", "kpi_review", "research_findings"],
+    "tones": ["analytical", "precise", "informative", "objective"]
+  },
+  "layout_family": "data",
+  "color_variants": {
+    "tableau_classic": {
+      "background": "#FFFFFF",
+      "text_primary": "#333333",
+      "text_secondary": "#666666",
+      "accent": "#4E79A7",
+      "accent_secondary": "#F28E2B",
+      "surface": "#F5F5F5"
+    },
+    "dark_dashboard": {
+      "background": "#1B2838",
+      "text_primary": "#E8E8E8",
+      "text_secondary": "#8899AA",
+      "accent": "#59A14F",
+      "accent_secondary": "#EDC948",
+      "surface": "#243447"
+    },
+    "cool_analytics": {
+      "background": "#F7F9FC",
+      "text_primary": "#2E3440",
+      "text_secondary": "#4C566A",
+      "accent": "#5E81AC",
+      "accent_secondary": "#BF616A",
+      "surface": "#ECEFF4"
+    },
+    "high_contrast": {
+      "background": "#FFFFFF",
+      "text_primary": "#000000",
+      "text_secondary": "#555555",
+      "accent": "#1F77B4",
+      "accent_secondary": "#D62728",
+      "surface": "#EEEEEE"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Source Sans Pro",
+    "font_family_body": "Source Sans Pro",
+    "size_h1": "44px",
+    "size_h2": "32px",
+    "size_h3": "24px",
+    "size_body": "16px",
+    "size_caption": "12px",
+    "line_height": 1.5,
+    "letter_spacing_heading": "0em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 600,
+    "font_weight_body": 400
+  },
+  "spacing": {
+    "unit": 4,
+    "whitespace_target": "40-50%",
+    "slide_padding": "48px",
+    "content_gap": "24px",
+    "section_gap": "36px"
+  },
+  "content_rules": {
+    "bullet_style": "number",
+    "max_bullets_per_slide": 6,
+    "max_words_per_bullet": 18,
+    "max_words_title": 10,
+    "image_treatment": "none"
+  },
+  "layout_templates": {
+    "hero_title": "data_hero",
+    "section_header": "data_section",
+    "data_table": "data_table",
+    "chart": "data_chart",
+    "comparison": "data_comparison",
+    "bullet_list": "data_bullets",
+    "cta": "data_cta"
+  }
+}

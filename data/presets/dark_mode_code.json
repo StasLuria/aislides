@@ -1,0 +1,82 @@
+{
+  "preset_id": "dark_mode_code",
+  "category": "Technical & Data-Driven",
+  "description": "Тёмная тема в стиле IDE/терминала. Для технических докладов, code review, архитектурных обзоров. Моноширинный шрифт, подсветка синтаксиса.",
+  "recommended_for": {
+    "audiences": ["developers", "devops", "sre", "open_source", "tech_leads"],
+    "purposes": ["tech_talk", "code_review", "architecture_overview", "conference_talk", "internal_demo"],
+    "tones": ["technical", "hacker", "precise", "no_nonsense"]
+  },
+  "layout_family": "tech",
+  "color_variants": {
+    "monokai": {
+      "background": "#272822",
+      "text_primary": "#F8F8F2",
+      "text_secondary": "#75715E",
+      "accent": "#A6E22E",
+      "accent_secondary": "#F92672",
+      "surface": "#3E3D32"
+    },
+    "dracula": {
+      "background": "#282A36",
+      "text_primary": "#F8F8F2",
+      "text_secondary": "#6272A4",
+      "accent": "#BD93F9",
+      "accent_secondary": "#FF79C6",
+      "surface": "#44475A"
+    },
+    "github_dark": {
+      "background": "#0D1117",
+      "text_primary": "#C9D1D9",
+      "text_secondary": "#8B949E",
+      "accent": "#58A6FF",
+      "accent_secondary": "#F78166",
+      "surface": "#161B22"
+    },
+    "nord": {
+      "background": "#2E3440",
+      "text_primary": "#ECEFF4",
+      "text_secondary": "#D8DEE9",
+      "accent": "#88C0D0",
+      "accent_secondary": "#BF616A",
+      "surface": "#3B4252"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Fira Code",
+    "font_family_body": "Fira Code",
+    "size_h1": "44px",
+    "size_h2": "32px",
+    "size_h3": "24px",
+    "size_body": "16px",
+    "size_caption": "13px",
+    "line_height": 1.5,
+    "letter_spacing_heading": "0em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 700,
+    "font_weight_body": 400
+  },
+  "spacing": {
+    "unit": 4,
+    "whitespace_target": "45-55%",
+    "slide_padding": "56px",
+    "content_gap": "24px",
+    "section_gap": "40px"
+  },
+  "content_rules": {
+    "bullet_style": "chevron",
+    "max_bullets_per_slide": 6,
+    "max_words_per_bullet": 15,
+    "max_words_title": 8,
+    "image_treatment": "rounded_corners_8px"
+  },
+  "layout_templates": {
+    "hero_title": "tech_hero",
+    "section_header": "tech_section",
+    "key_point": "tech_key_point",
+    "bullet_list": "tech_bullets",
+    "process_steps": "tech_process",
+    "chart": "tech_chart",
+    "cta": "tech_cta"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "preset_id": "consulting_classic",
+  "category": "Technical & Data-Driven",
+  "description": "Классический консалтинговый стиль в духе McKinsey/BCG. Плотная подача информации, структурированные данные, минимум декора. Для аналитиков и стратегов.",
+  "recommended_for": {
+    "audiences": ["consultants", "analysts", "strategists", "c-level", "board"],
+    "purposes": ["strategy_presentation", "market_analysis", "due_diligence", "business_case", "quarterly_review"],
+    "tones": ["analytical", "authoritative", "structured", "data_driven"]
+  },
+  "layout_family": "mckinsey",
+  "color_variants": {
+    "classic_navy": {
+      "background": "#FFFFFF",
+      "text_primary": "#003366",
+      "text_secondary": "#4A6A8A",
+      "accent": "#003366",
+      "accent_secondary": "#CC0000",
+      "surface": "#F0F4F8"
+    },
+    "monochrome": {
+      "background": "#FFFFFF",
+      "text_primary": "#1A1A1A",
+      "text_secondary": "#666666",
+      "accent": "#333333",
+      "accent_secondary": "#0066CC",
+      "surface": "#F5F5F5"
+    },
+    "dark_strategy": {
+      "background": "#1A1F2E",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A0B0C0",
+      "accent": "#4A90D9",
+      "accent_secondary": "#E8A838",
+      "surface": "#252B3B"
+    },
+    "warm_consulting": {
+      "background": "#FAFAF5",
+      "text_primary": "#2D2D2D",
+      "text_secondary": "#6B6B6B",
+      "accent": "#1A5276",
+      "accent_secondary": "#C0392B",
+      "surface": "#EDEDED"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Georgia",
+    "font_family_body": "Arial",
+    "size_h1": "44px",
+    "size_h2": "32px",
+    "size_h3": "24px",
+    "size_body": "16px",
+    "size_caption": "12px",
+    "line_height": 1.4,
+    "letter_spacing_heading": "0em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 700,
+    "font_weight_body": 400
+  },
+  "spacing": {
+    "unit": 4,
+    "whitespace_target": "40-50%",
+    "slide_padding": "48px",
+    "content_gap": "20px",
+    "section_gap": "32px"
+  },
+  "content_rules": {
+    "bullet_style": "dash",
+    "max_bullets_per_slide": 7,
+    "max_words_per_bullet": 20,
+    "max_words_title": 12,
+    "image_treatment": "none"
+  },
+  "layout_templates": {
+    "hero_title": "mck_hero",
+    "section_header": "mck_section",
+    "key_point": "mck_key_point",
+    "bullet_list": "mck_bullets",
+    "process_steps": "mck_process",
+    "comparison": "mck_comparison",
+    "data_table": "mck_data_table",
+    "chart": "mck_chart",
+    "cta": "mck_cta"
+  }
+}

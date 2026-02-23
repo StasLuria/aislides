@@ -1,0 +1,85 @@
+{
+  "preset_id": "swiss_minimalist",
+  "category": "Minimal & Clean",
+  "description": "Швейцарский минимализм — чистые линии, максимум пространства, типографика как главный элемент. Идеален для дизайнеров, архитекторов и стартапов.",
+  "recommended_for": {
+    "audiences": ["designers", "architects", "startups", "creative_professionals", "tech_savvy"],
+    "purposes": ["portfolio", "brand_presentation", "product_launch", "design_review"],
+    "tones": ["minimal", "clean", "sophisticated", "modern"]
+  },
+  "layout_family": "swiss",
+  "color_variants": {
+    "pure_bw": {
+      "background": "#FFFFFF",
+      "text_primary": "#000000",
+      "text_secondary": "#666666",
+      "accent": "#FF0000",
+      "accent_secondary": "#333333",
+      "surface": "#F5F5F5"
+    },
+    "warm_minimal": {
+      "background": "#FAF8F5",
+      "text_primary": "#1A1A1A",
+      "text_secondary": "#7A7A7A",
+      "accent": "#E85D3A",
+      "accent_secondary": "#2D5F5D",
+      "surface": "#F0EDE8"
+    },
+    "cool_grey": {
+      "background": "#F8F9FA",
+      "text_primary": "#212529",
+      "text_secondary": "#6C757D",
+      "accent": "#0D6EFD",
+      "accent_secondary": "#198754",
+      "surface": "#E9ECEF"
+    },
+    "dark_swiss": {
+      "background": "#111111",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#999999",
+      "accent": "#FF3B30",
+      "accent_secondary": "#FFFFFF",
+      "surface": "#1E1E1E"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Helvetica Neue",
+    "font_family_body": "Helvetica Neue",
+    "size_h1": "56px",
+    "size_h2": "40px",
+    "size_h3": "28px",
+    "size_body": "18px",
+    "size_caption": "12px",
+    "line_height": 1.4,
+    "letter_spacing_heading": "-0.03em",
+    "letter_spacing_body": "0em",
+    "font_weight_heading": 700,
+    "font_weight_body": 300
+  },
+  "spacing": {
+    "unit": 8,
+    "whitespace_target": "65-70%",
+    "slide_padding": "80px",
+    "content_gap": "40px",
+    "section_gap": "56px"
+  },
+  "content_rules": {
+    "bullet_style": "dash",
+    "max_bullets_per_slide": 4,
+    "max_words_per_bullet": 12,
+    "max_words_title": 6,
+    "image_treatment": "full_bleed"
+  },
+  "layout_templates": {
+    "hero_title": "swiss_hero",
+    "section_header": "swiss_section",
+    "key_point": "swiss_key_point",
+    "bullet_list": "swiss_bullets",
+    "process_steps": "swiss_process",
+    "comparison": "swiss_comparison",
+    "quote": "swiss_quote",
+    "funnel_stages": "swiss_funnel",
+    "timeline": "swiss_timeline",
+    "cta": "swiss_cta"
+  }
+}
