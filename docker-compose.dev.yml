@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════
+# Docker Compose Override — Development Mode
+# ═══════════════════════════════════════════════════════
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Adds:
+#   - Source code volume mounts for hot-reload
+#   - Debug mode enabled
+#   - Direct API port access (8000)
+#   - PostgreSQL port exposed
+#
+# ═══════════════════════════════════════════════════════
+
+services:
+  api:
+    environment:
+      DEBUG: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend:ro
+      - ./engine:/app/engine:ro
+      - ./tools:/app/tools:ro
+      - ./schemas:/app/schemas:ro
+      - ./data:/app/data:ro
+    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  db:
+    ports:
+      - "5432:5432"

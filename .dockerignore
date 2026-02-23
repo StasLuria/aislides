@@ -1,7 +1,51 @@
-node_modules
-dist
-.manus-logs
+# ═══════════════════════════════════════════════════════
+# Docker Ignore — exclude from build context
+# ═══════════════════════════════════════════════════════
+
+# Version control
 .git
-*.md
+.gitignore
+
+# Node modules (frontend installs inside container)
+frontend/node_modules
+frontend/dist
+
+# Python virtual environments
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files (secrets)
 .env
-.env.*
+.env.local
+.env.production
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# Tests (not needed in production container)
+tests/
+
+# Logs
+*.log
+.manus-logs
+
+# Notes
+notes_*.md
+
+# OS files
+.DS_Store
+Thumbs.db
