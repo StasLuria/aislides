@@ -6,7 +6,8 @@
 
 **Milestone: Engine Core v1.0 — ДОСТИГНУТ ✅**
 **Milestone: Backend v1.0 — ДОСТИГНУТ ✅**
-**Спринт 5: WebSocket + Real-time — ЗАВЕРШЁН ✅**
+**Milestone: Frontend Chat v1.0 — ДОСТИГНУТ ✅**
+**Спринт 6: Базовый чат-интерфейс — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -98,19 +99,35 @@
 | 5.9 README + CHANGELOG | ✅ | v0.6.0 |
 | 5.10 Milestone Backend v1.0 | ✅ | 252 теста, 96.16% coverage |
 
+### Спринт 6: Базовый чат-интерфейс ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 6.1 React + Vite + TypeScript + TailwindCSS | ✅ | Vite 7 + React 19 + TS 5.9 + Tailwind 4.2 + Vitest 4 |
+| 6.2 Layout: три зоны | ✅ | AppLayout, Sidebar, ChatPanel, ArtifactPanel, 12 тестов |
+| 6.3 ChatMessage | ✅ | user/ai роли, аватары, timestamp, 8 тестов |
+| 6.4 ChatInput | ✅ | Auto-resize, Enter/Shift+Enter, файлы, isLoading, 12 тестов |
+| 6.5 useWebSocket | ✅ | Reconnect с exp backoff, JSON-протокол, 12 тестов |
+| 6.6 StatusCard | ✅ | Progress bar, 4 статуса, createInitialSteps, 13 тестов |
+| 6.7 ProjectList | ✅ | Список, выбор, создание, empty state, относит. даты, 10 тестов |
+| 6.8 E2E-тест чата | ✅ | Full flow + error + multi-msg + loading, 4 E2E-теста |
+| 6.9 README + CHANGELOG | ✅ | v0.7.0 |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Тесты (unit + integration + e2e) | 252 passed |
-| Покрытие | 96.16% |
+| Backend тесты (pytest) | 252 passed |
+| Backend покрытие | 96.16% |
+| Frontend тесты (vitest) | 73 passed |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
-| Версия | 0.6.0 |
+| ESLint ошибки | 0 |
+| Версия | 0.7.0 |
 
 ## Следующий шаг
 
-**Этап 3, Спринт 6: Базовый чат-интерфейс** — задача 6.1: Инициализировать React + Vite + TypeScript + TailwindCSS
+**Этап 3, Спринт 7: Панель артефактов и превью** — задача 7.1
 
 ## Блокеры
 
