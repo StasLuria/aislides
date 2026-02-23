@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-02-23 — Sprint 10: Expansion & Polish
+
+### Added
+
+- **Design Presets (7 new)**
+    - `data/presets/swiss_minimalist.json` — Swiss grid-based minimalist design (task 10.3)
+    - `data/presets/tech_innovation.json` — Modern tech/startup style with gradients (task 10.3)
+    - `data/presets/elegant_premium.json` — Luxury premium design with serif fonts (task 10.3)
+    - `data/presets/consulting_classic.json` — McKinsey/BCG-style consulting preset (task 10.3)
+    - `data/presets/playful_creative.json` — Colorful creative/education style (task 10.3)
+    - `data/presets/data_visualization.json` — Data-focused preset optimized for charts (task 10.3)
+    - `data/presets/dark_mode_code.json` — Dark theme for technical/code presentations (task 10.3)
+    - 190 preset validation tests (task 10.3)
+- **CSS Layout Templates (6 new families)**
+    - `data/layouts/swiss_layouts.md` — Grid-based Swiss minimalist layouts (task 10.4)
+    - `data/layouts/tech_layouts.md` — Tech/startup layouts with gradient accents (task 10.4)
+    - `data/layouts/luxury_layouts.md` — Premium luxury layouts with serif typography (task 10.4)
+    - `data/layouts/creative_layouts.md` — Playful creative layouts with asymmetry (task 10.4)
+    - `data/layouts/data_layouts.md` — Data visualization-optimized layouts (task 10.4)
+    - `data/layouts/mckinsey_layouts.md` — Consulting-style structured layouts (task 10.4)
+    - 56 layout validation tests (task 10.4)
+- **CJM 5 «Redesign» — Restyle existing presentations**
+    - `engine/nodes/planner_node.py` — Added REDESIGN_CONTEXT_ADDITION for S0 planner (task 10.2)
+    - `engine/api.py` — Added `EngineAPI.redesign()` method (task 10.2)
+    - `backend/app/services/engine_bridge.py` — Added `EngineBridge.run_redesign()` (task 10.2)
+    - `backend/app/routers/websocket.py` — Added `_handle_redesign` WebSocket handler (task 10.2)
+    - `frontend/src/components/layout/ArtifactPanel.tsx` — Added Redesign button in toolbar (task 10.2)
+    - `frontend/src/types/index.ts` — Added `WsRedesignMessage` type (task 10.2)
+    - Unit tests for redesign: engine (5), planner (4), WS bridge (5), frontend (4) (task 10.2)
+- **PDF & PPTX Export**
+    - `backend/app/services/export_service.py` — ExportService with WeasyPrint PDF and python-pptx PPTX generation (task 10.5)
+    - `backend/app/routers/export.py` — `/api/projects/{id}/export/pdf` and `/export/pptx` endpoints (task 10.5)
+    - `frontend/src/components/layout/ArtifactPanel.tsx` — Export PDF/PPTX buttons in toolbar (task 10.5)
+    - 23 unit tests + 9 integration tests for export (task 10.5)
+- **Docker Compose**
+    - `backend/Dockerfile` — Multi-stage build for FastAPI backend (task 10.6)
+    - `frontend/Dockerfile` — Multi-stage build for React frontend with nginx (task 10.6)
+    - `docker-compose.yml` — Production: PostgreSQL + backend + frontend (3 services) (task 10.6)
+    - `docker-compose.dev.yml` — Development override with hot-reload (task 10.6)
+    - Updated `nginx.conf`, `.dockerignore`, `.env.example`, `Makefile` (task 10.6)
+- **User Documentation**
+    - `docs/user_guide/01_introduction.md` — Product overview and capabilities (task 10.7)
+    - `docs/user_guide/02_getting_started.md` — Docker setup and quick start (task 10.7)
+    - `docs/user_guide/03_interface_overview.md` — UI zones and toolbar (task 10.7)
+    - `docs/user_guide/04_core_workflows.md` — Create, redesign, export, edit workflows (task 10.7)
+    - `docs/user_guide/05_development.md` — Developer guide and contribution flow (task 10.7)
+
+### Changed
+
+- Backend tests: **628 total** (was 338), 96.82% coverage
+- Frontend tests: **245 total** (was 241)
+- Design presets: **8 total** (was 1)
+- Layout families: **7 total** (was 1)
+
 ## [0.10.0] - 2026-02-23 — Sprint 9: Authentication & Multi-tenancy
 
 ### Added

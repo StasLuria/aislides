@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ai-presentation-generator"
-version = "0.10.0"
+version = "0.11.0"
 description = "AI-powered presentation generator with LLM-driven planning and execution engine"
 authors = ["Stas"]
 readme = "README.md"

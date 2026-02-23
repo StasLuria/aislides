@@ -217,8 +217,8 @@
 | 10.3 | Добавить дополнительные дизайн-пресеты (5+) | ✅ | 7 пресетов + 190 тестов валидации |
 | 10.4 | Добавить дополнительные CSS-шаблоны макетов (10+) | ✅ | 7 семейств макетов + 56 тестов |
 | 10.5 | Реализовать экспорт в PDF и PPTX | ✅ | ExportService (WeasyPrint PDF + python-pptx), export router, UI кнопки, 23 unit + 9 integration тестов, 2026-02-23 |
-| 10.6 | Настроить Docker Compose для деплоя | ☐ | Frontend + Backend + PostgreSQL + Redis |
-| 10.7 | Написать документацию для пользователей | ☐ | |
+| 10.6 | Настроить Docker Compose для деплоя | ✅ | Backend Dockerfile + Frontend Dockerfile + docker-compose.yml (3 services: db, api, frontend) + dev override + nginx.conf + .env.example, 2026-02-23 |
+| 10.7 | Написать документацию для пользователей | ✅ | 5-секционный user_guide (Introduction, Getting Started, UI, Workflows, Development), 2026-02-23 |
 | 10.8 | **Milestone: Product v1.0** | ☐ | Полноценный продукт, готовый к использованию |
 
 ---

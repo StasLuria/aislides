@@ -11,6 +11,7 @@
 **Спринт 8: Редактирование артефактов — ЗАВЕРШЁН ✅**
 **Milestone: Auth v1.0 — ДОСТИГНУТ ✅**
 **Спринт 9: Авторизация и многопользовательность — ЗАВЕРШЁН ✅**
+**Спринт 10: Расширение и полировка — В ПРОЦЕССЕ (6/8 задач)**
 
 ## Что сделано
 
@@ -152,21 +153,36 @@
 | 9.5 Integration-тесты: авторизация, изоляция данных | ✅ | 36 integration-тестов: auth endpoints (15), data isolation (11), WebSocket auth (10), реальная in-memory SQLite + JWT |
 | 9.6 Обновить README.md и CHANGELOG.md | ✅ | README: +Auth, User, WS JWT; CHANGELOG: v0.10.0 |
 
+### Спринт 10: Расширение и полировка (в процессе)
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 10.1 CJM 2Б «Исследователь» (deep research) | ⏸️ | Отложена — требует web search API |
+| 10.2 CJM 5 «Редизайн» | ✅ | S0 redesign prompt, EngineAPI.redesign(), WS handler, UI button |
+| 10.3 Дизайн-пресеты (5+) | ✅ | 7 пресетов (swiss, tech, elegant, consulting, playful, data, dark_mode) + 190 тестов |
+| 10.4 CSS-шаблоны макетов (10+) | ✅ | 7 семейств (corporate, swiss, tech, luxury, creative, data, mckinsey) + 56 тестов |
+| 10.5 Экспорт в PDF и PPTX | ✅ | ExportService (WeasyPrint + python-pptx), export router, UI кнопки, 32 теста |
+| 10.6 Docker Compose | ✅ | Backend + Frontend Dockerfiles, docker-compose.yml (3 services), dev override, nginx.conf |
+| 10.7 Документация для пользователей | ✅ | 5-секционный user_guide |
+| 10.8 Milestone Product v1.0 | ☐ | Финализация |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Backend тесты (pytest) | 338 passed |
-| Backend покрытие | 96.16% |
-| Frontend тесты (vitest) | 241 passed |
+| Backend тесты (pytest) | 628 passed |
+| Backend покрытие | 96.82% |
+| Frontend тесты (vitest) | 245 passed |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
 | ESLint ошибки | 0 |
+| Дизайн-пресетов | 8 |
+| Семейств макетов | 7 |
 | Версия | 0.10.0 |
 
 ## Следующий шаг
 
-**Sprint 10: Расширение и полировка** — CJM-сценарии, улучшение UX, подготовка к деплою
+**Task 10.8: Milestone Product v1.0** — финальный version bump, README, CHANGELOG, release
 
 ## Блокеры
 
