@@ -5,7 +5,8 @@
 ## Текущий статус
 
 **Milestone: Engine Core v1.0 — ДОСТИГНУТ ✅**
-**Спринт 4: Backend + FastAPI — ЗАВЕРШЁН ✅**
+**Milestone: Backend v1.0 — ДОСТИГНУТ ✅**
+**Спринт 5: WebSocket + Real-time — ЗАВЕРШЁН ✅**
 
 ## Что сделано
 
@@ -82,19 +83,34 @@
 | 4.8 Unit-тесты Backend | ✅ | 41 тест: API (17), ProjectService (14), EngineService (10) |
 | 4.9 README + CHANGELOG | ✅ | v0.5.0 |
 
+### Спринт 5: WebSocket + Real-time ✅
+
+| Задача | Статус | Детали |
+|:---|:---|:---|
+| 5.1 WebSocket endpoint /ws/projects/{id} | ✅ | ConnectionManager + WebSocket router |
+| 5.2 EventBus → WebSocket bridge | ✅ | EngineBridge: _map_engine_event_to_ws |
+| 5.3 Обработка user_message через WS | ✅ | run_generation, run_edit через EngineBridge |
+| 5.4 Стриминг step_started/step_completed | ✅ | STEP_STARTED/STEP_COMPLETED → status_update |
+| 5.5 Отправка artifact_generated с превью | ✅ | ARTIFACT_CREATED → artifact_generated |
+| 5.6 Cancel через WebSocket | ✅ | _active_engines registry |
+| 5.7 Загрузка файлов /api/upload | ✅ | LocalFileStorage + upload router, валидация |
+| 5.8 Integration-тесты WebSocket | ✅ | 32 теста: CM, EventMapping, Bridge, FileStorage, Upload |
+| 5.9 README + CHANGELOG | ✅ | v0.6.0 |
+| 5.10 Milestone Backend v1.0 | ✅ | 252 теста, 96.16% coverage |
+
 ## Метрики
 
 | Метрика | Значение |
 |:---|:---|
-| Тесты (unit + integration + e2e) | 220 passed |
-| Покрытие | 96.39% |
+| Тесты (unit + integration + e2e) | 252 passed |
+| Покрытие | 96.16% |
 | Ruff ошибки | 0 |
 | Mypy ошибки | 0 |
-| Версия | 0.5.0 |
+| Версия | 0.6.0 |
 
 ## Следующий шаг
 
-**Этап 2, Спринт 5: WebSocket + Real-time** — задача 5.1: WebSocket endpoint `/ws/projects/{id}`
+**Этап 3, Спринт 6: Базовый чат-интерфейс** — задача 6.1: Инициализировать React + Vite + TypeScript + TailwindCSS
 
 ## Блокеры
 

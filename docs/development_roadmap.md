@@ -23,7 +23,7 @@
 | Этап | Название | Спринты | Длительность | Ключевая цель | Статус |
 |:---|:---|:---|:---|:---|:---:|
 | **1** | Ядро движка (Engine Core) | 0, 1, 2, 3 | 3 недели | Работающий движок, способный генерировать презентацию от запроса до HTML | ✅ |
-| **2** | Backend + WebSocket | 4, 5 | 2 недели | FastAPI-сервер, WebSocket-коммуникация, PostgreSQL, EngineAPI | ☐ |
+| **2** | Backend + WebSocket | 4, 5 | 2 недели | FastAPI-сервер, WebSocket-коммуникация, PostgreSQL, EngineAPI | ✅ |
 | **3** | MVP Frontend | 6, 7 | 2 недели | Чат-интерфейс с превью артефактов и real-time статусами | ☐ |
 | **4** | Полноценный продукт | 8, 9, 10+ | 3+ недель | Все CJM, редактирование, авторизация, деплой | ☐ |
 
@@ -138,7 +138,7 @@
 | 5.7 | Реализовать загрузку файлов (`/api/upload`) | ✅ | LocalFileStorage + upload router, валидация |
 | 5.8 | Integration-тесты: WebSocket-сценарий (подключение → сообщение → события → артефакт) | ✅ | 32 теста: CM, EventMapping, Bridge, FileStorage, Upload |
 | 5.9 | Обновить README.md и CHANGELOG.md | ✅ | v0.6.0, WebSocket protocol docs, 2026-02-23 |
-| 5.10 | **Milestone: Backend v1.0** | ☐ | Сервер принимает запросы, запускает движок, стримит события |
+| 5.10 | **Milestone: Backend v1.0** | ✅ | 252 теста, 96.16% coverage, 0 linter errors, 2026-02-23 |
 
 ---
 
