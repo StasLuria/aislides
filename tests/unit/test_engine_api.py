@@ -100,7 +100,7 @@ class TestEngineAPIRunSuccess:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(node_name))
+            api.registry.register(MockNode(node_name), allow_override=True)
 
         # Мокаем PlannerNode
         api._planner.execute = AsyncMock(side_effect=_mock_planner_execute)
@@ -133,7 +133,7 @@ class TestEngineAPIRunSuccess:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(name))
+            api.registry.register(MockNode(name), allow_override=True)
 
         result = await api.run(user_input={"prompt": "Тест"})
         assert result.project_id is not None
@@ -152,7 +152,7 @@ class TestEngineAPIRunSuccess:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(name))
+            api.registry.register(MockNode(name), allow_override=True)
 
         events: list[EngineEvent] = []
 
@@ -181,7 +181,7 @@ class TestEngineAPIRunSuccess:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(name))
+            api.registry.register(MockNode(name), allow_override=True)
 
         await api.run(project_id="test-cleanup", user_input={"prompt": "Тест"})
         assert "test-cleanup" not in api._cancellation_tokens
@@ -223,7 +223,7 @@ class TestEngineAPIRunValidation:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(name))
+            api.registry.register(MockNode(name), allow_override=True)
 
         call_count = 0
 
@@ -324,7 +324,7 @@ class TestEngineAPIApplyEdit:
             "S4_SlideGenerator",
             "S5_QualityValidator",
         ]:
-            api.registry.register(MockNode(name))
+            api.registry.register(MockNode(name), allow_override=True)
 
         result = await api.apply_edit(
             project_id="test-edit",

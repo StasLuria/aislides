@@ -32,16 +32,18 @@ class ToolRegistry:
     def __init__(self) -> None:
         self._nodes: dict[str, BaseNode] = {}
 
-    def register(self, node: BaseNode) -> None:
+    def register(self, node: BaseNode, *, allow_override: bool = False) -> None:
         """Зарегистрировать узел в реестре.
 
         Args:
             node: Экземпляр узла для регистрации.
+            allow_override: Если True, перезаписать существующий узел.
 
         Raises:
-            ValueError: Если узел с таким именем уже зарегистрирован.
+            ValueError: Если узел с таким именем уже зарегистрирован
+                и allow_override=False.
         """
-        if node.name in self._nodes:
+        if node.name in self._nodes and not allow_override:
             msg = f"Узел '{node.name}' уже зарегистрирован"
             raise ValueError(msg)
         self._nodes[node.name] = node

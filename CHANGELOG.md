@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Critical: Full Generation Cycle** — Integrated frontend components (`ChatInput`, `WebSocket`, `StatusCard`, `ArtifactPanel`) with the backend to enable a complete end-to-end presentation generation flow. (Commit `fa9f7e2`)
+- **Bug: S0 Planner Pydantic Validation** — Switched `instructor` to `Mode.JSON` for Gemini compatibility, preventing Pydantic validation errors where steps were returned as strings instead of objects. (Commit `fa9f7e2`)
+- **Bug: ExecutionPlanSchema Parsing** — Added a fallback validator to `ExecutionPlanSchema` to correctly parse string-formatted plan steps from the LLM. (Commit `fa9f7e2`)
+- **Bug: Tool Node Registration** — Registered `S1-S5` tool nodes in `EngineAPI` to resolve `ToolNotFound` errors during runtime execution. (Commit `fa9f7e2`)
+- **Bug: StatusCard UI** — Corrected the `engine_bridge` to map internal node names to human-readable step labels, ensuring the `StatusCard` UI updates correctly. (Commit `fa9f7e2`)
+- **Bug: Missing Artifacts** — Added `ARTIFACT_CREATED` event emission in the `RuntimeAgent` to ensure generated artifacts are displayed in the UI. (Commit `fa9f7e2`)
+
+### Changed
+
+- `AppLayout.tsx` was updated to allow external control over the `ArtifactPanel`, facilitating the new integrated UI. (Commit `fa9f7e2`)
+
 ## [1.0.0] - 2026-02-23 — Milestone: Product v1.0
 
 ### Summary

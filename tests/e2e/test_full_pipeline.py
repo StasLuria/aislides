@@ -318,11 +318,11 @@ class TestFullPipelineE2E:
             mock_s4 = _make_mock_s4(tmpdir)
             mock_s5 = _make_mock_s5()
 
-            engine.registry.register(mock_s1)
-            engine.registry.register(mock_s2)
-            engine.registry.register(mock_s3)
-            engine.registry.register(mock_s4)
-            engine.registry.register(mock_s5)
+            engine.registry.register(mock_s1, allow_override=True)
+            engine.registry.register(mock_s2, allow_override=True)
+            engine.registry.register(mock_s3, allow_override=True)
+            engine.registry.register(mock_s4, allow_override=True)
+            engine.registry.register(mock_s5, allow_override=True)
 
             # Запускаем полный цикл
             result = await engine.run(
@@ -432,7 +432,7 @@ class TestFullPipelineE2E:
         engine._validator = _make_mock_validator_pass()
 
         # S1 работает нормально
-        engine.registry.register(_make_mock_s1())
+        engine.registry.register(_make_mock_s1(), allow_override=True)
 
         # S2 бросает ошибку
         async def mock_s2_error(store: Any) -> Any:
@@ -442,7 +442,7 @@ class TestFullPipelineE2E:
         s2_error = AsyncMock()
         s2_error.execute = AsyncMock(side_effect=mock_s2_error)
         s2_error.name = "S2_NarrativeArchitect"
-        engine.registry.register(s2_error)
+        engine.registry.register(s2_error, allow_override=True)
 
         result = await engine.run(
             project_id="e2e-error-001",
@@ -475,7 +475,7 @@ class TestFullPipelineE2E:
         s1_cancel = AsyncMock()
         s1_cancel.execute = AsyncMock(side_effect=mock_s1_then_cancel)
         s1_cancel.name = "S1_ContextAnalyzer"
-        engine.registry.register(s1_cancel)
+        engine.registry.register(s1_cancel, allow_override=True)
 
         result = await engine.run(
             project_id="e2e-cancel-001",
@@ -496,11 +496,11 @@ class TestFullPipelineE2E:
             engine._planner = _make_mock_planner(MOCK_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s1())
-            engine.registry.register(_make_mock_s2())
-            engine.registry.register(_make_mock_s3())
-            engine.registry.register(_make_mock_s4(tmpdir))
-            engine.registry.register(_make_mock_s5())
+            engine.registry.register(_make_mock_s1(), allow_override=True)
+            engine.registry.register(_make_mock_s2(), allow_override=True)
+            engine.registry.register(_make_mock_s3(), allow_override=True)
+            engine.registry.register(_make_mock_s4(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5(), allow_override=True)
 
             # Подписываемся на все типы событий
             received_events: list[Any] = []

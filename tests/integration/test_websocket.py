@@ -165,13 +165,14 @@ class TestEventMapping:
         event = EngineEvent(
             event_type=EventType.STEP_STARTED,
             trace_id="t1",
-            component="S1_ContextAnalyzer",
+            component="RuntimeAgent",
             message="Анализ контекста",
+            data={"node": "S1_ContextAnalyzer"},
         )
         result = _map_engine_event_to_ws(event)
         assert result is not None
         assert result["type"] == "status_update"
-        assert result["payload"]["step"] == "S1_ContextAnalyzer"
+        assert result["payload"]["step"] == "S1: Анализ контекста"
         assert result["payload"]["status"] == "in_progress"
 
     def test_step_completed(self) -> None:

@@ -219,8 +219,8 @@ class TestApplyEditIntegration:
             engine._planner = _make_mock_planner_for_edit(EDIT_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s4_regen(tmpdir))
-            engine.registry.register(_make_mock_s5_pass())
+            engine.registry.register(_make_mock_s4_regen(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5_pass(), allow_override=True)
 
             result = await engine.apply_edit(
                 project_id="edit-test-001",
@@ -258,8 +258,8 @@ class TestApplyEditIntegration:
             engine._planner = _make_mock_planner_for_edit(EDIT_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s4_regen(tmpdir))
-            engine.registry.register(_make_mock_s5_pass())
+            engine.registry.register(_make_mock_s4_regen(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5_pass(), allow_override=True)
 
             result = await engine.apply_edit(
                 project_id="edit-test-002",
@@ -284,8 +284,8 @@ class TestApplyEditIntegration:
             engine._planner = _make_mock_planner_for_edit(EDIT_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s4_regen(tmpdir))
-            engine.registry.register(_make_mock_s5_pass())
+            engine.registry.register(_make_mock_s4_regen(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5_pass(), allow_override=True)
 
             received_events: list[Any] = []
 
@@ -314,8 +314,8 @@ class TestApplyEditIntegration:
             engine._planner = _make_mock_planner_for_edit(EDIT_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s4_regen(tmpdir))
-            engine.registry.register(_make_mock_s5_pass())
+            engine.registry.register(_make_mock_s4_regen(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5_pass(), allow_override=True)
 
             result = await engine.apply_edit(
                 project_id="edit-test-004",
@@ -334,8 +334,8 @@ class TestApplyEditIntegration:
             engine._planner = _make_mock_planner_for_edit(EDIT_PLAN)
             engine._validator = _make_mock_validator_pass()
 
-            engine.registry.register(_make_mock_s4_regen(tmpdir))
-            engine.registry.register(_make_mock_s5_pass())
+            engine.registry.register(_make_mock_s4_regen(tmpdir), allow_override=True)
+            engine.registry.register(_make_mock_s5_pass(), allow_override=True)
 
             result = await engine.apply_edit(
                 project_id="edit-test-005",
