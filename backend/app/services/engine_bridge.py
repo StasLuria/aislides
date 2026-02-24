@@ -357,6 +357,16 @@ class EngineBridge:
         return handler
 
 
+# Маппинг имён узлов движка на человекочитаемые имена шагов для StatusCard
+_NODE_TO_STEP: dict[str, str] = {
+    "S1_ContextAnalyzer": "S1: Анализ контекста",
+    "S2_NarrativeArchitect": "S2: Разработка нарратива",
+    "S3_DesignArchitect": "S3: Разработка дизайна",
+    "S4_SlideGenerator": "S4: Генерация контента",
+    "S5_QualityValidator": "S5: Валидация",
+}
+
+
 def _map_engine_event_to_ws(event: EngineEvent) -> dict[str, Any] | None:
     """Маппинг события движка в WebSocket-сообщение.
 
@@ -391,20 +401,24 @@ def _map_engine_event_to_ws(event: EngineEvent) -> dict[str, Any] | None:
         }
 
     if et == EventType.STEP_STARTED:
+        node_name = (event.data or {}).get("node", "")
+        step_label = _NODE_TO_STEP.get(node_name, node_name)
         return {
             "type": "status_update",
             "payload": {
-                "step": event.component,
+                "step": step_label,
                 "status": "in_progress",
                 "message": event.message,
             },
         }
 
     if et == EventType.STEP_COMPLETED:
+        node_name = (event.data or {}).get("node", "")
+        step_label = _NODE_TO_STEP.get(node_name, node_name)
         return {
             "type": "status_update",
             "payload": {
-                "step": event.component,
+                "step": step_label,
                 "status": "completed",
                 "message": event.message,
             },

@@ -54,6 +54,26 @@ SYSTEM_PROMPT = """Ты — планировщик AI-движка для ген
 5. Поле `reason` должно объяснять, ПОЧЕМУ этот шаг нужен.
 6. Поле `thought` должно содержать твоё пошаговое рассуждение ПЕРЕД составлением плана.
 7. Не добавляй шаги, которых нет в списке доступных инструментов.
+
+## ВАЖНО: Формат ответа
+
+Каждый шаг в массиве `steps` должен быть JSON-объектом с полями:
+- `step_id` (число) — порядковый номер
+- `node` (строка) — имя узла, например "S1_ContextAnalyzer"
+- `reason` (строка) — объяснение
+
+НЕ используй строки или вызовы функций для шагов. Только JSON-объекты.
+
+Пример правильного формата:
+```json
+{
+  "thought": "Рассуждение...",
+  "steps": [
+    {"step_id": 1, "node": "S1_ContextAnalyzer", "reason": "Анализ запроса"},
+    {"step_id": 2, "node": "S2_NarrativeArchitect", "reason": "Создание структуры"}
+  ]
+}
+```
 """
 
 EDIT_CONTEXT_ADDITION = """
@@ -166,12 +186,16 @@ class S0PlannerNode(BaseNode):
         return "S0_PlannerNode"
 
     def _create_client(self) -> instructor.AsyncInstructor:
-        """Создать Instructor-клиент для вызова LLM."""
+        """Создать Instructor-клиент для вызова LLM.
+
+        Использует JSON mode вместо TOOLS/FUNCTIONS mode для лучшей
+        совместимости с Gemini через OpenAI-compatible API.
+        """
         raw_client = AsyncOpenAI(
             api_key=self._api_key,
             base_url=self._base_url,
         )
-        return instructor.from_openai(raw_client)
+        return instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
 
     async def execute(self, store: SharedStore) -> SharedStore:
         """Сгенерировать план выполнения через LLM.

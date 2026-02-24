@@ -5,10 +5,10 @@
  * Панель артефактов показывается/скрывается по требованию.
  */
 
-import { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { ChatPanel } from './ChatPanel'
 import { ArtifactPanel } from './ArtifactPanel'
+import type { ArtifactData } from '../../types'
 
 interface AppLayoutProps {
   /** Содержимое sidebar (ProjectList). */
@@ -17,22 +17,46 @@ interface AppLayoutProps {
   chatContent?: React.ReactNode
   /** Содержимое панели артефактов. */
   artifactContent?: React.ReactNode
+  /** Управление видимостью панели артефактов (внешнее). */
+  isArtifactPanelOpen?: boolean
+  /** Callback закрытия панели артефактов. */
+  onArtifactPanelClose?: () => void
+  /** Текущий артефакт. */
+  currentArtifact?: ArtifactData | null
+  /** Все артефакты. */
+  artifacts?: ArtifactData[]
+  /** Callback выбора артефакта. */
+  onSelectArtifact?: (artifact: ArtifactData) => void
+  /** Callback скачивания. */
+  onDownload?: (artifact: ArtifactData) => void
+  /** Callback открытия в новой вкладке. */
+  onOpenNewTab?: (artifact: ArtifactData) => void
 }
 
 export function AppLayout({
   sidebarContent,
   chatContent,
   artifactContent,
+  isArtifactPanelOpen = false,
+  onArtifactPanelClose = () => {},
+  currentArtifact,
+  artifacts = [],
+  onSelectArtifact,
+  onDownload,
+  onOpenNewTab,
 }: AppLayoutProps) {
-  const [isArtifactPanelOpen, setIsArtifactPanelOpen] = useState(false)
-
   return (
     <div data-testid="app-layout" className="flex h-screen overflow-hidden">
       <Sidebar>{sidebarContent}</Sidebar>
       <ChatPanel>{chatContent}</ChatPanel>
       <ArtifactPanel
         isOpen={isArtifactPanelOpen}
-        onClose={() => setIsArtifactPanelOpen(false)}
+        onClose={onArtifactPanelClose}
+        artifact={currentArtifact}
+        artifacts={artifacts}
+        onSelectArtifact={onSelectArtifact}
+        onDownload={onDownload}
+        onOpenNewTab={onOpenNewTab}
       >
         {artifactContent}
       </ArtifactPanel>

@@ -19,6 +19,11 @@ from engine.registry import ToolRegistry
 from engine.runtime import RuntimeAgent
 from schemas.events import EngineEvent, EventType
 from schemas.shared_store import ChatMessage, ProjectStatus, SharedStore
+from tools.s1_context_analyzer import S1ContextAnalyzerNode
+from tools.s2_narrative_architect import S2NarrativeArchitectNode
+from tools.s3_design_architect import S3DesignArchitectNode
+from tools.s4_slide_generator import S4SlideGeneratorNode
+from tools.s5_quality_validator import S5QualityValidatorNode
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +65,33 @@ class EngineAPI:
             base_url=self._llm_base_url,
         )
         self._validator = PlanValidatorNode(registry=self.registry)
+
+        # Регистрируем инструментальные узлы S1-S5
+        self._register_tool_nodes()
+
+    def _register_tool_nodes(self) -> None:
+        """Зарегистрировать все инструментальные узлы S1-S5 в реестре.
+
+        Каждый узел создаётся с общими настройками LLM из конфигурации.
+        """
+        common_kwargs = {
+            "model": self._llm_model,
+            "max_retries": self._llm_max_retries,
+            "api_key": self._llm_api_key,
+            "base_url": self._llm_base_url,
+        }
+
+        self.registry.register(S1ContextAnalyzerNode(**common_kwargs))
+        self.registry.register(S2NarrativeArchitectNode(**common_kwargs))
+        self.registry.register(S3DesignArchitectNode(**common_kwargs))
+        self.registry.register(S4SlideGeneratorNode(**common_kwargs))
+        self.registry.register(S5QualityValidatorNode(**common_kwargs))
+
+        logger.info(
+            "Зарегистрировано %d инструментальных узлов: %s",
+            len(self.registry),
+            self.registry.available_nodes,
+        )
 
     async def run(
         self,

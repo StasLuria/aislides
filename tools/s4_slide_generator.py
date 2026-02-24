@@ -262,7 +262,7 @@ class S4SlideGeneratorNode(BaseNode):
             api_key=self._api_key,
             base_url=self._base_url,
         )
-        return instructor.from_openai(raw_client)
+        return instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
 
     async def _generate_single_slide(
         self,

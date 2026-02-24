@@ -106,6 +106,9 @@ class RuntimeAgent:
                 )
             )
 
+            # Запоминаем количество артефактов до выполнения шага
+            artifacts_before = len(store.artifacts)
+
             try:
                 node = self._registry.get(node_name)
                 store = await node.execute(store)
@@ -147,6 +150,23 @@ class RuntimeAgent:
                 )
                 logger.exception("[%s] Ошибка на шаге %s", trace_id, step_id)
                 return store
+
+            # --- Эмитируем ARTIFACT_CREATED для новых артефактов ---
+            for artifact in store.artifacts[artifacts_before:]:
+                await self._event_bus.emit(
+                    EngineEvent(
+                        event_type=EventType.ARTIFACT_CREATED,
+                        trace_id=trace_id,
+                        component=node_name,
+                        message=f"Создан артефакт: {artifact.filename}",
+                        data={
+                            "artifact_id": artifact.artifact_id,
+                            "filename": artifact.filename,
+                            "file_type": artifact.filename.rsplit(".", 1)[-1] if "." in artifact.filename else "",
+                            "preview_url": f"/api/artifacts/{artifact.artifact_id}/preview",
+                        },
+                    )
+                )
 
             # --- STEP_COMPLETED ---
             await self._event_bus.emit(
