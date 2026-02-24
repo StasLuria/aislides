@@ -2,7 +2,8 @@
 # Локальная замена CI + Docker-команды.
 
 .PHONY: lint format typecheck test test-unit test-integration check clean \
-        docker-up docker-down docker-build docker-logs docker-dev docker-reset
+        docker-up docker-down docker-build docker-logs docker-dev docker-reset \
+        sandbox-up sandbox-down sandbox-status sandbox-restart
 
 # ═══════════════════════════════════════════════════════
 # Development (local)
@@ -47,6 +48,26 @@ clean:
 	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
 	rm -rf htmlcov/ .coverage
+
+# ═══════════════════════════════════════════════════════
+# Sandbox (Manus)
+# ═══════════════════════════════════════════════════════
+
+## Запустить backend + frontend в sandbox
+sandbox-up:
+	./scripts/sandbox-up.sh start
+
+## Остановить все сервисы в sandbox
+sandbox-down:
+	./scripts/sandbox-up.sh stop
+
+## Проверить статус сервисов
+sandbox-status:
+	./scripts/sandbox-up.sh status
+
+## Перезапустить все сервисы
+sandbox-restart:
+	./scripts/sandbox-up.sh restart
 
 # ═══════════════════════════════════════════════════════
 # Docker
