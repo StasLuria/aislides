@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Bug: Tool Node Registration** — Registered `S1-S5` tool nodes in `EngineAPI` to resolve `ToolNotFound` errors during runtime execution. (Commit `fa9f7e2`)
 - **Bug: StatusCard UI** — Corrected the `engine_bridge` to map internal node names to human-readable step labels, ensuring the `StatusCard` UI updates correctly. (Commit `fa9f7e2`)
 - **Bug: Missing Artifacts** — Added `ARTIFACT_CREATED` event emission in the `RuntimeAgent` to ensure generated artifacts are displayed in the UI. (Commit `fa9f7e2`)
+- **Bug: Test Failures** — Fixed 16 failing tests caused by auto-registration of S1-S5 nodes in `EngineAPI.__init__()`. Added `allow_override` parameter to `ToolRegistry.register()`. (Commit `27568af`)
+
+### Added
+
+- **ADR-002:** Documented the architectural decision to switch Instructor to JSON mode for Gemini compatibility (`docs/adr/ADR-002-instructor-json-mode.md`).
+- **Pre-commit Checklist:** Added Section 9 to `CONTRIBUTING.md` with a mandatory checklist to enforce Definition of Done before every commit.
 
 ### Changed
 
