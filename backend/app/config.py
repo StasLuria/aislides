@@ -41,8 +41,9 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-2.5-flash"
     llm_api_key: str | None = None
     llm_base_url: str | None = None
+    openai_api_key: str | None = None
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache

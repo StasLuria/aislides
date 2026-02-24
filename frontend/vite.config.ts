@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
+    allowedHosts: ['.manus.computer'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
