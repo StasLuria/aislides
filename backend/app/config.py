@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -42,6 +43,21 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
     llm_base_url: str | None = None
     openai_api_key: str | None = None
+
+    @field_validator("database_url")
+    @classmethod
+    def convert_database_url_for_async(cls, v: str) -> str:
+        """Конвертирует DATABASE_URL для совместимости с SQLAlchemy async.
+
+        Render.com предоставляет URL в формате ``postgresql://...``,
+        а SQLAlchemy async требует ``postgresql+asyncpg://...``.
+        Также поддерживает ``postgres://`` (устаревший формат Heroku/Render).
+        """
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

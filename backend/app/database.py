@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import AsyncAdaptedQueuePool, NullPool
 
 from backend.app.config import get_settings
 
@@ -17,11 +18,15 @@ if TYPE_CHECKING:
 
 settings = get_settings()
 
+# SQLite не поддерживает connection pooling — используем NullPool.
+# PostgreSQL — используем AsyncAdaptedQueuePool для production.
+_is_sqlite = settings.database_url.startswith("sqlite")
+
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
-    # SQLite не поддерживает pool_size, поэтому используем NullPool для SQLite
-    pool_pre_ping=True,
+    poolclass=NullPool if _is_sqlite else AsyncAdaptedQueuePool,
+    pool_pre_ping=not _is_sqlite,
 )
 
 async_session_factory = async_sessionmaker(
