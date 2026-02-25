@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Render.com Deployment** — Infrastructure-as-Code for one-click deploy to Render.com.
+    - `Dockerfile.render` — Multi-stage production Dockerfile (frontend build + backend + nginx in one container)
+    - `render.yaml` — Render Blueprint with web service + PostgreSQL database
+    - `deploy/nginx.render.conf` — Nginx config template with `envsubst` for PORT
+    - `deploy/entrypoint.sh` — Entrypoint script that starts nginx + uvicorn
+    - `backend/app/config.py` — Auto-conversion of `DATABASE_URL` for asyncpg (Render/Heroku compatibility)
+    - `backend/app/database.py` — Correct pool settings for PostgreSQL vs SQLite
+    - Updated `.env.example` with production configuration documentation
+
 ### Fixed
 
 - **Critical: Full Generation Cycle** — Integrated frontend components (`ChatInput`, `WebSocket`, `StatusCard`, `ArtifactPanel`) with the backend to enable a complete end-to-end presentation generation flow. (Commit `fa9f7e2`)

@@ -1,0 +1,56 @@
+# ═══════════════════════════════════════════════════════
+# Render.com Blueprint — AI Presentation Generator
+# Infrastructure-as-Code: single web service + PostgreSQL
+#
+# Deploy: Render Dashboard → New Blueprint → select repo
+# Auto-deploy: every push to main triggers redeploy
+# ═══════════════════════════════════════════════════════
+
+services:
+  # ── Web Service (Frontend + Backend in one container) ──
+  - type: web
+    name: aislides
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+
+    envVars:
+      # ── Database ──────────────────────────────────────
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aislides-db
+          property: connectionString
+
+      # ── JWT Auth ──────────────────────────────────────
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # ── LLM Configuration ────────────────────────────
+      - key: LLM_MODEL
+        value: gemini-2.5-flash
+
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # ── App Settings ──────────────────────────────────
+      - key: DEBUG
+        value: "false"
+
+      - key: CORS_ORIGINS
+        value: '["https://aislides.onrender.com"]'
+
+      # ── Render sets PORT automatically ────────────────
+      # PORT is provided by Render (default: 10000)
+
+databases:
+  # ── PostgreSQL Database ────────────────────────────────
+  - name: aislides-db
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: aislides
+    user: aislides
