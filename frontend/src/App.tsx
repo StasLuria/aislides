@@ -164,9 +164,8 @@ function MainPage() {
             filename: message.payload.filename,
             file_type: message.payload.file_type,
             preview_url: message.payload.preview_url,
-            content: (message.payload as Record<string, unknown>).content as
-              | string
-              | undefined,
+            content: (message.payload as unknown as Record<string, unknown>)
+              .content as string | undefined,
           }
           setArtifacts((prev) => [...prev, artifact])
           setCurrentArtifact(artifact)
