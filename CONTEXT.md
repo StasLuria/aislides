@@ -19,6 +19,7 @@
 | 13.3 LLM model not found | ✅ | `EngineAPI` теперь читает `LLM_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` из env vars |
 | 13.4 Default model → gpt-4.1 | ✅ | Дефолтная модель изменена с `gemini-2.5-flash` на `gpt-4.1` |
 | 13.5 Artifact content pipeline | ✅ | Content передаётся через WebSocket и сохраняется в DB; ArtifactCard показывает mini iframe preview |
+| 13.6 Project switching data loss | ✅ | При переключении проекта загружаются messages и artifacts из API; auto-open первого HTML артефакта |
 
 ### Спринт 12: Production Deployment (Render.com)
 
