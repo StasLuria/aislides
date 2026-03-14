@@ -29,15 +29,18 @@ uvicorn backend.app.main:app \
 
 UVICORN_PID=$!
 
-# Wait for uvicorn to be ready
+# Wait for uvicorn to be ready (check /api/health on uvicorn directly)
 echo "⏳ Waiting for backend to start..."
-for i in $(seq 1 30); do
+for i in $(seq 1 60); do
     if curl -sf http://127.0.0.1:8000/api/health > /dev/null 2>&1; then
-        echo "✅ Backend is ready"
+        echo "✅ Backend is ready (attempt $i)"
         break
     fi
-    if [ "$i" -eq 30 ]; then
-        echo "❌ Backend failed to start within 30 seconds"
+    if [ "$i" -eq 60 ]; then
+        echo "❌ Backend failed to start within 60 seconds"
+        # Show uvicorn logs for debugging
+        echo "--- Last uvicorn output ---"
+        kill $UVICORN_PID 2>/dev/null || true
         exit 1
     fi
     sleep 1
@@ -48,6 +51,8 @@ echo "🌐 Starting nginx on port $PORT..."
 nginx -g "daemon off;" &
 
 NGINX_PID=$!
+
+echo "✅ All services started. Nginx PID=$NGINX_PID, Uvicorn PID=$UVICORN_PID"
 
 # ── Step 4: Wait for either process to exit ──────────
 # If either process dies, kill the other and exit
