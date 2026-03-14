@@ -31,7 +31,7 @@ services:
 
       # ── LLM Configuration ────────────────────────────
       - key: LLM_MODEL
-        value: gemini-2.5-flash
+        value: gpt-4.1
 
       - key: OPENAI_API_KEY
         sync: false
