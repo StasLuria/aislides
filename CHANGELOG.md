@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Critical: Render Deployment — TypeScript Build Errors** — Resolved multiple TypeScript errors that prevented `pnpm run build` on Render: fixed mock function type signature in `App.test.tsx`, corrected `ArtifactData` type assertion in `App.tsx`, fixed `ArtifactPanelRedesign.test.tsx` mock types. Excluded test files from `tsconfig.app.json` build scope. (Commits `2bcadfe`)
+- **Critical: Render Deployment — Health Check 404** — Added `/api` prefix to health router so the endpoint matches nginx proxy path and Render `healthCheckPath` (`/api/health`). Increased startup timeout from 30s to 60s in `entrypoint.sh` for cold starts with PostgreSQL. (Commit `86f19f1`)
+- **Critical: Render Deployment — LLM Model Not Found** — `EngineAPI` was created without config in `engine_bridge.py`, causing `base_url=None` (defaults to `api.openai.com`) and model `gemini-2.5-flash` not found. Fixed `engine/api.py` to fallback to `OPENAI_API_KEY`, `LLM_MODEL`, and `OPENAI_BASE_URL` environment variables when config is not provided. (Commit `ce41ccb`)
 - **Critical: Full Generation Cycle** — Integrated frontend components (`ChatInput`, `WebSocket`, `StatusCard`, `ArtifactPanel`) with the backend to enable a complete end-to-end presentation generation flow. (Commit `fa9f7e2`)
 - **Bug: S0 Planner Pydantic Validation** — Switched `instructor` to `Mode.JSON` for Gemini compatibility, preventing Pydantic validation errors where steps were returned as strings instead of objects. (Commit `fa9f7e2`)
 - **Bug: ExecutionPlanSchema Parsing** — Added a fallback validator to `ExecutionPlanSchema` to correctly parse string-formatted plan steps from the LLM. (Commit `fa9f7e2`)
@@ -28,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Default LLM Model** — Changed default model from `gemini-2.5-flash` to `gpt-4.1` for broader API compatibility. Updated `render.yaml` and `engine/api.py` defaults.
 - `AppLayout.tsx` was updated to allow external control over the `ArtifactPanel`, facilitating the new integrated UI. (Commit `fa9f7e2`)
 
 ## [1.0.0] - 2026-02-23 — Milestone: Product v1.0

@@ -83,18 +83,51 @@ The WebSocket endpoint at `/ws/projects/{id}?token=<jwt_token>` supports bidirec
 - `ai_message`
 - `error`
 
-## Quick Start (Docker)
+## Quick Start (Docker — Local Development)
 
 ```bash
 # 1. Clone the repository and create the environment file
 cp .env.example .env
 
-# 2. Fill in your GEMINI_API_KEY in the .env file
+# 2. Fill in your OPENAI_API_KEY in the .env file
 
 # 3. Build and run the application using Docker Compose
 make up
 
 # 4. Access the application at http://localhost:5173
+```
+
+## Production Deployment (Render.com)
+
+The project includes Infrastructure-as-Code for one-click deployment to Render.com.
+
+**Live URL:** https://aislides-4m3r.onrender.com
+
+### Deploy Steps
+
+1. Fork/clone the repository on GitHub.
+2. Create a new **Blueprint** on Render.com and connect the repository.
+3. Render will automatically provision the web service and PostgreSQL database from `render.yaml`.
+4. Set the following environment variables in Render dashboard:
+
+| Variable | Required | Description |
+|:---|:---:|:---|
+| `OPENAI_API_KEY` | Yes | OpenAI API key (starts with `sk-`) |
+| `LLM_MODEL` | No | LLM model name (default: `gpt-4.1`) |
+| `OPENAI_BASE_URL` | No | Custom base URL for OpenAI-compatible APIs |
+
+`DATABASE_URL` and `JWT_SECRET_KEY` are automatically configured by Render.
+
+### Architecture
+
+```
+[Browser] → [Render Web Service (port 10000)]
+                ├── nginx (static SPA + proxy)
+                │     ├── /api/* → uvicorn:8000
+                │     ├── /ws/*  → uvicorn:8000 (WebSocket)
+                │     └── /*     → /usr/share/nginx/html (SPA)
+                └── uvicorn (FastAPI backend)
+                      └── PostgreSQL (Render managed DB)
 ```
 
 ## Status
@@ -105,7 +138,7 @@ make up
 
 ### Final Metrics (v1.0.0)
 
-- **Backend tests:** **628 passed** (pytest) with **96.82% coverage**.
+- **Backend tests:** **628 passed** (pytest) with **95.40% coverage**.
 - **Frontend tests:** **245 passed** (Vitest).
 - **Integration tests:** **78 total** (auth, data isolation, WebSocket, editing, export).
 - **Linters:** **0 errors** (ruff, mypy, eslint).
