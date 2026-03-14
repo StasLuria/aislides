@@ -12,12 +12,12 @@ const API_BASE = '/api'
 
 /** Ошибка API с кодом статуса и сообщением. */
 export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
+  readonly status: number
+
+  constructor(status: number, message: string) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
   }
 }
 
