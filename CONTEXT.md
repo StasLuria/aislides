@@ -18,6 +18,7 @@
 | 13.2 Health check 404 | ✅ | Добавлен prefix `/api` к health router; увеличен startup timeout до 60s |
 | 13.3 LLM model not found | ✅ | `EngineAPI` теперь читает `LLM_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` из env vars |
 | 13.4 Default model → gpt-4.1 | ✅ | Дефолтная модель изменена с `gemini-2.5-flash` на `gpt-4.1` |
+| 13.5 Artifact content pipeline | ✅ | Content передаётся через WebSocket и сохраняется в DB; ArtifactCard показывает mini iframe preview |
 
 ### Спринт 12: Production Deployment (Render.com)
 

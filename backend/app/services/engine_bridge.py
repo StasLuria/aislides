@@ -433,6 +433,7 @@ def _map_engine_event_to_ws(event: EngineEvent) -> dict[str, Any] | None:
                 "filename": data.get("filename", ""),
                 "file_type": data.get("file_type", ""),
                 "preview_url": data.get("preview_url", ""),
+                "content": data.get("content", ""),
             },
         }
 
