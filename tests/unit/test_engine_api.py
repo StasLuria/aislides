@@ -350,7 +350,7 @@ class TestEngineAPIInit:
     def test_default_config(self) -> None:
         """Инициализация с пустой конфигурацией."""
         api = EngineAPI()
-        assert api._llm_model == "gemini-2.5-flash"
+        assert api._llm_model == "gpt-4.1"
         assert api._llm_max_retries == 3
 
     def test_custom_config(self) -> None:

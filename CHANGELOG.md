@@ -6,8 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Render.com Deployment** — Infrastructure-as-Code for one-click deploy to Render.com.
+    - `Dockerfile.render` — Multi-stage production Dockerfile (frontend build + backend + nginx in one container)
+    - `render.yaml` — Render Blueprint with web service + PostgreSQL database
+    - `deploy/nginx.render.conf` — Nginx config template with `envsubst` for PORT
+    - `deploy/entrypoint.sh` — Entrypoint script that starts nginx + uvicorn
+    - `backend/app/config.py` — Auto-conversion of `DATABASE_URL` for asyncpg (Render/Heroku compatibility)
+    - `backend/app/database.py` — Correct pool settings for PostgreSQL vs SQLite
+    - Updated `.env.example` with production configuration documentation
+
 ### Fixed
 
+- **Critical: Render Deployment — TypeScript Build Errors** — Resolved multiple TypeScript errors that prevented `pnpm run build` on Render: fixed mock function type signature in `App.test.tsx`, corrected `ArtifactData` type assertion in `App.tsx`, fixed `ArtifactPanelRedesign.test.tsx` mock types. Excluded test files from `tsconfig.app.json` build scope. (Commits `2bcadfe`)
+- **Critical: Render Deployment — Health Check 404** — Added `/api` prefix to health router so the endpoint matches nginx proxy path and Render `healthCheckPath` (`/api/health`). Increased startup timeout from 30s to 60s in `entrypoint.sh` for cold starts with PostgreSQL. (Commit `86f19f1`)
+- **Critical: Render Deployment — LLM Model Not Found** — `EngineAPI` was created without config in `engine_bridge.py`, causing `base_url=None` (defaults to `api.openai.com`) and model `gemini-2.5-flash` not found. Fixed `engine/api.py` to fallback to `OPENAI_API_KEY`, `LLM_MODEL`, and `OPENAI_BASE_URL` environment variables when config is not provided. (Commit `ce41ccb`)
+- **Critical: Project Switching Loses Data** — When switching between projects in sidebar, chat messages and artifacts were lost because `handleSelectProject` only reset state without loading history from API. Added `Promise.all` fetch of `/api/projects/{id}/messages` and `/api/projects/{id}/artifacts` on project switch, with proper mapping to `ChatMessageData` and `ArtifactData` types. Auto-opens first HTML artifact in ArtifactPanel.
+- **Critical: Artifact Content Not Displayed** — HTML artifacts showed black screen in ArtifactPanel because content was not transmitted through the pipeline. Fixed three layers: (1) `runtime.py` reads HTML from disk and includes `content` in `ARTIFACT_CREATED` event data; (2) `engine_bridge.py` passes `content` in WebSocket `artifact_generated` payload; (3) `engine_service.py` saves `content` to database via `add_artifact()`. Also improved `ArtifactCard` to render mini iframe preview for HTML artifacts instead of broken `<img>` tag.
 - **Critical: Full Generation Cycle** — Integrated frontend components (`ChatInput`, `WebSocket`, `StatusCard`, `ArtifactPanel`) with the backend to enable a complete end-to-end presentation generation flow. (Commit `fa9f7e2`)
 - **Bug: S0 Planner Pydantic Validation** — Switched `instructor` to `Mode.JSON` for Gemini compatibility, preventing Pydantic validation errors where steps were returned as strings instead of objects. (Commit `fa9f7e2`)
 - **Bug: ExecutionPlanSchema Parsing** — Added a fallback validator to `ExecutionPlanSchema` to correctly parse string-formatted plan steps from the LLM. (Commit `fa9f7e2`)
@@ -17,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Default LLM Model** — Changed default model from `gemini-2.5-flash` to `gpt-4.1` for broader API compatibility. Updated `render.yaml` and `engine/api.py` defaults.
 - `AppLayout.tsx` was updated to allow external control over the `ArtifactPanel`, facilitating the new integrated UI. (Commit `fa9f7e2`)
 
 ## [1.0.0] - 2026-02-23 — Milestone: Product v1.0

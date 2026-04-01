@@ -153,6 +153,20 @@ class RuntimeAgent:
 
             # --- Эмитируем ARTIFACT_CREATED для новых артефактов ---
             for artifact in store.artifacts[artifacts_before:]:
+                # Читаем content с диска для передачи через WebSocket
+                artifact_content = ""
+                if artifact.storage_path:
+                    try:
+                        from pathlib import Path
+                        content_path = Path(artifact.storage_path)
+                        if content_path.exists():
+                            artifact_content = content_path.read_text(encoding="utf-8")
+                    except Exception as read_exc:
+                        logger.warning(
+                            "[%s] Не удалось прочитать артефакт %s: %s",
+                            trace_id, artifact.storage_path, read_exc,
+                        )
+
                 await self._event_bus.emit(
                     EngineEvent(
                         event_type=EventType.ARTIFACT_CREATED,
@@ -164,6 +178,7 @@ class RuntimeAgent:
                             "filename": artifact.filename,
                             "file_type": artifact.filename.rsplit(".", 1)[-1] if "." in artifact.filename else "",
                             "preview_url": f"/api/artifacts/{artifact.artifact_id}/preview",
+                            "content": artifact_content,
                         },
                     )
                 )

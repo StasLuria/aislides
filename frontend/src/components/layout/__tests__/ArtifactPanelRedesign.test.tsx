@@ -8,11 +8,9 @@ import { ArtifactPanel } from '../ArtifactPanel'
 import type { ArtifactData } from '../../../types'
 
 const mockArtifact: ArtifactData = {
-  id: 'art-1',
-  type: 'slide_html',
-  title: 'Test Slide',
+  artifact_id: 'art-1',
+  filename: 'Test Slide',
   content: '<div>Hello</div>',
-  version: 1,
   file_type: 'html',
 }
 

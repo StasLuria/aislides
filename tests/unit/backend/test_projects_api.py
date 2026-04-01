@@ -234,6 +234,6 @@ class TestHealthCheck:
     @pytest.mark.asyncio
     async def test_health(self, client: AsyncClient) -> None:
         """Health check возвращает ok."""
-        resp = await client.get("/health")
+        resp = await client.get("/api/health")
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok"}

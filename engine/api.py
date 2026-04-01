@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import uuid
 from typing import Any
 
@@ -50,11 +51,11 @@ class EngineAPI:
         self.registry = ToolRegistry()
         self._cancellation_tokens: dict[str, asyncio.Event] = {}
 
-        # Настройки LLM из конфигурации
+        # Настройки LLM из конфигурации с fallback на переменные окружения
         llm_config = self._config.get("llm", {})
-        self._llm_model = llm_config.get("model", "gemini-2.5-flash")
-        self._llm_api_key = llm_config.get("api_key")
-        self._llm_base_url = llm_config.get("base_url")
+        self._llm_model = llm_config.get("model") or os.environ.get("LLM_MODEL", "gpt-4.1")
+        self._llm_api_key = llm_config.get("api_key") or os.environ.get("OPENAI_API_KEY")
+        self._llm_base_url = llm_config.get("base_url") or os.environ.get("OPENAI_BASE_URL")
         self._llm_max_retries = llm_config.get("max_retries", 3)
 
         # Создаём узлы планирования и валидации

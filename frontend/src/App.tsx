@@ -164,9 +164,8 @@ function MainPage() {
             filename: message.payload.filename,
             file_type: message.payload.file_type,
             preview_url: message.payload.preview_url,
-            content: (message.payload as Record<string, unknown>).content as
-              | string
-              | undefined,
+            content: (message.payload as unknown as Record<string, unknown>)
+              .content as string | undefined,
           }
           setArtifacts((prev) => [...prev, artifact])
           setCurrentArtifact(artifact)
@@ -237,7 +236,7 @@ function MainPage() {
 
   // --- Select project ---
   const handleSelectProject = useCallback(
-    (projectId: string) => {
+    async (projectId: string) => {
       setActiveProjectId(projectId)
       // Reset chat state for new project
       setMessages([])
@@ -247,8 +246,67 @@ function MainPage() {
       setShowStatus(false)
       setIsGenerating(false)
       artifactPanel.close()
+
+      // Load chat history and artifacts from API
+      if (!token) return
+      try {
+        const [messagesData, artifactsData] = await Promise.all([
+          apiFetch<{
+            messages: Array<{
+              id: string
+              sender: string
+              text: string
+              created_at: string
+            }>
+            total: number
+          }>(`/api/projects/${projectId}/messages`, token),
+          apiFetch<{
+            artifacts: Array<{
+              id: string
+              filename: string
+              file_type: string
+              content: string | null
+              version: number
+              created_at: string
+            }>
+            total: number
+          }>(`/api/projects/${projectId}/artifacts`, token),
+        ])
+
+        // Map messages to ChatMessageData format
+        if (messagesData.messages.length > 0) {
+          setMessages(
+            messagesData.messages.map((m) => ({
+              id: m.id,
+              role: m.sender === 'user' ? ('user' as const) : ('ai' as const),
+              text: m.text,
+              timestamp: m.created_at,
+            })),
+          )
+        }
+
+        // Map artifacts to ArtifactData format
+        if (artifactsData.artifacts.length > 0) {
+          const loadedArtifacts: ArtifactData[] = artifactsData.artifacts.map((a) => ({
+            artifact_id: a.id,
+            filename: a.filename,
+            file_type: a.file_type,
+            content: a.content ?? undefined,
+            current_version: a.version,
+          }))
+          setArtifacts(loadedArtifacts)
+          // Auto-open first artifact
+          const firstHtml = loadedArtifacts.find((a) => a.file_type === 'html')
+          if (firstHtml) {
+            setCurrentArtifact(firstHtml)
+            artifactPanel.open()
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load project history:', err)
+      }
     },
-    [artifactPanel],
+    [artifactPanel, token],
   )
 
   // --- Send message ---

@@ -155,10 +155,24 @@ class EngineService:
         for artifact in store.artifacts:
             # Определяем file_type из расширения filename
             file_type = artifact.filename.rsplit(".", 1)[-1] if "." in artifact.filename else "unknown"
+            # Читаем content с диска для сохранения в DB
+            artifact_content: str | None = None
+            if artifact.storage_path:
+                try:
+                    from pathlib import Path
+                    content_path = Path(artifact.storage_path)
+                    if content_path.exists():
+                        artifact_content = content_path.read_text(encoding="utf-8")
+                except Exception:
+                    logger.warning(
+                        "Could not read artifact content from %s",
+                        artifact.storage_path,
+                    )
             await svc.add_artifact(
                 project_id=project_id,
                 filename=artifact.filename,
                 file_type=file_type,
+                content=artifact_content,
                 storage_path=artifact.storage_path,
                 version=artifact.version,
             )

@@ -5,6 +5,7 @@
  * При клике на превью артефакт открывается в Панели артефактов».
  *
  * Показывает иконку типа файла, имя, тип и кнопку открытия.
+ * Для HTML-артефактов с content показывает mini iframe preview.
  */
 
 import type { ArtifactData } from '../../types'
@@ -57,6 +58,8 @@ function getFileTypeLabel(fileType: string): string {
 }
 
 export function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
+  const isHtmlWithContent = artifact.file_type === 'html' && artifact.content
+
   return (
     <button
       data-testid="artifact-card"
@@ -96,19 +99,32 @@ export function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
         </div>
       </div>
 
-      {/* Превью (если есть preview_url) */}
-      {artifact.preview_url && (
+      {/* Превью: mini iframe для HTML с content, иначе placeholder */}
+      {isHtmlWithContent ? (
         <div
           data-testid="artifact-preview"
-          className="mt-2 rounded border border-gray-100 bg-gray-50 h-24 overflow-hidden"
+          className="mt-2 rounded border border-gray-100 bg-white h-24 overflow-hidden relative pointer-events-none"
         >
-          <img
-            src={artifact.preview_url}
-            alt={`Превью ${artifact.filename}`}
-            className="w-full h-full object-cover"
+          <iframe
+            srcDoc={artifact.content}
+            title={`Превью ${artifact.filename}`}
+            sandbox=""
+            className="w-[1920px] h-[1080px] border-0 origin-top-left"
+            style={{
+              transform: 'scale(0.18)',
+              transformOrigin: 'top left',
+            }}
+            tabIndex={-1}
           />
         </div>
-      )}
+      ) : artifact.file_type === 'html' ? (
+        <div
+          data-testid="artifact-preview"
+          className="mt-2 rounded border border-gray-100 bg-gray-50 h-24 flex items-center justify-center"
+        >
+          <span className="text-xs text-gray-400">Нажмите для просмотра</span>
+        </div>
+      ) : null}
 
       {/* Версия */}
       {artifact.current_version && artifact.current_version > 1 && (

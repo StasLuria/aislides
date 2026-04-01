@@ -10,10 +10,10 @@ import { render, screen, cleanup, act } from '@testing-library/react'
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-const mockGetToken = vi.fn<() => string | null>(() => null)
+const mockGetToken = vi.fn(() => null as string | null)
 
 vi.mock('./services/tokenStorage', () => ({
-  getToken: (...args: unknown[]) => mockGetToken(...args),
+  getToken: () => mockGetToken(),
   saveToken: vi.fn(),
   removeToken: vi.fn(),
   hasToken: () => mockGetToken() !== null,
